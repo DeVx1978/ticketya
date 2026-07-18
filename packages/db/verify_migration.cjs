@@ -3,7 +3,7 @@ const fs = require('fs');
 
 async function main() {
   const db = new PGlite();
-  const migrationsDir = require('path').join(__dirname, 'packages', 'db', 'migrations');
+  const migrationsDir = require('path').join(__dirname, 'migrations');
   const migrationFile = fs.readdirSync(migrationsDir).find((f) => f.endsWith('.sql'));
   const sql = fs.readFileSync(require('path').join(migrationsDir, migrationFile), 'utf-8');
 
