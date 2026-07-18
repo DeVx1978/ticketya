@@ -1,0 +1,53 @@
+/**
+ * Configuración global de la plataforma.
+ *
+ * Varias filas de este módulo existen específicamente para NO hardcodear
+ * decisiones de negocio que el SRS marca explícitamente como pendientes de
+ * validación (sección 9). En vez de asumir un valor, se modelan como
+ * columnas nullable con su propia nota — quedan vacías hasta que negocio
+ * las defina, y el motor de reglas (capa de dominio, ver Arquitectura
+ * Técnica sección 2) debe rechazar operarlas si están en null.
+ */
+import { pgTable, uuid, varchar, numeric, integer, timestamp, text } from 'drizzle-orm/pg-core';
+
+/**
+ * Tabla singleton (se espera una sola fila). Se modela como tabla — no como
+ * variables de entorno — porque el Panel Admin (RF-ADMIN) debe poder
+ * editarla en caliente y quedar auditada (RF-ADMIN-005).
+ */
+export const configuracionPlataforma = pgTable('configuracion_plataforma', {
+  id: uuid('id').defaultRandom().primaryKey(),
+
+  // Identidad tributaria propia de TicketYa como persona jurídica.
+  // Necesaria para RF-COMM-006 (comprobante de venta publicitaria a nombre
+  // de la plataforma) y como uno de los 3 sujetos tributarios de RL-006.
+  rucPlataforma: varchar('ruc_plataforma', { length: 13 }).notNull(),
+  razonSocialPlataforma: varchar('razon_social_plataforma', { length: 200 }).notNull(),
+
+  // RN-003 — decisión pendiente: modelo y porcentaje exacto de comisión.
+  // Nullable a propósito: no se asume un valor. Ver también
+  // comisionPorcentajeModeloB si el modelo termina difiriendo por tipo de
+  // integración (pregunta abierta explícita en RN-003).
+  comisionPorcentajeModeloADefault: numeric('comision_porcentaje_modelo_a_default', {
+    precision: 5,
+    scale: 2,
+  }),
+  comisionPorcentajeModeloBDefault: numeric('comision_porcentaje_modelo_b_default', {
+    precision: 5,
+    scale: 2,
+  }),
+
+  // RN-004 — decisión pendiente: duración exacta de la ventana de bloqueo
+  // temporal de asiento (referencia de industria: 5-10 min, no asumida
+  // como definitiva).
+  ventanaBloqueoAsientoSegundos: integer('ventana_bloqueo_asiento_segundos'),
+
+  // RN-005 / RF-TICKET-006 — decisión pendiente: política de cancelación
+  // y reembolso. Se deja como texto libre estructurable a futuro (JSON)
+  // en vez de columnas booleanas rígidas, porque ni siquiera el *shape*
+  // de la política está definido todavía (total/parcial/nota de crédito,
+  // uniforme vs. por cooperativa).
+  politicaCancelacionNotas: text('politica_cancelacion_notas'),
+
+  actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
+});
