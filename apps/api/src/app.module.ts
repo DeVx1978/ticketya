@@ -6,9 +6,16 @@ import { DatabaseModule } from './infraestructura/database/database.module';
 import { SaludController } from './presentacion/salud/salud.controller';
 import { AuthModule } from './presentacion/auth/auth.module';
 import { BusquedaModule } from './presentacion/busqueda/busqueda.module';
+import { AsientosModule } from './presentacion/asientos/asientos.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, BusquedaModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    AuthModule,
+    BusquedaModule,
+    AsientosModule,
+  ],
   controllers: [AppController, SaludController],
   providers: [AppService],
 })
