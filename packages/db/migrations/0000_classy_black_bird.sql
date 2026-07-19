@@ -99,6 +99,20 @@ CREATE TABLE "usuarios" (
 );
 --> statement-breakpoint
 ALTER TABLE "usuarios" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+CREATE TABLE "conductores" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"cooperativa_id" uuid NOT NULL,
+	"nombre_completo" varchar(200) NOT NULL,
+	"cedula" varchar(20) NOT NULL,
+	"licencia_numero" varchar(30),
+	"licencia_categoria" varchar(10),
+	"telefono" varchar(20),
+	"activo" boolean DEFAULT true NOT NULL,
+	"creado_en" timestamp with time zone DEFAULT now() NOT NULL,
+	"actualizado_en" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "conductores" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE TABLE "tipos_vehiculo" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"cooperativa_id" uuid NOT NULL,
@@ -160,6 +174,7 @@ CREATE TABLE "viajes" (
 	"cooperativa_id" uuid NOT NULL,
 	"ruta_id" uuid NOT NULL,
 	"unidad_id" uuid NOT NULL,
+	"conductor_id" uuid,
 	"horario_ruta_origen_id" uuid,
 	"fecha_salida" date NOT NULL,
 	"hora_salida_programada" timestamp with time zone NOT NULL,
@@ -444,6 +459,7 @@ CREATE TABLE "planes_comerciales" (
 ALTER TABLE "puntos_operacion" ADD CONSTRAINT "puntos_operacion_cooperativa_propietaria_id_cooperativas_id_fk" FOREIGN KEY ("cooperativa_propietaria_id") REFERENCES "public"."cooperativas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tokens_usuario" ADD CONSTRAINT "tokens_usuario_usuario_id_usuarios_id_fk" FOREIGN KEY ("usuario_id") REFERENCES "public"."usuarios"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "usuarios" ADD CONSTRAINT "usuarios_cooperativa_id_cooperativas_id_fk" FOREIGN KEY ("cooperativa_id") REFERENCES "public"."cooperativas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "conductores" ADD CONSTRAINT "conductores_cooperativa_id_cooperativas_id_fk" FOREIGN KEY ("cooperativa_id") REFERENCES "public"."cooperativas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tipos_vehiculo" ADD CONSTRAINT "tipos_vehiculo_cooperativa_id_cooperativas_id_fk" FOREIGN KEY ("cooperativa_id") REFERENCES "public"."cooperativas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "unidades" ADD CONSTRAINT "unidades_cooperativa_id_cooperativas_id_fk" FOREIGN KEY ("cooperativa_id") REFERENCES "public"."cooperativas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "unidades" ADD CONSTRAINT "unidades_tipo_vehiculo_id_tipos_vehiculo_id_fk" FOREIGN KEY ("tipo_vehiculo_id") REFERENCES "public"."tipos_vehiculo"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -456,6 +472,7 @@ ALTER TABLE "rutas" ADD CONSTRAINT "rutas_destino_punto_operacion_id_puntos_oper
 ALTER TABLE "viajes" ADD CONSTRAINT "viajes_cooperativa_id_cooperativas_id_fk" FOREIGN KEY ("cooperativa_id") REFERENCES "public"."cooperativas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "viajes" ADD CONSTRAINT "viajes_ruta_id_rutas_id_fk" FOREIGN KEY ("ruta_id") REFERENCES "public"."rutas"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "viajes" ADD CONSTRAINT "viajes_unidad_id_unidades_id_fk" FOREIGN KEY ("unidad_id") REFERENCES "public"."unidades"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "viajes" ADD CONSTRAINT "viajes_conductor_id_conductores_id_fk" FOREIGN KEY ("conductor_id") REFERENCES "public"."conductores"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "viajes" ADD CONSTRAINT "viajes_horario_ruta_origen_id_horarios_ruta_id_fk" FOREIGN KEY ("horario_ruta_origen_id") REFERENCES "public"."horarios_ruta"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "viaje_asientos" ADD CONSTRAINT "viaje_asientos_viaje_id_viajes_id_fk" FOREIGN KEY ("viaje_id") REFERENCES "public"."viajes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "viaje_asientos" ADD CONSTRAINT "viaje_asientos_hold_usuario_id_usuarios_id_fk" FOREIGN KEY ("hold_usuario_id") REFERENCES "public"."usuarios"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -506,6 +523,7 @@ CREATE INDEX "idx_tokens_usuario_proposito" ON "tokens_usuario" USING btree ("pr
 CREATE UNIQUE INDEX "uq_usuarios_correo" ON "usuarios" USING btree ("correo");--> statement-breakpoint
 CREATE INDEX "idx_usuarios_cooperativa" ON "usuarios" USING btree ("cooperativa_id");--> statement-breakpoint
 CREATE INDEX "idx_usuarios_rol" ON "usuarios" USING btree ("rol");--> statement-breakpoint
+CREATE INDEX "idx_conductores_cooperativa" ON "conductores" USING btree ("cooperativa_id");--> statement-breakpoint
 CREATE INDEX "idx_tipos_vehiculo_cooperativa" ON "tipos_vehiculo" USING btree ("cooperativa_id");--> statement-breakpoint
 CREATE INDEX "idx_unidades_cooperativa" ON "unidades" USING btree ("cooperativa_id");--> statement-breakpoint
 CREATE INDEX "idx_unidades_tipo_vehiculo" ON "unidades" USING btree ("tipo_vehiculo_id");--> statement-breakpoint
@@ -565,6 +583,7 @@ CREATE INDEX "idx_campanas_publicitarias_vigencia" ON "campanas_publicitarias" U
 CREATE INDEX "idx_leads_anunciantes_estado" ON "leads_anunciantes" USING btree ("estado");--> statement-breakpoint
 CREATE INDEX "idx_metricas_publicitarias_campana_fecha" ON "metricas_publicitarias" USING btree ("campana_publicitaria_id","fecha");--> statement-breakpoint
 CREATE POLICY "aislamiento_cooperativa_usuarios" ON "usuarios" AS PERMISSIVE FOR ALL TO "ticketya_app" USING ((cooperativa_id IS NULL OR cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)) WITH CHECK ((cooperativa_id IS NULL OR cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid));--> statement-breakpoint
+CREATE POLICY "aislamiento_cooperativa_conductores" ON "conductores" AS PERMISSIVE FOR ALL TO "ticketya_app" USING (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid) WITH CHECK (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid);--> statement-breakpoint
 CREATE POLICY "aislamiento_cooperativa_tipos_vehiculo" ON "tipos_vehiculo" AS PERMISSIVE FOR ALL TO "ticketya_app" USING (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid) WITH CHECK (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid);--> statement-breakpoint
 CREATE POLICY "aislamiento_cooperativa_unidades" ON "unidades" AS PERMISSIVE FOR ALL TO "ticketya_app" USING (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid) WITH CHECK (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid);--> statement-breakpoint
 CREATE POLICY "aislamiento_cooperativa_rutas" ON "rutas" AS PERMISSIVE FOR ALL TO "ticketya_app" USING (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid) WITH CHECK (cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid);--> statement-breakpoint

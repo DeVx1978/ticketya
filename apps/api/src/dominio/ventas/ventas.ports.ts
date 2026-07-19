@@ -68,10 +68,15 @@ export interface PasarelaPago {
   procesar(montoTotal: number, idempotencyKey: string): Promise<ResultadoPago>;
 }
 
+export interface BoletoEmitido {
+  id: string;
+  codigoQr: string;
+}
+
 export interface PagoExistente {
   compraId: string;
   estado: 'pendiente' | 'aprobado' | 'rechazado' | 'revertido';
-  boletoIds: string[];
+  boletos: BoletoEmitido[];
 }
 
 export interface MapeoAsientoPasajero {
@@ -108,7 +113,7 @@ export interface CompraRepositorio {
    * pago a 'aprobado'. Agrupa las escrituras por cooperativa
    * internamente (una compra puede, en teoría, involucrar más de una).
    */
-  confirmarPago(compraId: string, referenciaExterna: string, mapeo: MapeoAsientoPasajero[]): Promise<{ boletoIds: string[] }>;
+  confirmarPago(compraId: string, referenciaExterna: string, mapeo: MapeoAsientoPasajero[]): Promise<{ boletos: BoletoEmitido[] }>;
 
   /** Registra el rechazo sin tocar los asientos (su hold expira solo). */
   rechazarPago(compraId: string, motivo: string): Promise<void>;

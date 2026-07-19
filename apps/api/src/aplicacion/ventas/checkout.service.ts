@@ -32,7 +32,7 @@ export class CheckoutService {
       return {
         compraId: existente.compraId,
         estado: existente.estado === 'aprobado' ? ('aprobado' as const) : ('rechazado' as const),
-        boletoIds: existente.boletoIds,
+        boletos: existente.boletos,
         reintento: true,
       };
     }
@@ -53,7 +53,7 @@ export class CheckoutService {
       };
     }
 
-    const { boletoIds } = await this.compras.confirmarPago(compraId, resultadoPago.referenciaExterna, mapeo);
-    return { compraId, estado: 'aprobado' as const, boletoIds, montoTotal };
+    const { boletos } = await this.compras.confirmarPago(compraId, resultadoPago.referenciaExterna, mapeo);
+    return { compraId, estado: 'aprobado' as const, boletos, montoTotal };
   }
 }

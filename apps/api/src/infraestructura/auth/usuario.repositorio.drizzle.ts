@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { usuarios } from '@ticketya/db';
-import { DRIZZLE_DB } from '../database/database.module';
+import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { DatosRegistro, UsuarioDominio, UsuarioRepositorio } from '../../dominio/auth/auth.ports';
 
@@ -9,10 +9,25 @@ import { DatosRegistro, UsuarioDominio, UsuarioRepositorio } from '../../dominio
  * Implementación concreta de UsuarioRepositorio usando Drizzle + el
  * esquema compartido de @ticketya/db. Es el único archivo del módulo de
  * auth que debería importar cosas de Drizzle directamente.
+ *
+ * ⚠ Usa DRIZZLE_DB_PUBLICO (rol con BYPASSRLS), no DRIZZLE_DB, y esto es
+ * una corrección real de un bug encontrado probando el sistema completo:
+ * la autenticación es, por naturaleza, una operación que ocurre ANTES de
+ * saber a qué cooperativa pertenece alguien — es exactamente lo que el
+ * login está tratando de averiguar. Buscar por correo usando la conexión
+ * con RLS activo (DRIZZLE_DB) exige tener ya seteado
+ * `app.current_cooperativa_id`, algo que en el momento del login todavía
+ * no existe. El resultado real de ese bug: cualquier usuario de
+ * cooperativa (admin_cooperativa, vendedor) recibía "correo o contraseña
+ * incorrectos" siempre, aunque la contraseña fuera correcta — la política
+ * RLS escondía la fila de sí misma. Los usuarios sin cooperativa
+ * (pasajero, admin_plataforma) no mostraban el problema porque su
+ * política adicional ("OR cooperativa_id IS NULL") sí los dejaba pasar,
+ * lo cual ocultó el bug hasta probar con una cuenta de cooperativa real.
  */
 @Injectable()
 export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
-  constructor(@Inject(DRIZZLE_DB) private readonly db: DrizzleDb) {}
+  constructor(@Inject(DRIZZLE_DB_PUBLICO) private readonly db: DrizzleDb) {}
 
   async buscarPorCorreo(correo: string): Promise<UsuarioDominio | null> {
     const fila = await this.db.query.usuarios.findFirst({ where: eq(usuarios.correo, correo) });
@@ -69,3 +84,4 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     };
   }
 }
+

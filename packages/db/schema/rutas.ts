@@ -24,7 +24,7 @@ import {
 import { relations } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
 import { puntosOperacion } from './tenancy';
-import { unidades } from './flota';
+import { unidades, conductores } from './flota';
 import { estadoViajeEnum } from './enums';
 import { appRole, filtroCooperativaActual } from './rls';
 
@@ -133,6 +133,10 @@ export const viajes = pgTable(
     unidadId: uuid('unidad_id')
       .references(() => unidades.id)
       .notNull(),
+    // Nullable a propósito: asignar conductor es útil pero no debe ser
+    // un requisito bloqueante para poder publicar un viaje (una
+    // cooperativa podría asignar el conductor más cerca de la fecha).
+    conductorId: uuid('conductor_id').references(() => conductores.id),
     horarioRutaOrigenId: uuid('horario_ruta_origen_id').references(() => horariosRuta.id),
 
     fechaSalida: date('fecha_salida').notNull(),
@@ -195,4 +199,5 @@ export const viajesRelations = relations(viajes, ({ one }) => ({
   cooperativa: one(cooperativas, { fields: [viajes.cooperativaId], references: [cooperativas.id] }),
   ruta: one(rutas, { fields: [viajes.rutaId], references: [rutas.id] }),
   unidad: one(unidades, { fields: [viajes.unidadId], references: [unidades.id] }),
+  conductor: one(conductores, { fields: [viajes.conductorId], references: [conductores.id] }),
 }));

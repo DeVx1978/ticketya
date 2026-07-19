@@ -1,0 +1,36 @@
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { AdminService } from '../../aplicacion/admin/admin.service';
+import { CrearCooperativaDto, CrearPuntoOperacionDto } from './dto/admin.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/guards/roles.guard';
+
+/** Todo este controller es exclusivo del admin_plataforma — RF-ADMIN. */
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin_plataforma')
+@Controller('admin')
+export class AdminController {
+  constructor(private readonly admin: AdminService) {}
+
+  /** RF-ADMIN-001 — alta de cooperativa + su primer usuario administrador. */
+  @Post('cooperativas')
+  async crearCooperativa(@Body() dto: CrearCooperativaDto) {
+    return this.admin.crearCooperativaConPrimerUsuario(dto.cooperativa, dto.usuario);
+  }
+
+  @Get('cooperativas')
+  async listarCooperativas() {
+    return this.admin.listarCooperativas();
+  }
+
+  @Post('puntos-operacion')
+  async crearPuntoOperacion(@Body() dto: CrearPuntoOperacionDto) {
+    return this.admin.crearPuntoOperacion(dto);
+  }
+
+  /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
+  @Get('dashboard')
+  async dashboardNacional() {
+    return this.admin.dashboardNacional();
+  }
+}

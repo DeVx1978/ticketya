@@ -1,5 +1,5 @@
 {
-  "id": "885ba10b-09f5-4356-88c8-daeaef078419",
+  "id": "4f3f4c63-51bf-4766-ab0c-1319d28c7440",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -669,6 +669,124 @@
       "checkConstraints": {},
       "isRLSEnabled": true
     },
+    "public.conductores": {
+      "name": "conductores",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "cooperativa_id": {
+          "name": "cooperativa_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nombre_completo": {
+          "name": "nombre_completo",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cedula": {
+          "name": "cedula",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licencia_numero": {
+          "name": "licencia_numero",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "licencia_categoria": {
+          "name": "licencia_categoria",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telefono": {
+          "name": "telefono",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activo": {
+          "name": "activo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "creado_en": {
+          "name": "creado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "actualizado_en": {
+          "name": "actualizado_en",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_conductores_cooperativa": {
+          "name": "idx_conductores_cooperativa",
+          "columns": [
+            {
+              "expression": "cooperativa_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "conductores_cooperativa_id_cooperativas_id_fk": {
+          "name": "conductores_cooperativa_id_cooperativas_id_fk",
+          "tableFrom": "conductores",
+          "tableTo": "cooperativas",
+          "columnsFrom": [
+            "cooperativa_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "aislamiento_cooperativa_conductores": {
+          "name": "aislamiento_cooperativa_conductores",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "ticketya_app"
+          ],
+          "using": "cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid",
+          "withCheck": "cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
     "public.tipos_vehiculo": {
       "name": "tipos_vehiculo",
       "schema": "",
@@ -1298,6 +1416,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "conductor_id": {
+          "name": "conductor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "horario_ruta_origen_id": {
           "name": "horario_ruta_origen_id",
           "type": "uuid",
@@ -1458,6 +1582,19 @@
           "tableTo": "unidades",
           "columnsFrom": [
             "unidad_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "viajes_conductor_id_conductores_id_fk": {
+          "name": "viajes_conductor_id_conductores_id_fk",
+          "tableFrom": "viajes",
+          "tableTo": "conductores",
+          "columnsFrom": [
+            "conductor_id"
           ],
           "columnsTo": [
             "id"

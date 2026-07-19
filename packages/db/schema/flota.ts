@@ -120,3 +120,57 @@ export const unidadesRelations = relations(unidades, ({ one }) => ({
     references: [tiposVehiculo.id],
   }),
 }));
+
+/**
+ * Conductores — módulo NUEVO, ausente del SRS v1.2 original (ninguna
+ * sección lo cubre). Se agrega a pedido explícito del director del
+ * proyecto tras identificar que una cooperativa real necesita registrar
+ * conductores junto con su flota — un vacío real de la especificación
+ * original, no un descuido de esta capa de infraestructura.
+ *
+ * Deliberadamente simple para este alcance inicial: no es una cuenta de
+ * usuario (un conductor no inicia sesión en el sistema en esta fase), es
+ * un registro operativo/de cumplimiento que se asigna a un viaje
+ * concreto (ver `viajes.conductorId` en rutas.ts). Si más adelante se
+ * necesita que el conductor use una app propia (ej. confirmar su turno,
+ * ver su ruta del día), esto se puede extender agregando una fila en
+ * `usuarios` vinculada, sin romper este diseño.
+ */
+export const conductores = pgTable(
+  'conductores',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    cooperativaId: uuid('cooperativa_id')
+      .references(() => cooperativas.id)
+      .notNull(),
+
+    nombreCompleto: varchar('nombre_completo', { length: 200 }).notNull(),
+    cedula: varchar('cedula', { length: 20 }).notNull(),
+
+    // Campos relevantes para cumplimiento ANT/LOTTTSV — no verificados
+    // automáticamente contra ningún registro externo en esta fase, solo
+    // capturados como dato operativo de la cooperativa.
+    licenciaNumero: varchar('licencia_numero', { length: 30 }),
+    licenciaCategoria: varchar('licencia_categoria', { length: 10 }), // ej. 'E1' para transporte de pasajeros
+
+    telefono: varchar('telefono', { length: 20 }),
+    activo: boolean('activo').default(true).notNull(),
+
+    creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
+    actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index('idx_conductores_cooperativa').on(t.cooperativaId),
+    pgPolicy('aislamiento_cooperativa_conductores', {
+      for: 'all',
+      to: appRole,
+      using: filtroCooperativaActual,
+      withCheck: filtroCooperativaActual,
+    }),
+  ],
+).enableRLS();
+
+export const conductoresRelations = relations(conductores, ({ one }) => ({
+  cooperativa: one(cooperativas, { fields: [conductores.cooperativaId], references: [cooperativas.id] }),
+}));
+

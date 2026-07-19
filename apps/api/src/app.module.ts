@@ -8,6 +8,8 @@ import { AuthModule } from './presentacion/auth/auth.module';
 import { BusquedaModule } from './presentacion/busqueda/busqueda.module';
 import { AsientosModule } from './presentacion/asientos/asientos.module';
 import { VentasModule } from './presentacion/ventas/ventas.module';
+import { AdminModule } from './presentacion/admin/admin.module';
+import { PanelEmpresaModule } from './presentacion/panelempresa/panel-empresa.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { VentasModule } from './presentacion/ventas/ventas.module';
     BusquedaModule,
     AsientosModule,
     VentasModule,
+    AdminModule,
+    PanelEmpresaModule,
   ],
   controllers: [AppController, SaludController],
   providers: [AppService],

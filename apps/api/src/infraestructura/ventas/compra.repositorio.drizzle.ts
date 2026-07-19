@@ -20,6 +20,7 @@ import type {
   DesgloseAsiento,
   MapeoAsientoPasajero,
   PagoExistente,
+  BoletoEmitido,
 } from '../../dominio/ventas/ventas.ports';
 import { factorDescuento, esMenorDeEdad } from '../../dominio/ventas/ventas.ports';
 
@@ -35,14 +36,14 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     if (!pago) return null;
 
     const boletosDeLaCompra = await this.dbPublico
-      .select({ id: boletos.id })
+      .select({ id: boletos.id, codigoQr: boletos.codigoQr })
       .from(boletos)
       .where(eq(boletos.compraId, pago.compraId));
 
     return {
       compraId: pago.compraId,
       estado: pago.estado,
-      boletoIds: boletosDeLaCompra.map((b) => b.id),
+      boletos: boletosDeLaCompra,
     };
   }
 
@@ -163,7 +164,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     compraId: string,
     referenciaExterna: string,
     mapeo: MapeoAsientoPasajero[],
-  ): Promise<{ boletoIds: string[] }> {
+  ): Promise<{ boletos: BoletoEmitido[] }> {
     // Agrupar por cooperativa: cada grupo se escribe en su propia
     // transacción con SET LOCAL — una compra puede, en teoría, cubrir
     // asientos de más de una cooperativa (ver nota de diseño en
@@ -175,7 +176,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       porCooperativa.set(item.cooperativaId, lista);
     }
 
-    const boletoIds: string[] = [];
+    const boletosEmitidos: BoletoEmitido[] = [];
 
     for (const [cooperativaId, items] of porCooperativa) {
       await ejecutarComoCooperativa(this.dbApp, cooperativaId, async (tx) => {
@@ -194,7 +195,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
                 RETURNING id`,
           );
           const boletoId = (boletoRows.rows[0] as { id: string }).id;
-          boletoIds.push(boletoId);
+          boletosEmitidos.push({ id: boletoId, codigoQr });
 
           // RF-TICKET-002 — comprobante de tasa de terminal, uno por
           // pasajero, referenciando el punto de operación de origen.
@@ -218,7 +219,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .set({ estado: 'aprobado', referenciaExterna })
       .where(eq(pagos.compraId, compraId));
 
-    return { boletoIds };
+    return { boletos: boletosEmitidos };
   }
 
   async rechazarPago(compraId: string, motivo: string): Promise<void> {
