@@ -37,6 +37,17 @@ export const configuracionPlataforma = pgTable('configuracion_plataforma', {
     scale: 2,
   }),
 
+  // RN-002 — "cargo fijo de plataforma por pasajero", parte del desglose
+  // de cobro (distinto de la comisión de arriba, que es lo que la
+  // plataforma retiene de la parte de la cooperativa). Nullable a
+  // propósito: no se asume un valor — si está en null, la capa de
+  // aplicación lo trata como $0 y debe señalarlo como configuración
+  // pendiente, no como una decisión ya tomada.
+  cargoPlataformaPorPasajeroDefault: numeric('cargo_plataforma_por_pasajero_default', {
+    precision: 8,
+    scale: 2,
+  }),
+
   // RN-004 — decisión pendiente: duración exacta de la ventana de bloqueo
   // temporal de asiento (referencia de industria: 5-10 min, no asumida
   // como definitiva).

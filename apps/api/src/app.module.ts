@@ -7,6 +7,7 @@ import { SaludController } from './presentacion/salud/salud.controller';
 import { AuthModule } from './presentacion/auth/auth.module';
 import { BusquedaModule } from './presentacion/busqueda/busqueda.module';
 import { AsientosModule } from './presentacion/asientos/asientos.module';
+import { VentasModule } from './presentacion/ventas/ventas.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AsientosModule } from './presentacion/asientos/asientos.module';
     AuthModule,
     BusquedaModule,
     AsientosModule,
+    VentasModule,
   ],
   controllers: [AppController, SaludController],
   providers: [AppService],

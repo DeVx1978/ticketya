@@ -1,5 +1,5 @@
 {
-  "id": "48731d95-6c44-48aa-a890-5c84907c7951",
+  "id": "885ba10b-09f5-4356-88c8-daeaef078419",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -36,6 +36,12 @@
         "comision_porcentaje_modelo_b_default": {
           "name": "comision_porcentaje_modelo_b_default",
           "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cargo_plataforma_por_pasajero_default": {
+          "name": "cargo_plataforma_por_pasajero_default",
+          "type": "numeric(8, 2)",
           "primaryKey": false,
           "notNull": false
         },

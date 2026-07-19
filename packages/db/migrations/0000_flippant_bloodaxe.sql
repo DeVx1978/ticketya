@@ -27,6 +27,7 @@ CREATE TABLE "configuracion_plataforma" (
 	"razon_social_plataforma" varchar(200) NOT NULL,
 	"comision_porcentaje_modelo_a_default" numeric(5, 2),
 	"comision_porcentaje_modelo_b_default" numeric(5, 2),
+	"cargo_plataforma_por_pasajero_default" numeric(8, 2),
 	"ventana_bloqueo_asiento_segundos" integer,
 	"politica_cancelacion_notas" text,
 	"actualizado_en" timestamp with time zone DEFAULT now() NOT NULL
