@@ -31,7 +31,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     private readonly hasher: BcryptHasher,
   ) {}
 
-  async crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo): Promise<{ id: string }> {
+  async crearTipoVehiculo(
+    cooperativaId: string,
+    datos: DatosNuevoTipoVehiculo,
+  ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         INSERT INTO tipos_vehiculo (cooperativa_id, nombre, capacidad_total, distribucion_asientos)
@@ -42,7 +45,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
-  async crearUnidad(cooperativaId: string, datos: DatosNuevaUnidad): Promise<{ id: string }> {
+  async crearUnidad(
+    cooperativaId: string,
+    datos: DatosNuevaUnidad,
+  ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         INSERT INTO unidades (cooperativa_id, tipo_vehiculo_id, placa, identificador_operativo)
@@ -53,7 +59,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
-  async crearRuta(cooperativaId: string, datos: DatosNuevaRuta): Promise<{ id: string }> {
+  async crearRuta(
+    cooperativaId: string,
+    datos: DatosNuevaRuta,
+  ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         INSERT INTO rutas (cooperativa_id, origen_punto_operacion_id, destino_punto_operacion_id, precio_base_referencia, nombre)
@@ -64,7 +73,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
-  async crearViaje(cooperativaId: string, datos: DatosNuevoViaje): Promise<{ id: string }> {
+  async crearViaje(
+    cooperativaId: string,
+    datos: DatosNuevoViaje,
+  ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         INSERT INTO viajes (cooperativa_id, ruta_id, unidad_id, fecha_salida, hora_salida_programada, precio_base, estado)
@@ -75,7 +87,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
-  async crearUsuarioStaff(cooperativaId: string, datos: DatosNuevoUsuarioStaff): Promise<{ usuarioId: string }> {
+  async crearUsuarioStaff(
+    cooperativaId: string,
+    datos: DatosNuevoUsuarioStaff,
+  ): Promise<{ usuarioId: string }> {
     const passwordHash = await this.hasher.hash(datos.password);
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
@@ -87,7 +102,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
-  async crearConductor(cooperativaId: string, datos: DatosNuevoConductor): Promise<{ id: string }> {
+  async crearConductor(
+    cooperativaId: string,
+    datos: DatosNuevoConductor,
+  ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         INSERT INTO conductores (cooperativa_id, nombre_completo, cedula, licencia_numero, licencia_categoria, telefono)
@@ -105,127 +123,162 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
    * un `ref` mal escrito), no queda nada a medias — se revierte
    * completo, no parcialmente.
    */
-  async importarDatos(cooperativaId: string, datos: DatosImportacion): Promise<ResultadoImportacion> {
+  async importarDatos(
+    cooperativaId: string,
+    datos: DatosImportacion,
+  ): Promise<ResultadoImportacion> {
     try {
-      return await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
-        const refsTipoVehiculo = new Map<string, string>();
-        const refsConductor = new Map<string, string>();
-        const refsUnidad = new Map<string, string>();
-        const refsRuta = new Map<string, string>();
+      return await ejecutarComoCooperativa(
+        this.db,
+        cooperativaId,
+        async (tx) => {
+          const refsTipoVehiculo = new Map<string, string>();
+          const refsConductor = new Map<string, string>();
+          const refsUnidad = new Map<string, string>();
+          const refsRuta = new Map<string, string>();
 
-        for (const item of datos.tiposVehiculo ?? []) {
-          const filas = await tx.execute(sql`
+          for (const item of datos.tiposVehiculo ?? []) {
+            const filas = await tx.execute(sql`
             INSERT INTO tipos_vehiculo (cooperativa_id, nombre, capacidad_total, distribucion_asientos)
             VALUES (${cooperativaId}, ${item.nombre}, ${item.capacidadTotal}, ${JSON.stringify(item.distribucionAsientos ?? {})})
             RETURNING id
           `);
-          refsTipoVehiculo.set(item.ref, (filas.rows[0] as { id: string }).id);
-        }
+            refsTipoVehiculo.set(
+              item.ref,
+              (filas.rows[0] as { id: string }).id,
+            );
+          }
 
-        for (const item of datos.conductores ?? []) {
-          const filas = await tx.execute(sql`
+          for (const item of datos.conductores ?? []) {
+            const filas = await tx.execute(sql`
             INSERT INTO conductores (cooperativa_id, nombre_completo, cedula, licencia_numero, licencia_categoria, telefono)
             VALUES (${cooperativaId}, ${item.nombreCompleto}, ${item.cedula}, ${item.licenciaNumero ?? null}, ${item.licenciaCategoria ?? null}, ${item.telefono ?? null})
             RETURNING id
           `);
-          refsConductor.set(item.ref, (filas.rows[0] as { id: string }).id);
-        }
+            refsConductor.set(item.ref, (filas.rows[0] as { id: string }).id);
+          }
 
-        for (const item of datos.unidades ?? []) {
-          // Permite referenciar un tipo_vehiculo creado en ESTE mismo
-          // paquete (por su `ref`) o uno ya existente de antes (pasando
-          // directamente su id real) — ver comentario de diseño en
-          // panel-empresa.ports.ts.
-          const tipoVehiculoId = refsTipoVehiculo.get(item.tipoVehiculoRef) ?? item.tipoVehiculoRef;
-          const filas = await tx.execute(sql`
+          for (const item of datos.unidades ?? []) {
+            // Permite referenciar un tipo_vehiculo creado en ESTE mismo
+            // paquete (por su `ref`) o uno ya existente de antes (pasando
+            // directamente su id real) — ver comentario de diseño en
+            // panel-empresa.ports.ts.
+            const tipoVehiculoId =
+              refsTipoVehiculo.get(item.tipoVehiculoRef) ??
+              item.tipoVehiculoRef;
+            const filas = await tx.execute(sql`
             INSERT INTO unidades (cooperativa_id, tipo_vehiculo_id, placa, identificador_operativo)
             VALUES (${cooperativaId}, ${tipoVehiculoId}, ${item.placa}, ${item.identificadorOperativo})
             RETURNING id
           `);
-          refsUnidad.set(item.ref, (filas.rows[0] as { id: string }).id);
-        }
+            refsUnidad.set(item.ref, (filas.rows[0] as { id: string }).id);
+          }
 
-        for (const item of datos.rutas ?? []) {
-          const filas = await tx.execute(sql`
+          for (const item of datos.rutas ?? []) {
+            const filas = await tx.execute(sql`
             INSERT INTO rutas (cooperativa_id, origen_punto_operacion_id, destino_punto_operacion_id, precio_base_referencia, nombre)
             VALUES (${cooperativaId}, ${item.origenPuntoOperacionId}, ${item.destinoPuntoOperacionId}, ${item.precioBaseReferencia}, ${item.nombre ?? null})
             RETURNING id
           `);
-          refsRuta.set(item.ref, (filas.rows[0] as { id: string }).id);
-        }
+            refsRuta.set(item.ref, (filas.rows[0] as { id: string }).id);
+          }
 
-        let horariosCreados = 0;
-        const horariosParaGenerar: {
-          rutaId: string;
-          unidadId: string;
-          conductorId: string | null;
-          horaSalida: string;
-          diasSemana: number[];
-        }[] = [];
+          let horariosCreados = 0;
+          const horariosParaGenerar: {
+            rutaId: string;
+            unidadId: string;
+            conductorId: string | null;
+            horaSalida: string;
+            diasSemana: number[];
+          }[] = [];
 
-        for (const item of datos.horarios ?? []) {
-          const rutaId = refsRuta.get(item.rutaRef) ?? item.rutaRef;
-          const unidadId = refsUnidad.get(item.unidadRef) ?? item.unidadRef;
-          const conductorId = item.conductorRef ? (refsConductor.get(item.conductorRef) ?? item.conductorRef) : null;
+          for (const item of datos.horarios ?? []) {
+            const rutaId = refsRuta.get(item.rutaRef) ?? item.rutaRef;
+            const unidadId = refsUnidad.get(item.unidadRef) ?? item.unidadRef;
+            const conductorId = item.conductorRef
+              ? (refsConductor.get(item.conductorRef) ?? item.conductorRef)
+              : null;
 
-          await tx.execute(sql`
+            await tx.execute(sql`
             INSERT INTO horarios_ruta (ruta_id, hora_salida, dias_semana)
             VALUES (${rutaId}, ${item.horaSalida}, ${JSON.stringify(item.diasSemana)})
           `);
-          horariosCreados++;
-          horariosParaGenerar.push({ rutaId, unidadId, conductorId, horaSalida: item.horaSalida, diasSemana: item.diasSemana });
-        }
+            horariosCreados++;
+            horariosParaGenerar.push({
+              rutaId,
+              unidadId,
+              conductorId,
+              horaSalida: item.horaSalida,
+              diasSemana: item.diasSemana,
+            });
+          }
 
-        // Generación de viajes concretos a partir de los horarios
-        // recurrentes — esto es lo que evita tener que crear cada viaje
-        // uno por uno para cubrir semanas/meses de operación.
-        let viajesGenerados = 0;
-        if (datos.generarViajesDesde && datos.generarViajesHasta && horariosParaGenerar.length > 0) {
-          const desde = new Date(`${datos.generarViajesDesde}T00:00:00`);
-          const hasta = new Date(`${datos.generarViajesHasta}T00:00:00`);
+          // Generación de viajes concretos a partir de los horarios
+          // recurrentes — esto es lo que evita tener que crear cada viaje
+          // uno por uno para cubrir semanas/meses de operación.
+          let viajesGenerados = 0;
+          if (
+            datos.generarViajesDesde &&
+            datos.generarViajesHasta &&
+            horariosParaGenerar.length > 0
+          ) {
+            const desde = new Date(`${datos.generarViajesDesde}T00:00:00`);
+            const hasta = new Date(`${datos.generarViajesHasta}T00:00:00`);
 
-          for (const h of horariosParaGenerar) {
-            const rutaRows = await tx.execute(sql`SELECT precio_base_referencia FROM rutas WHERE id = ${h.rutaId}`);
-            const precioBase = (rutaRows.rows[0] as { precio_base_referencia: string }).precio_base_referencia;
+            for (const h of horariosParaGenerar) {
+              const rutaRows = await tx.execute(
+                sql`SELECT precio_base_referencia FROM rutas WHERE id = ${h.rutaId}`,
+              );
+              const precioBase = (
+                rutaRows.rows[0] as { precio_base_referencia: string }
+              ).precio_base_referencia;
 
-            for (let d = new Date(desde); d <= hasta; d.setDate(d.getDate() + 1)) {
-              const diaSemana = d.getDay(); // 0=domingo … 6=sábado
-              if (!h.diasSemana.includes(diaSemana)) continue;
+              for (
+                let d = new Date(desde);
+                d <= hasta;
+                d.setDate(d.getDate() + 1)
+              ) {
+                const diaSemana = d.getDay(); // 0=domingo … 6=sábado
+                if (!h.diasSemana.includes(diaSemana)) continue;
 
-              const fechaStr = d.toISOString().slice(0, 10);
-              // Ecuador no tiene horario de verano — desfase fijo -05:00.
-              const horaSalidaCompleta = `${fechaStr}T${h.horaSalida}:00-05:00`;
+                const fechaStr = d.toISOString().slice(0, 10);
+                // Ecuador no tiene horario de verano — desfase fijo -05:00.
+                const horaSalidaCompleta = `${fechaStr}T${h.horaSalida}:00-05:00`;
 
-              await tx.execute(sql`
+                await tx.execute(sql`
                 INSERT INTO viajes (cooperativa_id, ruta_id, unidad_id, conductor_id, fecha_salida, hora_salida_programada, precio_base, estado)
                 VALUES (${cooperativaId}, ${h.rutaId}, ${h.unidadId}, ${h.conductorId}, ${fechaStr}, ${horaSalidaCompleta}, ${precioBase}, 'programado')
               `);
-              viajesGenerados++;
+                viajesGenerados++;
+              }
             }
           }
-        }
 
-        return {
-          tiposVehiculoCreados: datos.tiposVehiculo?.length ?? 0,
-          conductoresCreados: datos.conductores?.length ?? 0,
-          unidadesCreadas: datos.unidades?.length ?? 0,
-          rutasCreadas: datos.rutas?.length ?? 0,
-          horariosCreados,
-          viajesGenerados,
-        };
-      });
+          return {
+            tiposVehiculoCreados: datos.tiposVehiculo?.length ?? 0,
+            conductoresCreados: datos.conductores?.length ?? 0,
+            unidadesCreadas: datos.unidades?.length ?? 0,
+            rutasCreadas: datos.rutas?.length ?? 0,
+            horariosCreados,
+            viajesGenerados,
+          };
+        },
+      );
     } catch (error) {
       // Envuelve cualquier error de SQL (ej. un `ref` mal escrito que
       // resulta en una FK inexistente) en un mensaje entendible — la
       // transacción ya se revirtió completa en este punto.
-      const mensaje = error instanceof Error ? error.message : 'Error desconocido';
+      const mensaje =
+        error instanceof Error ? error.message : 'Error desconocido';
       throw new BadRequestException(
         `La importación falló y se revirtió por completo (no quedó nada a medias). Verifica que todas las referencias (\`ref\`) estén bien escritas y no se repitan. Detalle técnico: ${mensaje}`,
       );
     }
   }
 
-  async dashboardVentasDelDia(cooperativaId: string): Promise<FilaVentaDelDia[]> {
+  async dashboardVentasDelDia(
+    cooperativaId: string,
+  ): Promise<FilaVentaDelDia[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
         SELECT r.nombre AS ruta_nombre_raw,
@@ -247,9 +300,17 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         GROUP BY r.id, r.nombre, ori.ciudad, dest.ciudad, u.nombre_completo
       `);
       return resultado.rows.map((fila) => {
-        const f = fila as { ruta_nombre_raw: string | null; origen_ciudad: string; destino_ciudad: string; vendedor_nombre: string | null; total_boletos: number; total_ventas: number };
+        const f = fila as {
+          ruta_nombre_raw: string | null;
+          origen_ciudad: string;
+          destino_ciudad: string;
+          vendedor_nombre: string | null;
+          total_boletos: number;
+          total_ventas: number;
+        };
         return {
-          rutaNombre: f.ruta_nombre_raw ?? `${f.origen_ciudad} → ${f.destino_ciudad}`,
+          rutaNombre:
+            f.ruta_nombre_raw ?? `${f.origen_ciudad} → ${f.destino_ciudad}`,
           vendedorNombre: f.vendedor_nombre,
           totalBoletos: f.total_boletos,
           totalVentas: f.total_ventas,
@@ -280,10 +341,17 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         return { valido: false, mensaje: 'Boleto no encontrado.' };
       }
 
-      const fila = filas.rows[0] as { id: string; estado: string; nombre_completo: string };
+      const fila = filas.rows[0] as {
+        id: string;
+        estado: string;
+        nombre_completo: string;
+      };
 
       if (fila.estado === 'usado') {
-        return { valido: false, mensaje: 'Este boleto ya fue utilizado anteriormente.' };
+        return {
+          valido: false,
+          mensaje: 'Este boleto ya fue utilizado anteriormente.',
+        };
       }
       if (fila.estado === 'cancelado') {
         return { valido: false, mensaje: 'Este boleto fue cancelado.' };
@@ -299,10 +367,17 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       `);
 
       if (actualizado.rows.length === 0) {
-        return { valido: false, mensaje: 'Este boleto ya fue validado por otra persona justo ahora.' };
+        return {
+          valido: false,
+          mensaje: 'Este boleto ya fue validado por otra persona justo ahora.',
+        };
       }
 
-      return { valido: true, mensaje: 'Boleto válido. Abordaje confirmado.', pasajeroNombre: fila.nombre_completo };
+      return {
+        valido: true,
+        mensaje: 'Boleto válido. Abordaje confirmado.',
+        pasajeroNombre: fila.nombre_completo,
+      };
     });
   }
 }

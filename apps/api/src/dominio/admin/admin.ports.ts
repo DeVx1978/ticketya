@@ -34,7 +34,9 @@ export interface FilaVentaNacional {
 
 export interface AdminRepositorio {
   /** RF-ADMIN-001 — alta de cooperativa (se crea ya aprobada, el admin_plataforma la está dando de alta él mismo). */
-  crearCooperativa(datos: DatosNuevaCooperativa): Promise<{ cooperativaId: string }>;
+  crearCooperativa(
+    datos: DatosNuevaCooperativa,
+  ): Promise<{ cooperativaId: string }>;
 
   /** Arranque: primer usuario admin_cooperativa de una cooperativa recién creada. */
   crearPrimerUsuarioCooperativa(
@@ -42,9 +44,13 @@ export interface AdminRepositorio {
     datos: DatosPrimerUsuarioCooperativa,
   ): Promise<{ usuarioId: string }>;
 
-  listarCooperativas(): Promise<{ id: string; nombreComercial: string; estado: string }[]>;
+  listarCooperativas(): Promise<
+    { id: string; nombreComercial: string; estado: string }[]
+  >;
 
-  crearPuntoOperacion(datos: DatosNuevoPuntoOperacion): Promise<{ puntoOperacionId: string }>;
+  crearPuntoOperacion(
+    datos: DatosNuevoPuntoOperacion,
+  ): Promise<{ puntoOperacionId: string }>;
 
   /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
   dashboardNacional(): Promise<FilaVentaNacional[]>;

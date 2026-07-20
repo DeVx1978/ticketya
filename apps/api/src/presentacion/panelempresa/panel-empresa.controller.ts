@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Request, UseGuards, ForbiddenException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UseGuards,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PanelEmpresaService } from '../../aplicacion/panelempresa/panel-empresa.service';
 import {
   CrearTipoVehiculoDto,
@@ -22,7 +30,9 @@ import { PayloadToken } from '../../dominio/auth/auth.ports';
  */
 function cooperativaDelToken(user: PayloadToken): string {
   if (!user.cooperativaId) {
-    throw new ForbiddenException('Este usuario no pertenece a ninguna cooperativa.');
+    throw new ForbiddenException(
+      'Este usuario no pertenece a ninguna cooperativa.',
+    );
   }
   return user.cooperativaId;
 }
@@ -34,38 +44,56 @@ export class PanelEmpresaController {
 
   @Roles('admin_cooperativa')
   @Post('tipos-vehiculo')
-  async crearTipoVehiculo(@Body() dto: CrearTipoVehiculoDto, @Request() req: { user: PayloadToken }) {
+  async crearTipoVehiculo(
+    @Body() dto: CrearTipoVehiculoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.crearTipoVehiculo(cooperativaDelToken(req.user), dto);
   }
 
   @Roles('admin_cooperativa')
   @Post('unidades')
-  async crearUnidad(@Body() dto: CrearUnidadDto, @Request() req: { user: PayloadToken }) {
+  async crearUnidad(
+    @Body() dto: CrearUnidadDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.crearUnidad(cooperativaDelToken(req.user), dto);
   }
 
   @Roles('admin_cooperativa')
   @Post('rutas')
-  async crearRuta(@Body() dto: CrearRutaDto, @Request() req: { user: PayloadToken }) {
+  async crearRuta(
+    @Body() dto: CrearRutaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.crearRuta(cooperativaDelToken(req.user), dto);
   }
 
   @Roles('admin_cooperativa')
   @Post('viajes')
-  async crearViaje(@Body() dto: CrearViajeDto, @Request() req: { user: PayloadToken }) {
+  async crearViaje(
+    @Body() dto: CrearViajeDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.crearViaje(cooperativaDelToken(req.user), dto);
   }
 
   /** RF-COOP-007 — múltiples usuarios por cooperativa con permisos diferenciados. */
   @Roles('admin_cooperativa')
   @Post('usuarios')
-  async crearUsuarioStaff(@Body() dto: CrearUsuarioStaffDto, @Request() req: { user: PayloadToken }) {
+  async crearUsuarioStaff(
+    @Body() dto: CrearUsuarioStaffDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.crearUsuarioStaff(cooperativaDelToken(req.user), dto);
   }
 
   @Roles('admin_cooperativa')
   @Post('conductores')
-  async crearConductor(@Body() dto: CrearConductorDto, @Request() req: { user: PayloadToken }) {
+  async crearConductor(
+    @Body() dto: CrearConductorDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.crearConductor(cooperativaDelToken(req.user), dto);
   }
 
@@ -77,7 +105,10 @@ export class PanelEmpresaController {
    */
   @Roles('admin_cooperativa')
   @Post('importar')
-  async importarDatos(@Body() dto: ImportarDatosDto, @Request() req: { user: PayloadToken }) {
+  async importarDatos(
+    @Body() dto: ImportarDatosDto,
+    @Request() req: { user: PayloadToken },
+  ) {
     return this.panel.importarDatos(cooperativaDelToken(req.user), dto as any);
   }
 
@@ -91,7 +122,14 @@ export class PanelEmpresaController {
   /** RF-COOP-006 — tanto el vendedor como el admin pueden validar boletos en el andén. */
   @Roles('vendedor', 'admin_cooperativa')
   @Post('validar-qr')
-  async validarQr(@Body() dto: ValidarQrDto, @Request() req: { user: PayloadToken }) {
-    return this.panel.validarBoletoPorQr(cooperativaDelToken(req.user), dto.codigoQr, req.user.sub);
+  async validarQr(
+    @Body() dto: ValidarQrDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.validarBoletoPorQr(
+      cooperativaDelToken(req.user),
+      dto.codigoQr,
+      req.user.sub,
+    );
   }
 }

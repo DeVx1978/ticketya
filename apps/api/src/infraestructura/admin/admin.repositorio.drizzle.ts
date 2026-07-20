@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { cooperativas, usuarios, puntosOperacion } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -27,7 +27,9 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     private readonly hasher: BcryptHasher,
   ) {}
 
-  async crearCooperativa(datos: DatosNuevaCooperativa): Promise<{ cooperativaId: string }> {
+  async crearCooperativa(
+    datos: DatosNuevaCooperativa,
+  ): Promise<{ cooperativaId: string }> {
     const [fila] = await this.db
       .insert(cooperativas)
       .values({
@@ -65,11 +67,17 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
 
   async listarCooperativas() {
     return this.db
-      .select({ id: cooperativas.id, nombreComercial: cooperativas.nombreComercial, estado: cooperativas.estado })
+      .select({
+        id: cooperativas.id,
+        nombreComercial: cooperativas.nombreComercial,
+        estado: cooperativas.estado,
+      })
       .from(cooperativas);
   }
 
-  async crearPuntoOperacion(datos: DatosNuevoPuntoOperacion): Promise<{ puntoOperacionId: string }> {
+  async crearPuntoOperacion(
+    datos: DatosNuevoPuntoOperacion,
+  ): Promise<{ puntoOperacionId: string }> {
     const [fila] = await this.db
       .insert(puntosOperacion)
       .values({

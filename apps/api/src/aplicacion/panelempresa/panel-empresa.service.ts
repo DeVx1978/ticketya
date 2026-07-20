@@ -14,7 +14,10 @@ export const PANEL_EMPRESA_REPOSITORIO = 'PANEL_EMPRESA_REPOSITORIO';
 
 @Injectable()
 export class PanelEmpresaService {
-  constructor(@Inject(PANEL_EMPRESA_REPOSITORIO) private readonly panel: PanelEmpresaRepositorio) {}
+  constructor(
+    @Inject(PANEL_EMPRESA_REPOSITORIO)
+    private readonly panel: PanelEmpresaRepositorio,
+  ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
     return this.panel.crearTipoVehiculo(cooperativaId, datos);
@@ -48,7 +51,15 @@ export class PanelEmpresaService {
     return this.panel.dashboardVentasDelDia(cooperativaId);
   }
 
-  validarBoletoPorQr(cooperativaId: string, codigoQr: string, validadoPorUsuarioId: string) {
-    return this.panel.validarBoletoPorQr(cooperativaId, codigoQr, validadoPorUsuarioId);
+  validarBoletoPorQr(
+    cooperativaId: string,
+    codigoQr: string,
+    validadoPorUsuarioId: string,
+  ) {
+    return this.panel.validarBoletoPorQr(
+      cooperativaId,
+      codigoQr,
+      validadoPorUsuarioId,
+    );
   }
 }

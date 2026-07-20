@@ -11,7 +11,14 @@ export class VentasController {
   /** RF-CHECK completo — requiere estar logueado (el comprador es el usuario del token). */
   @UseGuards(JwtAuthGuard)
   @Post()
-  async crearCompra(@Body() dto: CrearCompraDto, @Request() req: { user: PayloadToken }) {
-    return this.checkout.procesarCompra(dto.pasajeros, req.user.sub, dto.idempotencyKey);
+  async crearCompra(
+    @Body() dto: CrearCompraDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.procesarCompra(
+      dto.pasajeros,
+      req.user.sub,
+      dto.idempotencyKey,
+    );
   }
 }

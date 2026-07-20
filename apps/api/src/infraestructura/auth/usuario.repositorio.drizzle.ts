@@ -3,7 +3,11 @@ import { eq } from 'drizzle-orm';
 import { usuarios } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
-import { DatosRegistro, UsuarioDominio, UsuarioRepositorio } from '../../dominio/auth/auth.ports';
+import {
+  DatosRegistro,
+  UsuarioDominio,
+  UsuarioRepositorio,
+} from '../../dominio/auth/auth.ports';
 
 /**
  * Implementación concreta de UsuarioRepositorio usando Drizzle + el
@@ -30,12 +34,16 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
   constructor(@Inject(DRIZZLE_DB_PUBLICO) private readonly db: DrizzleDb) {}
 
   async buscarPorCorreo(correo: string): Promise<UsuarioDominio | null> {
-    const fila = await this.db.query.usuarios.findFirst({ where: eq(usuarios.correo, correo) });
+    const fila = await this.db.query.usuarios.findFirst({
+      where: eq(usuarios.correo, correo),
+    });
     return fila ? this.aDominio(fila) : null;
   }
 
   async buscarPorId(id: string): Promise<UsuarioDominio | null> {
-    const fila = await this.db.query.usuarios.findFirst({ where: eq(usuarios.id, id) });
+    const fila = await this.db.query.usuarios.findFirst({
+      where: eq(usuarios.id, id),
+    });
     return fila ? this.aDominio(fila) : null;
   }
 
@@ -54,7 +62,11 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     return this.aDominio(fila);
   }
 
-  async registrarIntentoFallido(usuarioId: string, intentos: number, bloqueadoHasta: Date | null): Promise<void> {
+  async registrarIntentoFallido(
+    usuarioId: string,
+    intentos: number,
+    bloqueadoHasta: Date | null,
+  ): Promise<void> {
     await this.db
       .update(usuarios)
       .set({ intentosFallidos: intentos, bloqueadoHasta })
@@ -84,4 +96,3 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     };
   }
 }
-

@@ -25,7 +25,12 @@ export interface AsientoRepositorio {
   obtenerMapa(viajeId: string): Promise<MapaAsientosViaje | null>;
   /** Necesario para saber bajo qué cooperativa abrir la transacción de escritura. */
   obtenerCooperativaDelViaje(viajeId: string): Promise<string | null>;
-  bloquear(viajeId: string, numeroAsiento: string, usuarioId: string, cooperativaId: string): Promise<ResultadoBloqueo>;
+  bloquear(
+    viajeId: string,
+    numeroAsiento: string,
+    usuarioId: string,
+    cooperativaId: string,
+  ): Promise<ResultadoBloqueo>;
 }
 
 /**

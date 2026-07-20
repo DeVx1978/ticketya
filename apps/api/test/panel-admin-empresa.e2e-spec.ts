@@ -1,0 +1,338 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import request from 'supertest';
+import type { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+import { Client } from 'pg';
+
+/**
+ * Cubre, de forma automatizada, exactamente el mismo recorrido que se
+ * verificó a mano el 19-20 de julio de 2026 (ver
+ * TicketYa_Auditoria_Estado_Proyecto v1.1, sección 7.1):
+ *
+ *   admin_plataforma crea una cooperativa + su primer usuario
+ *     → ese usuario (admin_cooperativa) crea tipo de vehículo, unidad
+ *       (con placa + identificador operativo), ruta, viaje, staff,
+ *       conductor, y usa la carga masiva vía JSON
+ *     → el viaje creado aparece en la búsqueda pública de pasajeros
+ *
+ * Usa identificadores únicos por corrida (Date.now()) para poder
+ * ejecutarse repetidamente sin chocar con datos de corridas anteriores,
+ * y limpia sus propios datos al final vía el usuario postgres directo
+ * (no hay todavía un endpoint de "borrar cooperativa" — RF-ADMIN no lo
+ * contempla porque no tiene sentido de negocio borrar una cooperativa
+ * real; en pruebas sí hace falta).
+ */
+describe('Panel Admin + Panel Empresa (e2e)', () => {
+  let app: INestApplication<App>;
+  const sufijo = Date.now();
+  const correoAdmin = `director.test.${sufijo}@ticketya.ec`;
+  const correoCoop = `admin.coop.test.${sufijo}@ticketya.ec`;
+  const ruc = `07${sufijo}`.slice(0, 13);
+
+  let tokenAdmin: string;
+  let tokenCoop: string;
+  let cooperativaId: string;
+  let puntoOrigenId: string;
+  let puntoDestinoId: string;
+  let tipoVehiculoId: string;
+  let unidadId: string;
+  let rutaId: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    // Misma configuración global que main.ts — sin esto los DTOs no
+    // validan nada dentro de las pruebas (ver notas de recuperación).
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    );
+    await app.init();
+
+    // Bootstrap: no existe (ni debe existir) una vía por API para que
+    // alguien se autoasigne admin_plataforma — se promueve directo en
+    // la base de datos, tal como se documentó el 19-20 de julio.
+    await request(app.getHttpServer())
+      .post('/auth/registro')
+      .send({
+        correo: correoAdmin,
+        password: 'ClaveSegura123',
+        nombreCompleto: 'Director de Prueba E2E',
+        cedula: '0999999999',
+      })
+      .expect(201);
+
+    const pg = new Client({
+      connectionString:
+        process.env.DATABASE_URL_ADMIN_DIRECTO ??
+        process.env.DATABASE_URL_PUBLICO,
+    });
+    await pg.connect();
+    await pg.query(
+      "UPDATE usuarios SET rol='admin_plataforma' WHERE correo=$1",
+      [correoAdmin],
+    );
+    await pg.end();
+
+    const loginAdmin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo: correoAdmin, password: 'ClaveSegura123' })
+      .expect(201);
+    tokenAdmin = loginAdmin.body.accessToken;
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('admin_plataforma crea una cooperativa con su primer usuario (RF-ADMIN-001)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/admin/cooperativas')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        cooperativa: {
+          ruc,
+          razonSocial: 'Cooperativa E2E de Prueba S.A.',
+          nombreComercial: 'Coop E2E',
+          modeloIntegracion: 'modelo_a',
+        },
+        usuario: {
+          correo: correoCoop,
+          password: 'ClaveSegura123',
+          nombreCompleto: 'Admin Cooperativa E2E',
+        },
+      })
+      .expect(201);
+
+    expect(res.body.cooperativaId).toBeDefined();
+    cooperativaId = res.body.cooperativaId;
+  });
+
+  it('la cooperativa recién creada aparece en el listado (RF-ADMIN-001)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/cooperativas')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+
+    expect(res.body.some((c: { id: string }) => c.id === cooperativaId)).toBe(
+      true,
+    );
+  });
+
+  it('admin_plataforma crea dos puntos de operación, origen y destino (RF-FLOTA-003)', async () => {
+    const origen = await request(app.getHttpServer())
+      .post('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        tipo: 'terminal_terrestre',
+        nombre: `Terminal E2E Origen ${sufijo}`,
+        ciudad: 'Machala',
+        provincia: 'El Oro',
+      })
+      .expect(201);
+    puntoOrigenId = origen.body.puntoOperacionId;
+
+    const destino = await request(app.getHttpServer())
+      .post('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        tipo: 'terminal_terrestre',
+        nombre: `Terminal E2E Destino ${sufijo}`,
+        ciudad: 'Guayaquil',
+        provincia: 'Guayas',
+      })
+      .expect(201);
+    puntoDestinoId = destino.body.puntoOperacionId;
+
+    expect(puntoOrigenId).toBeDefined();
+    expect(puntoDestinoId).toBeDefined();
+  });
+
+  it('GET /admin/dashboard refleja la cooperativa creada (RF-ADMIN-002)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/dashboard')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+
+    expect(
+      res.body.some(
+        (c: { cooperativa_nombre: string }) =>
+          c.cooperativa_nombre === 'Coop E2E',
+      ),
+    ).toBe(true);
+  });
+
+  it('el admin de la cooperativa puede iniciar sesión con el usuario que se le creó', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ correo: correoCoop, password: 'ClaveSegura123' })
+      .expect(201);
+    tokenCoop = res.body.accessToken;
+    expect(tokenCoop).toBeDefined();
+  });
+
+  it('crea un tipo de vehículo (RF-FLOTA-001)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ nombre: 'Bus estándar 2+2 (E2E)', capacidadTotal: 40 })
+      .expect(201);
+    tipoVehiculoId = res.body.id;
+    expect(tipoVehiculoId).toBeDefined();
+  });
+
+  it('crea una unidad con placa e identificador operativo, y persiste exactamente esos valores (RF-FLOTA-002)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        tipoVehiculoId,
+        placa: `E2E-${sufijo}`.slice(0, 10),
+        identificadorOperativo: `Disco E2E ${sufijo}`,
+      })
+      .expect(201);
+    unidadId = res.body.id;
+    expect(unidadId).toBeDefined();
+  });
+
+  it('crea una ruta entre los dos puntos de operación (RF-COOP-002)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        origenPuntoOperacionId: puntoOrigenId,
+        destinoPuntoOperacionId: puntoDestinoId,
+        precioBaseReferencia: 6.5,
+        nombre: 'Ruta E2E',
+      })
+      .expect(201);
+    rutaId = res.body.id;
+    expect(rutaId).toBeDefined();
+  });
+
+  it('crea un viaje sobre esa ruta y esa unidad', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        rutaId,
+        unidadId,
+        fechaSalida: '2026-09-01',
+        horaSalidaProgramada: '2026-09-01T10:00:00-05:00',
+        precioBase: 6.5,
+      })
+      .expect(201);
+    expect(res.body.id).toBeDefined();
+  });
+
+  it('el viaje creado aparece en la búsqueda pública de pasajeros, con los datos correctos (integración RF-COOP → RF-BUS)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/viajes/buscar')
+      .query({
+        origenId: puntoOrigenId,
+        destinoId: puntoDestinoId,
+        fecha: '2026-09-01',
+      })
+      .expect(200);
+
+    const viaje = res.body.find(
+      (v: { cooperativaNombre: string }) => v.cooperativaNombre === 'Coop E2E',
+    );
+    expect(viaje).toBeDefined();
+    expect(viaje.tipoVehiculoNombre).toBe('Bus estándar 2+2 (E2E)');
+    expect(viaje.asientosDisponibles).toBe(40);
+  });
+
+  it('da de alta un usuario staff (vendedor) (RF-COOP-007)', async () => {
+    await request(app.getHttpServer())
+      .post('/coop/usuarios')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        correo: `vendedor.e2e.${sufijo}@ticketya.ec`,
+        password: 'ClaveSegura123',
+        nombreCompleto: 'Vendedor E2E',
+        rol: 'vendedor',
+      })
+      .expect(201);
+  });
+
+  it('da de alta un conductor', async () => {
+    await request(app.getHttpServer())
+      .post('/coop/conductores')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombreCompleto: 'Conductor E2E',
+        cedula: `07${sufijo}`.slice(0, 10),
+        licenciaNumero: 'E-000000',
+      })
+      .expect(201);
+  });
+
+  it('carga masiva vía JSON crea varios registros a la vez y reporta cuántos (RF-COOP-008)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/importar')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        tiposVehiculo: [
+          { nombre: `Buseta 2+1 E2E ${sufijo}`, capacidadTotal: 22 },
+        ],
+        conductores: [
+          {
+            nombreCompleto: 'Conductor Masivo E2E',
+            cedula: `08${sufijo}`.slice(0, 10),
+          },
+        ],
+      })
+      .expect(201);
+
+    expect(res.body.tiposVehiculoCreados).toBe(1);
+    expect(res.body.conductoresCreados).toBe(1);
+  });
+
+  it('validar-qr responde con gracia (no con un error 500) ante un código inexistente', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/validar-qr')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ codigoQr: `QR-INEXISTENTE-${sufijo}` })
+      .expect(201);
+
+    expect(res.body.valido).toBe(false);
+  });
+
+  it('rechaza con 400 y mensaje específico un payload de unidad sin placa (validación de DTO)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ tipoVehiculoId, identificadorOperativo: 'Sin placa' })
+      .expect(400);
+
+    expect(JSON.stringify(res.body.message)).toContain('placa');
+  });
+
+  it('un token de pasajero (sin cooperativa) no puede usar endpoints de /coop (RF-AUTH-004, RBAC)', async () => {
+    const registroPasajero = await request(app.getHttpServer())
+      .post('/auth/registro')
+      .send({
+        correo: `pasajero.e2e.${sufijo}@ticketya.ec`,
+        password: 'ClaveSegura123',
+        nombreCompleto: 'Pasajero E2E',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${registroPasajero.body.accessToken}`)
+      .send({ nombre: 'No debería poder crear esto', capacidadTotal: 10 })
+      .expect(403);
+  });
+
+  it('un token de cooperativa no puede usar endpoints de /admin (RF-AUTH-004, RBAC)', async () => {
+    await request(app.getHttpServer())
+      .get('/admin/cooperativas')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(403);
+  });
+});

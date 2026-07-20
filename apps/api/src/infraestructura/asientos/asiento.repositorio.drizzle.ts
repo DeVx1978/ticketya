@@ -49,7 +49,12 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
         holdExpiraEn: viajeAsientos.holdExpiraEn,
       })
       .from(viajeAsientos)
-      .where(and(eq(viajeAsientos.viajeId, viajeId), ne(viajeAsientos.estado, 'disponible')));
+      .where(
+        and(
+          eq(viajeAsientos.viajeId, viajeId),
+          ne(viajeAsientos.estado, 'disponible'),
+        ),
+      );
 
     return {
       viajeId,
@@ -75,7 +80,9 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
     cooperativaId: string,
   ): Promise<ResultadoBloqueo> {
     return ejecutarComoCooperativa(this.dbApp, cooperativaId, async (tx) => {
-      const expiraEn = new Date(Date.now() + MINUTOS_BLOQUEO_ASIENTO_DEFECTO * 60 * 1000);
+      const expiraEn = new Date(
+        Date.now() + MINUTOS_BLOQUEO_ASIENTO_DEFECTO * 60 * 1000,
+      );
 
       const existente = await tx.execute(
         sql`SELECT id, estado, hold_expira_en, hold_usuario_id FROM viaje_asientos
@@ -110,10 +117,16 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
         return { exito: false, motivo: 'ocupado' };
       }
 
-      const holdVigente = fila.hold_expira_en && new Date(fila.hold_expira_en).getTime() > Date.now();
+      const holdVigente =
+        fila.hold_expira_en &&
+        new Date(fila.hold_expira_en).getTime() > Date.now();
       const esOtroUsuario = fila.hold_usuario_id !== usuarioId;
 
-      if (fila.estado === 'bloqueado_temporal' && holdVigente && esOtroUsuario) {
+      if (
+        fila.estado === 'bloqueado_temporal' &&
+        holdVigente &&
+        esOtroUsuario
+      ) {
         return { exito: false, motivo: 'bloqueado_por_otro_usuario' };
       }
 

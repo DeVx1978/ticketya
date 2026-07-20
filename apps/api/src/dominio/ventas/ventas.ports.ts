@@ -30,7 +30,10 @@ export function factorDescuento(tipoTarifa: TipoTarifa): number {
 }
 
 /** RF-MENOR-001 — detección de menor de edad por tarifa o fecha de nacimiento. */
-export function esMenorDeEdad(tipoTarifa: TipoTarifa, fechaNacimiento: string | null | undefined): boolean {
+export function esMenorDeEdad(
+  tipoTarifa: TipoTarifa,
+  fechaNacimiento: string | null | undefined,
+): boolean {
   if (tipoTarifa === 'nino') return true;
   if (!fechaNacimiento) return false;
   const nacimiento = new Date(fechaNacimiento);
@@ -90,14 +93,19 @@ export interface MapeoAsientoPasajero {
 
 export interface CompraRepositorio {
   /** RF-CHECK-005 — idempotencia: si ya existe un pago con esta clave, devuelve su resultado sin reprocesar. */
-  buscarPagoPorIdempotencyKey(idempotencyKey: string): Promise<PagoExistente | null>;
+  buscarPagoPorIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<PagoExistente | null>;
 
   /**
    * Verifica que cada asiento esté bloqueado por este usuario y su hold
    * no haya expirado, y devuelve el desglose de precio de cada uno.
    * Lanza si algún asiento no es válido para este checkout.
    */
-  validarYCalcularAsientos(asientos: PasajeroCheckout[], usuarioId: string): Promise<DesgloseAsiento[]>;
+  validarYCalcularAsientos(
+    asientos: PasajeroCheckout[],
+    usuarioId: string,
+  ): Promise<DesgloseAsiento[]>;
 
   /** Crea compra + pasajeros_compra + fila de pago en estado 'pendiente'. */
   crearCompraPendiente(
@@ -113,9 +121,12 @@ export interface CompraRepositorio {
    * pago a 'aprobado'. Agrupa las escrituras por cooperativa
    * internamente (una compra puede, en teoría, involucrar más de una).
    */
-  confirmarPago(compraId: string, referenciaExterna: string, mapeo: MapeoAsientoPasajero[]): Promise<{ boletos: BoletoEmitido[] }>;
+  confirmarPago(
+    compraId: string,
+    referenciaExterna: string,
+    mapeo: MapeoAsientoPasajero[],
+  ): Promise<{ boletos: BoletoEmitido[] }>;
 
   /** Registra el rechazo sin tocar los asientos (su hold expira solo). */
   rechazarPago(compraId: string, motivo: string): Promise<void>;
 }
-

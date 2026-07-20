@@ -22,7 +22,10 @@ import type {
   PagoExistente,
   BoletoEmitido,
 } from '../../dominio/ventas/ventas.ports';
-import { factorDescuento, esMenorDeEdad } from '../../dominio/ventas/ventas.ports';
+import {
+  factorDescuento,
+  esMenorDeEdad,
+} from '../../dominio/ventas/ventas.ports';
 
 @Injectable()
 export class CompraRepositorioDrizzle implements CompraRepositorio {
@@ -31,8 +34,12 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     @Inject(DRIZZLE_DB) private readonly dbApp: DrizzleDb,
   ) {}
 
-  async buscarPagoPorIdempotencyKey(idempotencyKey: string): Promise<PagoExistente | null> {
-    const pago = await this.dbPublico.query.pagos.findFirst({ where: eq(pagos.idempotencyKey, idempotencyKey) });
+  async buscarPagoPorIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<PagoExistente | null> {
+    const pago = await this.dbPublico.query.pagos.findFirst({
+      where: eq(pagos.idempotencyKey, idempotencyKey),
+    });
     if (!pago) return null;
 
     const boletosDeLaCompra = await this.dbPublico
@@ -47,9 +54,15 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     };
   }
 
-  async validarYCalcularAsientos(asientos: PasajeroCheckout[], usuarioId: string): Promise<DesgloseAsiento[]> {
-    const configuracion = await this.dbPublico.query.configuracionPlataforma.findFirst();
-    const cargoPlataforma = Number(configuracion?.cargoPlataformaPorPasajeroDefault ?? 0);
+  async validarYCalcularAsientos(
+    asientos: PasajeroCheckout[],
+    usuarioId: string,
+  ): Promise<DesgloseAsiento[]> {
+    const configuracion =
+      await this.dbPublico.query.configuracionPlataforma.findFirst();
+    const cargoPlataforma = Number(
+      configuracion?.cargoPlataformaPorPasajeroDefault ?? 0,
+    );
 
     const resultado: DesgloseAsiento[] = [];
 
@@ -66,8 +79,16 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         .from(viajeAsientos)
         .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
         .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
-        .innerJoin(puntosOperacion, eq(rutas.origenPuntoOperacionId, puntosOperacion.id))
-        .where(and(eq(viajeAsientos.viajeId, asiento.viajeId), eq(viajeAsientos.numeroAsiento, asiento.numeroAsiento)))
+        .innerJoin(
+          puntosOperacion,
+          eq(rutas.origenPuntoOperacionId, puntosOperacion.id),
+        )
+        .where(
+          and(
+            eq(viajeAsientos.viajeId, asiento.viajeId),
+            eq(viajeAsientos.numeroAsiento, asiento.numeroAsiento),
+          ),
+        )
         .limit(1);
 
       if (fila.length === 0) {
@@ -77,9 +98,14 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       }
 
       const f = fila[0];
-      const holdVigente = f.holdExpiraEn && new Date(f.holdExpiraEn).getTime() > Date.now();
+      const holdVigente =
+        f.holdExpiraEn && new Date(f.holdExpiraEn).getTime() > Date.now();
 
-      if (f.estadoAsiento !== 'bloqueado_temporal' || f.holdUsuarioId !== usuarioId || !holdVigente) {
+      if (
+        f.estadoAsiento !== 'bloqueado_temporal' ||
+        f.holdUsuarioId !== usuarioId ||
+        !holdVigente
+      ) {
         throw new BadRequestException(
           `El bloqueo del asiento ${asiento.numeroAsiento} ya no es válido (expiró o pertenece a otro usuario) — vuelve a seleccionarlo.`,
         );
@@ -89,7 +115,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         viajeId: asiento.viajeId,
         numeroAsiento: asiento.numeroAsiento,
         cooperativaId: f.cooperativaId,
-        precioPagado: Number(f.precioBase) * factorDescuento(asiento.tipoTarifa),
+        precioPagado:
+          Number(f.precioBase) * factorDescuento(asiento.tipoTarifa),
         tasaTerminal: Number(f.tasaTerminal ?? 0),
         cargoPlataforma,
       });
@@ -104,10 +131,17 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     desglose: DesgloseAsiento[],
     idempotencyKey: string,
   ): Promise<{ compraId: string; mapeo: MapeoAsientoPasajero[] }> {
-    const montoTarifasCooperativa = desglose.reduce((a, d) => a + d.precioPagado, 0);
+    const montoTarifasCooperativa = desglose.reduce(
+      (a, d) => a + d.precioPagado,
+      0,
+    );
     const montoTasaTerminal = desglose.reduce((a, d) => a + d.tasaTerminal, 0);
-    const montoCargoPlataforma = desglose.reduce((a, d) => a + d.cargoPlataforma, 0);
-    const montoTotal = montoTarifasCooperativa + montoTasaTerminal + montoCargoPlataforma;
+    const montoCargoPlataforma = desglose.reduce(
+      (a, d) => a + d.cargoPlataforma,
+      0,
+    );
+    const montoTotal =
+      montoTarifasCooperativa + montoTasaTerminal + montoCargoPlataforma;
 
     const [compra] = await this.dbPublico
       .insert(compras)
@@ -186,7 +220,9 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           );
           const viajeAsientoId = (asientoRows.rows[0] as { id: string }).id;
 
-          await tx.execute(sql`UPDATE viaje_asientos SET estado = 'ocupado' WHERE id = ${viajeAsientoId}`);
+          await tx.execute(
+            sql`UPDATE viaje_asientos SET estado = 'ocupado' WHERE id = ${viajeAsientoId}`,
+          );
 
           const codigoQr = randomUUID();
           const boletoRows = await tx.execute(

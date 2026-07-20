@@ -10,14 +10,20 @@ export const ADMIN_REPOSITORIO = 'ADMIN_REPOSITORIO';
 
 @Injectable()
 export class AdminService {
-  constructor(@Inject(ADMIN_REPOSITORIO) private readonly admin: AdminRepositorio) {}
+  constructor(
+    @Inject(ADMIN_REPOSITORIO) private readonly admin: AdminRepositorio,
+  ) {}
 
   async crearCooperativaConPrimerUsuario(
     datosCooperativa: DatosNuevaCooperativa,
     datosUsuario: DatosPrimerUsuarioCooperativa,
   ) {
-    const { cooperativaId } = await this.admin.crearCooperativa(datosCooperativa);
-    const { usuarioId } = await this.admin.crearPrimerUsuarioCooperativa(cooperativaId, datosUsuario);
+    const { cooperativaId } =
+      await this.admin.crearCooperativa(datosCooperativa);
+    const { usuarioId } = await this.admin.crearPrimerUsuarioCooperativa(
+      cooperativaId,
+      datosUsuario,
+    );
     return { cooperativaId, usuarioId };
   }
 

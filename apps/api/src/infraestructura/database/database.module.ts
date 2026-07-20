@@ -52,28 +52,32 @@ export const DRIZZLE_DB_PUBLICO = 'DRIZZLE_DB_PUBLICO';
     {
       provide: DRIZZLE_DB,
       inject: [DB_CONNECTION],
-      useFactory: (conexion: ReturnType<typeof crearConexionBaseDeDatos>) => conexion.db,
+      useFactory: (conexion: ReturnType<typeof crearConexionBaseDeDatos>) =>
+        conexion.db,
     },
     {
       provide: PG_POOL,
       inject: [DB_CONNECTION],
-      useFactory: (conexion: ReturnType<typeof crearConexionBaseDeDatos>) => conexion.pool,
+      useFactory: (conexion: ReturnType<typeof crearConexionBaseDeDatos>) =>
+        conexion.pool,
     },
     {
       provide: DB_CONNECTION_PUBLICO,
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const connectionString = config.getOrThrow<string>('DATABASE_URL_PUBLICO');
+        const connectionString = config.getOrThrow<string>(
+          'DATABASE_URL_PUBLICO',
+        );
         return crearConexionBaseDeDatos(connectionString);
       },
     },
     {
       provide: DRIZZLE_DB_PUBLICO,
       inject: [DB_CONNECTION_PUBLICO],
-      useFactory: (conexion: ReturnType<typeof crearConexionBaseDeDatos>) => conexion.db,
+      useFactory: (conexion: ReturnType<typeof crearConexionBaseDeDatos>) =>
+        conexion.db,
     },
   ],
   exports: [DRIZZLE_DB, PG_POOL, DRIZZLE_DB_PUBLICO],
 })
 export class DatabaseModule {}
-

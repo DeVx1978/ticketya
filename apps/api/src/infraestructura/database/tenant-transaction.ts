@@ -30,7 +30,9 @@ export async function ejecutarComoCooperativa<T>(
   fn: (tx: DrizzleDb) => Promise<T>,
 ): Promise<T> {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.current_cooperativa_id', ${cooperativaId}, true)`);
-    return fn(tx as unknown as DrizzleDb);
+    await tx.execute(
+      sql`SELECT set_config('app.current_cooperativa_id', ${cooperativaId}, true)`,
+    );
+    return fn(tx);
   });
 }

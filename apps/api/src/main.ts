@@ -7,7 +7,9 @@ async function bootstrap() {
   // Activa las validaciones de class-validator en cada DTO (@IsEmail,
   // @MinLength, etc.) — sin esto, los decoradores de los DTO no hacen
   // nada, solo son anotaciones sin efecto.
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
   // El sitio web (apps/web, Next.js) corre en un puerto distinto al
   // backend — sin CORS habilitado, el navegador bloquea esas llamadas
   // por política de mismo origen, aunque el backend responda bien.

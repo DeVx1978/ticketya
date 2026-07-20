@@ -15,7 +15,10 @@ export class AdminController {
   /** RF-ADMIN-001 — alta de cooperativa + su primer usuario administrador. */
   @Post('cooperativas')
   async crearCooperativa(@Body() dto: CrearCooperativaDto) {
-    return this.admin.crearCooperativaConPrimerUsuario(dto.cooperativa, dto.usuario);
+    return this.admin.crearCooperativaConPrimerUsuario(
+      dto.cooperativa,
+      dto.usuario,
+    );
   }
 
   @Get('cooperativas')

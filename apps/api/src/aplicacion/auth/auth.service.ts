@@ -1,6 +1,20 @@
-import { Injectable, Inject, ConflictException, UnauthorizedException } from '@nestjs/common';
-import type { UsuarioRepositorio, HasherContrasena, EmisorTokens, DatosRegistro, UsuarioDominio } from '../../dominio/auth/auth.ports';
-import { calcularBloqueoTrasIntentoFallido, cuentaEstaBloqueada } from '../../dominio/auth/auth.ports';
+import {
+  Injectable,
+  Inject,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import type {
+  UsuarioRepositorio,
+  HasherContrasena,
+  EmisorTokens,
+  DatosRegistro,
+  UsuarioDominio,
+} from '../../dominio/auth/auth.ports';
+import {
+  calcularBloqueoTrasIntentoFallido,
+  cuentaEstaBloqueada,
+} from '../../dominio/auth/auth.ports';
 
 export const USUARIO_REPOSITORIO = 'USUARIO_REPOSITORIO';
 export const HASHER_CONTRASENA = 'HASHER_CONTRASENA';
@@ -28,7 +42,10 @@ export class AuthService {
     }
 
     const passwordHash = await this.hasher.hash(datos.password);
-    const usuario = await this.usuarios.crearPasajero({ ...datos, password: passwordHash });
+    const usuario = await this.usuarios.crearPasajero({
+      ...datos,
+      password: passwordHash,
+    });
 
     // Nota: el envío real del correo de confirmación (RF-AUTH-001,
     // "recibe confirmación por correo") pertenece al módulo RF-NOTIF, que
@@ -50,7 +67,8 @@ export class AuthService {
     // incorrecta — no revelar cuál de las dos cosas falló, práctica
     // estándar de seguridad (evita que un atacante confirme qué correos
     // están registrados).
-    const credencialesInvalidas = () => new UnauthorizedException('Correo o contraseña incorrectos.');
+    const credencialesInvalidas = () =>
+      new UnauthorizedException('Correo o contraseña incorrectos.');
 
     if (!usuario || !usuario.activo || !usuario.passwordHash) {
       throw credencialesInvalidas();
@@ -62,11 +80,20 @@ export class AuthService {
       );
     }
 
-    const passwordValido = await this.hasher.comparar(passwordPlano, usuario.passwordHash);
+    const passwordValido = await this.hasher.comparar(
+      passwordPlano,
+      usuario.passwordHash,
+    );
 
     if (!passwordValido) {
-      const { nuevoConteo, bloqueadoHasta } = calcularBloqueoTrasIntentoFallido(usuario.intentosFallidos);
-      await this.usuarios.registrarIntentoFallido(usuario.id, nuevoConteo, bloqueadoHasta);
+      const { nuevoConteo, bloqueadoHasta } = calcularBloqueoTrasIntentoFallido(
+        usuario.intentosFallidos,
+      );
+      await this.usuarios.registrarIntentoFallido(
+        usuario.id,
+        nuevoConteo,
+        bloqueadoHasta,
+      );
       throw credencialesInvalidas();
     }
 

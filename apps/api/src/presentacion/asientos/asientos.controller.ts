@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Param, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AsientosService } from '../../aplicacion/asientos/asientos.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';

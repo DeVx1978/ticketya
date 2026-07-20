@@ -1,4 +1,13 @@
-import { IsArray, IsIn, IsOptional, IsString, IsUUID, ValidateNested, MinLength, ArrayMinSize } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+  MinLength,
+  ArrayMinSize,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class PasajeroCheckoutDto {

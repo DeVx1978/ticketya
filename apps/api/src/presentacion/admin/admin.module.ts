@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AdminController } from './admin.controller';
-import { AdminService, ADMIN_REPOSITORIO } from '../../aplicacion/admin/admin.service';
+import {
+  AdminService,
+  ADMIN_REPOSITORIO,
+} from '../../aplicacion/admin/admin.service';
 import { AdminRepositorioDrizzle } from '../../infraestructura/admin/admin.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 

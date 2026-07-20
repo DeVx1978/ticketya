@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from '../../aplicacion/auth/auth.service';
 import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
@@ -28,7 +35,7 @@ export class AuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('perfil')
-  async perfil(@Request() req: { user: PayloadToken }) {
+  perfil(@Request() req: { user: PayloadToken }) {
     return req.user;
   }
 }

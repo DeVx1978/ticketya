@@ -35,7 +35,12 @@ export class BusquedaService {
         tipo: puntosOperacion.tipo,
       })
       .from(puntosOperacion)
-      .where(or(ilike(puntosOperacion.ciudad, `%${texto}%`), ilike(puntosOperacion.nombre, `%${texto}%`)))
+      .where(
+        or(
+          ilike(puntosOperacion.ciudad, `%${texto}%`),
+          ilike(puntosOperacion.nombre, `%${texto}%`),
+        ),
+      )
       .limit(10);
   }
 
@@ -47,7 +52,12 @@ export class BusquedaService {
    * bloqueados temporalmente por otras compras en curso (no solo los ya
    * vendidos).
    */
-  async buscarViajes(origenId: string, destinoId: string, fecha: string, pasajerosMinimos: number) {
+  async buscarViajes(
+    origenId: string,
+    destinoId: string,
+    fecha: string,
+    pasajerosMinimos: number,
+  ) {
     // Subconsulta escalar: asientos NO disponibles (ocupados o en hold)
     // para este viaje específico. Si el viaje todavía no tiene filas en
     // viaje_asientos (nunca se inicializó su mapa), el count da 0 y toda

@@ -37,7 +37,11 @@ export interface UsuarioRepositorio {
   buscarPorCorreo(correo: string): Promise<UsuarioDominio | null>;
   buscarPorId(id: string): Promise<UsuarioDominio | null>;
   crearPasajero(datos: DatosRegistro): Promise<UsuarioDominio>;
-  registrarIntentoFallido(usuarioId: string, intentos: number, bloqueadoHasta: Date | null): Promise<void>;
+  registrarIntentoFallido(
+    usuarioId: string,
+    intentos: number,
+    bloqueadoHasta: Date | null,
+  ): Promise<void>;
   reiniciarIntentosFallidos(usuarioId: string): Promise<void>;
 }
 

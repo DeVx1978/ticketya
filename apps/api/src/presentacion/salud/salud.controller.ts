@@ -16,7 +16,9 @@ export class SaludController {
 
   @Get()
   async verificar() {
-    const resultado = await this.db.execute(sql`SELECT count(*)::int AS total FROM cooperativas`);
+    const resultado = await this.db.execute(
+      sql`SELECT count(*)::int AS total FROM cooperativas`,
+    );
     const totalCooperativas = (resultado.rows[0] as { total: number }).total;
     return {
       estado: 'ok',

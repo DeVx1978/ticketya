@@ -16,6 +16,11 @@ export class BusquedaController {
   /** RF-BUS-001, RF-BUS-003, RF-BUS-006 */
   @Get('viajes/buscar')
   async buscarViajes(@Query() query: BuscarViajesDto) {
-    return this.busqueda.buscarViajes(query.origenId, query.destinoId, query.fecha, query.pasajeros ?? 1);
+    return this.busqueda.buscarViajes(
+      query.origenId,
+      query.destinoId,
+      query.fecha,
+      query.pasajeros ?? 1,
+    );
   }
 }

@@ -3,7 +3,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
-import { AuthService, USUARIO_REPOSITORIO, HASHER_CONTRASENA, EMISOR_TOKENS } from '../../aplicacion/auth/auth.service';
+import {
+  AuthService,
+  USUARIO_REPOSITORIO,
+  HASHER_CONTRASENA,
+  EMISOR_TOKENS,
+} from '../../aplicacion/auth/auth.service';
 import { UsuarioRepositorioDrizzle } from '../../infraestructura/auth/usuario.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 import { JwtEmisorTokens } from '../../infraestructura/auth/jwt.emisor-tokens';

@@ -1,4 +1,15 @@
-import { IsArray, IsEmail, IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, Min, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsIn,
+  IsInt,
+  IsISO8601,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CrearTipoVehiculoDto {
   @IsString()

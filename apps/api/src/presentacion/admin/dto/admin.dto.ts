@@ -1,4 +1,11 @@
-import { IsEmail, IsIn, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class DatosCooperativaDto {

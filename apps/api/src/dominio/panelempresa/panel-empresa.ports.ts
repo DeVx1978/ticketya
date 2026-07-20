@@ -131,19 +131,44 @@ export interface ResultadoValidacionQr {
 }
 
 export interface PanelEmpresaRepositorio {
-  crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo): Promise<{ id: string }>;
-  crearUnidad(cooperativaId: string, datos: DatosNuevaUnidad): Promise<{ id: string }>;
-  crearRuta(cooperativaId: string, datos: DatosNuevaRuta): Promise<{ id: string }>;
-  crearViaje(cooperativaId: string, datos: DatosNuevoViaje): Promise<{ id: string }>;
-  crearUsuarioStaff(cooperativaId: string, datos: DatosNuevoUsuarioStaff): Promise<{ usuarioId: string }>;
-  crearConductor(cooperativaId: string, datos: DatosNuevoConductor): Promise<{ id: string }>;
+  crearTipoVehiculo(
+    cooperativaId: string,
+    datos: DatosNuevoTipoVehiculo,
+  ): Promise<{ id: string }>;
+  crearUnidad(
+    cooperativaId: string,
+    datos: DatosNuevaUnidad,
+  ): Promise<{ id: string }>;
+  crearRuta(
+    cooperativaId: string,
+    datos: DatosNuevaRuta,
+  ): Promise<{ id: string }>;
+  crearViaje(
+    cooperativaId: string,
+    datos: DatosNuevoViaje,
+  ): Promise<{ id: string }>;
+  crearUsuarioStaff(
+    cooperativaId: string,
+    datos: DatosNuevoUsuarioStaff,
+  ): Promise<{ usuarioId: string }>;
+  crearConductor(
+    cooperativaId: string,
+    datos: DatosNuevoConductor,
+  ): Promise<{ id: string }>;
 
   /** Carga masiva — ver comentario de DatosImportacion arriba. */
-  importarDatos(cooperativaId: string, datos: DatosImportacion): Promise<ResultadoImportacion>;
+  importarDatos(
+    cooperativaId: string,
+    datos: DatosImportacion,
+  ): Promise<ResultadoImportacion>;
 
   /** RF-COOP-004 — dashboard de ventas del día, tenant-scoped de verdad. */
   dashboardVentasDelDia(cooperativaId: string): Promise<FilaVentaDelDia[]>;
 
   /** RF-COOP-006 — validación de boleto por QR en abordaje. */
-  validarBoletoPorQr(cooperativaId: string, codigoQr: string, validadoPorUsuarioId: string): Promise<ResultadoValidacionQr>;
+  validarBoletoPorQr(
+    cooperativaId: string,
+    codigoQr: string,
+    validadoPorUsuarioId: string,
+  ): Promise<ResultadoValidacionQr>;
 }

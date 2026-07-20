@@ -1,11 +1,18 @@
-import { Inject, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import type { AsientoRepositorio } from '../../dominio/asientos/asientos.ports';
 
 export const ASIENTO_REPOSITORIO = 'ASIENTO_REPOSITORIO';
 
 @Injectable()
 export class AsientosService {
-  constructor(@Inject(ASIENTO_REPOSITORIO) private readonly asientos: AsientoRepositorio) {}
+  constructor(
+    @Inject(ASIENTO_REPOSITORIO) private readonly asientos: AsientoRepositorio,
+  ) {}
 
   /** RF-SEAT-001 — mapa de asientos por tipo de unidad. */
   async obtenerMapa(viajeId: string) {
@@ -25,13 +32,23 @@ export class AsientosService {
    * motor de Postgres, no por lógica de aplicación que podría fallar bajo
    * concurrencia real.
    */
-  async bloquearAsiento(viajeId: string, numeroAsiento: string, usuarioId: string) {
-    const cooperativaId = await this.asientos.obtenerCooperativaDelViaje(viajeId);
+  async bloquearAsiento(
+    viajeId: string,
+    numeroAsiento: string,
+    usuarioId: string,
+  ) {
+    const cooperativaId =
+      await this.asientos.obtenerCooperativaDelViaje(viajeId);
     if (!cooperativaId) {
       throw new NotFoundException('Viaje no encontrado.');
     }
 
-    const resultado = await this.asientos.bloquear(viajeId, numeroAsiento, usuarioId, cooperativaId);
+    const resultado = await this.asientos.bloquear(
+      viajeId,
+      numeroAsiento,
+      usuarioId,
+      cooperativaId,
+    );
 
     if (!resultado.exito) {
       const mensaje =
