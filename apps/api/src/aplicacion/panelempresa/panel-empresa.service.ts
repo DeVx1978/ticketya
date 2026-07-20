@@ -31,6 +31,10 @@ export class PanelEmpresaService {
     return this.panel.crearRuta(cooperativaId, datos);
   }
 
+  listarRutas(cooperativaId: string) {
+    return this.panel.listarRutas(cooperativaId);
+  }
+
   crearViaje(cooperativaId: string, datos: DatosNuevoViaje) {
     return this.panel.crearViaje(cooperativaId, datos);
   }

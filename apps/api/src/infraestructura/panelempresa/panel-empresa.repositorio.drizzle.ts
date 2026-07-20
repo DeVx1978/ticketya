@@ -16,6 +16,7 @@ import type {
   ResultadoImportacion,
   FilaVentaDelDia,
   ResultadoValidacionQr,
+  RutaResumen,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 /**
@@ -70,6 +71,36 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
+    });
+  }
+
+  async listarRutas(cooperativaId: string): Promise<RutaResumen[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT r.id, r.nombre, r.precio_base_referencia,
+               ori.ciudad AS origen_ciudad, dest.ciudad AS destino_ciudad
+        FROM rutas r
+        JOIN puntos_operacion ori ON ori.id = r.origen_punto_operacion_id
+        JOIN puntos_operacion dest ON dest.id = r.destino_punto_operacion_id
+        WHERE r.cooperativa_id = ${cooperativaId}
+        ORDER BY r.creado_en DESC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          nombre: string | null;
+          precio_base_referencia: string;
+          origen_ciudad: string;
+          destino_ciudad: string;
+        };
+        return {
+          id: f.id,
+          nombre: f.nombre,
+          origenCiudad: f.origen_ciudad,
+          destinoCiudad: f.destino_ciudad,
+          precioBaseReferencia: Number(f.precio_base_referencia),
+        };
+      });
     });
   }
 

@@ -130,6 +130,14 @@ export interface ResultadoValidacionQr {
   pasajeroNombre?: string;
 }
 
+export interface RutaResumen {
+  id: string;
+  nombre: string | null;
+  origenCiudad: string;
+  destinoCiudad: string;
+  precioBaseReferencia: number;
+}
+
 export interface PanelEmpresaRepositorio {
   crearTipoVehiculo(
     cooperativaId: string,
@@ -143,6 +151,8 @@ export interface PanelEmpresaRepositorio {
     cooperativaId: string,
     datos: DatosNuevaRuta,
   ): Promise<{ id: string }>;
+  /** Rutas de la cooperativa, para elegir al armar un viaje o solo para revisar lo que ya existe. */
+  listarRutas(cooperativaId: string): Promise<RutaResumen[]>;
   crearViaje(
     cooperativaId: string,
     datos: DatosNuevoViaje,

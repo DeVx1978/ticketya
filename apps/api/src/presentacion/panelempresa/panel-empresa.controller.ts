@@ -69,6 +69,12 @@ export class PanelEmpresaController {
     return this.panel.crearRuta(cooperativaDelToken(req.user), dto);
   }
 
+  @Roles('admin_cooperativa', 'vendedor')
+  @Get('rutas')
+  async listarRutas(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarRutas(cooperativaDelToken(req.user));
+  }
+
   @Roles('admin_cooperativa')
   @Post('viajes')
   async crearViaje(

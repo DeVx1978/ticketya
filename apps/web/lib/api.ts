@@ -95,6 +95,43 @@ export async function obtenerDashboardCoop(token: string): Promise<FilaVentaDelD
   return cuerpo as FilaVentaDelDia[];
 }
 
+export interface RutaResumen {
+  id: string;
+  nombre: string | null;
+  origenCiudad: string;
+  destinoCiudad: string;
+  precioBaseReferencia: number;
+}
+
+export async function listarRutasCoop(token: string): Promise<RutaResumen[]> {
+  const res = await fetch(`${API_URL}/coop/rutas`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudieron cargar las rutas.");
+  }
+  return cuerpo as RutaResumen[];
+}
+
+export async function crearRutaCoop(
+  token: string,
+  datos: { origenPuntoOperacionId: string; destinoPuntoOperacionId: string; precioBaseReferencia: number; nombre?: string },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/rutas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear la ruta.");
+  }
+  return cuerpo as { id: string };
+}
+
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;

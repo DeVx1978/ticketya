@@ -213,6 +213,18 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(rutaId).toBeDefined();
   });
 
+  it('la ruta recién creada aparece al listar (GET /coop/rutas)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+
+    const ruta = res.body.find((r: { id: string }) => r.id === rutaId);
+    expect(ruta).toBeDefined();
+    expect(ruta.nombre).toBe('Ruta E2E');
+    expect(ruta.precioBaseReferencia).toBe(6.5);
+  });
+
   it('crea un viaje sobre esa ruta y esa unidad', async () => {
     const res = await request(app.getHttpServer())
       .post('/coop/viajes')
