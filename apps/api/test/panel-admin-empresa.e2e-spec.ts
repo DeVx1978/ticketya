@@ -184,6 +184,17 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(tipoVehiculoId).toBeDefined();
   });
 
+  it('el tipo de vehículo recién creado aparece al listar (GET /coop/tipos-vehiculo)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+
+    const tipo = res.body.find((t: { id: string }) => t.id === tipoVehiculoId);
+    expect(tipo).toBeDefined();
+    expect(tipo.capacidadTotal).toBe(40);
+  });
+
   it('crea una unidad con placa e identificador operativo, y persiste exactamente esos valores (RF-FLOTA-002)', async () => {
     const res = await request(app.getHttpServer())
       .post('/coop/unidades')
@@ -196,6 +207,17 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .expect(201);
     unidadId = res.body.id;
     expect(unidadId).toBeDefined();
+  });
+
+  it('la unidad recién creada aparece al listar, con el nombre de su tipo ya resuelto (GET /coop/unidades)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+
+    const unidad = res.body.find((u: { id: string }) => u.id === unidadId);
+    expect(unidad).toBeDefined();
+    expect(unidad.tipoVehiculoNombre).toBe('Bus estándar 2+2 (E2E)');
   });
 
   it('crea una ruta entre los dos puntos de operación (RF-COOP-002)', async () => {

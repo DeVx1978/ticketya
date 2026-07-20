@@ -23,8 +23,16 @@ export class PanelEmpresaService {
     return this.panel.crearTipoVehiculo(cooperativaId, datos);
   }
 
+  listarTiposVehiculo(cooperativaId: string) {
+    return this.panel.listarTiposVehiculo(cooperativaId);
+  }
+
   crearUnidad(cooperativaId: string, datos: DatosNuevaUnidad) {
     return this.panel.crearUnidad(cooperativaId, datos);
+  }
+
+  listarUnidades(cooperativaId: string) {
+    return this.panel.listarUnidades(cooperativaId);
   }
 
   crearRuta(cooperativaId: string, datos: DatosNuevaRuta) {

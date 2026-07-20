@@ -17,6 +17,8 @@ import type {
   FilaVentaDelDia,
   ResultadoValidacionQr,
   RutaResumen,
+  TipoVehiculoResumen,
+  UnidadResumen,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 /**
@@ -46,6 +48,31 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async listarTiposVehiculo(
+    cooperativaId: string,
+  ): Promise<TipoVehiculoResumen[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT id, nombre, capacidad_total
+        FROM tipos_vehiculo
+        WHERE cooperativa_id = ${cooperativaId}
+        ORDER BY creado_en DESC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          nombre: string;
+          capacidad_total: number;
+        };
+        return {
+          id: f.id,
+          nombre: f.nombre,
+          capacidadTotal: f.capacidad_total,
+        };
+      });
+    });
+  }
+
   async crearUnidad(
     cooperativaId: string,
     datos: DatosNuevaUnidad,
@@ -57,6 +84,34 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
+    });
+  }
+
+  async listarUnidades(cooperativaId: string): Promise<UnidadResumen[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT u.id, u.placa, u.identificador_operativo, u.tipo_vehiculo_id, tv.nombre AS tipo_vehiculo_nombre
+        FROM unidades u
+        JOIN tipos_vehiculo tv ON tv.id = u.tipo_vehiculo_id
+        WHERE u.cooperativa_id = ${cooperativaId}
+        ORDER BY u.creado_en DESC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          placa: string;
+          identificador_operativo: string;
+          tipo_vehiculo_id: string;
+          tipo_vehiculo_nombre: string;
+        };
+        return {
+          id: f.id,
+          placa: f.placa,
+          identificadorOperativo: f.identificador_operativo,
+          tipoVehiculoId: f.tipo_vehiculo_id,
+          tipoVehiculoNombre: f.tipo_vehiculo_nombre,
+        };
+      });
     });
   }
 

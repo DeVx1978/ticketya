@@ -51,6 +51,12 @@ export class PanelEmpresaController {
     return this.panel.crearTipoVehiculo(cooperativaDelToken(req.user), dto);
   }
 
+  @Roles('admin_cooperativa', 'vendedor')
+  @Get('tipos-vehiculo')
+  async listarTiposVehiculo(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarTiposVehiculo(cooperativaDelToken(req.user));
+  }
+
   @Roles('admin_cooperativa')
   @Post('unidades')
   async crearUnidad(
@@ -58,6 +64,12 @@ export class PanelEmpresaController {
     @Request() req: { user: PayloadToken },
   ) {
     return this.panel.crearUnidad(cooperativaDelToken(req.user), dto);
+  }
+
+  @Roles('admin_cooperativa', 'vendedor')
+  @Get('unidades')
+  async listarUnidades(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarUnidades(cooperativaDelToken(req.user));
   }
 
   @Roles('admin_cooperativa')

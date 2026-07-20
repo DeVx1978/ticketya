@@ -138,15 +138,33 @@ export interface RutaResumen {
   precioBaseReferencia: number;
 }
 
+export interface TipoVehiculoResumen {
+  id: string;
+  nombre: string;
+  capacidadTotal: number;
+}
+
+export interface UnidadResumen {
+  id: string;
+  placa: string;
+  identificadorOperativo: string;
+  tipoVehiculoId: string;
+  tipoVehiculoNombre: string;
+}
+
 export interface PanelEmpresaRepositorio {
   crearTipoVehiculo(
     cooperativaId: string,
     datos: DatosNuevoTipoVehiculo,
   ): Promise<{ id: string }>;
+  /** Tipos de vehículo de la cooperativa — se necesita antes de poder crear una unidad. */
+  listarTiposVehiculo(cooperativaId: string): Promise<TipoVehiculoResumen[]>;
   crearUnidad(
     cooperativaId: string,
     datos: DatosNuevaUnidad,
   ): Promise<{ id: string }>;
+  /** Unidades (buses) de la cooperativa, con el nombre de su tipo ya resuelto. */
+  listarUnidades(cooperativaId: string): Promise<UnidadResumen[]>;
   crearRuta(
     cooperativaId: string,
     datos: DatosNuevaRuta,

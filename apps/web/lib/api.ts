@@ -132,6 +132,74 @@ export async function crearRutaCoop(
   return cuerpo as { id: string };
 }
 
+export interface TipoVehiculoResumen {
+  id: string;
+  nombre: string;
+  capacidadTotal: number;
+}
+
+export async function listarTiposVehiculoCoop(token: string): Promise<TipoVehiculoResumen[]> {
+  const res = await fetch(`${API_URL}/coop/tipos-vehiculo`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los tipos de vehículo.");
+  return cuerpo as TipoVehiculoResumen[];
+}
+
+export async function crearTipoVehiculoCoop(
+  token: string,
+  datos: { nombre: string; capacidadTotal: number },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/tipos-vehiculo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el tipo de vehículo.");
+  }
+  return cuerpo as { id: string };
+}
+
+export interface UnidadResumen {
+  id: string;
+  placa: string;
+  identificadorOperativo: string;
+  tipoVehiculoId: string;
+  tipoVehiculoNombre: string;
+}
+
+export async function listarUnidadesCoop(token: string): Promise<UnidadResumen[]> {
+  const res = await fetch(`${API_URL}/coop/unidades`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las unidades.");
+  return cuerpo as UnidadResumen[];
+}
+
+export async function crearUnidadCoop(
+  token: string,
+  datos: { tipoVehiculoId: string; placa: string; identificadorOperativo: string },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/unidades`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear la unidad.");
+  }
+  return cuerpo as { id: string };
+}
+
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;
