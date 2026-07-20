@@ -76,6 +76,25 @@ export async function bloquearAsiento(viajeId: string, numeroAsiento: string, to
   return cuerpo as { estado: string; expiraEn: string };
 }
 
+export interface FilaVentaDelDia {
+  rutaNombre: string;
+  vendedorNombre: string | null;
+  totalBoletos: number;
+  totalVentas: number;
+}
+
+export async function obtenerDashboardCoop(token: string): Promise<FilaVentaDelDia[]> {
+  const res = await fetch(`${API_URL}/coop/dashboard`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudo cargar el dashboard.");
+  }
+  return cuerpo as FilaVentaDelDia[];
+}
+
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;

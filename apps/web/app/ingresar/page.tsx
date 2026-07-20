@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login } from "@/lib/api";
-import { guardarToken } from "@/lib/auth";
+import { guardarToken, decodificarToken } from "@/lib/auth";
 
 function FormularioIngreso() {
   const router = useRouter();
@@ -22,7 +22,22 @@ function FormularioIngreso() {
       const { accessToken } = await login(correo, password);
       guardarToken(accessToken);
       const volverA = searchParams.get("volverA");
-      router.push(volverA ?? "/");
+      if (volverA) {
+        router.push(volverA);
+      } else {
+        // Sin un destino explícito (volverA), cada rol tiene su propia
+        // puerta de entrada natural — un vendedor no debería aterrizar
+        // en la landing de pasajero, ni un pasajero en un panel que no
+        // le sirve de nada.
+        const payload = decodificarToken(accessToken);
+        if (payload?.rol === "admin_plataforma") {
+          router.push("/admin");
+        } else if (payload?.rol === "admin_cooperativa" || payload?.rol === "vendedor") {
+          router.push("/panel-empresa");
+        } else {
+          router.push("/");
+        }
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión.");
