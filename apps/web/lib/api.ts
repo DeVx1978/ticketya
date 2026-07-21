@@ -200,6 +200,46 @@ export async function crearUnidadCoop(
   return cuerpo as { id: string };
 }
 
+export interface ViajeCoopResumen {
+  id: string;
+  rutaNombre: string;
+  origenCiudad: string;
+  destinoCiudad: string;
+  fechaSalida: string;
+  horaSalidaProgramada: string;
+  precioBase: number;
+  estado: string;
+  unidadPlaca: string;
+  tipoVehiculoNombre: string;
+}
+
+export async function listarViajesCoop(token: string): Promise<ViajeCoopResumen[]> {
+  const res = await fetch(`${API_URL}/coop/viajes`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los viajes.");
+  return cuerpo as ViajeCoopResumen[];
+}
+
+export async function crearViajeCoop(
+  token: string,
+  datos: { rutaId: string; unidadId: string; fechaSalida: string; horaSalidaProgramada: string; precioBase: number },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/viajes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el viaje.");
+  }
+  return cuerpo as { id: string };
+}
+
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;

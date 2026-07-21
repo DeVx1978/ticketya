@@ -152,6 +152,19 @@ export interface UnidadResumen {
   tipoVehiculoNombre: string;
 }
 
+export interface ViajeResumen {
+  id: string;
+  rutaNombre: string;
+  origenCiudad: string;
+  destinoCiudad: string;
+  fechaSalida: string;
+  horaSalidaProgramada: string;
+  precioBase: number;
+  estado: string;
+  unidadPlaca: string;
+  tipoVehiculoNombre: string;
+}
+
 export interface PanelEmpresaRepositorio {
   crearTipoVehiculo(
     cooperativaId: string,
@@ -175,6 +188,8 @@ export interface PanelEmpresaRepositorio {
     cooperativaId: string,
     datos: DatosNuevoViaje,
   ): Promise<{ id: string }>;
+  /** Viajes programados de la cooperativa — el mismo listado que RF-BUS termina mostrando al pasajero, pero visto desde adentro. */
+  listarViajes(cooperativaId: string): Promise<ViajeResumen[]>;
   crearUsuarioStaff(
     cooperativaId: string,
     datos: DatosNuevoUsuarioStaff,

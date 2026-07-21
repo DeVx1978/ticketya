@@ -38,6 +38,7 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
   let tipoVehiculoId: string;
   let unidadId: string;
   let rutaId: string;
+  let viajeId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -259,7 +260,21 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
         precioBase: 6.5,
       })
       .expect(201);
-    expect(res.body.id).toBeDefined();
+    viajeId = res.body.id;
+    expect(viajeId).toBeDefined();
+  });
+
+  it('el viaje recién creado aparece al listar, con la placa y el tipo de vehículo ya resueltos (GET /coop/viajes)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+
+    const viaje = res.body.find((v: { id: string }) => v.id === viajeId);
+    expect(viaje).toBeDefined();
+    expect(viaje.estado).toBe('programado');
+    expect(viaje.unidadPlaca).toBeDefined();
+    expect(viaje.tipoVehiculoNombre).toBeDefined();
   });
 
   it('el viaje creado aparece en la búsqueda pública de pasajeros, con los datos correctos (integración RF-COOP → RF-BUS)', async () => {

@@ -96,6 +96,12 @@ export class PanelEmpresaController {
     return this.panel.crearViaje(cooperativaDelToken(req.user), dto);
   }
 
+  @Roles('admin_cooperativa', 'vendedor')
+  @Get('viajes')
+  async listarViajes(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarViajes(cooperativaDelToken(req.user));
+  }
+
   /** RF-COOP-007 — múltiples usuarios por cooperativa con permisos diferenciados. */
   @Roles('admin_cooperativa')
   @Post('usuarios')

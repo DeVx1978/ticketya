@@ -19,6 +19,7 @@ import type {
   RutaResumen,
   TipoVehiculoResumen,
   UnidadResumen,
+  ViajeResumen,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 /**
@@ -170,6 +171,51 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
+    });
+  }
+
+  async listarViajes(cooperativaId: string): Promise<ViajeResumen[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT v.id, v.fecha_salida, v.hora_salida_programada, v.precio_base, v.estado,
+               r.nombre AS ruta_nombre_raw, ori.ciudad AS origen_ciudad, dest.ciudad AS destino_ciudad,
+               u.placa AS unidad_placa, tv.nombre AS tipo_vehiculo_nombre
+        FROM viajes v
+        JOIN rutas r ON r.id = v.ruta_id
+        JOIN puntos_operacion ori ON ori.id = r.origen_punto_operacion_id
+        JOIN puntos_operacion dest ON dest.id = r.destino_punto_operacion_id
+        JOIN unidades u ON u.id = v.unidad_id
+        JOIN tipos_vehiculo tv ON tv.id = u.tipo_vehiculo_id
+        WHERE v.cooperativa_id = ${cooperativaId}
+        ORDER BY v.fecha_salida DESC, v.hora_salida_programada DESC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          fecha_salida: string;
+          hora_salida_programada: string;
+          precio_base: string;
+          estado: string;
+          ruta_nombre_raw: string | null;
+          origen_ciudad: string;
+          destino_ciudad: string;
+          unidad_placa: string;
+          tipo_vehiculo_nombre: string;
+        };
+        return {
+          id: f.id,
+          rutaNombre:
+            f.ruta_nombre_raw ?? `${f.origen_ciudad} → ${f.destino_ciudad}`,
+          origenCiudad: f.origen_ciudad,
+          destinoCiudad: f.destino_ciudad,
+          fechaSalida: f.fecha_salida,
+          horaSalidaProgramada: f.hora_salida_programada,
+          precioBase: Number(f.precio_base),
+          estado: f.estado,
+          unidadPlaca: f.unidad_placa,
+          tipoVehiculoNombre: f.tipo_vehiculo_nombre,
+        };
+      });
     });
   }
 
