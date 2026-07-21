@@ -240,6 +240,25 @@ export async function crearViajeCoop(
   return cuerpo as { id: string };
 }
 
+export interface ResultadoValidacionQr {
+  valido: boolean;
+  mensaje: string;
+  pasajeroNombre?: string;
+}
+
+export async function validarQrCoop(token: string, codigoQr: string): Promise<ResultadoValidacionQr> {
+  const res = await fetch(`${API_URL}/coop/validar-qr`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ codigoQr }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudo validar el boleto.");
+  }
+  return cuerpo as ResultadoValidacionQr;
+}
+
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;
