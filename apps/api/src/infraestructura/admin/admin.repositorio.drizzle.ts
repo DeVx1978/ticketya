@@ -86,6 +86,8 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
         ciudad: datos.ciudad,
         provincia: datos.provincia,
         cooperativaPropietariaId: datos.cooperativaPropietariaId,
+        tasaMonto:
+          datos.tasaMonto !== undefined ? String(datos.tasaMonto) : undefined,
       })
       .returning();
     return { puntoOperacionId: fila.id };

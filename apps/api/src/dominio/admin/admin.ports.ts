@@ -24,6 +24,8 @@ export interface DatosNuevoPuntoOperacion {
   ciudad: string;
   provincia: string;
   cooperativaPropietariaId?: string;
+  /** Tasa fija que cobra ESTE punto de operación por cada boleto que sale de él — cada terminal la define por su cuenta. */
+  tasaMonto?: number;
 }
 
 export interface FilaVentaNacional {

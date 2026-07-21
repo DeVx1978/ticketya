@@ -1,8 +1,10 @@
 import {
   IsEmail,
   IsIn,
+  IsNumber,
   IsOptional,
   IsString,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -69,4 +71,9 @@ export class CrearPuntoOperacionDto {
   @IsOptional()
   @IsString()
   cooperativaPropietariaId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tasaMonto?: number;
 }
