@@ -1,51 +1,110 @@
 # TicketYa — Estado del proyecto y ruta de trabajo por fases
 
-**Última actualización:** 18 de julio de 2026
+**Última actualización:** 21 de julio de 2026 (Panel Empresa completado al 100%)
 **Repositorio:** https://github.com/DeVx1978/ticketya (privado)
+**Último commit subido:** `db49354` — "paso 6: validar boleto por QR, probado con boleto real"
 
 Este documento es el punto de partida para cualquier sesión de trabajo
-futura (con Claude o con quien sea) — reemplaza la necesidad de "memoria".
-Está basado en 3 documentos de mayor autoridad, ya en el repositorio o en
-posesión del director del proyecto:
+futura — reemplaza la necesidad de "memoria". Está basado en 4 documentos
+de mayor autoridad:
 
-1. `TicketYa_SRS_v1.2` — Especificación de Requerimientos.
+1. `TicketYa_SRS_v1.3` — Especificación de Requerimientos.
 2. `TicketYa_Arquitectura_Tecnica_v1.0` — Stack y decisiones técnicas.
-3. Este documento — estado de avance y próximos pasos.
+3. `TicketYa_Auditoria_Estado_Proyecto_v1.1` — Auditoría verificada del código real.
+4. Este documento — estado de avance día a día y próximos pasos.
 
 ---
 
-## De dónde partimos
+## ⚠️ PROTOCOLO DE VERIFICACIÓN — OBLIGATORIO, SIN EXCEPCIÓN
 
-TicketYa es una plataforma SaaS multi-tenant de venta de pasajes de bus
-interprovincial en Ecuador. Piloto en Terminal Terrestre de Machala →
-expansión nacional → Colombia. Stack decidido: Next.js + NestJS +
-PostgreSQL + Drizzle ORM + Row-Level Security multi-tenant, monorepo
-Turborepo.
+*(sin cambios respecto a la versión anterior — ver commit `0ba476f` para el
+texto completo. Resumen: nunca declarar algo resuelto solo porque un
+comando no tiró error; verificar contenido real con `Select-String` o
+`git --no-pager show HEAD:archivo`; probar primero en el entorno de
+Claude, luego repetir en la PC real; nunca confiar en la pestaña
+"Problems" de VS Code por encima de la terminal.)*
 
-## A dónde debemos llegar
-
-Un sistema en producción donde un pasajero busca ruta, elige asiento,
-paga una vez, y recibe boleto digital con QR — con panel de gestión para
-cada cooperativa y panel de administración de plataforma.
+**Aprendizaje nuevo de esta sesión:** al pedir verificación de contenido,
+hay que buscar un texto que realmente viva en el código fuente (nombres
+de función, texto de UI escrito literal), no un mensaje que solo existe
+en la respuesta del backend en tiempo de ejecución — buscar ese tipo de
+texto en el archivo del frontend siempre va a dar "vacío" aunque el
+archivo esté perfecto, y genera una alarma falsa.
 
 ---
 
 ## ✅ Fase 0 — Fundaciones de datos (COMPLETADA)
+## ✅ Fase 1 — Fundaciones de código (COMPLETADA)
+## ✅ Fase 2 — Núcleo de venta (MVP) — ciclo completo funcionando, 56 pruebas automatizadas
+## ✅ PANEL EMPRESA — COMPLETADO AL 100% (backend + frontend + pruebas + verificado en vivo)
 
-- [x] Documento SRS v1.2 (requerimientos completos, 12 módulos funcionales)
-- [x] Documento de Arquitectura Técnica v1.0 (stack definido y justificado)
-- [x] **Esquema completo de base de datos** (33 tablas) en Drizzle ORM,
-      con Row-Level Security multi-tenant activada y verificada
-      funcionalmente (no solo compilada)
-- [x] PostgreSQL 17 instalado y corriendo localmente (Windows)
-- [x] Base de datos `ticketya` creada, con las 33 tablas y las 3
-      migraciones manuales de seguridad aplicadas (BYPASSRLS del admin,
-      GRANTs del rol de aplicación, auditoría inmutable)
-- [x] Proyecto respaldado en GitHub: `DeVx1978/ticketya` (privado)
+Las 5 pantallas de Panel Empresa están construidas, verificadas en código
+(ESLint + TypeScript + build de producción) y probadas en vivo con datos
+reales usando Playwright, con capturas de pantalla confirmando cada una:
 
-**Decisiones de negocio que quedaron pendientes** (nullable en la base de
-datos a propósito, no asumidas — ver `packages/db/README.md` en el repo
-para el detalle completo):
+| Pantalla | Qué hace | Verificado en vivo con |
+|---|---|---|
+| Panel (dashboard) | Ventas de hoy, resumen y detalle por ruta/vendedor | Una venta real de un pasajero, mostrada correctamente ($8.50, 1 boleto) |
+| Rutas | Crear y listar rutas (origen, destino, precio base) | Ruta nueva creada por la UI, aparece de inmediato en la lista |
+| Unidades | Crear tipos de vehículo y unidades (placa + identificador operativo) | Tipo "Bus doble piso VIP" (52 asientos) y unidad "GYE-9821 / Disco 14" creados y vinculados correctamente |
+| Viajes | Programar viajes combinando ruta + unidad + fecha/hora/precio | Viaje real creado; encontrado y corregido un bug real de zona horaria en el camino (ver abajo) |
+| Validar boleto | Escanear/pegar código QR para confirmar abordaje | Un boleto real generado de punta a punta (compra de pasajero) y validado dos veces: primera vez válido, segunda vez correctamente rechazado por "ya utilizado" |
+
+**Backend agregado en el camino** (no existía antes de esta sesión): las
+5 pantallas necesitaban poder **listar** lo ya creado, no solo crear —
+se agregaron `GET /coop/rutas`, `GET /coop/tipos-vehiculo`,
+`GET /coop/unidades` y `GET /coop/viajes`, cada uno con su propia prueba
+automatizada. El total de pruebas del backend subió de 52 a **56**.
+
+**Bug real encontrado y corregido gracias a la verificación visual (no
+se habría visto solo con `tsc`/`eslint`):** la hora de salida de un viaje
+se mostraba desplazada varias horas en el Panel Empresa —
+`toLocaleTimeString` sin especificar `timeZone` usa la zona horaria del
+navegador/servidor, no la de Ecuador. Se corrigió agregando
+`timeZone: "America/Guayaquil"` explícito. De paso se confirmó que la
+página pública de búsqueda de pasajeros (`app/buscar/page.tsx`) ya tenía
+este detalle bien resuelto desde antes — el bug era solo del código
+nuevo de esta sesión.
+
+## 🔶 Fase 3 (resto) — Panel Admin: backend confirmado, frontend con solo la pantalla base (sin listas ni formularios todavía)
+
+---
+
+## Hallazgos reales encontrados durante todo el proceso (sin cambios, siguen anotados)
+
+- La respuesta de `/compras` no incluye el precio desglosado por boleto (solo `id` y `codigoQr`).
+- No existe ninguna fila en `configuracion_plataforma` — el cargo de plataforma por pasajero cae en $0 por defecto.
+- El buscador de ciudades no ordena por relevancia y corta en 10 resultados.
+- Bloquear un número de asiento que no existe físicamente en el bus (ej. "ZZ99") hoy se acepta igual.
+
+## 📍 Punto exacto de pausa — empezar aquí la próxima sesión
+
+Con Panel Empresa 100% terminado, el siguiente paso — mismo patrón,
+mismo cuidado — es **Panel Admin**:
+
+1. **Cooperativas** — listar las cooperativas afiliadas (el backend
+   `GET /admin/cooperativas` ya existe) y crear nuevas desde la interfaz
+   (el backend `POST /admin/cooperativas` también ya existe — es la
+   misma llamada que se ha usado todo este tiempo por comando para crear
+   cooperativas de prueba).
+2. **Puntos de operación** — listar y crear terminales/oficinas/paradas
+   (el backend `POST /admin/puntos-operacion` ya existe; falta el `GET`
+   de listado, igual que pasó con rutas/unidades/viajes — hay que
+   agregarlo primero).
+3. **Dashboard nacional** — ya tiene una versión mínima funcionando
+   (`GET /admin/dashboard`), se puede mejorar visualmente después.
+
+El patrón a seguir es idéntico al que ya funcionó 6 veces seguidas hoy:
+revisar si falta el `GET` de listado en el backend → agregarlo con su
+propia prueba automatizada → construir la página → verificar código
+(ESLint + TypeScript + build) → probar en vivo con Playwright y capturas
+reales → entregar en un solo paso reemplazable → verificar en la PC real
+→ hacer commit y push.
+
+---
+
+## Decisiones de negocio pendientes (sin cambios, siguen abiertas)
+
 - Comisión de plataforma (RN-003)
 - Ventana de bloqueo temporal de asiento (RN-004)
 - Política de cancelación/reembolso (RN-005)
@@ -53,215 +112,25 @@ para el detalle completo):
 - Nombre exacto del identificador operativo de unidad ("disco"/turno)
 - Arquitectura de 3 comprobantes SRI por venta (validar con contador)
 - Tarifas de planes comerciales de publicidad
+- Credenciales reales de PayPhone/Kushki
 
----
+## Fases futuras (sin cambios respecto al plan original)
 
-## 🔲 Fase 1 — Fundaciones de código (EN PROGRESO)
-
-Esto es lo que sigue ahora mismo. Convertir la carpeta actual del
-repositorio (que hoy solo tiene `packages/db`) en el monorepo real que la
-Arquitectura Técnica define.
-
-- [x] Estructura de monorepo con Turborepo (`apps/api` con NestJS,
-      `packages/db` ya existía) — **verificado con Postgres real:
-      `turbo run typecheck` y `turbo run build` pasan limpio en ambos
-      paquetes**
-- [x] Backend NestJS con arquitectura en capas (dominio/aplicacion/
-      infraestructura/presentacion) — carpetas creadas con README
-      explicando cada capa
-- [x] Módulo de conexión real a Postgres (`DatabaseModule`, Drizzle +
-      `pg`), inyectable globalmente
-- [x] Endpoint de prueba `/salud` que consulta la base de datos real (no
-      solo confirma que el servidor arrancó) — **verificado end-to-end en
-      el entorno de Claude: devolvió `{"estado":"ok","baseDeDatos":"conectada","totalCooperativas":1}`**
-- [x] **Reproducir esta misma verificación en la PC del director** —
-      **CONFIRMADO el 18 de julio de 2026, noche:** backend corriendo en
-      Windows, conectado a Postgres real (`ticketya`), endpoint
-      `/salud` respondió `{"estado":"ok","baseDeDatos":"conectada","totalCooperativas":0}`
-      (0 es correcto: la base real de producción aún no tiene datos).
-- [x] Motor de autenticación (RF-AUTH): registro, login, roles (RBAC),
-      bloqueo por intentos fallidos — sobre la tabla `usuarios` ya
-      existente. **Verificado con Postgres real en dos entornos** (Claude
-      y la PC del director): registro, login, endpoint protegido con y
-      sin token, rechazo de credenciales inválidas, rechazo de registro
-      duplicado, y bloqueo de cuenta tras 5 intentos fallidos — todo
-      probado y funcionando.
-      - ⚠ Pendiente, no resuelto todavía: RF-AUTH-003 (recuperación de
-        contraseña por correo) y RF-AUTH-005 completo (refresh token real
-        — hoy el token solo expira a los 60 min desde su emisión, no
-        detecta "inactividad").
-
-## 🔲 Fase 2 — Núcleo de venta (MVP) (EN PROGRESO)
-
-- [x] **Corrección de seguridad crítica:** el backend se conectaba como
-      superusuario de Postgres, lo cual anulaba silenciosamente TODAS las
-      políticas RLS (los superusuarios las ignoran por diseño de
-      Postgres). Corregido: ahora usa dos roles restringidos —
-      `ticketya_app` (sujeto a RLS, para operaciones de una cooperativa
-      específica) y `ticketya_platform_admin` (con BYPASSRLS, para
-      lecturas legítimamente cross-tenant como la búsqueda pública).
-      Nueva migración manual: `004_habilitar_login_roles.sql`.
-- [x] **Búsqueda de rutas y disponibilidad (RF-BUS)** — construida y
-      verificada con Postgres real: autocompletado de ciudades
-      (RF-BUS-002), búsqueda multi-cooperativa ordenada por hora de
-      salida (RF-BUS-001/003), disponibilidad en tiempo real descontando
-      asientos ocupados y bloqueados (RF-BUS-006, probado exacto: 40
-      capacidad − 3 ocupados − 2 bloqueados = 35 disponibles).
-- [x] **Selección de asientos con bloqueo temporal (RF-SEAT)** —
-      construida y verificada con Postgres real, incluyendo el caso más
-      exigente: dos solicitudes **verdaderamente simultáneas** (no
-      secuenciales) sobre el mismo asiento nunca antes tocado — exactamente
-      una tuvo éxito, la otra fue rechazada, y en la base de datos quedó
-      una sola fila. Usa el patrón transaccional con `SET LOCAL` por
-      cooperativa (`ejecutarComoCooperativa`), así que las escrituras
-      también respetan RLS, no solo las lecturas. **Confirmado también en
-      la PC del director** (instalación limpia, sin duplicados).
-- [x] **Checkout y boleto digital (RF-CHECK + RF-TICKET núcleo)** —
-      construido y verificado con Postgres real: descuentos de tarifa
-      correctos (RN-001, niño 50% probado exacto: 8.50 → 4.25), boleto
-      con código QR único generado tras pago aprobado, comprobante de
-      tasa de terminal generado, camino de rechazo probado (el asiento
-      NO se pierde, su hold sigue vigente), e idempotencia probada
-      (reintentar con la misma clave devuelve la misma compra, no cobra
-      dos veces). **Confirmado también en la PC del director.**
-      - ⚠ Usa un **simulador de pago**, no PayPhone real — no hay
-        credenciales todavía (decisión de negocio pendiente). Cuando
-        existan, solo hay que reemplazar `SimuladorPasarelaPago` por una
-        implementación real de la misma interfaz, sin tocar el resto.
-      - ⚠ No incluye todavía: facturación electrónica SRI real (RL-006,
-        pendiente de validar con contador), envío de correo/WhatsApp del
-        boleto (depende de un módulo de notificaciones no construido), ni
-        el flujo completo de menores de edad (RF-MENOR — solo se detecta
-        y marca la bandera `es_menor_edad`, no se pide/valida
-        autorización todavía).
-
-## ✅ Fase 3a — Panel Admin y Panel Empresa (núcleo) — COMPLETA
-
-- [x] **RF-ADMIN-001** — alta de cooperativa + su primer usuario admin_cooperativa (arranque)
-- [x] Alta de puntos de operación (terminales)
-- [x] **RF-ADMIN-002** — dashboard nacional agregado de todas las cooperativas
-- [x] **RF-FLOTA-001 / RF-COOP-003** — tipos de vehículo y unidades (tenant-scoped)
-- [x] **RF-COOP-002** — rutas y viajes (tenant-scoped)
-- [x] **RF-COOP-007** — cooperativa crea usuarios propios (vendedor/admin_cooperativa)
-- [x] **RF-COOP-004** — dashboard de ventas del día (tenant-scoped)
-- [x] **RF-COOP-006** — validación de boleto por QR en abordaje
-
-**Verificado con 22 pruebas de punta a punta contra Postgres real**, incluyendo el
-ciclo de negocio completo: admin crea cooperativa → la cooperativa arma
-su flota/ruta/viaje → un pasajero busca, bloquea asiento y compra → un
-vendedor valida el boleto escaneando el QR. Además: RBAC probado con
-rechazos reales (403 cuando un rol intenta algo que no le corresponde), y
-aislamiento multi-tenant probado con un intento real de un vendedor
-tratando de validar el boleto de OTRA cooperativa (rechazado
-correctamente, sin revelar que el boleto existía en otro lado, y sin
-tocar ese boleto en la base de datos).
-
-**🐛 Bug de seguridad real encontrado y corregido durante esta verificación:**
-las cuentas de cooperativa (admin_cooperativa, vendedor) no podían iniciar
-sesión — el login mismo quedaba bloqueado por la política RLS que se
-supone debía proteger sus datos (una paradoja: RLS exige saber la
-cooperativa para encontrar al usuario, pero encontrar al usuario es
-justamente cómo se determina su cooperativa). Solo pasó desapercibido
-antes porque las cuentas probadas hasta ese momento eran todas pasajero/
-admin_plataforma (sin cooperativa, no afectadas). Corregido: el
-repositorio de autenticación ahora usa la conexión de plataforma
-(bypass) para login/registro, ya que autenticar a alguien es
-conceptualmente una operación de plataforma, no de una cooperativa
-específica.
-
-## ✅ Fase 3b — Conductores + Carga masiva (extensión pedida por el director)
-
-**Contexto:** el director identificó, por experiencia real de negocio, que
-las cooperativas necesitan cargar de una sola vez rutas, horarios,
-unidades y **conductores** — no crear cada recurso uno por uno vía API.
-Análisis: (1) el esquema ya tenía preparada la tabla `horarios_ruta` para
-patrones recurrentes, pero nunca se había construido el endpoint que la
-usa; (2) **"conductor" no existía en ninguna parte del sistema ni del SRS
-original** — un vacío real del documento de requerimientos, no un
-descuido de construcción.
-
-- [x] **Tabla `conductores` nueva** (cooperativa, nombre, cédula, licencia,
-      teléfono) — módulo que NO estaba en el SRS v1.2 original.
-- [x] **`viajes.conductor_id`** — asignación opcional de conductor por viaje.
-- [x] **Endpoint de carga masiva** (`POST /coop/importar`): un solo paquete
-      JSON con tipos de vehículo, conductores, unidades, rutas y horarios
-      recurrentes, con sistema de referencias temporales (`ref`) para que
-      un ítem pueda referenciar a otro del mismo paquete antes de que
-      tenga un ID real. Genera automáticamente las filas de viajes
-      concretas para un rango de fechas a partir de los horarios.
-      **Todo el paquete corre en una sola transacción — si algo fallara a
-      la mitad, se revierte completo, no queda nada a medias.**
-
-**Verificado con Postgres real:**
-- Importación completa (tipo de vehículo + conductor + unidad + ruta +
-  horario Lunes/Miércoles/Viernes) generó exactamente **6 viajes** para
-  un rango de 14 días — verificado a mano contra el calendario real, y
-  confirmado que cada viaje generado tiene la fecha, hora (con el
-  desfase horario correcto de Ecuador, -05:00), precio, unidad y
-  conductor correctos.
-- Prueba de reversión: un `ref` roto a propósito en una unidad hizo que
-  **hasta el tipo de vehículo válido creado antes en el mismo paquete
-  quedara revertido a cero** — atomicidad real, no parcial.
-
-### 📍 Punto exacto de pausa
-
-Fase 3 (Panel Admin + Panel Empresa + conductores + carga masiva) está
-completa y verificada. El sistema ya no depende de que alguien escriba
-SQL a mano para operar — una cooperativa real puede darse de alta,
-cargar su flota completa de una vez, y empezar a vender.
-
-**Decisión pendiente para la próxima sesión:** ¿seguir agregando
-funcionalidad de backend (RF-MENOR completo, RF-COMM publicidad, reportes
-históricos), o empezar el frontend (Next.js) — hasta ahora todo lo
-construido es API pura, sin ninguna pantalla visual todavía?
-
-
-## 🔲 Fase 2 — Núcleo de venta (MVP)
-
-- [ ] Búsqueda de rutas y disponibilidad (RF-BUS)
-- [ ] Selección de asientos con bloqueo temporal (RF-SEAT)
-- [ ] Checkout y pasajeros (RF-CHECK)
-- [ ] Integración de pago con PayPhone
-- [ ] Emisión de boleto digital + QR (RF-TICKET)
-- [ ] Integración con proveedor de facturación electrónica SRI
-
-## 🔲 Fase 3 — Paneles de gestión (MVP)
-
-- [ ] Panel Empresa (gestión de rutas/unidades/flota, venta en
-      ventanilla, validación de QR) — RF-COOP
-- [ ] Panel Admin de plataforma (aprobación de cooperativas, comisiones,
-      liquidaciones, auditoría) — RF-ADMIN
-
-## 🔲 Fase 4 — Piloto real
-
-- [ ] Validación con una cooperativa real del Terminal de Machala
-- [ ] Confirmar terminología exacta ("disco"/turno), flujos de ventanilla
-
-## 🔲 Fase 5 — Expansión (Fase 2 del SRS)
-
-- [ ] Integración API Modelo B (RF-API) para cooperativas con sistema propio
-- [ ] Módulo comercial/publicidad (RF-COMM)
-- [ ] Kushki como segunda pasarela de pago
-- [ ] Reportes avanzados
-
-## 🔲 Fase 6 — Apps móviles
-
-- [ ] React Native (pasajeros y validación de QR en el andén)
-
-## 🔲 Fase 7 — Escala nacional/internacional
-
-- [ ] Cobertura de parroquias, expansión a Colombia, recomendaciones IA
-
-## 🔲 Fase 8 — Producto separado (visión de largo plazo)
-
-- [ ] Transporte tipo InDrive/Uber — arquitectura y equipo completamente
-      independientes del negocio de boletos
+- **Fase 3.5** — Diseño visual final del frontend (sistema ClickBus vía Tailwind, ya en marcha — `app/globals.css` tiene los colores de marca definidos y varias páginas ya los usan).
+- **Fase 4** — Piloto real con cooperativa del Terminal de Machala.
+- **Fase 5** — RF-API (Modelo B), RF-COMM (publicidad), Kushki, reportes avanzados.
+- **Fase 6** — Apps móviles (React Native).
+- **Fase 7** — Escala nacional/internacional, expansión a Colombia.
+- **Fase 8** — Producto separado de largo plazo (transporte tipo InDrive/Uber).
 
 ---
 
 ## Nota sobre la forma de trabajo
 
 El director de este proyecto tiene experiencia técnica y prefiere
-instrucciones directas, en bloques, sin explicaciones excesivas de cada
-clic. Ir directo al grano, dar los comandos/pasos completos de una vez, y
-solo detenerse a explicar cuando algo falla de verdad.
+instrucciones directas, **un solo paso a la vez, con el comando exacto
+para copiar y pegar**, sin explicaciones largas antes de actuar. Exige
+—correctamente— que nada se declare "normal" o "resuelto" sin evidencia
+real y verificada, y que todo lo visual se muestre en vivo (capturas
+reales de Playwright, no solo confirmación de que el código compila).
+Ver el protocolo de verificación al inicio de este documento.
