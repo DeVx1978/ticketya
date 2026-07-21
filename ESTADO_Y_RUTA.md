@@ -1,169 +1,267 @@
 # TicketYa — Estado del proyecto y ruta de trabajo por fases
 
-**Última actualización:** 20 de julio de 2026 (cierre de la sesión de blindaje del núcleo + limpieza total de errores)
+**Última actualización:** 18 de julio de 2026
 **Repositorio:** https://github.com/DeVx1978/ticketya (privado)
-**Último commit subido:** `7b14e99` — "corrige tipos de Jest y baseUrl obsoleto en tsconfig, cero errores en todo el proyecto"
 
 Este documento es el punto de partida para cualquier sesión de trabajo
-futura — reemplaza la necesidad de "memoria". Está basado en 4 documentos
-de mayor autoridad:
+futura (con Claude o con quien sea) — reemplaza la necesidad de "memoria".
+Está basado en 3 documentos de mayor autoridad, ya en el repositorio o en
+posesión del director del proyecto:
 
-1. `TicketYa_SRS_v1.3` — Especificación de Requerimientos.
+1. `TicketYa_SRS_v1.2` — Especificación de Requerimientos.
 2. `TicketYa_Arquitectura_Tecnica_v1.0` — Stack y decisiones técnicas.
-3. `TicketYa_Auditoria_Estado_Proyecto_v1.1` — Auditoría verificada del código real.
-4. Este documento — estado de avance día a día y próximos pasos.
+3. Este documento — estado de avance y próximos pasos.
 
 ---
 
-## ⚠️ PROTOCOLO DE VERIFICACIÓN — OBLIGATORIO, SIN EXCEPCIÓN
+## De dónde partimos
 
-Establecido el 20 de julio de 2026 tras una sesión donde se comprobó que
-"el comando no dio error" **no es suficiente** — se puede copiar el
-archivo equivocado, dejar una carpeta a medio actualizar, o reintroducir
-un problema ya resuelto, todo sin que ningún comando "falle". A partir de
-ahora, toda sesión de trabajo en este proyecto sigue esto sin excepción:
+TicketYa es una plataforma SaaS multi-tenant de venta de pasajes de bus
+interprovincial en Ecuador. Piloto en Terminal Terrestre de Machala →
+expansión nacional → Colombia. Stack decidido: Next.js + NestJS +
+PostgreSQL + Drizzle ORM + Row-Level Security multi-tenant, monorepo
+Turborepo.
 
-1. **Nunca declarar algo resuelto solo porque un comando no tiró error.**
-   Verificar el **contenido real** después de cualquier copia/reemplazo:
-   ```powershell
-   Get-Content ruta\al\archivo.ts | Select-String -Pattern "algo-que-deberia-o-no-estar"
-   ```
-   o, para confirmar exactamente qué quedó guardado en git:
-   ```powershell
-   git --no-pager show HEAD:ruta\al\archivo.ts
-   ```
-2. **Antes de entregar cualquier archivo nuevo o modificado**, se prueba
-   primero en el entorno de Claude: `npx eslint`, `npx tsc --noEmit`, y
-   las pruebas automatizadas que correspondan — los tres, no solo uno.
-3. **Después de que el archivo llega a la PC real**, se repite la misma
-   verificación ahí — nunca asumir que "si funcionó en un lado, funciona
-   en el otro".
-4. **La pestaña "Problems" de VS Code no es la fuente de verdad** — se
-   desactualiza. La fuente de verdad son los comandos de terminal. Pero
-   si "Problems" muestra algo que el comando no explica, se investiga
-   hasta encontrar la causa real (como se hizo el 20 de julio con los
-   tipos de Jest) — nunca se descarta un aviso solo porque "ya pasó antes
-   y no era nada".
-5. **Cero tolerancia a dejar errores reales sin resolver.** Advertencias
-   (warnings) menores y ya identificadas son aceptables temporalmente si
-   están documentadas; errores, no.
+## A dónde debemos llegar
+
+Un sistema en producción donde un pasajero busca ruta, elige asiento,
+paga una vez, y recibe boleto digital con QR — con panel de gestión para
+cada cooperativa y panel de administración de plataforma.
 
 ---
 
 ## ✅ Fase 0 — Fundaciones de datos (COMPLETADA)
-## ✅ Fase 1 — Fundaciones de código (COMPLETADA)
-## ✅ Fase 2 — Núcleo de venta (MVP) — ciclo completo funcionando
-## ✅ Núcleo blindado con pruebas automatizadas — COMPLETADO el 20 de julio
 
-Los 4 módulos que faltaban ya están hechos, confirmados en la PC del
-director, y subidos a GitHub:
+- [x] Documento SRS v1.2 (requerimientos completos, 12 módulos funcionales)
+- [x] Documento de Arquitectura Técnica v1.0 (stack definido y justificado)
+- [x] **Esquema completo de base de datos** (33 tablas) en Drizzle ORM,
+      con Row-Level Security multi-tenant activada y verificada
+      funcionalmente (no solo compilada)
+- [x] PostgreSQL 17 instalado y corriendo localmente (Windows)
+- [x] Base de datos `ticketya` creada, con las 33 tablas y las 3
+      migraciones manuales de seguridad aplicadas (BYPASSRLS del admin,
+      GRANTs del rol de aplicación, auditoría inmutable)
+- [x] Proyecto respaldado en GitHub: `DeVx1978/ticketya` (privado)
 
-| Archivo | Pruebas | Estado |
-|---|---|---|
-| `auth.e2e-spec.ts` | 11 | ✅ Confirmado en la PC |
-| `busqueda.e2e-spec.ts` | 9 | ✅ Confirmado en la PC |
-| `asientos.e2e-spec.ts` | 7 | ✅ Confirmado en la PC |
-| `checkout.e2e-spec.ts` | 7 | ✅ Confirmado en la PC |
-| `panel-admin-empresa.e2e-spec.ts` | 17 | ✅ Confirmado en la PC |
-
-**Total: 52 de 52 pruebas automatizadas, corriendo todas juntas, sin
-chocar entre sí, contra Postgres real.**
-
-## 🔶 Fase 3 — Paneles de gestión — backend confirmado (manual + automatizado); falta el frontend
-
-*(Sin cambios respecto a la Auditoría v1.1 en cuanto a alcance funcional
-— lo que cambió hoy es que ahora también está protegido por pruebas
-automatizadas, no solo verificación manual.)*
-
----
-
-## Limpieza total de calidad de código — 20 de julio de 2026
-
-Se encontró (a partir de que el director insistió correctamente en
-revisar esto a fondo) que el código de la sesión anterior nunca había
-pasado por un formateo completo del proyecto: **337 avisos** al revisar
-`apps/api` entero con `eslint .` (antes solo se habían revisado archivos
-sueltos, nunca el proyecto completo de una vez).
-
-**Se corrigió de raíz, no archivo por archivo:**
-- Se excluyó `dist/` (código compilado) del linter.
-- Se corrió el formateador automático sobre todo el proyecto: 337 → 8.
-- Se corrigieron a mano los 8 reales restantes (una importación sin usar,
-  tres funciones `async` innecesarias, un parámetro sin usar requerido
-  por una interfaz).
-- Se encontró y corrigió la causa real de que el editor (no la terminal)
-  mostrara "Cannot find name describe/it/expect" en todos los archivos
-  de prueba: el `tsconfig.json` de `apps/api` no declaraba explícitamente
-  `"types": ["jest", "node"]`. En un monorepo, el editor no siempre
-  encuentra los tipos de paquetes hoisted al node_modules raíz de la
-  misma forma que la terminal — declararlo explícito lo resuelve sin
-  ambigüedad.
-- Se corrigió también, por segunda vez (se había reintroducido sin
-  querer al entregar un archivo), la eliminación de `"baseUrl": "./"`
-  (opción obsoleta, sin `"paths"` asociado, sin ningún uso real en el
-  proyecto).
-
-**Estado final verificado — el mismo día, con las tres herramientas:**
-- `npx eslint .` (todo `apps/api`): **0 errores**, 3 avisos menores
-  identificados y aceptados (no bloquean nada, no son errores).
-- `npx tsc --noEmit -p tsconfig.json`: **0 errores**.
-- `npm run test:e2e` (las 52 pruebas): **52 passed, 52 total**.
-- Confirmado con `git --no-pager show HEAD:archivo` que lo subido a
-  GitHub coincide exactamente con lo verificado — no solo que el commit
-  "no dio error".
-
----
-
-## Hallazgos reales encontrados durante todo el proceso (sin cambios, siguen anotados)
-
-- La respuesta de `/compras` no incluye el precio desglosado por boleto (solo `id` y `codigoQr`).
-- No existe ninguna fila en `configuracion_plataforma` — el cargo de plataforma por pasajero cae en $0 por defecto.
-- El buscador de ciudades no ordena por relevancia y corta en 10 resultados.
-- Bloquear un número de asiento que no existe físicamente en el bus (ej. "ZZ99") hoy se acepta igual.
-
-## 📍 Punto exacto de pausa — empezar aquí la próxima sesión
-
-Con el núcleo completo (auth + búsqueda + asientos + checkout + paneles)
-verificado dos veces (manual y automatizado) y con el código del
-proyecto entero limpio de errores reales, el siguiente paso — según lo
-ya acordado — es:
-
-1. **Construir el frontend de Panel Empresa y Panel Admin** (el backend
-   que lo soporta ya está confirmado funcionando).
-2. En paralelo o después: aplicar el sistema de diseño visual final
-   (estilo ClickBus, sección 7.1 del SRS v1.3) al frontend de pasajero
-   existente y a los paneles nuevos.
-
----
-
-## Decisiones de negocio pendientes (sin cambios, siguen abiertas)
-
-- Comisión de plataforma (RN-003) — con evidencia concreta de que no hay ni siquiera una fila de configuración por defecto en la base de datos real.
+**Decisiones de negocio que quedaron pendientes** (nullable en la base de
+datos a propósito, no asumidas — ver `packages/db/README.md` en el repo
+para el detalle completo):
+- Comisión de plataforma (RN-003)
 - Ventana de bloqueo temporal de asiento (RN-004)
 - Política de cancelación/reembolso (RN-005)
 - Cuenta bancaria y periodicidad de liquidación del Terminal de Machala
 - Nombre exacto del identificador operativo de unidad ("disco"/turno)
 - Arquitectura de 3 comprobantes SRI por venta (validar con contador)
 - Tarifas de planes comerciales de publicidad
-- Credenciales reales de PayPhone/Kushki
 
-## Fases futuras (sin cambios respecto al plan original)
+---
 
-- **Fase 3.5** — Diseño visual final del frontend (sistema ClickBus vía Tailwind), antes del piloto real.
-- **Fase 4** — Piloto real con cooperativa del Terminal de Machala.
-- **Fase 5** — RF-API (Modelo B), RF-COMM (publicidad), Kushki, reportes avanzados.
-- **Fase 6** — Apps móviles (React Native).
-- **Fase 7** — Escala nacional/internacional, expansión a Colombia.
-- **Fase 8** — Producto separado de largo plazo (transporte tipo InDrive/Uber).
+## 🔲 Fase 1 — Fundaciones de código (EN PROGRESO)
+
+Esto es lo que sigue ahora mismo. Convertir la carpeta actual del
+repositorio (que hoy solo tiene `packages/db`) en el monorepo real que la
+Arquitectura Técnica define.
+
+- [x] Estructura de monorepo con Turborepo (`apps/api` con NestJS,
+      `packages/db` ya existía) — **verificado con Postgres real:
+      `turbo run typecheck` y `turbo run build` pasan limpio en ambos
+      paquetes**
+- [x] Backend NestJS con arquitectura en capas (dominio/aplicacion/
+      infraestructura/presentacion) — carpetas creadas con README
+      explicando cada capa
+- [x] Módulo de conexión real a Postgres (`DatabaseModule`, Drizzle +
+      `pg`), inyectable globalmente
+- [x] Endpoint de prueba `/salud` que consulta la base de datos real (no
+      solo confirma que el servidor arrancó) — **verificado end-to-end en
+      el entorno de Claude: devolvió `{"estado":"ok","baseDeDatos":"conectada","totalCooperativas":1}`**
+- [x] **Reproducir esta misma verificación en la PC del director** —
+      **CONFIRMADO el 18 de julio de 2026, noche:** backend corriendo en
+      Windows, conectado a Postgres real (`ticketya`), endpoint
+      `/salud` respondió `{"estado":"ok","baseDeDatos":"conectada","totalCooperativas":0}`
+      (0 es correcto: la base real de producción aún no tiene datos).
+- [x] Motor de autenticación (RF-AUTH): registro, login, roles (RBAC),
+      bloqueo por intentos fallidos — sobre la tabla `usuarios` ya
+      existente. **Verificado con Postgres real en dos entornos** (Claude
+      y la PC del director): registro, login, endpoint protegido con y
+      sin token, rechazo de credenciales inválidas, rechazo de registro
+      duplicado, y bloqueo de cuenta tras 5 intentos fallidos — todo
+      probado y funcionando.
+      - ⚠ Pendiente, no resuelto todavía: RF-AUTH-003 (recuperación de
+        contraseña por correo) y RF-AUTH-005 completo (refresh token real
+        — hoy el token solo expira a los 60 min desde su emisión, no
+        detecta "inactividad").
+
+## 🔲 Fase 2 — Núcleo de venta (MVP) (EN PROGRESO)
+
+- [x] **Corrección de seguridad crítica:** el backend se conectaba como
+      superusuario de Postgres, lo cual anulaba silenciosamente TODAS las
+      políticas RLS (los superusuarios las ignoran por diseño de
+      Postgres). Corregido: ahora usa dos roles restringidos —
+      `ticketya_app` (sujeto a RLS, para operaciones de una cooperativa
+      específica) y `ticketya_platform_admin` (con BYPASSRLS, para
+      lecturas legítimamente cross-tenant como la búsqueda pública).
+      Nueva migración manual: `004_habilitar_login_roles.sql`.
+- [x] **Búsqueda de rutas y disponibilidad (RF-BUS)** — construida y
+      verificada con Postgres real: autocompletado de ciudades
+      (RF-BUS-002), búsqueda multi-cooperativa ordenada por hora de
+      salida (RF-BUS-001/003), disponibilidad en tiempo real descontando
+      asientos ocupados y bloqueados (RF-BUS-006, probado exacto: 40
+      capacidad − 3 ocupados − 2 bloqueados = 35 disponibles).
+- [x] **Selección de asientos con bloqueo temporal (RF-SEAT)** —
+      construida y verificada con Postgres real, incluyendo el caso más
+      exigente: dos solicitudes **verdaderamente simultáneas** (no
+      secuenciales) sobre el mismo asiento nunca antes tocado — exactamente
+      una tuvo éxito, la otra fue rechazada, y en la base de datos quedó
+      una sola fila. Usa el patrón transaccional con `SET LOCAL` por
+      cooperativa (`ejecutarComoCooperativa`), así que las escrituras
+      también respetan RLS, no solo las lecturas. **Confirmado también en
+      la PC del director** (instalación limpia, sin duplicados).
+- [x] **Checkout y boleto digital (RF-CHECK + RF-TICKET núcleo)** —
+      construido y verificado con Postgres real: descuentos de tarifa
+      correctos (RN-001, niño 50% probado exacto: 8.50 → 4.25), boleto
+      con código QR único generado tras pago aprobado, comprobante de
+      tasa de terminal generado, camino de rechazo probado (el asiento
+      NO se pierde, su hold sigue vigente), e idempotencia probada
+      (reintentar con la misma clave devuelve la misma compra, no cobra
+      dos veces). **Confirmado también en la PC del director.**
+      - ⚠ Usa un **simulador de pago**, no PayPhone real — no hay
+        credenciales todavía (decisión de negocio pendiente). Cuando
+        existan, solo hay que reemplazar `SimuladorPasarelaPago` por una
+        implementación real de la misma interfaz, sin tocar el resto.
+      - ⚠ No incluye todavía: facturación electrónica SRI real (RL-006,
+        pendiente de validar con contador), envío de correo/WhatsApp del
+        boleto (depende de un módulo de notificaciones no construido), ni
+        el flujo completo de menores de edad (RF-MENOR — solo se detecta
+        y marca la bandera `es_menor_edad`, no se pide/valida
+        autorización todavía).
+
+## ✅ Fase 3a — Panel Admin y Panel Empresa (núcleo) — COMPLETA
+
+- [x] **RF-ADMIN-001** — alta de cooperativa + su primer usuario admin_cooperativa (arranque)
+- [x] Alta de puntos de operación (terminales)
+- [x] **RF-ADMIN-002** — dashboard nacional agregado de todas las cooperativas
+- [x] **RF-FLOTA-001 / RF-COOP-003** — tipos de vehículo y unidades (tenant-scoped)
+- [x] **RF-COOP-002** — rutas y viajes (tenant-scoped)
+- [x] **RF-COOP-007** — cooperativa crea usuarios propios (vendedor/admin_cooperativa)
+- [x] **RF-COOP-004** — dashboard de ventas del día (tenant-scoped)
+- [x] **RF-COOP-006** — validación de boleto por QR en abordaje
+
+**Verificado con 22 pruebas de punta a punta contra Postgres real**, incluyendo el
+ciclo de negocio completo: admin crea cooperativa → la cooperativa arma
+su flota/ruta/viaje → un pasajero busca, bloquea asiento y compra → un
+vendedor valida el boleto escaneando el QR. Además: RBAC probado con
+rechazos reales (403 cuando un rol intenta algo que no le corresponde), y
+aislamiento multi-tenant probado con un intento real de un vendedor
+tratando de validar el boleto de OTRA cooperativa (rechazado
+correctamente, sin revelar que el boleto existía en otro lado, y sin
+tocar ese boleto en la base de datos).
+
+**🐛 Bug de seguridad real encontrado y corregido durante esta verificación:**
+las cuentas de cooperativa (admin_cooperativa, vendedor) no podían iniciar
+sesión — el login mismo quedaba bloqueado por la política RLS que se
+supone debía proteger sus datos (una paradoja: RLS exige saber la
+cooperativa para encontrar al usuario, pero encontrar al usuario es
+justamente cómo se determina su cooperativa). Solo pasó desapercibido
+antes porque las cuentas probadas hasta ese momento eran todas pasajero/
+admin_plataforma (sin cooperativa, no afectadas). Corregido: el
+repositorio de autenticación ahora usa la conexión de plataforma
+(bypass) para login/registro, ya que autenticar a alguien es
+conceptualmente una operación de plataforma, no de una cooperativa
+específica.
+
+## ✅ Fase 3b — Conductores + Carga masiva (extensión pedida por el director)
+
+**Contexto:** el director identificó, por experiencia real de negocio, que
+las cooperativas necesitan cargar de una sola vez rutas, horarios,
+unidades y **conductores** — no crear cada recurso uno por uno vía API.
+Análisis: (1) el esquema ya tenía preparada la tabla `horarios_ruta` para
+patrones recurrentes, pero nunca se había construido el endpoint que la
+usa; (2) **"conductor" no existía en ninguna parte del sistema ni del SRS
+original** — un vacío real del documento de requerimientos, no un
+descuido de construcción.
+
+- [x] **Tabla `conductores` nueva** (cooperativa, nombre, cédula, licencia,
+      teléfono) — módulo que NO estaba en el SRS v1.2 original.
+- [x] **`viajes.conductor_id`** — asignación opcional de conductor por viaje.
+- [x] **Endpoint de carga masiva** (`POST /coop/importar`): un solo paquete
+      JSON con tipos de vehículo, conductores, unidades, rutas y horarios
+      recurrentes, con sistema de referencias temporales (`ref`) para que
+      un ítem pueda referenciar a otro del mismo paquete antes de que
+      tenga un ID real. Genera automáticamente las filas de viajes
+      concretas para un rango de fechas a partir de los horarios.
+      **Todo el paquete corre en una sola transacción — si algo fallara a
+      la mitad, se revierte completo, no queda nada a medias.**
+
+**Verificado con Postgres real:**
+- Importación completa (tipo de vehículo + conductor + unidad + ruta +
+  horario Lunes/Miércoles/Viernes) generó exactamente **6 viajes** para
+  un rango de 14 días — verificado a mano contra el calendario real, y
+  confirmado que cada viaje generado tiene la fecha, hora (con el
+  desfase horario correcto de Ecuador, -05:00), precio, unidad y
+  conductor correctos.
+- Prueba de reversión: un `ref` roto a propósito en una unidad hizo que
+  **hasta el tipo de vehículo válido creado antes en el mismo paquete
+  quedara revertido a cero** — atomicidad real, no parcial.
+
+### 📍 Punto exacto de pausa
+
+Fase 3 (Panel Admin + Panel Empresa + conductores + carga masiva) está
+completa y verificada. El sistema ya no depende de que alguien escriba
+SQL a mano para operar — una cooperativa real puede darse de alta,
+cargar su flota completa de una vez, y empezar a vender.
+
+**Decisión pendiente para la próxima sesión:** ¿seguir agregando
+funcionalidad de backend (RF-MENOR completo, RF-COMM publicidad, reportes
+históricos), o empezar el frontend (Next.js) — hasta ahora todo lo
+construido es API pura, sin ninguna pantalla visual todavía?
+
+
+## 🔲 Fase 2 — Núcleo de venta (MVP)
+
+- [ ] Búsqueda de rutas y disponibilidad (RF-BUS)
+- [ ] Selección de asientos con bloqueo temporal (RF-SEAT)
+- [ ] Checkout y pasajeros (RF-CHECK)
+- [ ] Integración de pago con PayPhone
+- [ ] Emisión de boleto digital + QR (RF-TICKET)
+- [ ] Integración con proveedor de facturación electrónica SRI
+
+## 🔲 Fase 3 — Paneles de gestión (MVP)
+
+- [ ] Panel Empresa (gestión de rutas/unidades/flota, venta en
+      ventanilla, validación de QR) — RF-COOP
+- [ ] Panel Admin de plataforma (aprobación de cooperativas, comisiones,
+      liquidaciones, auditoría) — RF-ADMIN
+
+## 🔲 Fase 4 — Piloto real
+
+- [ ] Validación con una cooperativa real del Terminal de Machala
+- [ ] Confirmar terminología exacta ("disco"/turno), flujos de ventanilla
+
+## 🔲 Fase 5 — Expansión (Fase 2 del SRS)
+
+- [ ] Integración API Modelo B (RF-API) para cooperativas con sistema propio
+- [ ] Módulo comercial/publicidad (RF-COMM)
+- [ ] Kushki como segunda pasarela de pago
+- [ ] Reportes avanzados
+
+## 🔲 Fase 6 — Apps móviles
+
+- [ ] React Native (pasajeros y validación de QR en el andén)
+
+## 🔲 Fase 7 — Escala nacional/internacional
+
+- [ ] Cobertura de parroquias, expansión a Colombia, recomendaciones IA
+
+## 🔲 Fase 8 — Producto separado (visión de largo plazo)
+
+- [ ] Transporte tipo InDrive/Uber — arquitectura y equipo completamente
+      independientes del negocio de boletos
 
 ---
 
 ## Nota sobre la forma de trabajo
 
 El director de este proyecto tiene experiencia técnica y prefiere
-instrucciones directas, **un solo paso a la vez, con el comando exacto
-para copiar y pegar**, sin explicaciones largas antes de actuar. Exige —
-correctamente, como quedó demostrado el 20 de julio — que nada se declare
-"normal" o "resuelto" sin evidencia real y verificada. Ver el protocolo
-de verificación al inicio de este documento: es la forma de trabajo
-esperada de aquí en adelante, no una excepción de un día difícil.
+instrucciones directas, en bloques, sin explicaciones excesivas de cada
+clic. Ir directo al grano, dar los comandos/pasos completos de una vez, y
+solo detenerse a explicar cuando algo falla de verdad.
