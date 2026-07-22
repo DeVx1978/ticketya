@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { HeaderPublico } from "@/components/HeaderPublico";
 
 export const metadata: Metadata = {
   title: "TicketYa — Pasajes de bus interprovincial en Ecuador",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <HeaderPublico />
+        {children}
+      </body>
     </html>
   );
 }
