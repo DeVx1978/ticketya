@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_URL, dashboardNacionalAdmin, type FilaVentaNacional } from "@/lib/api";
+import {
+  API_URL,
+  dashboardNacionalAdmin,
+  obtenerCargoPlataforma,
+  actualizarCargoPlataforma,
+  type FilaVentaNacional,
+} from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
+import { Toast } from "@/components/Toast";
 
 function formatearDolares(monto: number) {
   return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
@@ -18,6 +25,12 @@ export default function AdminHome() {
   const [ventas, setVentas] = useState<FilaVentaNacional[] | null>(null);
   const [errorVentas, setErrorVentas] = useState<string | null>(null);
 
+  const [cargoPlataforma, setCargoPlataforma] = useState("");
+  const [cargandoCargo, setCargandoCargo] = useState(true);
+  const [guardandoCargo, setGuardandoCargo] = useState(false);
+  const [errorCargo, setErrorCargo] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+
   useEffect(() => {
     const token = obtenerToken();
     if (!token) return; // el layout ya se encarga de redirigir si no hay token
@@ -30,7 +43,32 @@ export default function AdminHome() {
     dashboardNacionalAdmin(token)
       .then(setVentas)
       .catch((err) => setErrorVentas(err instanceof Error ? err.message : "No se pudo cargar el dashboard nacional."));
+
+    obtenerCargoPlataforma(token)
+      .then((monto) => setCargoPlataforma(String(monto)))
+      .catch((err) => setErrorCargo(err instanceof Error ? err.message : "No se pudo cargar el cargo de plataforma."))
+      .finally(() => setCargandoCargo(false));
   }, []);
+
+  async function guardarCargo(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorCargo(null);
+    const token = obtenerToken();
+    const valor = Number(cargoPlataforma);
+    if (!token || Number.isNaN(valor) || valor < 0) {
+      setErrorCargo("Escribe un monto válido, igual o mayor a $0.");
+      return;
+    }
+    setGuardandoCargo(true);
+    try {
+      await actualizarCargoPlataforma(token, valor);
+      setMensajeExito("Cargo de plataforma actualizado.");
+    } catch (err) {
+      setErrorCargo(err instanceof Error ? err.message : "No se pudo guardar.");
+    } finally {
+      setGuardandoCargo(false);
+    }
+  }
 
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
@@ -65,6 +103,7 @@ export default function AdminHome() {
 
   return (
     <div className="space-y-6">
+      <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Dashboard nacional</h1>
         <p className="mt-1 text-sm text-brand-dark/60">
@@ -177,6 +216,44 @@ export default function AdminHome() {
         )}
         {mensaje && <p className="mt-3 text-sm font-medium text-emerald-600">{mensaje}</p>}
         {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+      </div>
+
+      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+        <h2 className="font-display text-lg font-bold text-brand-dark">Cargo de plataforma</h2>
+        <p className="mt-1 text-sm text-brand-dark/60">
+          Monto fijo que la plataforma cobra por cada pasajero, sumado aparte de la tarifa (RN-002).
+        </p>
+
+        {cargandoCargo ? (
+          <p className="mt-4 text-sm text-brand-dark/50">Cargando...</p>
+        ) : (
+          <form onSubmit={guardarCargo} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                Monto por pasajero
+              </label>
+              <div className="flex items-center gap-1">
+                <span className="text-brand-dark/60">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cargoPlataforma}
+                  onChange={(e) => setCargoPlataforma(e.target.value)}
+                  className="w-28 rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={guardandoCargo}
+              className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            >
+              {guardandoCargo ? "Guardando..." : "Guardar"}
+            </button>
+          </form>
+        )}
+        {errorCargo && <p className="mt-3 text-sm font-medium text-red-600">{errorCargo}</p>}
       </div>
     </div>
   );

@@ -20,6 +20,7 @@ describe('Checkout y pago (e2e)', () => {
   let viajeId: string;
   let tokenPasajero: string;
   let tokenCoopRechazo: string;
+  let tokenAdmin: string;
   let puntoOrigenId: string;
   let puntoDestinoId: string;
   let unidadIdRechazo: string;
@@ -66,7 +67,7 @@ describe('Checkout y pago (e2e)', () => {
     const loginDirector = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ correo: correoDirector, password: 'ClaveSegura123' });
-    const tokenAdmin = loginDirector.body.accessToken;
+    tokenAdmin = loginDirector.body.accessToken;
 
     const ruc = `07${sufijo}`.slice(0, 13);
     await request(app.getHttpServer())
@@ -396,18 +397,51 @@ describe('Checkout y pago (e2e)', () => {
     expect(res.body.boletos).toBeUndefined();
   });
 
-  it('HALLAZGO DOCUMENTADO (actualizado 21-jul-2026): el cargo fijo de plataforma por pasajero sigue sin un valor de negocio real (columna nullable, cae en 0 por defecto). Antes esta prueba también documentaba que configuracion_plataforma estaba vacía, pero desde la función de IVA nacional (actualizarYPropagarIvaNacional) esa fila se siembra sola en el primer uso — eso ya no es un hallazgo, así que se verifica solo lo que sigue pendiente: RN-003 del SRS.', async () => {
-    const pg = new Client({
-      connectionString: process.env.DATABASE_URL_PUBLICO,
-    });
-    await pg.connect();
-    const { rows } = await pg.query(
-      'SELECT cargo_plataforma_por_pasajero_default FROM configuracion_plataforma LIMIT 1',
-    );
-    await pg.end();
-    // Puede que no exista fila todavía (null implícito) o que exista pero
-    // con esta columna en null — ambos casos son la misma realidad: no
-    // hay un valor de negocio real configurado.
-    expect(rows[0]?.cargo_plataforma_por_pasajero_default ?? null).toBeNull();
+  it('el cargo fijo de plataforma por pasajero ya es configurable, y el checkout lo refleja — hallazgo cerrado 22-jul-2026 (antes caía en 0 sin forma de cambiarlo)', async () => {
+    const res1 = await request(app.getHttpServer())
+      .get('/admin/cargo-plataforma')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    expect(res1.body.monto).toBe(0); // valor por defecto, nadie lo ha configurado todavía en este entorno de prueba
+
+    await request(app.getHttpServer())
+      .patch('/admin/cargo-plataforma')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ monto: 0.25 })
+      .expect(200);
+
+    const res2 = await request(app.getHttpServer())
+      .get('/admin/cargo-plataforma')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    expect(res2.body.monto).toBe(0.25);
+
+    // Confirma que el checkout de verdad usa este valor, no solo que se guardó.
+    await bloquearYRegistrarAsiento('3A', tokenPasajero);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '3A',
+            nombreCompleto: 'Pasajero Cargo Plataforma E2E',
+            documento: '0955555559',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+    expect(compra.body.boletos[0].cargoPlataforma).toBe(0.25);
+    expect(compra.body.montoTotal).toBe(PRECIO_BASE + 0.25);
+
+    // se deja de nuevo en 0 para no afectar otras pruebas de esta suite
+    // ni de otros archivos que corren en paralelo contra la misma base.
+    await request(app.getHttpServer())
+      .patch('/admin/cargo-plataforma')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ monto: 0 })
+      .expect(200);
   });
 });

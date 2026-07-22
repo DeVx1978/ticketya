@@ -216,6 +216,23 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(origen.cooperativaPropietariaNombre).toBeNull();
   });
 
+  it('se puede editar la tasa de un punto de operación ya creado — hallazgo cerrado 22-jul-2026 (antes solo se podía fijar al crearlo)', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/puntos-operacion/${puntoOrigenId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ tasaMonto: 0.75 })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    const actualizado = res.body.find(
+      (p: { id: string }) => p.id === puntoOrigenId,
+    );
+    expect(actualizado.tasaMonto).toBe(0.75);
+  });
+
   it('GET /admin/dashboard refleja la cooperativa creada (RF-ADMIN-002)', async () => {
     const res = await request(app.getHttpServer())
       .get('/admin/dashboard')

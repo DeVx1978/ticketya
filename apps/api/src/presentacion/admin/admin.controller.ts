@@ -13,9 +13,11 @@ import { AdminService } from '../../aplicacion/admin/admin.service';
 import {
   CrearCooperativaDto,
   CrearPuntoOperacionDto,
+  ActualizarPuntoOperacionDto,
   ActualizarIvaNacionalDto,
   CrearBannerPropioDto,
   ActualizarBannerPropioDto,
+  ActualizarCargoPlataformaDto,
 } from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -51,6 +53,15 @@ export class AdminController {
   @Get('puntos-operacion')
   async listarPuntosOperacion() {
     return this.admin.listarPuntosOperacion();
+  }
+
+  @Patch('puntos-operacion/:id')
+  async actualizarPuntoOperacion(
+    @Param('id') id: string,
+    @Body() dto: ActualizarPuntoOperacionDto,
+  ) {
+    await this.admin.actualizarPuntoOperacion(id, dto);
+    return { ok: true };
   }
 
   /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
@@ -99,6 +110,18 @@ export class AdminController {
   @Delete('banners-propios/:id')
   async eliminarBannerPropio(@Param('id') id: string) {
     await this.admin.eliminarBannerPropio(id);
+    return { ok: true };
+  }
+
+  /** Cargo fijo de plataforma por pasajero — hallazgo cerrado 22-jul-2026. */
+  @Get('cargo-plataforma')
+  async obtenerCargoPlataforma() {
+    return { monto: await this.admin.obtenerCargoPlataforma() };
+  }
+
+  @Patch('cargo-plataforma')
+  async actualizarCargoPlataforma(@Body() dto: ActualizarCargoPlataformaDto) {
+    await this.admin.actualizarCargoPlataforma(dto.monto);
     return { ok: true };
   }
 }

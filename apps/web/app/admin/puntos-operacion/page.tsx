@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   listarPuntosOperacionAdmin,
   crearPuntoOperacionAdmin,
+  actualizarPuntoOperacionAdmin,
   listarCooperativasAdmin,
   type PuntoOperacionResumen,
   type CooperativaResumen,
@@ -19,6 +20,78 @@ const ETIQUETA_TIPO: Record<string, string> = {
 
 function formatearDolares(monto: number) {
   return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
+}
+
+/** Edición en línea de la tasa — hallazgo cerrado 22-jul-2026: antes solo se podía fijar al crear el punto. */
+function TasaEditable({
+  puntoId,
+  valorActual,
+  onGuardado,
+}: {
+  puntoId: string;
+  valorActual: number | null;
+  onGuardado: (mensaje: string, esError: boolean) => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [valor, setValor] = useState(valorActual !== null ? String(valorActual) : "");
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardar() {
+    const token = obtenerToken();
+    const numero = Number(valor);
+    if (!token || Number.isNaN(numero) || numero < 0) {
+      onGuardado("Escribe un monto válido, igual o mayor a $0.", true);
+      return;
+    }
+    setGuardando(true);
+    try {
+      await actualizarPuntoOperacionAdmin(token, puntoId, { tasaMonto: numero });
+      onGuardado("Tasa actualizada.", false);
+      setEditando(false);
+    } catch (err) {
+      onGuardado(err instanceof Error ? err.message : "No se pudo actualizar la tasa.", true);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  if (!editando) {
+    return (
+      <button
+        onClick={() => setEditando(true)}
+        className="font-semibold text-brand-dark underline decoration-dotted underline-offset-2 hover:text-brand"
+      >
+        {valorActual !== null ? formatearDolares(valorActual) : "— fijar tasa"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        autoFocus
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        className="w-20 rounded border border-brand-light px-2 py-1 text-right text-sm"
+      />
+      <button
+        onClick={guardar}
+        disabled={guardando}
+        className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+      >
+        ✓
+      </button>
+      <button
+        onClick={() => setEditando(false)}
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+      >
+        ✕
+      </button>
+    </div>
+  );
 }
 
 export default function PuntosOperacionAdminPage() {
@@ -238,7 +311,17 @@ export default function PuntosOperacionAdminPage() {
                   </td>
                   <td className="px-6 py-3 text-brand-dark/70">{p.cooperativaPropietariaNombre ?? "—"}</td>
                   <td className="px-6 py-3 text-right font-semibold text-brand-dark">
-                    {p.tasaMonto !== null ? formatearDolares(p.tasaMonto) : "—"}
+                    <TasaEditable
+                      puntoId={p.id}
+                      valorActual={p.tasaMonto}
+                      onGuardado={(mensaje, esError) => {
+                        if (esError) setMensajeError(mensaje);
+                        else {
+                          setMensajeExito(mensaje);
+                          cargar();
+                        }
+                      }}
+                    />
                   </td>
                 </tr>
               ))}

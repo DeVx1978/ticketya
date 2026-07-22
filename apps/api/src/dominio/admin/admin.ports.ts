@@ -75,6 +75,17 @@ export interface AdminRepositorio {
     datos: DatosNuevoPuntoOperacion,
   ): Promise<{ puntoOperacionId: string }>;
 
+  /**
+   * Editar un punto de operación existente — hallazgo real 22-jul-2026:
+   * antes no existía forma de cambiar la tasa (ni nada más) de un
+   * terminal ya creado sin entrar directo a la base de datos. Todos
+   * los campos son opcionales — solo se actualiza lo que se envíe.
+   */
+  actualizarPuntoOperacion(
+    id: string,
+    datos: Partial<DatosNuevoPuntoOperacion>,
+  ): Promise<void>;
+
   /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
   dashboardNacional(): Promise<FilaVentaNacional[]>;
 
@@ -91,6 +102,17 @@ export interface AdminRepositorio {
     nuevoPorcentaje: number,
     usuarioId: string,
   ): Promise<{ cooperativasActualizadas: number }>;
+
+  /**
+   * Cargo fijo de plataforma por pasajero — hallazgo real 22-jul-2026:
+   * la columna existía en el esquema desde el diseño original
+   * (RN-002), pero nunca tuvo un valor real ni forma de configurarla,
+   * así que el cálculo de checkout siempre caía en 0. Mismo patrón que
+   * el IVA nacional: valor único, global, editable por el admin de
+   * plataforma.
+   */
+  obtenerCargoPlataforma(): Promise<number>;
+  actualizarCargoPlataforma(nuevoMonto: number): Promise<void>;
 
   /**
    * Banners propios (22-jul-2026) — promoción de productos propios de

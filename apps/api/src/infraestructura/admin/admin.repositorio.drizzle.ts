@@ -152,6 +152,28 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     return { puntoOperacionId: fila.id };
   }
 
+  async actualizarPuntoOperacion(
+    id: string,
+    datos: Partial<DatosNuevoPuntoOperacion>,
+  ): Promise<void> {
+    const valores: Record<string, unknown> = {};
+    if (datos.tipo !== undefined) valores.tipo = datos.tipo;
+    if (datos.nombre !== undefined) valores.nombre = datos.nombre;
+    if (datos.ciudad !== undefined) valores.ciudad = datos.ciudad;
+    if (datos.provincia !== undefined) valores.provincia = datos.provincia;
+    if (datos.cooperativaPropietariaId !== undefined)
+      valores.cooperativaPropietariaId = datos.cooperativaPropietariaId;
+    if (datos.tasaMonto !== undefined)
+      valores.tasaMonto = String(datos.tasaMonto);
+
+    if (Object.keys(valores).length === 0) return; // nada que actualizar
+
+    await this.db
+      .update(puntosOperacion)
+      .set(valores)
+      .where(eq(puntosOperacion.id, id));
+  }
+
   async dashboardNacional(): Promise<FilaVentaNacional[]> {
     const resultado = await this.db.execute(sql`
       SELECT c.nombre_comercial AS cooperativa_nombre,
@@ -225,6 +247,36 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     `);
 
     return { cooperativasActualizadas: propagado.rows.length };
+  }
+
+  async obtenerCargoPlataforma(): Promise<number> {
+    const resultado = await this.db.execute(
+      sql`SELECT cargo_plataforma_por_pasajero_default FROM configuracion_plataforma LIMIT 1`,
+    );
+    const fila = resultado.rows[0] as
+      { cargo_plataforma_por_pasajero_default: string | null } | undefined;
+    return fila?.cargo_plataforma_por_pasajero_default
+      ? Number(fila.cargo_plataforma_por_pasajero_default)
+      : 0;
+  }
+
+  async actualizarCargoPlataforma(nuevoMonto: number): Promise<void> {
+    const filaExistente = await this.db.execute(
+      sql`SELECT id FROM configuracion_plataforma LIMIT 1`,
+    );
+    if (filaExistente.rows.length === 0) {
+      await this.db.execute(sql`
+        INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, cargo_plataforma_por_pasajero_default)
+        VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${nuevoMonto})
+      `);
+    } else {
+      const configuracionId = (filaExistente.rows[0] as { id: string }).id;
+      await this.db.execute(sql`
+        UPDATE configuracion_plataforma
+        SET cargo_plataforma_por_pasajero_default = ${nuevoMonto}, actualizado_en = now()
+        WHERE id = ${configuracionId}
+      `);
+    }
   }
 
   async listarBannersPropios() {

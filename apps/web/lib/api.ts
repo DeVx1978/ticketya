@@ -489,6 +489,50 @@ export async function crearPuntoOperacionAdmin(
   }
 }
 
+export async function actualizarPuntoOperacionAdmin(
+  token: string,
+  id: string,
+  datos: Partial<DatosNuevoPuntoOperacion>,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/puntos-operacion/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo actualizar el punto de operación.");
+  }
+}
+
+// ---------------------------------------------------------------------
+// Cargo fijo de plataforma por pasajero — hallazgo cerrado 22-jul-2026.
+// ---------------------------------------------------------------------
+
+export async function obtenerCargoPlataforma(token: string): Promise<number> {
+  const res = await fetch(`${API_URL}/admin/cargo-plataforma`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el cargo de plataforma.");
+  return cuerpo.monto as number;
+}
+
+export async function actualizarCargoPlataforma(token: string, monto: number): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/cargo-plataforma`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ monto }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar el cargo de plataforma.");
+  }
+}
+
 // ---------------------------------------------------------------------
 // Perfil de cooperativa (logo) — ver 22-jul-2026.
 // ---------------------------------------------------------------------

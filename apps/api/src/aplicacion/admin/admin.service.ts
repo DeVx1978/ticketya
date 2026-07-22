@@ -36,6 +36,13 @@ export class AdminService {
     return this.admin.crearPuntoOperacion(datos);
   }
 
+  async actualizarPuntoOperacion(
+    id: string,
+    datos: Partial<DatosNuevoPuntoOperacion>,
+  ) {
+    return this.admin.actualizarPuntoOperacion(id, datos);
+  }
+
   async dashboardNacional() {
     return this.admin.dashboardNacional();
   }
@@ -52,6 +59,14 @@ export class AdminService {
       nuevoPorcentaje,
       usuarioId,
     );
+  }
+
+  async obtenerCargoPlataforma() {
+    return this.admin.obtenerCargoPlataforma();
+  }
+
+  async actualizarCargoPlataforma(nuevoMonto: number) {
+    return this.admin.actualizarCargoPlataforma(nuevoMonto);
   }
 
   async listarBannersPropios() {

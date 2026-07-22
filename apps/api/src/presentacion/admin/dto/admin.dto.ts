@@ -80,7 +80,34 @@ export class CrearPuntoOperacionDto {
   tasaMonto?: number;
 }
 
-/** IVA nacional — solo admin_plataforma puede cambiarlo (21-jul-2026). */
+/** Editar un punto de operación existente — todos los campos opcionales (22-jul-2026). */
+export class ActualizarPuntoOperacionDto {
+  @IsOptional()
+  @IsIn(['terminal_terrestre', 'oficina_agencia', 'parada_intermedia'])
+  tipo?: 'terminal_terrestre' | 'oficina_agencia' | 'parada_intermedia';
+
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  nombre?: string;
+
+  @IsOptional()
+  @IsString()
+  ciudad?: string;
+
+  @IsOptional()
+  @IsString()
+  provincia?: string;
+
+  @IsOptional()
+  @IsString()
+  cooperativaPropietariaId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tasaMonto?: number;
+}
 export class ActualizarIvaNacionalDto {
   @IsNumber()
   @Min(0)
@@ -112,4 +139,11 @@ export class ActualizarBannerPropioDto {
   @IsOptional()
   @IsNumber()
   orden?: number;
+}
+
+/** Cargo fijo de plataforma por pasajero — hallazgo cerrado 22-jul-2026. */
+export class ActualizarCargoPlataformaDto {
+  @IsNumber()
+  @Min(0)
+  monto!: number;
 }
