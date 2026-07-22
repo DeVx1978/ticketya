@@ -18,6 +18,9 @@ describe('Calificaciones de viaje (e2e)', () => {
   let viajeId: string;
   let tokenPasajero: string;
   let tokenOtroPasajero: string;
+  let tokenCoop: string;
+  let rutaId: string;
+  let unidadId: string;
   let boletoId: string;
   const PRECIO_BASE = 10;
 
@@ -77,7 +80,7 @@ describe('Calificaciones de viaje (e2e)', () => {
         correo: `admin.calif.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
       });
-    const tokenCoop = loginCoop.body.accessToken;
+    tokenCoop = loginCoop.body.accessToken;
 
     const origen = await request(app.getHttpServer())
       .post('/admin/puntos-operacion')
@@ -112,6 +115,7 @@ describe('Calificaciones de viaje (e2e)', () => {
         placa: `CAL-${sufijo % 100000}`,
         identificadorOperativo: `Op-${sufijo % 100000}`,
       });
+    unidadId = unidad.body.id;
 
     const ruta = await request(app.getHttpServer())
       .post('/coop/rutas')
@@ -121,6 +125,7 @@ describe('Calificaciones de viaje (e2e)', () => {
         destinoPuntoOperacionId: destino.body.puntoOperacionId,
         precioBaseReferencia: PRECIO_BASE,
       });
+    rutaId = ruta.body.id;
 
     const viaje = await request(app.getHttpServer())
       .post('/coop/viajes')
@@ -128,8 +133,8 @@ describe('Calificaciones de viaje (e2e)', () => {
       .send({
         rutaId: ruta.body.id,
         unidadId: unidad.body.id,
-        fechaSalida: '2026-12-05',
-        horaSalidaProgramada: '2026-12-05T08:00:00-05:00',
+        fechaSalida: '2026-01-15', // en el pasado a propósito — para poder calificar en las pruebas de "camino feliz" (ver hallazgo 22-jul-2026 más abajo)
+        horaSalidaProgramada: '2026-01-15T08:00:00-05:00',
         precioBase: PRECIO_BASE,
       });
     viajeId = viaje.body.id;
@@ -223,6 +228,49 @@ describe('Calificaciones de viaje (e2e)', () => {
       .expect(409);
   });
 
+  it('rechaza calificar un viaje que todavía no ha llegado a su destino — hallazgo real, 22-jul-2026 (reportado en vivo por el usuario)', async () => {
+    // Mismo escenario, pero con un viaje programado a futuro — no en el
+    // pasado como el de arriba.
+    const viajeFuturo = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        rutaId,
+        unidadId,
+        fechaSalida: '2030-01-01',
+        horaSalidaProgramada: '2030-01-01T08:00:00-05:00',
+        precioBase: PRECIO_BASE,
+      });
+
+    await request(app.getHttpServer())
+      .post(`/viajes/${viajeFuturo.body.id}/asientos/1A/bloquear`)
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(201);
+    const compraFutura = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId: viajeFuturo.body.id,
+            numeroAsiento: '1A',
+            nombreCompleto: 'Pasajero Calificaciones E2E',
+            documento: '0955555558',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+    const boletoFuturoId = compraFutura.body.boletos[0].id;
+
+    const res = await request(app.getHttpServer())
+      .post('/calificaciones')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({ boletoId: boletoFuturoId, puntuacion: 5 })
+      .expect(400);
+    expect(res.body.message).toContain('destino');
+  });
+
   it('el promedio de la cooperativa aparece en la búsqueda pública de viajes', async () => {
     // Mismo viaje ya calificado con 5 arriba → promedio debe ser exactamente 5.
     const res = await request(app.getHttpServer())
@@ -238,11 +286,25 @@ describe('Calificaciones de viaje (e2e)', () => {
             .get('/puntos-operacion/buscar')
             .query({ texto: `Destino Calif ${sufijo}` })
         ).body[0].id,
-        fecha: '2026-12-05',
+        fecha: '2026-01-15',
       })
       .expect(200);
 
     expect(res.body[0].cooperativaCalificacionPromedio).toBe(5);
     expect(res.body[0].cooperativaCalificacionCantidad).toBe(1);
+  });
+
+  it('"mis boletos" refleja correctamente cuándo sí se puede calificar y cuándo ya se calificó', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/calificaciones/mis-boletos')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(200);
+
+    const yaCalificado = res.body.find(
+      (b: { boletoId: string }) => b.boletoId === boletoId,
+    );
+    expect(yaCalificado.yaCalificado).toBe(true);
+    expect(yaCalificado.puedeCalificar).toBe(false);
+    expect(res.body.length).toBeGreaterThanOrEqual(2);
   });
 });

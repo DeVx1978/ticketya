@@ -39,6 +39,19 @@ export class CalificacionesService {
       );
     }
 
+    // Hallazgo real, 22-jul-2026: no tiene sentido calificar un viaje
+    // que todavía no ha ocurrido. Idealmente esto se abriría cuando el
+    // sistema de monitoreo/alertas confirme la llegada real (fase
+    // futura, no construida todavía) — mientras tanto, se usa la hora
+    // de llegada ESTIMADA del viaje como el mejor proxy disponible.
+    const referenciaLlegada =
+      boleto.horaLlegadaEstimada ?? boleto.horaSalidaProgramada;
+    if (new Date() < referenciaLlegada) {
+      throw new BadRequestException(
+        'Todavía no puedes calificar este viaje — espera a que llegues a tu destino.',
+      );
+    }
+
     const yaCalificado =
       await this.calificaciones.yaExisteCalificacionPara(boletoId);
     if (yaCalificado) {
@@ -56,5 +69,17 @@ export class CalificacionesService {
 
   async resumenPorCooperativa(cooperativaId: string) {
     return this.calificaciones.resumenPorCooperativa(cooperativaId);
+  }
+
+  async listarMisBoletos(usuarioId: string) {
+    const boletos =
+      await this.calificaciones.listarBoletosDePasajero(usuarioId);
+    return boletos.map((b) => {
+      const referenciaLlegada = b.horaLlegadaEstimada ?? b.horaSalidaProgramada;
+      return {
+        ...b,
+        puedeCalificar: !b.yaCalificado && new Date() >= referenciaLlegada,
+      };
+    });
   }
 }

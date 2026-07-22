@@ -1,6 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
-import { boletos, compras, calificaciones } from '@ticketya/db';
+import { eq, sql, desc } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
+import {
+  boletos,
+  compras,
+  calificaciones,
+  viajeAsientos,
+  viajes,
+  rutas,
+  puntosOperacion,
+  cooperativas,
+} from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import type { CalificacionesRepositorio } from '../../dominio/calificaciones/calificaciones.ports';
@@ -20,11 +30,21 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
   async obtenerCooperativaSiBoletoPerteneceA(
     boletoId: string,
     usuarioId: string,
-  ): Promise<{ cooperativaId: string } | null> {
+  ): Promise<{
+    cooperativaId: string;
+    horaSalidaProgramada: Date;
+    horaLlegadaEstimada: Date | null;
+  } | null> {
     const [fila] = await this.db
-      .select({ cooperativaId: boletos.cooperativaId })
+      .select({
+        cooperativaId: boletos.cooperativaId,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+        horaLlegadaEstimada: viajes.horaLlegadaEstimada,
+      })
       .from(boletos)
       .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
       .where(
         sql`${boletos.id} = ${boletoId} AND ${compras.compradorUsuarioId} = ${usuarioId}`,
       );
@@ -73,5 +93,61 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
       promedio: fila?.promedio ? Number(fila.promedio) : null,
       cantidad: fila?.cantidad ?? 0,
     };
+  }
+
+  async listarBoletosDePasajero(usuarioId: string): Promise<
+    {
+      boletoId: string;
+      cooperativaNombre: string;
+      origenCiudad: string;
+      destinoCiudad: string;
+      fechaSalida: string;
+      horaSalidaProgramada: Date;
+      horaLlegadaEstimada: Date | null;
+      yaCalificado: boolean;
+    }[]
+  > {
+    const puntosOrigen = alias(puntosOperacion, 'puntos_origen');
+    const puntosDestino = alias(puntosOperacion, 'puntos_destino');
+
+    const filas = await this.db
+      .select({
+        boletoId: boletos.id,
+        cooperativaNombre: cooperativas.nombreComercial,
+        origenCiudad: puntosOrigen.ciudad,
+        destinoCiudad: puntosDestino.ciudad,
+        fechaSalida: viajes.fechaSalida,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+        horaLlegadaEstimada: viajes.horaLlegadaEstimada,
+        calificacionId: calificaciones.id,
+      })
+      .from(boletos)
+      .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
+      .innerJoin(
+        puntosOrigen,
+        eq(rutas.origenPuntoOperacionId, puntosOrigen.id),
+      )
+      .innerJoin(
+        puntosDestino,
+        eq(rutas.destinoPuntoOperacionId, puntosDestino.id),
+      )
+      .innerJoin(cooperativas, eq(boletos.cooperativaId, cooperativas.id))
+      .leftJoin(calificaciones, eq(calificaciones.boletoId, boletos.id))
+      .where(eq(compras.compradorUsuarioId, usuarioId))
+      .orderBy(desc(viajes.horaSalidaProgramada));
+
+    return filas.map((f) => ({
+      boletoId: f.boletoId,
+      cooperativaNombre: f.cooperativaNombre,
+      origenCiudad: f.origenCiudad,
+      destinoCiudad: f.destinoCiudad,
+      fechaSalida: f.fechaSalida,
+      horaSalidaProgramada: f.horaSalidaProgramada,
+      horaLlegadaEstimada: f.horaLlegadaEstimada,
+      yaCalificado: f.calificacionId !== null,
+    }));
   }
 }

@@ -3,7 +3,7 @@
 import { Suspense, useState, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { crearCompra, calificarViaje, type ResultadoCompra } from "@/lib/api";
+import { crearCompra, type ResultadoCompra } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
@@ -13,82 +13,6 @@ const TARIFAS = [
   { valor: "tercera_edad", etiqueta: "Tercera edad (50% descuento)" },
   { valor: "discapacidad", etiqueta: "Discapacidad (descuento según carnet CONADIS)" },
 ] as const;
-
-function CalificarViaje({ boletoId }: { boletoId: string }) {
-  const [puntuacion, setPuntuacion] = useState(0);
-  const [hover, setHover] = useState(0);
-  const [comentario, setComentario] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [enviado, setEnviado] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function enviar() {
-    const token = tokenValido();
-    if (!token) {
-      setError("Tu sesión expiró — vuelve a iniciar sesión para calificar el viaje.");
-      return;
-    }
-    if (puntuacion === 0) return;
-    setEnviando(true);
-    setError(null);
-    try {
-      await calificarViaje(token, boletoId, puntuacion, comentario.trim() || undefined);
-      setEnviado(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo enviar la calificación.");
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  if (enviado) {
-    return (
-      <p className="mt-5 text-sm font-medium text-emerald-600">¡Gracias por calificar tu viaje!</p>
-    );
-  }
-
-  return (
-    <div className="mt-5 border-t border-black/5 pt-4 text-left">
-      <p className="text-sm font-semibold text-brand-dark">¿Qué tal estuvo tu viaje?</p>
-      <div className="mt-2 flex gap-1">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setPuntuacion(n)}
-            onMouseEnter={() => setHover(n)}
-            onMouseLeave={() => setHover(0)}
-            aria-label={`${n} estrellas`}
-            className="text-2xl leading-none"
-          >
-            <span className={n <= (hover || puntuacion) ? "text-amber-500" : "text-brand-dark/20"}>★</span>
-          </button>
-        ))}
-      </div>
-      {puntuacion > 0 && (
-        <>
-          <textarea
-            value={comentario}
-            onChange={(e) => setComentario(e.target.value)}
-            placeholder="Cuéntanos más (opcional)"
-            rows={2}
-            maxLength={500}
-            className="mt-2 w-full rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
-          />
-          <button
-            type="button"
-            onClick={enviar}
-            disabled={enviando}
-            className="mt-2 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
-          >
-            {enviando ? "Enviando..." : "Enviar calificación"}
-          </button>
-        </>
-      )}
-      {error && <p className="mt-2 text-xs font-medium text-red-600">{error}</p>}
-    </div>
-  );
-}
 
 function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const searchParams = useSearchParams();
@@ -184,11 +108,17 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             Muestra este código al abordar. También puedes tomarle una captura de pantalla.
           </p>
 
-          <CalificarViaje boletoId={boleto.id} />
-
-          <Link href="/" className="mt-6 inline-block font-semibold text-brand hover:underline">
-            Volver al inicio
-          </Link>
+          <div className="mt-6 flex flex-col gap-2">
+            <Link
+              href="/mis-boletos"
+              className="rounded-lg border border-brand-light px-4 py-2 text-sm font-semibold text-brand-dark/70 transition hover:bg-brand-light/40"
+            >
+              Ver mis boletos
+            </Link>
+            <Link href="/" className="font-semibold text-brand hover:underline">
+              Volver al inicio
+            </Link>
+          </div>
         </div>
       </main>
     );

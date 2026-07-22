@@ -617,5 +617,27 @@ export async function calificarViaje(
   }
 }
 
+export interface MiBoleto {
+  boletoId: string;
+  cooperativaNombre: string;
+  origenCiudad: string;
+  destinoCiudad: string;
+  fechaSalida: string;
+  horaSalidaProgramada: string;
+  horaLlegadaEstimada: string | null;
+  yaCalificado: boolean;
+  puedeCalificar: boolean;
+}
+
+export async function listarMisBoletos(token: string): Promise<MiBoleto[]> {
+  const res = await fetch(`${API_URL}/calificaciones/mis-boletos`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar tus boletos.");
+  return cuerpo as MiBoleto[];
+}
+
 
 
