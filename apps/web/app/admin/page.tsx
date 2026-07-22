@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_URL } from "@/lib/api";
+import { API_URL, dashboardNacionalAdmin, type FilaVentaNacional } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
+
+function formatearDolares(monto: number) {
+  return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
+}
 
 export default function AdminHome() {
   const [ivaPorcentaje, setIvaPorcentaje] = useState("");
@@ -10,6 +14,9 @@ export default function AdminHome() {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [ventas, setVentas] = useState<FilaVentaNacional[] | null>(null);
+  const [errorVentas, setErrorVentas] = useState<string | null>(null);
 
   useEffect(() => {
     const token = obtenerToken();
@@ -19,6 +26,10 @@ export default function AdminHome() {
       .then((cuerpo: { ivaPorcentaje: number }) => setIvaPorcentaje(String(cuerpo.ivaPorcentaje)))
       .catch(() => setError("No se pudo cargar el IVA nacional."))
       .finally(() => setCargando(false));
+
+    dashboardNacionalAdmin(token)
+      .then(setVentas)
+      .catch((err) => setErrorVentas(err instanceof Error ? err.message : "No se pudo cargar el dashboard nacional."));
   }, []);
 
   async function guardar(e: React.FormEvent) {
@@ -54,11 +65,77 @@ export default function AdminHome() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
-        <h1 className="font-display text-2xl font-bold text-brand-dark">Panel Admin</h1>
-        <p className="mt-2 text-sm text-brand-dark/60">
-          El acceso protegido ya funciona. El dashboard real (cooperativas, ventas nacionales) es el siguiente paso.
+      <div>
+        <h1 className="font-display text-2xl font-bold text-brand-dark">Dashboard nacional</h1>
+        <p className="mt-1 text-sm text-brand-dark/60">
+          Ventas acumuladas por cooperativa, en toda la red (RF-ADMIN-002).
         </p>
+      </div>
+
+      {errorVentas && (
+        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
+          {errorVentas}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">Cooperativas activas</p>
+          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
+            {ventas === null ? "—" : ventas.length}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">Boletos vendidos (total)</p>
+          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
+            {ventas === null ? "—" : ventas.reduce((acc, v) => acc + v.totalBoletos, 0)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">Total vendido (histórico)</p>
+          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
+            {ventas === null ? "—" : formatearDolares(ventas.reduce((acc, v) => acc + v.totalVentas, 0))}
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+        <div className="border-b border-black/5 px-6 py-4">
+          <h2 className="font-display text-base font-bold text-brand-dark">Ventas por cooperativa</h2>
+        </div>
+
+        {ventas === null && !errorVentas && (
+          <p className="px-6 py-8 text-center text-sm text-brand-dark/50">Cargando...</p>
+        )}
+
+        {ventas !== null && ventas.length === 0 && (
+          <p className="px-6 py-8 text-center text-sm text-brand-dark/50">
+            Todavía no hay cooperativas registradas.
+          </p>
+        )}
+
+        {ventas !== null && ventas.length > 0 && (
+          <table className="w-full text-left text-sm">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <tr>
+                <th className="px-6 py-3">Cooperativa</th>
+                <th className="px-6 py-3 text-right">Boletos vendidos</th>
+                <th className="px-6 py-3 text-right">Total vendido</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/5">
+              {ventas.map((v, i) => (
+                <tr key={i}>
+                  <td className="px-6 py-3 font-medium text-brand-dark">{v.cooperativaNombre}</td>
+                  <td className="px-6 py-3 text-right text-brand-dark/70">{v.totalBoletos}</td>
+                  <td className="px-6 py-3 text-right font-semibold text-brand-dark">
+                    {formatearDolares(v.totalVentas)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">

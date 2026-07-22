@@ -440,6 +440,22 @@ export async function listarPuntosOperacionAdmin(token: string): Promise<PuntoOp
   return cuerpo as PuntoOperacionResumen[];
 }
 
+export interface FilaVentaNacional {
+  cooperativaNombre: string;
+  totalVentas: number;
+  totalBoletos: number;
+}
+
+export async function dashboardNacionalAdmin(token: string): Promise<FilaVentaNacional[]> {
+  const res = await fetch(`${API_URL}/admin/dashboard`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el dashboard nacional.");
+  return cuerpo as FilaVentaNacional[];
+}
+
 export interface DatosNuevoPuntoOperacion {
   tipo: string;
   nombre: string;
