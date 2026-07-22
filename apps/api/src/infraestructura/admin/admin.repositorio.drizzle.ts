@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { sql, eq } from 'drizzle-orm';
 import { cooperativas, usuarios, puntosOperacion } from '@ticketya/db';
@@ -31,41 +31,70 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     datosCooperativa: DatosNuevaCooperativa,
     datosUsuario: DatosPrimerUsuarioCooperativa,
   ): Promise<{ cooperativaId: string; usuarioId: string }> {
+    // Mismo patrón que AuthService.registrar (revisar primero, en vez
+    // de dejar que el error crudo de Postgres llegue al usuario) —
+    // hallazgo real del 22-jul-2026: antes de esto, un correo duplicado
+    // se veía como "Internal server error" sin ninguna pista de la
+    // causa real.
+    const [correoExistente] = await this.db
+      .select({ id: usuarios.id })
+      .from(usuarios)
+      .where(eq(usuarios.correo, datosUsuario.correo));
+    if (correoExistente) {
+      throw new ConflictException(
+        `Ya existe un usuario registrado con el correo ${datosUsuario.correo}.`,
+      );
+    }
+
     // El hash de la contraseña se calcula ANTES de abrir la transacción
     // a propósito: bcrypt es intencionalmente lento (RNF-SEG-002), y no
     // hay razón para mantener la transacción de base de datos abierta
     // (con sus locks) mientras se espera ese cómputo en CPU.
     const passwordHash = await this.hasher.hash(datosUsuario.password);
 
-    return this.db.transaction(async (tx) => {
-      const [filaCooperativa] = await tx
-        .insert(cooperativas)
-        .values({
-          ruc: datosCooperativa.ruc,
-          razonSocial: datosCooperativa.razonSocial,
-          nombreComercial: datosCooperativa.nombreComercial,
-          modeloIntegracion: datosCooperativa.modeloIntegracion,
-          estado: 'aprobada',
-          contactoNombre: datosCooperativa.contactoNombre,
-          contactoCorreo: datosCooperativa.contactoCorreo,
-          contactoTelefono: datosCooperativa.contactoTelefono,
-          fechaAfiliacion: new Date(),
-        })
-        .returning();
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [filaCooperativa] = await tx
+          .insert(cooperativas)
+          .values({
+            ruc: datosCooperativa.ruc,
+            razonSocial: datosCooperativa.razonSocial,
+            nombreComercial: datosCooperativa.nombreComercial,
+            modeloIntegracion: datosCooperativa.modeloIntegracion,
+            estado: 'aprobada',
+            contactoNombre: datosCooperativa.contactoNombre,
+            contactoCorreo: datosCooperativa.contactoCorreo,
+            contactoTelefono: datosCooperativa.contactoTelefono,
+            fechaAfiliacion: new Date(),
+          })
+          .returning();
 
-      const [filaUsuario] = await tx
-        .insert(usuarios)
-        .values({
-          rol: 'admin_cooperativa',
-          cooperativaId: filaCooperativa.id,
-          correo: datosUsuario.correo,
-          passwordHash,
-          nombreCompleto: datosUsuario.nombreCompleto,
-        })
-        .returning();
+        const [filaUsuario] = await tx
+          .insert(usuarios)
+          .values({
+            rol: 'admin_cooperativa',
+            cooperativaId: filaCooperativa.id,
+            correo: datosUsuario.correo,
+            passwordHash,
+            nombreCompleto: datosUsuario.nombreCompleto,
+          })
+          .returning();
 
-      return { cooperativaId: filaCooperativa.id, usuarioId: filaUsuario.id };
-    });
+        return { cooperativaId: filaCooperativa.id, usuarioId: filaUsuario.id };
+      });
+    } catch (error) {
+      // Respaldo para la carrera de condición (dos solicitudes con el
+      // mismo correo llegando casi al mismo tiempo, entre el SELECT de
+      // arriba y este INSERT) — muy improbable, pero si pasa, el
+      // mensaje debe seguir siendo claro, no un error crudo de Postgres.
+      const errorTipado = error as { cause?: { constraint?: string } };
+      if (errorTipado?.cause?.constraint === 'uq_usuarios_correo') {
+        throw new ConflictException(
+          `Ya existe un usuario registrado con el correo ${datosUsuario.correo}.`,
+        );
+      }
+      throw error;
+    }
   }
 
   async listarCooperativas() {

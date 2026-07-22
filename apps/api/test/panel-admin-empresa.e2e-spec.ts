@@ -132,7 +132,7 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
 
     // Mismo correoCoop que la cooperativa ya creada arriba → viola la
     // restricción de unicidad de correo, a propósito.
-    await request(app.getHttpServer())
+    const intento = await request(app.getHttpServer())
       .post('/admin/cooperativas')
       .set('Authorization', `Bearer ${tokenAdmin}`)
       .send({
@@ -148,7 +148,9 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
           nombreCompleto: 'Otro Admin E2E',
         },
       })
-      .expect(500); // el error de Postgres se propaga tal cual — no es lo lindo, pero lo importante aquí es la atomicidad
+      .expect(409); // 22-jul-2026: antes esto daba 500 con un error crudo de Postgres — ahora es un mensaje claro (ver hallazgo del usuario en vivo)
+
+    expect(intento.body.message).toContain(correoCoop);
 
     const despues = await request(app.getHttpServer())
       .get('/admin/cooperativas')

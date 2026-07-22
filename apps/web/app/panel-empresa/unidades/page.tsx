@@ -17,6 +17,7 @@ export default function UnidadesPage() {
   const [unidades, setUnidades] = useState<UnidadResumen[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
 
   // Formulario: tipo de vehículo
   const [nombreTipo, setNombreTipo] = useState("");
@@ -60,7 +61,9 @@ export default function UnidadesPage() {
       setCapacidad("");
       cargarTodo();
     } catch (err) {
-      setErrorTipo(err instanceof Error ? err.message : "No se pudo crear el tipo de vehículo.");
+      const mensaje = err instanceof Error ? err.message : "No se pudo crear el tipo de vehículo.";
+      setErrorTipo(mensaje);
+      setMensajeError(mensaje);
     } finally {
       setGuardandoTipo(false);
     }
@@ -86,7 +89,9 @@ export default function UnidadesPage() {
       setMensajeExito(`Unidad "${placa.trim()}" registrada correctamente.`);
       cargarTodo();
     } catch (err) {
-      setErrorUnidad(err instanceof Error ? err.message : "No se pudo crear la unidad.");
+      const mensaje = err instanceof Error ? err.message : "No se pudo crear la unidad.";
+      setErrorUnidad(mensaje);
+      setMensajeError(mensaje);
     } finally {
       setGuardandoUnidad(false);
     }
@@ -95,6 +100,7 @@ export default function UnidadesPage() {
   return (
     <div className="space-y-8">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
+      <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Unidades</h1>
         <p className="mt-1 text-sm text-brand-dark/60">

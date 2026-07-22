@@ -41,6 +41,7 @@ export default function CooperativasAdminPage() {
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
 
   function cargar() {
     const token = obtenerToken();
@@ -92,7 +93,9 @@ export default function CooperativasAdminPage() {
       setMensajeExito(`Cooperativa "${nombreComercial}" creada correctamente.`);
       cargar();
     } catch (err) {
-      setErrorForm(err instanceof Error ? err.message : "No se pudo crear la cooperativa.");
+      const mensaje = err instanceof Error ? err.message : "No se pudo crear la cooperativa.";
+      setErrorForm(mensaje);
+      setMensajeError(mensaje);
     } finally {
       setGuardando(false);
     }
@@ -101,6 +104,7 @@ export default function CooperativasAdminPage() {
   return (
     <div className="space-y-6">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
+      <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Cooperativas</h1>
         <p className="mt-1 text-sm text-brand-dark/60">

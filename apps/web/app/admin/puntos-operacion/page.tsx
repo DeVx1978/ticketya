@@ -37,6 +37,7 @@ export default function PuntosOperacionAdminPage() {
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
 
   function cargar() {
     const token = obtenerToken();
@@ -79,7 +80,9 @@ export default function PuntosOperacionAdminPage() {
       setMensajeExito(`Punto de operación "${nombre}" creado correctamente.`);
       cargar();
     } catch (err) {
-      setErrorForm(err instanceof Error ? err.message : "No se pudo crear el punto de operación.");
+      const mensaje = err instanceof Error ? err.message : "No se pudo crear el punto de operación.";
+      setErrorForm(mensaje);
+      setMensajeError(mensaje);
     } finally {
       setGuardando(false);
     }
@@ -88,6 +91,7 @@ export default function PuntosOperacionAdminPage() {
   return (
     <div className="space-y-6">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
+      <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Puntos de operación</h1>
         <p className="mt-1 text-sm text-brand-dark/60">

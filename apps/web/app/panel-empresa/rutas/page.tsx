@@ -17,6 +17,7 @@ export default function RutasPage() {
   const [nombre, setNombre] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState<string | null>(null);
+  const [mensajeError, setMensajeError] = useState<string | null>(null);
 
   function cargarRutas() {
     const token = obtenerToken();
@@ -52,7 +53,9 @@ export default function RutasPage() {
       setMensajeExito(`Ruta "${descripcion}" creada correctamente.`);
       cargarRutas();
     } catch (err) {
-      setErrorForm(err instanceof Error ? err.message : "No se pudo crear la ruta.");
+      const mensaje = err instanceof Error ? err.message : "No se pudo crear la ruta.";
+      setErrorForm(mensaje);
+      setMensajeError(mensaje);
     } finally {
       setGuardando(false);
     }
@@ -61,6 +64,7 @@ export default function RutasPage() {
   return (
     <div className="space-y-6">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
+      <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Rutas</h1>
         <p className="mt-1 text-sm text-brand-dark/60">
