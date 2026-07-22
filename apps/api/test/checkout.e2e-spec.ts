@@ -245,7 +245,7 @@ describe('Checkout y pago (e2e)', () => {
     expect(Number(res.body.montoTotal)).toBe(5);
   });
 
-  it('HALLAZGO DOCUMENTADO: la respuesta de /compras no incluye el desglose de precio por boleto (solo trae id y codigoQr) — el precio pagado y la tasa de terminal SÍ se calculan y se guardan correctamente en la base de datos (boletos, comprobantes_tasa_terminal), pero un frontend que quiera mostrar "pagaste $5 por este boleto de niño" tendría que consultarlo aparte. No es un error de cálculo, es información que falta en la respuesta — vale la pena agregarla antes de construir el frontend de confirmación de compra.', async () => {
+  it('cada boleto trae su propio desglose de precio en la respuesta — hallazgo cerrado 22-jul-2026 (antes solo traía id y codigoQr)', async () => {
     await bloquearYRegistrarAsiento('1D', tokenPasajero);
     const res = await request(app.getHttpServer())
       .post('/compras')
@@ -264,7 +264,51 @@ describe('Checkout y pago (e2e)', () => {
       .expect(201);
 
     const boleto = res.body.boletos[0];
-    expect(Object.keys(boleto).sort()).toEqual(['codigoQr', 'id']); // documenta la forma real, no la deseada
+    expect(Object.keys(boleto).sort()).toEqual([
+      'cargoPlataforma',
+      'codigoQr',
+      'id',
+      'ivaMonto',
+      'numeroAsiento',
+      'precioPagado',
+      'tasaTerminal',
+    ]);
+    expect(boleto.numeroAsiento).toBe('1D');
+    expect(boleto.precioPagado).toBe(PRECIO_BASE);
+  });
+
+  it('el desglose por boleto sigue disponible aunque se reintente la misma idempotencyKey (RF-CHECK-005 + hallazgo del 22-jul-2026 combinados)', async () => {
+    await bloquearYRegistrarAsiento('2A', tokenPasajero);
+    const idempotencyKey = `idem-desglose-${sufijo}`;
+    const payload = {
+      pasajeros: [
+        {
+          viajeId,
+          numeroAsiento: '2A',
+          nombreCompleto: 'Pasajero Reintento Desglose E2E',
+          documento: '0955555556',
+          tipoTarifa: 'adulto',
+        },
+      ],
+      idempotencyKey,
+    };
+
+    const primera = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send(payload)
+      .expect(201);
+
+    const segunda = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send(payload)
+      .expect(201);
+
+    expect(segunda.body.boletos[0].precioPagado).toBe(
+      primera.body.boletos[0].precioPagado,
+    );
+    expect(segunda.body.boletos[0].numeroAsiento).toBe('2A');
   });
 
   it('la misma idempotencyKey enviada dos veces NO cobra ni genera boleto dos veces (RF-CHECK-005)', async () => {

@@ -70,14 +70,37 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
       <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
         <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-black/5">
           <p className="font-display text-lg font-bold text-brand-dark">¡Boleto confirmado!</p>
-          <p className="mt-1 text-sm text-brand-dark/60">
-            Asiento {numeroAsiento} · ${resultado.montoTotal?.toFixed(2)}
-          </p>
-          {resultado.ivaVisible && resultado.ivaTotal !== undefined && resultado.ivaTotal > 0 && (
-            <p className="mt-0.5 text-xs text-brand-dark/40">
-              IVA incluido: ${resultado.ivaTotal.toFixed(2)}
-            </p>
-          )}
+          <p className="mt-1 text-sm text-brand-dark/60">Asiento {numeroAsiento}</p>
+
+          <div className="mt-4 space-y-1 rounded-lg bg-brand-light/30 px-4 py-3 text-left text-sm">
+            <div className="flex justify-between text-brand-dark/70">
+              <span>Tarifa</span>
+              <span>${boleto.precioPagado.toFixed(2)}</span>
+            </div>
+            {boleto.tasaTerminal > 0 && (
+              <div className="flex justify-between text-brand-dark/70">
+                <span>Tasa de terminal</span>
+                <span>${boleto.tasaTerminal.toFixed(2)}</span>
+              </div>
+            )}
+            {boleto.cargoPlataforma > 0 && (
+              <div className="flex justify-between text-brand-dark/70">
+                <span>Cargo de plataforma</span>
+                <span>${boleto.cargoPlataforma.toFixed(2)}</span>
+              </div>
+            )}
+            {resultado.ivaVisible && boleto.ivaMonto > 0 && (
+              <div className="flex justify-between text-xs text-brand-dark/40">
+                <span>IVA incluido en la tarifa</span>
+                <span>${boleto.ivaMonto.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="mt-1 flex justify-between border-t border-brand-dark/10 pt-1 font-semibold text-brand-dark">
+              <span>Total</span>
+              <span>${resultado.montoTotal?.toFixed(2)}</span>
+            </div>
+          </div>
+
           <div className="mt-5">
             <CodigoQr valor={boleto.codigoQr} />
           </div>

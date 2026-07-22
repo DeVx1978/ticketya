@@ -11,6 +11,7 @@ import {
   pasajerosCompra,
   pagos,
   boletos,
+  comprobantesTasaTerminal,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -44,14 +45,35 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     if (!pago) return null;
 
     const boletosDeLaCompra = await this.dbPublico
-      .select({ id: boletos.id, codigoQr: boletos.codigoQr })
+      .select({
+        id: boletos.id,
+        codigoQr: boletos.codigoQr,
+        numeroAsiento: viajeAsientos.numeroAsiento,
+        precioPagado: boletos.precioPagado,
+        cargoPlataforma: boletos.cargoPlataforma,
+        ivaMonto: boletos.ivaMonto,
+        tasaTerminal: comprobantesTasaTerminal.monto,
+      })
       .from(boletos)
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .leftJoin(
+        comprobantesTasaTerminal,
+        eq(comprobantesTasaTerminal.boletoId, boletos.id),
+      )
       .where(eq(boletos.compraId, pago.compraId));
 
     return {
       compraId: pago.compraId,
       estado: pago.estado,
-      boletos: boletosDeLaCompra,
+      boletos: boletosDeLaCompra.map((b) => ({
+        id: b.id,
+        codigoQr: b.codigoQr,
+        numeroAsiento: b.numeroAsiento,
+        precioPagado: Number(b.precioPagado),
+        cargoPlataforma: Number(b.cargoPlataforma),
+        ivaMonto: Number(b.ivaMonto),
+        tasaTerminal: Number(b.tasaTerminal ?? 0),
+      })),
     };
   }
 
@@ -201,6 +223,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         cooperativaId: d.cooperativaId,
         precioPagado: d.precioPagado,
         tasaTerminal: d.tasaTerminal,
+        cargoPlataforma: d.cargoPlataforma,
+        ivaMonto: d.ivaMonto,
       });
     }
 
@@ -247,12 +271,20 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
 
           const codigoQr = randomUUID();
           const boletoRows = await tx.execute(
-            sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, estado)
-                VALUES (${cooperativaId}, ${compraId}, ${item.pasajeroCompraId}, ${viajeAsientoId}, ${codigoQr}, ${item.precioPagado.toFixed(2)}, 'vigente')
+            sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, cargo_plataforma, iva_monto, estado)
+                VALUES (${cooperativaId}, ${compraId}, ${item.pasajeroCompraId}, ${viajeAsientoId}, ${codigoQr}, ${item.precioPagado.toFixed(2)}, ${item.cargoPlataforma.toFixed(2)}, ${item.ivaMonto.toFixed(2)}, 'vigente')
                 RETURNING id`,
           );
           const boletoId = (boletoRows.rows[0] as { id: string }).id;
-          boletosEmitidos.push({ id: boletoId, codigoQr });
+          boletosEmitidos.push({
+            id: boletoId,
+            codigoQr,
+            numeroAsiento: item.numeroAsiento,
+            precioPagado: item.precioPagado,
+            tasaTerminal: item.tasaTerminal,
+            cargoPlataforma: item.cargoPlataforma,
+            ivaMonto: item.ivaMonto,
+          });
 
           // RF-TICKET-002 — comprobante de tasa de terminal, uno por
           // pasajero, referenciando el punto de operación de origen.

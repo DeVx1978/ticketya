@@ -146,6 +146,17 @@ export const boletos = pgTable(
     // RN-001 — precio final ya con el descuento de esta tarifa aplicado.
     precioPagado: numeric('precio_pagado', { precision: 8, scale: 2 }).notNull(),
 
+    // Desglose informativo persistido junto al precio (22-jul-2026) —
+    // antes solo vivían como cálculo de un momento en checkout.service.ts
+    // y se perdían; sin guardarlos aquí, un reintento por idempotencia
+    // (RF-CHECK-005) o una consulta posterior no podía reconstruir el
+    // desglose real de ESTE boleto específico, solo el total agregado
+    // de toda la compra.
+    cargoPlataforma: numeric('cargo_plataforma', { precision: 8, scale: 2 })
+      .default('0')
+      .notNull(),
+    ivaMonto: numeric('iva_monto', { precision: 8, scale: 2 }).default('0').notNull(),
+
     estado: estadoBoletoEnum('estado').default('vigente').notNull(),
     validadoEn: timestamp('validado_en', { withTimezone: true }),
     validadoPorUsuarioId: uuid('validado_por_usuario_id').references(() => usuarios.id),

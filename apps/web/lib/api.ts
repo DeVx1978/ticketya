@@ -306,6 +306,11 @@ export interface PasajeroCompraInput {
 export interface BoletoEmitido {
   id: string;
   codigoQr: string;
+  numeroAsiento: string;
+  precioPagado: number;
+  tasaTerminal: number;
+  cargoPlataforma: number;
+  ivaMonto: number;
 }
 
 export interface ResultadoCompra {

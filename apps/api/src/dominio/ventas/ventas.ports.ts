@@ -78,6 +78,11 @@ export interface PasarelaPago {
 export interface BoletoEmitido {
   id: string;
   codigoQr: string;
+  numeroAsiento: string;
+  precioPagado: number;
+  tasaTerminal: number;
+  cargoPlataforma: number;
+  ivaMonto: number;
 }
 
 export interface PagoExistente {
@@ -93,6 +98,8 @@ export interface MapeoAsientoPasajero {
   cooperativaId: string;
   precioPagado: number;
   tasaTerminal: number;
+  cargoPlataforma: number;
+  ivaMonto: number;
 }
 
 export interface CompraRepositorio {
