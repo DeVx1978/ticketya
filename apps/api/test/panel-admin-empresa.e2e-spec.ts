@@ -123,6 +123,49 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     );
   });
 
+  it('si el correo del primer usuario ya existe, la cooperativa NO queda huérfana — todo o nada (hallazgo real 22-jul-2026, reportado en vivo por el usuario)', async () => {
+    const antes = await request(app.getHttpServer())
+      .get('/admin/cooperativas')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    const totalAntes = antes.body.length;
+
+    // Mismo correoCoop que la cooperativa ya creada arriba → viola la
+    // restricción de unicidad de correo, a propósito.
+    await request(app.getHttpServer())
+      .post('/admin/cooperativas')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        cooperativa: {
+          ruc: `${ruc.slice(0, -1)}9`, // RUC distinto, para que la única colisión sea el correo
+          razonSocial: 'Cooperativa Huerfana E2E S.A.',
+          nombreComercial: 'Coop Huerfana E2E',
+          modeloIntegracion: 'modelo_a',
+        },
+        usuario: {
+          correo: correoCoop, // duplicado a propósito
+          password: 'ClaveSegura123',
+          nombreCompleto: 'Otro Admin E2E',
+        },
+      })
+      .expect(500); // el error de Postgres se propaga tal cual — no es lo lindo, pero lo importante aquí es la atomicidad
+
+    const despues = await request(app.getHttpServer())
+      .get('/admin/cooperativas')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+
+    // El punto central de esta prueba: el intento fallido NO debe haber
+    // dejado ninguna cooperativa nueva a medias.
+    expect(despues.body.length).toBe(totalAntes);
+    expect(
+      despues.body.some(
+        (c: { nombreComercial: string }) =>
+          c.nombreComercial === 'Coop Huerfana E2E',
+      ),
+    ).toBe(false);
+  });
+
   it('admin_plataforma crea dos puntos de operación, origen y destino (RF-FLOTA-003)', async () => {
     const origen = await request(app.getHttpServer())
       .post('/admin/puntos-operacion')
@@ -150,6 +193,22 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
 
     expect(puntoOrigenId).toBeDefined();
     expect(puntoDestinoId).toBeDefined();
+  });
+
+  it('los dos puntos de operación recién creados aparecen al listar (GET /admin/puntos-operacion, 22-jul-2026)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+
+    const ids = res.body.map((p: { id: string }) => p.id);
+    expect(ids).toContain(puntoOrigenId);
+    expect(ids).toContain(puntoDestinoId);
+    // Estos dos puntos son 'terminal_terrestre' → sin cooperativa
+    // propietaria (compartidos por muchas cooperativas), a diferencia de
+    // una 'oficina_agencia'.
+    const origen = res.body.find((p: { id: string }) => p.id === puntoOrigenId);
+    expect(origen.cooperativaPropietariaNombre).toBeNull();
   });
 
   it('GET /admin/dashboard refleja la cooperativa creada (RF-ADMIN-002)', async () => {

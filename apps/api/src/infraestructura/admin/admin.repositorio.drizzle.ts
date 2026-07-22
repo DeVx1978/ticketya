@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import { cooperativas, usuarios, puntosOperacion } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -27,42 +27,45 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     private readonly hasher: BcryptHasher,
   ) {}
 
-  async crearCooperativa(
-    datos: DatosNuevaCooperativa,
-  ): Promise<{ cooperativaId: string }> {
-    const [fila] = await this.db
-      .insert(cooperativas)
-      .values({
-        ruc: datos.ruc,
-        razonSocial: datos.razonSocial,
-        nombreComercial: datos.nombreComercial,
-        modeloIntegracion: datos.modeloIntegracion,
-        estado: 'aprobada', // El admin_plataforma la está dando de alta él mismo — RF-ADMIN-001.
-        contactoNombre: datos.contactoNombre,
-        contactoCorreo: datos.contactoCorreo,
-        contactoTelefono: datos.contactoTelefono,
-        fechaAfiliacion: new Date(),
-      })
-      .returning();
-    return { cooperativaId: fila.id };
-  }
+  async crearCooperativaConPrimerUsuarioAtomico(
+    datosCooperativa: DatosNuevaCooperativa,
+    datosUsuario: DatosPrimerUsuarioCooperativa,
+  ): Promise<{ cooperativaId: string; usuarioId: string }> {
+    // El hash de la contraseña se calcula ANTES de abrir la transacción
+    // a propósito: bcrypt es intencionalmente lento (RNF-SEG-002), y no
+    // hay razón para mantener la transacción de base de datos abierta
+    // (con sus locks) mientras se espera ese cómputo en CPU.
+    const passwordHash = await this.hasher.hash(datosUsuario.password);
 
-  async crearPrimerUsuarioCooperativa(
-    cooperativaId: string,
-    datos: DatosPrimerUsuarioCooperativa,
-  ): Promise<{ usuarioId: string }> {
-    const passwordHash = await this.hasher.hash(datos.password);
-    const [fila] = await this.db
-      .insert(usuarios)
-      .values({
-        rol: 'admin_cooperativa',
-        cooperativaId,
-        correo: datos.correo,
-        passwordHash,
-        nombreCompleto: datos.nombreCompleto,
-      })
-      .returning();
-    return { usuarioId: fila.id };
+    return this.db.transaction(async (tx) => {
+      const [filaCooperativa] = await tx
+        .insert(cooperativas)
+        .values({
+          ruc: datosCooperativa.ruc,
+          razonSocial: datosCooperativa.razonSocial,
+          nombreComercial: datosCooperativa.nombreComercial,
+          modeloIntegracion: datosCooperativa.modeloIntegracion,
+          estado: 'aprobada',
+          contactoNombre: datosCooperativa.contactoNombre,
+          contactoCorreo: datosCooperativa.contactoCorreo,
+          contactoTelefono: datosCooperativa.contactoTelefono,
+          fechaAfiliacion: new Date(),
+        })
+        .returning();
+
+      const [filaUsuario] = await tx
+        .insert(usuarios)
+        .values({
+          rol: 'admin_cooperativa',
+          cooperativaId: filaCooperativa.id,
+          correo: datosUsuario.correo,
+          passwordHash,
+          nombreCompleto: datosUsuario.nombreCompleto,
+        })
+        .returning();
+
+      return { cooperativaId: filaCooperativa.id, usuarioId: filaUsuario.id };
+    });
   }
 
   async listarCooperativas() {
@@ -73,6 +76,28 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
         estado: cooperativas.estado,
       })
       .from(cooperativas);
+  }
+
+  async listarPuntosOperacion() {
+    const filas = await this.db
+      .select({
+        id: puntosOperacion.id,
+        tipo: puntosOperacion.tipo,
+        nombre: puntosOperacion.nombre,
+        ciudad: puntosOperacion.ciudad,
+        provincia: puntosOperacion.provincia,
+        tasaMonto: puntosOperacion.tasaMonto,
+        cooperativaPropietariaNombre: cooperativas.nombreComercial,
+      })
+      .from(puntosOperacion)
+      .leftJoin(
+        cooperativas,
+        eq(puntosOperacion.cooperativaPropietariaId, cooperativas.id),
+      );
+    return filas.map((f) => ({
+      ...f,
+      tasaMonto: f.tasaMonto !== null ? Number(f.tasaMonto) : null,
+    }));
   }
 
   async crearPuntoOperacion(

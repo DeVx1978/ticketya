@@ -11,6 +11,7 @@ import {
   type ViajeCoopResumen,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
+import { Toast } from "@/components/Toast";
 
 const ESTADO_ESTILO: Record<string, string> = {
   programado: "bg-brand-light text-brand",
@@ -28,6 +29,7 @@ export default function ViajesPage() {
   const [unidades, setUnidades] = useState<UnidadResumen[] | null>(null);
   const [viajes, setViajes] = useState<ViajeCoopResumen[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
   const [rutaElegida, setRutaElegida] = useState("");
   const [unidadElegida, setUnidadElegida] = useState("");
@@ -71,6 +73,7 @@ export default function ViajesPage() {
       setFecha("");
       setHora("");
       setPrecio("");
+      setMensajeExito("Viaje programado correctamente.");
       cargarTodo();
     } catch (err) {
       setErrorForm(err instanceof Error ? err.message : "No se pudo crear el viaje.");
@@ -83,6 +86,7 @@ export default function ViajesPage() {
 
   return (
     <div className="space-y-6">
+      <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Viajes</h1>
         <p className="mt-1 text-sm text-brand-dark/60">

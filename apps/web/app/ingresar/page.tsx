@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { login } from "@/lib/api";
 import { guardarToken, decodificarToken } from "@/lib/auth";
+import { CampoPassword } from "@/components/CampoPassword";
 
 function FormularioIngreso() {
   const router = useRouter();
@@ -69,13 +70,7 @@ function FormularioIngreso() {
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
               Contraseña
             </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-            />
+            <CampoPassword value={password} onChange={setPassword} />
           </div>
 
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}

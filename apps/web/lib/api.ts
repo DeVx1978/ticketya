@@ -365,3 +365,103 @@ export async function registrar(datos: {
   }
   return cuerpo;
 }
+
+// ---------------------------------------------------------------------
+// Panel Admin (admin_plataforma) — cooperativas y puntos de operación,
+// ver 22-jul-2026.
+// ---------------------------------------------------------------------
+
+export interface CooperativaResumen {
+  id: string;
+  nombreComercial: string;
+  estado: string;
+}
+
+export async function listarCooperativasAdmin(token: string): Promise<CooperativaResumen[]> {
+  const res = await fetch(`${API_URL}/admin/cooperativas`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las cooperativas.");
+  return cuerpo as CooperativaResumen[];
+}
+
+export interface DatosNuevaCooperativa {
+  ruc: string;
+  razonSocial: string;
+  nombreComercial: string;
+  modeloIntegracion: string;
+  contactoNombre?: string;
+  contactoCorreo?: string;
+  contactoTelefono?: string;
+}
+
+export interface DatosPrimerUsuarioCooperativa {
+  correo: string;
+  password: string;
+  nombreCompleto: string;
+}
+
+export async function crearCooperativaAdmin(
+  token: string,
+  cooperativa: DatosNuevaCooperativa,
+  usuario: DatosPrimerUsuarioCooperativa,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/cooperativas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ cooperativa, usuario }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear la cooperativa.");
+  }
+}
+
+export interface PuntoOperacionResumen {
+  id: string;
+  tipo: string;
+  nombre: string;
+  ciudad: string;
+  provincia: string;
+  tasaMonto: number | null;
+  cooperativaPropietariaNombre: string | null;
+}
+
+export async function listarPuntosOperacionAdmin(token: string): Promise<PuntoOperacionResumen[]> {
+  const res = await fetch(`${API_URL}/admin/puntos-operacion`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los puntos de operación.");
+  return cuerpo as PuntoOperacionResumen[];
+}
+
+export interface DatosNuevoPuntoOperacion {
+  tipo: string;
+  nombre: string;
+  ciudad: string;
+  provincia: string;
+  cooperativaPropietariaId?: string;
+  tasaMonto?: number;
+}
+
+export async function crearPuntoOperacionAdmin(
+  token: string,
+  datos: DatosNuevoPuntoOperacion,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/puntos-operacion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el punto de operación.");
+  }
+}
+

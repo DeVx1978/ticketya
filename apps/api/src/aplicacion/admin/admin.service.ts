@@ -18,17 +18,18 @@ export class AdminService {
     datosCooperativa: DatosNuevaCooperativa,
     datosUsuario: DatosPrimerUsuarioCooperativa,
   ) {
-    const { cooperativaId } =
-      await this.admin.crearCooperativa(datosCooperativa);
-    const { usuarioId } = await this.admin.crearPrimerUsuarioCooperativa(
-      cooperativaId,
+    return this.admin.crearCooperativaConPrimerUsuarioAtomico(
+      datosCooperativa,
       datosUsuario,
     );
-    return { cooperativaId, usuarioId };
   }
 
   async listarCooperativas() {
     return this.admin.listarCooperativas();
+  }
+
+  async listarPuntosOperacion() {
+    return this.admin.listarPuntosOperacion();
   }
 
   async crearPuntoOperacion(datos: DatosNuevoPuntoOperacion) {

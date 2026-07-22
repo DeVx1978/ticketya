@@ -44,6 +44,11 @@ export class AdminController {
     return this.admin.crearPuntoOperacion(dto);
   }
 
+  @Get('puntos-operacion')
+  async listarPuntosOperacion() {
+    return this.admin.listarPuntosOperacion();
+  }
+
   /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
   @Get('dashboard')
   async dashboardNacional() {

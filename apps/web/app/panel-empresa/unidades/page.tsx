@@ -10,11 +10,13 @@ import {
   type UnidadResumen,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
+import { Toast } from "@/components/Toast";
 
 export default function UnidadesPage() {
   const [tipos, setTipos] = useState<TipoVehiculoResumen[] | null>(null);
   const [unidades, setUnidades] = useState<UnidadResumen[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
   // Formulario: tipo de vehículo
   const [nombreTipo, setNombreTipo] = useState("");
@@ -53,6 +55,7 @@ export default function UnidadesPage() {
     setGuardandoTipo(true);
     try {
       await crearTipoVehiculoCoop(token, { nombre: nombreTipo.trim(), capacidadTotal: Number(capacidad) });
+      setMensajeExito(`Tipo de vehículo "${nombreTipo.trim()}" creado correctamente.`);
       setNombreTipo("");
       setCapacidad("");
       cargarTodo();
@@ -80,6 +83,7 @@ export default function UnidadesPage() {
       });
       setPlaca("");
       setIdentificador("");
+      setMensajeExito(`Unidad "${placa.trim()}" registrada correctamente.`);
       cargarTodo();
     } catch (err) {
       setErrorUnidad(err instanceof Error ? err.message : "No se pudo crear la unidad.");
@@ -90,6 +94,7 @@ export default function UnidadesPage() {
 
   return (
     <div className="space-y-8">
+      <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Unidades</h1>
         <p className="mt-1 text-sm text-brand-dark/60">

@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { crearRutaCoop, listarRutasCoop, type PuntoOperacion, type RutaResumen } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { SelectorCiudad } from "@/components/SelectorCiudad";
+import { Toast } from "@/components/Toast";
 
 export default function RutasPage() {
   const [rutas, setRutas] = useState<RutaResumen[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
   const [origen, setOrigen] = useState<PuntoOperacion | null>(null);
   const [destino, setDestino] = useState<PuntoOperacion | null>(null);
@@ -42,10 +44,12 @@ export default function RutasPage() {
         precioBaseReferencia: Number(precio),
         nombre: nombre.trim() || undefined,
       });
+      const descripcion = nombre.trim() || `${origen.ciudad} → ${destino.ciudad}`;
       setOrigen(null);
       setDestino(null);
       setPrecio("");
       setNombre("");
+      setMensajeExito(`Ruta "${descripcion}" creada correctamente.`);
       cargarRutas();
     } catch (err) {
       setErrorForm(err instanceof Error ? err.message : "No se pudo crear la ruta.");
@@ -56,6 +60,7 @@ export default function RutasPage() {
 
   return (
     <div className="space-y-6">
+      <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Rutas</h1>
         <p className="mt-1 text-sm text-brand-dark/60">
