@@ -56,4 +56,18 @@ export interface AdminRepositorio {
 
   /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
   dashboardNacional(): Promise<FilaVentaNacional[]>;
+
+  /** IVA nacional vigente — el que se propaga a las cooperativas en "modo automático" (21-jul-2026). */
+  obtenerIvaNacional(): Promise<number>;
+
+  /**
+   * Cambia el IVA nacional y lo propaga de inmediato a toda cooperativa
+   * con ivaSigueTasaNacional = true (las que fijaron un valor propio
+   * manualmente no se tocan). Devuelve cuántas cooperativas se
+   * actualizaron, para que el admin vea el alcance real del cambio.
+   */
+  actualizarYPropagarIvaNacional(
+    nuevoPorcentaje: number,
+    usuarioId: string,
+  ): Promise<{ cooperativasActualizadas: number }>;
 }

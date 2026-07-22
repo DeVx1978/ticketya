@@ -60,5 +60,18 @@ export const configuracionPlataforma = pgTable('configuracion_plataforma', {
   // uniforme vs. por cooperativa).
   politicaCancelacionNotas: text('politica_cancelacion_notas'),
 
+  // IVA vigente a nivel nacional (Ecuador, 15% al momento de este
+  // diseño — 21-jul-2026). Es el valor que se propaga a todas las
+  // cooperativas que tengan "iva_sigue_tasa_nacional = true" cuando el
+  // admin de plataforma actualiza este campo. Las cooperativas con un
+  // valor propio manual (false) no se tocan al propagar — ver
+  // cooperativas.ivaSigueTasaNacional en tenancy.ts.
+  ivaPorcentajeNacional: numeric('iva_porcentaje_nacional', {
+    precision: 5,
+    scale: 2,
+  })
+    .default('15.00')
+    .notNull(),
+
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
 });

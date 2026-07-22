@@ -208,6 +208,21 @@ export interface PanelEmpresaRepositorio {
   /** RF-COOP-004 — dashboard de ventas del día, tenant-scoped de verdad. */
   dashboardVentasDelDia(cooperativaId: string): Promise<FilaVentaDelDia[]>;
 
+  /** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable. */
+  obtenerConfiguracionFiscal(cooperativaId: string): Promise<{
+    ivaPorcentaje: number;
+    ivaVisibleEnBoleto: boolean;
+    ivaSigueTasaNacional: boolean;
+  }>;
+  actualizarConfiguracionFiscal(
+    cooperativaId: string,
+    datos: {
+      ivaPorcentaje: number;
+      ivaVisibleEnBoleto: boolean;
+      ivaSigueTasaNacional: boolean;
+    },
+  ): Promise<void>;
+
   /** RF-COOP-006 — validación de boleto por QR en abordaje. */
   validarBoletoPorQr(
     cooperativaId: string,

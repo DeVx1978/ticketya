@@ -38,4 +38,18 @@ export class AdminService {
   async dashboardNacional() {
     return this.admin.dashboardNacional();
   }
+
+  async obtenerIvaNacional() {
+    return this.admin.obtenerIvaNacional();
+  }
+
+  async actualizarYPropagarIvaNacional(
+    nuevoPorcentaje: number,
+    usuarioId: string,
+  ) {
+    return this.admin.actualizarYPropagarIvaNacional(
+      nuevoPorcentaje,
+      usuarioId,
+    );
+  }
 }

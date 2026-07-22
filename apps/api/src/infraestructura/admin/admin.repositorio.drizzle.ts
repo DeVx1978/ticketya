@@ -105,4 +105,66 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     `);
     return resultado.rows as unknown as FilaVentaNacional[];
   }
+
+  async obtenerIvaNacional(): Promise<number> {
+    const resultado = await this.db.execute(sql`
+      SELECT iva_porcentaje_nacional FROM configuracion_plataforma LIMIT 1
+    `);
+    const fila = resultado.rows[0] as
+      { iva_porcentaje_nacional: string } | undefined;
+    // Nullable-en-la-práctica: si todavía no existe la fila singleton de
+    // configuracion_plataforma, se asume el valor por defecto de la
+    // columna (15.00) en vez de fallar.
+    return fila ? Number(fila.iva_porcentaje_nacional) : 15;
+  }
+
+  async actualizarYPropagarIvaNacional(
+    nuevoPorcentaje: number,
+    usuarioId: string,
+  ): Promise<{ cooperativasActualizadas: number }> {
+    // 1) Actualiza (o crea, si todavía no existe la fila singleton) la
+    //    configuración global.
+    const filaExistente = await this.db.execute(
+      sql`SELECT id FROM configuracion_plataforma LIMIT 1`,
+    );
+    let configuracionId: string;
+    if (filaExistente.rows.length === 0) {
+      const creada = await this.db.execute(sql`
+        INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, iva_porcentaje_nacional)
+        VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${nuevoPorcentaje})
+        RETURNING id
+      `);
+      configuracionId = (creada.rows[0] as { id: string }).id;
+    } else {
+      configuracionId = (filaExistente.rows[0] as { id: string }).id;
+      await this.db.execute(sql`
+        UPDATE configuracion_plataforma
+        SET iva_porcentaje_nacional = ${nuevoPorcentaje}, actualizado_en = now()
+        WHERE id = ${configuracionId}
+      `);
+    }
+
+    // 2) Propaga SOLO a las cooperativas en modo automático — las que
+    //    fijaron su propio valor manualmente quedan intactas.
+    const propagado = await this.db.execute(sql`
+      UPDATE cooperativas
+      SET iva_porcentaje = ${nuevoPorcentaje}
+      WHERE iva_sigue_tasa_nacional = true
+      RETURNING id
+    `);
+
+    // 3) Auditoría — acción crítica que afecta a todas las cooperativas.
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES (
+        'actualizacion_iva_nacional',
+        ${usuarioId},
+        'configuracion_plataforma',
+        ${configuracionId},
+        ${JSON.stringify({ nuevoPorcentaje, cooperativasActualizadas: propagado.rows.length })}
+      )
+    `);
+
+    return { cooperativasActualizadas: propagado.rows.length };
+  }
 }

@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
   MinLength,
   ValidateNested,
@@ -76,4 +77,12 @@ export class CrearPuntoOperacionDto {
   @IsNumber()
   @Min(0)
   tasaMonto?: number;
+}
+
+/** IVA nacional — solo admin_plataforma puede cambiarlo (21-jul-2026). */
+export class ActualizarIvaNacionalDto {
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  ivaPorcentaje!: number;
 }

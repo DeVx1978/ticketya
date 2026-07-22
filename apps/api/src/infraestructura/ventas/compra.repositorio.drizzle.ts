@@ -6,6 +6,7 @@ import {
   viajeAsientos,
   rutas,
   puntosOperacion,
+  cooperativas,
   compras,
   pasajerosCompra,
   pagos,
@@ -75,6 +76,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           holdUsuarioId: viajeAsientos.holdUsuarioId,
           holdExpiraEn: viajeAsientos.holdExpiraEn,
           tasaTerminal: puntosOperacion.tasaMonto,
+          ivaPorcentaje: cooperativas.ivaPorcentaje,
+          ivaVisibleEnBoleto: cooperativas.ivaVisibleEnBoleto,
         })
         .from(viajeAsientos)
         .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
@@ -83,6 +86,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           puntosOperacion,
           eq(rutas.origenPuntoOperacionId, puntosOperacion.id),
         )
+        .innerJoin(cooperativas, eq(viajes.cooperativaId, cooperativas.id))
         .where(
           and(
             eq(viajeAsientos.viajeId, asiento.viajeId),
@@ -111,14 +115,26 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         );
       }
 
+      const precioPagado =
+        Number(f.precioBase) * factorDescuento(asiento.tipoTarifa);
+      const ivaPorcentaje = Number(f.ivaPorcentaje ?? 0);
+      // El precio YA trae el IVA incluido — se despeja la porción de IVA
+      // sobre el total, no se suma aparte. Ej.: precio 11.50, IVA 15% →
+      // base = 11.50 / 1.15 = 10, iva = 11.50 - 10 = 1.50.
+      const ivaMonto =
+        ivaPorcentaje > 0
+          ? precioPagado - precioPagado / (1 + ivaPorcentaje / 100)
+          : 0;
+
       resultado.push({
         viajeId: asiento.viajeId,
         numeroAsiento: asiento.numeroAsiento,
         cooperativaId: f.cooperativaId,
-        precioPagado:
-          Number(f.precioBase) * factorDescuento(asiento.tipoTarifa),
+        precioPagado,
         tasaTerminal: Number(f.tasaTerminal ?? 0),
         cargoPlataforma,
+        ivaMonto: Number(ivaMonto.toFixed(2)),
+        ivaVisible: f.ivaVisibleEnBoleto,
       });
     }
 
@@ -140,6 +156,11 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       (a, d) => a + d.cargoPlataforma,
       0,
     );
+    // El IVA ya viene incluido dentro de montoTarifasCooperativa (no se
+    // suma aparte al total) — esta columna es el desglose informativo de
+    // cuánto de ese monto corresponde a IVA, para el comprobante y la
+    // auditoría (RN-002).
+    const montoImpuestos = desglose.reduce((a, d) => a + d.ivaMonto, 0);
     const montoTotal =
       montoTarifasCooperativa + montoTasaTerminal + montoCargoPlataforma;
 
@@ -152,7 +173,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         montoTarifasCooperativa: montoTarifasCooperativa.toFixed(2),
         montoCargoPlataforma: montoCargoPlataforma.toFixed(2),
         montoTasaTerminal: montoTasaTerminal.toFixed(2),
-        montoImpuestos: '0', // ⚠ ver nota de RN-002 en ventas.ports.ts / configuracion.ts
+        montoImpuestos: montoImpuestos.toFixed(2),
       })
       .returning();
 

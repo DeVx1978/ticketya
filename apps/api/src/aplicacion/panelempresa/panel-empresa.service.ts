@@ -67,6 +67,21 @@ export class PanelEmpresaService {
     return this.panel.dashboardVentasDelDia(cooperativaId);
   }
 
+  obtenerConfiguracionFiscal(cooperativaId: string) {
+    return this.panel.obtenerConfiguracionFiscal(cooperativaId);
+  }
+
+  actualizarConfiguracionFiscal(
+    cooperativaId: string,
+    datos: {
+      ivaPorcentaje: number;
+      ivaVisibleEnBoleto: boolean;
+      ivaSigueTasaNacional: boolean;
+    },
+  ) {
+    return this.panel.actualizarConfiguracionFiscal(cooperativaId, datos);
+  }
+
   validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,

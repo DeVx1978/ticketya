@@ -16,6 +16,7 @@ import {
   numeric,
   doublePrecision,
   timestamp,
+  boolean,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -46,6 +47,28 @@ export const cooperativas = pgTable(
     contactoTelefono: varchar('contacto_telefono', { length: 20 }),
 
     fechaAfiliacion: timestamp('fecha_afiliacion', { withTimezone: true }),
+
+    // IVA (impuesto al valor agregado) — se asume, por defecto, YA
+    // incluido dentro del precio del boleto (así opera hoy la mayoría de
+    // cooperativas en Ecuador, tasa vigente 15%). Configurable por
+    // cooperativa porque cada una puede tener un caso distinto: alguna
+    // podría manejar 0% (exenta), o simplemente no querer mostrarlo
+    // desglosado en el boleto aunque sí lo esté pagando. No se guarda
+    // como parte de "configuracion_plataforma" (esa es global) porque
+    // esta decisión es explícitamente por cooperativa.
+    ivaPorcentaje: numeric('iva_porcentaje', { precision: 5, scale: 2 })
+      .default('15.00')
+      .notNull(),
+    ivaVisibleEnBoleto: boolean('iva_visible_en_boleto').default(true).notNull(),
+    // true = el valor de arriba se actualiza solo cuando el admin de
+    // plataforma cambia el IVA nacional (comportamiento por defecto).
+    // false = la cooperativa fijó su propio valor manualmente (ej.
+    // exenta, o caso especial) y las actualizaciones masivas no la
+    // tocan. Al editar su propio ivaPorcentaje desde el Panel Empresa,
+    // esto pasa a false automáticamente — puede volver a true cuando
+    // quiera "seguir de nuevo" el valor nacional.
+    ivaSigueTasaNacional: boolean('iva_sigue_tasa_nacional').default(true).notNull(),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },

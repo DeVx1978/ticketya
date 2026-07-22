@@ -73,6 +73,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           <p className="mt-1 text-sm text-brand-dark/60">
             Asiento {numeroAsiento} · ${resultado.montoTotal?.toFixed(2)}
           </p>
+          {resultado.ivaVisible && resultado.ivaTotal !== undefined && resultado.ivaTotal > 0 && (
+            <p className="mt-0.5 text-xs text-brand-dark/40">
+              IVA incluido: ${resultado.ivaTotal.toFixed(2)}
+            </p>
+          )}
           <div className="mt-5">
             <CodigoQr valor={boleto.codigoQr} />
           </div>

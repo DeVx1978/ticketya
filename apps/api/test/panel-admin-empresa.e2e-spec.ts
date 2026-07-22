@@ -221,6 +221,96 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(unidad.tipoVehiculoNombre).toBe('Bus estándar 2+2 (E2E)');
   });
 
+  it('la cooperativa nace con IVA 15% incluido, visible y en modo automático por defecto, y puede cambiarlo (21-jul-2026)', async () => {
+    const res1 = await request(app.getHttpServer())
+      .get('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(res1.body.ivaPorcentaje).toBe(15);
+    expect(res1.body.ivaVisibleEnBoleto).toBe(true);
+    expect(res1.body.ivaSigueTasaNacional).toBe(true);
+
+    // Al fijar un valor manual, se espera que pase a modo manual (false).
+    await request(app.getHttpServer())
+      .patch('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        ivaPorcentaje: 0,
+        ivaVisibleEnBoleto: false,
+        ivaSigueTasaNacional: false,
+      })
+      .expect(200);
+
+    const res2 = await request(app.getHttpServer())
+      .get('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(res2.body.ivaPorcentaje).toBe(0);
+    expect(res2.body.ivaVisibleEnBoleto).toBe(false);
+    expect(res2.body.ivaSigueTasaNacional).toBe(false);
+
+    // se deja de nuevo en 15% / automático para no afectar otras pruebas de esta suite
+    await request(app.getHttpServer())
+      .patch('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        ivaPorcentaje: 15,
+        ivaVisibleEnBoleto: true,
+        ivaSigueTasaNacional: true,
+      })
+      .expect(200);
+  });
+
+  it('el admin de plataforma cambia el IVA nacional y se propaga solo a cooperativas en modo automático, respetando excepciones manuales (21-jul-2026)', async () => {
+    // Una cooperativa se queda en modo manual con su propio valor (ej. exenta).
+    await request(app.getHttpServer())
+      .patch('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        ivaPorcentaje: 0,
+        ivaVisibleEnBoleto: true,
+        ivaSigueTasaNacional: false,
+      })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .patch('/admin/iva-nacional')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ ivaPorcentaje: 18 })
+      .expect(200);
+    expect(res.body.cooperativasActualizadas).toBeGreaterThanOrEqual(0);
+
+    // La cooperativa en modo manual (0%, exenta) NO debió cambiar.
+    const fiscalCoop = await request(app.getHttpServer())
+      .get('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(fiscalCoop.body.ivaPorcentaje).toBe(0);
+
+    const nacional = await request(app.getHttpServer())
+      .get('/admin/iva-nacional')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    expect(nacional.body.ivaPorcentaje).toBe(18);
+
+    // se deja todo de nuevo en 15% / automático (nacional + esta cooperativa)
+    // para no afectar otras pruebas de esta suite.
+    await request(app.getHttpServer())
+      .patch('/admin/iva-nacional')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ ivaPorcentaje: 15 })
+      .expect(200);
+    await request(app.getHttpServer())
+      .patch('/coop/configuracion-fiscal')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        ivaPorcentaje: 15,
+        ivaVisibleEnBoleto: true,
+        ivaSigueTasaNacional: true,
+      })
+      .expect(200);
+  });
+
   it('crea una ruta entre los dos puntos de operación (RF-COOP-002)', async () => {
     const res = await request(app.getHttpServer())
       .post('/coop/rutas')

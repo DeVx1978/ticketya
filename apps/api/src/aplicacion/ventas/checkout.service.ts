@@ -87,6 +87,18 @@ export class CheckoutService {
       resultadoPago.referenciaExterna,
       mapeo,
     );
-    return { compraId, estado: 'aprobado' as const, boletos, montoTotal };
+    const ivaTotal = desglose.reduce((acc, d) => acc + d.ivaMonto, 0);
+    // Si la compra mezcla boletos de cooperativas con distinta
+    // configuración de visibilidad, se prefiere mostrarlo (más
+    // transparente) en vez de ocultarlo por defecto.
+    const ivaVisible = desglose.some((d) => d.ivaVisible);
+    return {
+      compraId,
+      estado: 'aprobado' as const,
+      boletos,
+      montoTotal,
+      ivaTotal: Number(ivaTotal.toFixed(2)),
+      ivaVisible,
+    };
   }
 }

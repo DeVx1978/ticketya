@@ -206,6 +206,12 @@ describe('Checkout y pago (e2e)', () => {
     expect(res.body.estado).toBe('aprobado');
     expect(res.body.boletos).toHaveLength(1);
     expect(res.body.boletos[0].codigoQr).toBeDefined();
+    // IVA (RN nuevo, 21-jul-2026): la cooperativa nace con 15% por
+    // defecto, ya incluido dentro del precio (no se suma aparte al
+    // total). Con PRECIO_BASE=10: iva = 10 - 10/1.15 = 1.30.
+    expect(res.body.ivaTotal).toBeCloseTo(1.3, 2);
+    expect(res.body.ivaVisible).toBe(true);
+    expect(res.body.montoTotal).toBe(PRECIO_BASE); // el IVA NO se suma aparte, ya está adentro
   });
 
   it('aplica el 50% de descuento a un pasajero niño (RN-001, RF-CHECK-002)', async () => {
@@ -341,15 +347,18 @@ describe('Checkout y pago (e2e)', () => {
     expect(res.body.boletos).toBeUndefined();
   });
 
-  it('HALLAZGO DOCUMENTADO: no existe ninguna fila en configuracion_plataforma — el cargo de plataforma por pasajero cae en 0 por defecto (fallback ?? 0), no en un valor de negocio real. Debe sembrarse una fila real antes del piloto (RN-003 del SRS sigue pendiente de decisión de todas formas).', async () => {
+  it('HALLAZGO DOCUMENTADO (actualizado 21-jul-2026): el cargo fijo de plataforma por pasajero sigue sin un valor de negocio real (columna nullable, cae en 0 por defecto). Antes esta prueba también documentaba que configuracion_plataforma estaba vacía, pero desde la función de IVA nacional (actualizarYPropagarIvaNacional) esa fila se siembra sola en el primer uso — eso ya no es un hallazgo, así que se verifica solo lo que sigue pendiente: RN-003 del SRS.', async () => {
     const pg = new Client({
       connectionString: process.env.DATABASE_URL_PUBLICO,
     });
     await pg.connect();
     const { rows } = await pg.query(
-      'SELECT count(*)::int AS total FROM configuracion_plataforma',
+      'SELECT cargo_plataforma_por_pasajero_default FROM configuracion_plataforma LIMIT 1',
     );
     await pg.end();
-    expect(rows[0].total).toBe(0); // documenta el estado real, no el deseado
+    // Puede que no exista fila todavía (null implícito) o que exista pero
+    // con esta columna en null — ambos casos son la misma realidad: no
+    // hay un valor de negocio real configurado.
+    expect(rows[0]?.cargo_plataforma_por_pasajero_default ?? null).toBeNull();
   });
 });

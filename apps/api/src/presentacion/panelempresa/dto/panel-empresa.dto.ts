@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsEmail,
   IsIn,
   IsInt,
@@ -7,6 +8,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
   MinLength,
 } from 'class-validator';
@@ -123,4 +125,21 @@ export class ImportarDatosDto {
 export class ValidarQrDto {
   @IsString()
   codigoQr!: string;
+}
+
+/** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable, ver 21-jul-2026. */
+export class ActualizarConfiguracionFiscalDto {
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  ivaPorcentaje!: number;
+
+  @IsBoolean()
+  ivaVisibleEnBoleto!: boolean;
+
+  // true = seguir el IVA nacional automáticamente (el panel de admin lo
+  // actualiza solo). false = quedarme con el valor que acabo de fijar
+  // manualmente, sin que las actualizaciones nacionales me lo cambien.
+  @IsBoolean()
+  ivaSigueTasaNacional!: boolean;
 }

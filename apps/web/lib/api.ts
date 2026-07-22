@@ -4,7 +4,7 @@
  * reemplaza por una variable de entorno real (NEXT_PUBLIC_API_URL) — no
  * se hardcodea la URL de producción aquí porque todavía no existe.
  */
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 export interface PuntoOperacion {
   id: string;
@@ -93,6 +93,40 @@ export async function obtenerDashboardCoop(token: string): Promise<FilaVentaDelD
     throw new Error(cuerpo?.message ?? "No se pudo cargar el dashboard.");
   }
   return cuerpo as FilaVentaDelDia[];
+}
+
+export interface ConfiguracionFiscal {
+  ivaPorcentaje: number;
+  ivaVisibleEnBoleto: boolean;
+  ivaSigueTasaNacional: boolean;
+}
+
+export async function obtenerConfiguracionFiscal(token: string): Promise<ConfiguracionFiscal> {
+  const res = await fetch(`${API_URL}/coop/configuracion-fiscal`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudo cargar la configuración fiscal.");
+  }
+  return cuerpo as ConfiguracionFiscal;
+}
+
+export async function actualizarConfiguracionFiscal(
+  token: string,
+  datos: ConfiguracionFiscal,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/configuracion-fiscal`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar la configuración fiscal.");
+  }
 }
 
 export interface RutaResumen {
@@ -279,6 +313,8 @@ export interface ResultadoCompra {
   boletos?: BoletoEmitido[];
   motivo?: string;
   montoTotal?: number;
+  ivaTotal?: number;
+  ivaVisible?: boolean;
 }
 
 export async function crearCompra(

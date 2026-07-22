@@ -1,9 +1,22 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from '../../aplicacion/admin/admin.service';
-import { CrearCooperativaDto, CrearPuntoOperacionDto } from './dto/admin.dto';
+import {
+  CrearCooperativaDto,
+  CrearPuntoOperacionDto,
+  ActualizarIvaNacionalDto,
+} from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.guard';
+import { PayloadToken } from '../../dominio/auth/auth.ports';
 
 /** Todo este controller es exclusivo del admin_plataforma — RF-ADMIN. */
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -35,5 +48,22 @@ export class AdminController {
   @Get('dashboard')
   async dashboardNacional() {
     return this.admin.dashboardNacional();
+  }
+
+  /** IVA nacional — valor que se propaga a las cooperativas en modo automático (21-jul-2026). */
+  @Get('iva-nacional')
+  async obtenerIvaNacional() {
+    return { ivaPorcentaje: await this.admin.obtenerIvaNacional() };
+  }
+
+  @Patch('iva-nacional')
+  async actualizarIvaNacional(
+    @Body() dto: ActualizarIvaNacionalDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.admin.actualizarYPropagarIvaNacional(
+      dto.ivaPorcentaje,
+      req.user.sub,
+    );
   }
 }

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Request,
   UseGuards,
   ForbiddenException,
@@ -17,6 +18,7 @@ import {
   CrearConductorDto,
   ImportarDatosDto,
   ValidarQrDto,
+  ActualizarConfiguracionFiscalDto,
 } from './dto/panel-empresa.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
@@ -141,6 +143,26 @@ export class PanelEmpresaController {
   @Get('dashboard')
   async dashboard(@Request() req: { user: PayloadToken }) {
     return this.panel.dashboardVentasDelDia(cooperativaDelToken(req.user));
+  }
+
+  /** IVA de la cooperativa — solo el admin puede verla/cambiarla (21-jul-2026). */
+  @Roles('admin_cooperativa')
+  @Get('configuracion-fiscal')
+  async obtenerConfiguracionFiscal(@Request() req: { user: PayloadToken }) {
+    return this.panel.obtenerConfiguracionFiscal(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('configuracion-fiscal')
+  async actualizarConfiguracionFiscal(
+    @Body() dto: ActualizarConfiguracionFiscalDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarConfiguracionFiscal(
+      cooperativaDelToken(req.user),
+      dto,
+    );
+    return { ok: true };
   }
 
   /** RF-COOP-006 — tanto el vendedor como el admin pueden validar boletos en el andén. */

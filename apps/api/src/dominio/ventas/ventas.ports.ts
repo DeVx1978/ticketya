@@ -58,6 +58,10 @@ export interface DesgloseAsiento {
   precioPagado: number;
   tasaTerminal: number;
   cargoPlataforma: number;
+  /** Porción de precioPagado que corresponde a IVA — el precio YA lo trae incluido, esto es solo el desglose informativo. */
+  ivaMonto: number;
+  /** Si la cooperativa decide mostrar el desglose de IVA en el boleto (puede pagarlo igual y no mostrarlo). */
+  ivaVisible: boolean;
 }
 
 export interface ResultadoPago {

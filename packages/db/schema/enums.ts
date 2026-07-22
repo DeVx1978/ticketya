@@ -133,6 +133,7 @@ export const accionAuditoriaEnum = pgEnum('accion_auditoria', [
   'cambio_comision',
   'aprobacion_campana',
   'ajuste_liquidacion',
+  'actualizacion_iva_nacional',
 ]);
 
 /** RF-COMM-002 — planes comerciales diferenciados. */

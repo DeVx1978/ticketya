@@ -451,6 +451,49 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async obtenerConfiguracionFiscal(cooperativaId: string): Promise<{
+    ivaPorcentaje: number;
+    ivaVisibleEnBoleto: boolean;
+    ivaSigueTasaNacional: boolean;
+  }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT iva_porcentaje, iva_visible_en_boleto, iva_sigue_tasa_nacional
+        FROM cooperativas
+        WHERE id = ${cooperativaId}
+      `);
+      const f = resultado.rows[0] as {
+        iva_porcentaje: string;
+        iva_visible_en_boleto: boolean;
+        iva_sigue_tasa_nacional: boolean;
+      };
+      return {
+        ivaPorcentaje: Number(f.iva_porcentaje),
+        ivaVisibleEnBoleto: f.iva_visible_en_boleto,
+        ivaSigueTasaNacional: f.iva_sigue_tasa_nacional,
+      };
+    });
+  }
+
+  async actualizarConfiguracionFiscal(
+    cooperativaId: string,
+    datos: {
+      ivaPorcentaje: number;
+      ivaVisibleEnBoleto: boolean;
+      ivaSigueTasaNacional: boolean;
+    },
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE cooperativas
+        SET iva_porcentaje = ${datos.ivaPorcentaje},
+            iva_visible_en_boleto = ${datos.ivaVisibleEnBoleto},
+            iva_sigue_tasa_nacional = ${datos.ivaSigueTasaNacional}
+        WHERE id = ${cooperativaId}
+      `);
+    });
+  }
+
   async validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,
