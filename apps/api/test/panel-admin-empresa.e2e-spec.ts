@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { Client } from 'pg';
+import { limpiarCooperativasDePrueba } from './helpers/limpieza';
 
 /**
  * Cubre, de forma automatizada, exactamente el mismo recorrido que se
@@ -86,6 +87,10 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
   });
 
   afterAll(async () => {
+    // 22-jul-2026: antes solo cerraba la app y decía en un comentario
+    // que "limpiaba sus datos" — no era cierto. Ahora sí borra de
+    // verdad (ver test/helpers/limpieza.ts).
+    await limpiarCooperativasDePrueba(['Coop E2E', 'Coop Huerfana E2E']);
     await app.close();
   });
 

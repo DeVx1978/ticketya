@@ -4,6 +4,10 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { Client } from 'pg';
+import {
+  limpiarCooperativasDePrueba,
+  limpiarPuntosDePruebaPorNombre,
+} from './helpers/limpieza';
 
 /**
  * Paso 2 del plan de blindaje del núcleo. Cubre RF-BUS-001, 002, 003 y
@@ -201,6 +205,17 @@ describe('Búsqueda de rutas (e2e)', () => {
   });
 
   afterAll(async () => {
+    // 22-jul-2026: limpieza real (ver test/helpers/limpieza.ts) — este
+    // archivo era, junto con checkout y asientos, el que más
+    // acumulaba datos sin borrar nada al final.
+    await limpiarCooperativasDePrueba([
+      `Coop Búsqueda A ${sufijo}`,
+      `Coop Búsqueda B ${sufijo}`,
+    ]);
+    await limpiarPuntosDePruebaPorNombre([
+      `Terminal Relevancia ${sufijo}`,
+      `ZzRelevancia${sufijo} Sucursal Norte`,
+    ]);
     await app.close();
   });
 

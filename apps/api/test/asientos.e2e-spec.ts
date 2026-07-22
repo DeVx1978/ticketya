@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { Client } from 'pg';
+import { limpiarCooperativasDePrueba } from './helpers/limpieza';
 
 /**
  * Paso 3 del plan de blindaje del núcleo — el más delicado de los
@@ -156,6 +157,8 @@ describe('Selección de asientos (e2e)', () => {
   });
 
   afterAll(async () => {
+    // 22-jul-2026: limpieza real (ver test/helpers/limpieza.ts).
+    await limpiarCooperativasDePrueba([`Coop Asientos ${sufijo}`]);
     await app.close();
   });
 

@@ -4,6 +4,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { Client } from 'pg';
+import { limpiarCooperativasDePrueba } from './helpers/limpieza';
 
 /**
  * Paso 4 (último) del plan de blindaje del núcleo. Cubre RF-CHECK y el
@@ -163,6 +164,10 @@ describe('Checkout y pago (e2e)', () => {
   });
 
   afterAll(async () => {
+    // 22-jul-2026: limpieza real (ver test/helpers/limpieza.ts) — este
+    // archivo genera compras/boletos/comprobantes reales de prueba, la
+    // cadena más larga de las cuatro.
+    await limpiarCooperativasDePrueba([`Coop Checkout ${sufijo}`]);
     await app.close();
   });
 
