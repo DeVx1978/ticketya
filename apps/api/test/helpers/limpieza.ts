@@ -54,6 +54,9 @@ export async function limpiarCooperativasDePrueba(
       `DELETE FROM comprobantes_electronicos WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,
     );
     await pg.query(
+      `DELETE FROM calificaciones WHERE boleto_id IN (SELECT id FROM _boletos_test)`,
+    );
+    await pg.query(
       `DELETE FROM boletos WHERE id IN (SELECT id FROM _boletos_test)`,
     );
     await pg.query(

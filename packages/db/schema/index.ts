@@ -14,6 +14,7 @@ export * from './flota';
 export * from './rutas';
 export * from './asientos';
 export * from './ventas';
+export * from './calificaciones';
 export * from './facturacion';
 export * from './menores';
 export * from './notificaciones';

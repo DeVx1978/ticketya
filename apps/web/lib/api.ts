@@ -18,6 +18,8 @@ export interface ResultadoViaje {
   viajeId: string;
   cooperativaNombre: string;
   cooperativaLogoUrl: string | null;
+  cooperativaCalificacionPromedio: number | null;
+  cooperativaCalificacionCantidad: number;
   rutaId: string;
   horaSalidaProgramada: string;
   horaLlegadaEstimada: string | null;
@@ -592,5 +594,28 @@ export async function listarBannersActivos(): Promise<BannerPropio[]> {
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los banners.");
   return cuerpo as BannerPropio[];
 }
+
+// ---------------------------------------------------------------------
+// Calificaciones de viaje — 22-jul-2026.
+// ---------------------------------------------------------------------
+
+export async function calificarViaje(
+  token: string,
+  boletoId: string,
+  puntuacion: number,
+  comentario?: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/calificaciones`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ boletoId, puntuacion, comentario: comentario || undefined }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo enviar la calificación.");
+  }
+}
+
 
 

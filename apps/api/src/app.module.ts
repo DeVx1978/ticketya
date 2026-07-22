@@ -10,6 +10,7 @@ import { AsientosModule } from './presentacion/asientos/asientos.module';
 import { VentasModule } from './presentacion/ventas/ventas.module';
 import { AdminModule } from './presentacion/admin/admin.module';
 import { PanelEmpresaModule } from './presentacion/panelempresa/panel-empresa.module';
+import { CalificacionesModule } from './presentacion/calificaciones/calificaciones.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PanelEmpresaModule } from './presentacion/panelempresa/panel-empresa.mo
     VentasModule,
     AdminModule,
     PanelEmpresaModule,
+    CalificacionesModule,
   ],
   controllers: [AppController, SaludController],
   providers: [AppService],

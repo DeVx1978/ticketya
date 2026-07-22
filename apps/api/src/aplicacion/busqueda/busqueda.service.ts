@@ -90,11 +90,26 @@ export class BusquedaService {
 
     const asientosDisponibles = sql<number>`(${tiposVehiculo.capacidadTotal} - ${asientosNoDisponibles})`;
 
+    // Igual patrón que asientosDisponibles: subconsulta escalar, para no
+    // necesitar un GROUP BY que complicaría el resto del SELECT.
+    const calificacionPromedio = sql<string | null>`(
+      SELECT AVG(puntuacion) FROM calificaciones WHERE cooperativa_id = ${cooperativas.id}
+    )`;
+    const calificacionCantidad = sql<number>`(
+      SELECT COUNT(*)::int FROM calificaciones WHERE cooperativa_id = ${cooperativas.id}
+    )`;
+
     const resultados = await this.db
       .select({
         viajeId: viajes.id,
         cooperativaNombre: cooperativas.nombreComercial,
         cooperativaLogoUrl: cooperativas.logoUrl,
+        cooperativaCalificacionPromedio: calificacionPromedio.as(
+          'calificacion_promedio',
+        ),
+        cooperativaCalificacionCantidad: calificacionCantidad.as(
+          'calificacion_cantidad',
+        ),
         rutaId: rutas.id,
         horaSalidaProgramada: viajes.horaSalidaProgramada,
         horaLlegadaEstimada: viajes.horaLlegadaEstimada,
@@ -125,7 +140,14 @@ export class BusquedaService {
     // expresión completa en el WHERE — más simple y igual de correcto
     // filtrarlo aquí dado que el volumen de resultados por ruta/fecha es
     // pequeño (decenas, no miles).
-    return resultados.filter((r) => r.asientosDisponibles >= pasajerosMinimos);
+    return resultados
+      .filter((r) => r.asientosDisponibles >= pasajerosMinimos)
+      .map((r) => ({
+        ...r,
+        cooperativaCalificacionPromedio: r.cooperativaCalificacionPromedio
+          ? Number(r.cooperativaCalificacionPromedio)
+          : null,
+      }));
   }
 
   /** Banners propios activos, para la página pública — sin autenticación (22-jul-2026). */
