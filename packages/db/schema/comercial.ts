@@ -199,3 +199,29 @@ export const metricasPublicitariasRelations = relations(metricasPublicitarias, (
     references: [campanasPublicitarias.id],
   }),
 }));
+
+/**
+ * Banners propios (22-jul-2026) — versión deliberadamente simple, NO
+ * parte de RF-COMM. Sirve para que la propia plataforma (o productos
+ * hermanos, ej. DevX, Surebets24/7) se promocione en su propia página,
+ * o para que un terminal salude a los pasajeros — sin proceso de venta
+ * a un tercero, sin métricas de campaña, sin facturación. Cuando de
+ * verdad se venda espacio a una marca externa, eso pasa a
+ * campanasPublicitarias arriba (que sí tiene todo ese aparato) — este
+ * banner simple no debe crecer hacia ese sistema, son cosas distintas
+ * a propósito.
+ */
+export const bannersPropios = pgTable(
+  'banners_propios',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    titulo: varchar('titulo', { length: 100 }).notNull(),
+    imagenUrl: text('imagen_url').notNull(),
+    enlaceUrl: text('enlace_url').notNull(),
+    activo: boolean('activo').default(true).notNull(),
+    orden: integer('orden').default(0).notNull(),
+    creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('idx_banners_propios_activo').on(t.activo)],
+);
+

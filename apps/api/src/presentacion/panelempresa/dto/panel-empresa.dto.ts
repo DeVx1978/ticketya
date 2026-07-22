@@ -122,6 +122,17 @@ export class ImportarDatosDto {
   @IsOptional() @IsISO8601() generarViajesHasta?: string;
 }
 
+/** Perfil visual de la cooperativa — hoy solo el logo (22-jul-2026). */
+export class ActualizarPerfilDto {
+  // Sin @IsUrl() a propósito: una cadena vacía significa "quitar el
+  // logo" (ver panel-empresa.controller.ts), y @IsUrl() la rechazaría
+  // como formato inválido. La validación real de "sí es una URL" pasa
+  // solo cuando el valor no está vacío, en el propio controlador.
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+}
+
 export class ValidarQrDto {
   @IsString()
   codigoQr!: string;

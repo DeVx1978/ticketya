@@ -23,4 +23,10 @@ export class BusquedaController {
       query.pasajeros ?? 1,
     );
   }
+
+  /** Banners propios activos, para la portada — sin autenticación (22-jul-2026). */
+  @Get('banners-propios')
+  async listarBannersActivos() {
+    return this.busqueda.listarBannersActivos();
+  }
 }

@@ -280,6 +280,40 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(unidad.tipoVehiculoNombre).toBe('Bus estándar 2+2 (E2E)');
   });
 
+  it('la cooperativa nace sin logo, puede cargar uno y también borrarlo (22-jul-2026)', async () => {
+    const res1 = await request(app.getHttpServer())
+      .get('/coop/perfil')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(res1.body.logoUrl).toBeNull();
+
+    const urlLogo = 'https://res.cloudinary.com/demo/image/upload/logo-e2e.png';
+    await request(app.getHttpServer())
+      .patch('/coop/perfil')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ logoUrl: urlLogo })
+      .expect(200);
+
+    const res2 = await request(app.getHttpServer())
+      .get('/coop/perfil')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(res2.body.logoUrl).toBe(urlLogo);
+
+    // Borrar el logo: mandar cadena vacía lo interpreta como "quitarlo".
+    await request(app.getHttpServer())
+      .patch('/coop/perfil')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ logoUrl: '' })
+      .expect(200);
+
+    const res3 = await request(app.getHttpServer())
+      .get('/coop/perfil')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(res3.body.logoUrl).toBeNull();
+  });
+
   it('la cooperativa nace con IVA 15% incluido, visible y en modo automático por defecto, y puede cambiarlo (21-jul-2026)', async () => {
     const res1 = await request(app.getHttpServer())
       .get('/coop/configuracion-fiscal')
@@ -532,5 +566,68 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .get('/admin/cooperativas')
       .set('Authorization', `Bearer ${tokenCoop}`)
       .expect(403);
+  });
+
+  it('banners propios: crear, listar, actualizar (activar/desactivar), y que el endpoint público solo muestre los activos (22-jul-2026)', async () => {
+    const titulo = `Banner E2E ${sufijo}`;
+    const crear = await request(app.getHttpServer())
+      .post('/admin/banners-propios')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        titulo,
+        imagenUrl:
+          'https://res.cloudinary.com/demo/image/upload/banner-e2e.png',
+        enlaceUrl: 'https://devx.example.com',
+      })
+      .expect(201);
+    const bannerId = crear.body.id as string;
+    expect(bannerId).toBeDefined();
+
+    const listaAdmin = await request(app.getHttpServer())
+      .get('/admin/banners-propios')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    const creado = listaAdmin.body.find(
+      (b: { id: string }) => b.id === bannerId,
+    );
+    expect(creado).toBeDefined();
+    expect(creado.activo).toBe(true); // activo por defecto
+
+    // Nace activo → debe aparecer en el endpoint público.
+    const publicoAntes = await request(app.getHttpServer())
+      .get('/banners-propios')
+      .expect(200);
+    expect(
+      publicoAntes.body.some((b: { id: string }) => b.id === bannerId),
+    ).toBe(true);
+
+    // Se desactiva → debe desaparecer del endpoint público, pero seguir
+    // existiendo para el admin.
+    await request(app.getHttpServer())
+      .patch(`/admin/banners-propios/${bannerId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ activo: false })
+      .expect(200);
+
+    const publicoDespues = await request(app.getHttpServer())
+      .get('/banners-propios')
+      .expect(200);
+    expect(
+      publicoDespues.body.some((b: { id: string }) => b.id === bannerId),
+    ).toBe(false);
+
+    // Se borra → ya no debe aparecer ni en la lista de admin.
+    await request(app.getHttpServer())
+      .delete(`/admin/banners-propios/${bannerId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+
+    const listaFinal = await request(app.getHttpServer())
+      .get('/admin/banners-propios')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    expect(listaFinal.body.some((b: { id: string }) => b.id === bannerId)).toBe(
+      false,
+    );
   });
 });

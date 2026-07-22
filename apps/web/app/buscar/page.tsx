@@ -75,7 +75,17 @@ export default async function ResultadosBusquedaPage({
               className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 md:flex-row md:items-center md:justify-between"
             >
               <div>
-                <p className="font-display text-lg font-bold text-brand-dark">{r.cooperativaNombre}</p>
+                <div className="flex items-center gap-2">
+                  {r.cooperativaLogoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
+                    <img
+                      src={r.cooperativaLogoUrl}
+                      alt={r.cooperativaNombre}
+                      className="h-8 w-8 rounded-full object-cover ring-1 ring-black/5"
+                    />
+                  )}
+                  <p className="font-display text-lg font-bold text-brand-dark">{r.cooperativaNombre}</p>
+                </div>
                 <p className="text-sm text-brand-dark/60">{r.tipoVehiculoNombre}</p>
                 <p className="mt-1 text-sm text-brand-dark/70">
                   Sale {formatearHora(r.horaSalidaProgramada)}

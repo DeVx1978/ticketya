@@ -8,6 +8,7 @@ import {
   tiposVehiculo,
   puntosOperacion,
   viajeAsientos,
+  bannersPropios,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../../infraestructura/database/database.module';
 import type { DrizzleDb } from '../../infraestructura/database/database.provider';
@@ -93,6 +94,7 @@ export class BusquedaService {
       .select({
         viajeId: viajes.id,
         cooperativaNombre: cooperativas.nombreComercial,
+        cooperativaLogoUrl: cooperativas.logoUrl,
         rutaId: rutas.id,
         horaSalidaProgramada: viajes.horaSalidaProgramada,
         horaLlegadaEstimada: viajes.horaLlegadaEstimada,
@@ -124,5 +126,19 @@ export class BusquedaService {
     // filtrarlo aquí dado que el volumen de resultados por ruta/fecha es
     // pequeño (decenas, no miles).
     return resultados.filter((r) => r.asientosDisponibles >= pasajerosMinimos);
+  }
+
+  /** Banners propios activos, para la página pública — sin autenticación (22-jul-2026). */
+  async listarBannersActivos() {
+    return this.db
+      .select({
+        id: bannersPropios.id,
+        titulo: bannersPropios.titulo,
+        imagenUrl: bannersPropios.imagenUrl,
+        enlaceUrl: bannersPropios.enlaceUrl,
+      })
+      .from(bannersPropios)
+      .where(eq(bannersPropios.activo, true))
+      .orderBy(bannersPropios.orden);
   }
 }

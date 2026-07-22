@@ -4,6 +4,8 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
+  Param,
   Request,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +14,8 @@ import {
   CrearCooperativaDto,
   CrearPuntoOperacionDto,
   ActualizarIvaNacionalDto,
+  CrearBannerPropioDto,
+  ActualizarBannerPropioDto,
 } from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -70,5 +74,31 @@ export class AdminController {
       dto.ivaPorcentaje,
       req.user.sub,
     );
+  }
+
+  /** Banners propios — promoción interna, NO parte de RF-COMM (22-jul-2026). */
+  @Get('banners-propios')
+  async listarBannersPropios() {
+    return this.admin.listarBannersPropios();
+  }
+
+  @Post('banners-propios')
+  async crearBannerPropio(@Body() dto: CrearBannerPropioDto) {
+    return this.admin.crearBannerPropio(dto);
+  }
+
+  @Patch('banners-propios/:id')
+  async actualizarBannerPropio(
+    @Param('id') id: string,
+    @Body() dto: ActualizarBannerPropioDto,
+  ) {
+    await this.admin.actualizarBannerPropio(id, dto);
+    return { ok: true };
+  }
+
+  @Delete('banners-propios/:id')
+  async eliminarBannerPropio(@Param('id') id: string) {
+    await this.admin.eliminarBannerPropio(id);
+    return { ok: true };
   }
 }

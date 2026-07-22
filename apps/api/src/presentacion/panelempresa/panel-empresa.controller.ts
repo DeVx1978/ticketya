@@ -19,6 +19,7 @@ import {
   ImportarDatosDto,
   ValidarQrDto,
   ActualizarConfiguracionFiscalDto,
+  ActualizarPerfilDto,
 } from './dto/panel-empresa.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
@@ -143,6 +144,25 @@ export class PanelEmpresaController {
   @Get('dashboard')
   async dashboard(@Request() req: { user: PayloadToken }) {
     return this.panel.dashboardVentasDelDia(cooperativaDelToken(req.user));
+  }
+
+  /** Perfil visual de la cooperativa — hoy solo el logo (22-jul-2026). */
+  @Roles('admin_cooperativa')
+  @Get('perfil')
+  async obtenerPerfil(@Request() req: { user: PayloadToken }) {
+    return this.panel.obtenerPerfil(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('perfil')
+  async actualizarPerfil(
+    @Body() dto: ActualizarPerfilDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarPerfil(cooperativaDelToken(req.user), {
+      logoUrl: dto.logoUrl && dto.logoUrl.trim() !== '' ? dto.logoUrl : null,
+    });
+    return { ok: true };
   }
 
   /** IVA de la cooperativa — solo el admin puede verla/cambiarla (21-jul-2026). */

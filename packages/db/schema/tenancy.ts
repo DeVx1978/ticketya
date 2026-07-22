@@ -69,6 +69,14 @@ export const cooperativas = pgTable(
     // quiera "seguir de nuevo" el valor nacional.
     ivaSigueTasaNacional: boolean('iva_sigue_tasa_nacional').default(true).notNull(),
 
+    // Logo de la cooperativa (22-jul-2026) — se guarda solo la URL, no
+    // el archivo en sí. La imagen vive en un servicio externo de
+    // almacenamiento (ej. Cloudinary) que la cooperativa ya usa o
+    // configura aparte; aquí no se construye un pipeline de subida de
+    // archivos propio todavía, sería sobre-construcción para lo que se
+    // necesita hoy. Nullable: no toda cooperativa tiene logo cargado.
+    logoUrl: text('logo_url'),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },

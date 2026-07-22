@@ -262,6 +262,11 @@ describe('Búsqueda de rutas (e2e)', () => {
       );
       expect(nombres).toContain(`Coop Búsqueda A ${sufijo}`);
       expect(nombres).toContain(`Coop Búsqueda B ${sufijo}`);
+
+      // El campo debe existir en la respuesta (aunque sea null si la
+      // cooperativa no cargó logo) — 22-jul-2026, para que el frontend
+      // de resultados de búsqueda pueda mostrarlo.
+      expect(res.body[0]).toHaveProperty('cooperativaLogoUrl');
     });
 
     it('ordena los resultados por hora de salida (RF-BUS-001)', async () => {

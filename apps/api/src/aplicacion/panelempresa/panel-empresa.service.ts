@@ -67,6 +67,14 @@ export class PanelEmpresaService {
     return this.panel.dashboardVentasDelDia(cooperativaId);
   }
 
+  obtenerPerfil(cooperativaId: string) {
+    return this.panel.obtenerPerfil(cooperativaId);
+  }
+
+  actualizarPerfil(cooperativaId: string, datos: { logoUrl: string | null }) {
+    return this.panel.actualizarPerfil(cooperativaId, datos);
+  }
+
   obtenerConfiguracionFiscal(cooperativaId: string) {
     return this.panel.obtenerConfiguracionFiscal(cooperativaId);
   }

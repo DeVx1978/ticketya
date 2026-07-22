@@ -451,6 +451,29 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async obtenerPerfil(
+    cooperativaId: string,
+  ): Promise<{ logoUrl: string | null }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT logo_url FROM cooperativas WHERE id = ${cooperativaId}
+      `);
+      const f = resultado.rows[0] as { logo_url: string | null } | undefined;
+      return { logoUrl: f?.logo_url ?? null };
+    });
+  }
+
+  async actualizarPerfil(
+    cooperativaId: string,
+    datos: { logoUrl: string | null },
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE cooperativas SET logo_url = ${datos.logoUrl} WHERE id = ${cooperativaId}
+      `);
+    });
+  }
+
   async obtenerConfiguracionFiscal(cooperativaId: string): Promise<{
     ivaPorcentaje: number;
     ivaVisibleEnBoleto: boolean;

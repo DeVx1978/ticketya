@@ -91,4 +91,31 @@ export interface AdminRepositorio {
     nuevoPorcentaje: number,
     usuarioId: string,
   ): Promise<{ cooperativasActualizadas: number }>;
+
+  /**
+   * Banners propios (22-jul-2026) — promoción de productos propios de
+   * la plataforma en su propia página, NO parte de RF-COMM. Ver
+   * comentario completo en packages/db/schema/comercial.ts.
+   */
+  listarBannersPropios(): Promise<
+    {
+      id: string;
+      titulo: string;
+      imagenUrl: string;
+      enlaceUrl: string;
+      activo: boolean;
+      orden: number;
+    }[]
+  >;
+  crearBannerPropio(datos: {
+    titulo: string;
+    imagenUrl: string;
+    enlaceUrl: string;
+    orden?: number;
+  }): Promise<{ id: string }>;
+  actualizarBannerPropio(
+    id: string,
+    datos: { activo?: boolean; orden?: number },
+  ): Promise<void>;
+  eliminarBannerPropio(id: string): Promise<void>;
 }

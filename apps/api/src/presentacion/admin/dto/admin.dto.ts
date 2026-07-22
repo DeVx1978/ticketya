@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
   MinLength,
@@ -85,4 +86,30 @@ export class ActualizarIvaNacionalDto {
   @Min(0)
   @Max(100)
   ivaPorcentaje!: number;
+}
+
+/** Banners propios — promoción interna, NO parte de RF-COMM (22-jul-2026). */
+export class CrearBannerPropioDto {
+  @IsString()
+  @MinLength(2)
+  titulo!: string;
+
+  @IsUrl()
+  imagenUrl!: string;
+
+  @IsUrl()
+  enlaceUrl!: string;
+
+  @IsOptional()
+  @IsNumber()
+  orden?: number;
+}
+
+export class ActualizarBannerPropioDto {
+  @IsOptional()
+  activo?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  orden?: number;
 }

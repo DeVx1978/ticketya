@@ -1,7 +1,12 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { sql, eq } from 'drizzle-orm';
-import { cooperativas, usuarios, puntosOperacion } from '@ticketya/db';
+import {
+  cooperativas,
+  usuarios,
+  puntosOperacion,
+  bannersPropios,
+} from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { BcryptHasher } from '../auth/bcrypt.hasher';
@@ -220,5 +225,51 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     `);
 
     return { cooperativasActualizadas: propagado.rows.length };
+  }
+
+  async listarBannersPropios() {
+    return this.db
+      .select({
+        id: bannersPropios.id,
+        titulo: bannersPropios.titulo,
+        imagenUrl: bannersPropios.imagenUrl,
+        enlaceUrl: bannersPropios.enlaceUrl,
+        activo: bannersPropios.activo,
+        orden: bannersPropios.orden,
+      })
+      .from(bannersPropios)
+      .orderBy(bannersPropios.orden);
+  }
+
+  async crearBannerPropio(datos: {
+    titulo: string;
+    imagenUrl: string;
+    enlaceUrl: string;
+    orden?: number;
+  }): Promise<{ id: string }> {
+    const [fila] = await this.db
+      .insert(bannersPropios)
+      .values({
+        titulo: datos.titulo,
+        imagenUrl: datos.imagenUrl,
+        enlaceUrl: datos.enlaceUrl,
+        orden: datos.orden ?? 0,
+      })
+      .returning();
+    return { id: fila.id };
+  }
+
+  async actualizarBannerPropio(
+    id: string,
+    datos: { activo?: boolean; orden?: number },
+  ): Promise<void> {
+    await this.db
+      .update(bannersPropios)
+      .set(datos)
+      .where(eq(bannersPropios.id, id));
+  }
+
+  async eliminarBannerPropio(id: string): Promise<void> {
+    await this.db.delete(bannersPropios).where(eq(bannersPropios.id, id));
   }
 }

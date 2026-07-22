@@ -1,4 +1,5 @@
 import { BuscadorForm } from "@/components/BuscadorForm";
+import { FranjaBanners } from "@/components/FranjaBanners";
 
 export default function InicioPage() {
   return (
@@ -27,6 +28,7 @@ export default function InicioPage() {
       </section>
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-24">
+        <FranjaBanners />
         <h2 className="font-display text-xl font-bold text-brand-dark">
           ¿Por qué TicketYa?
         </h2>

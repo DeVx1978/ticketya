@@ -9,6 +9,7 @@ const ENLACES = [
   { href: "/admin", etiqueta: "Panel" },
   { href: "/admin/cooperativas", etiqueta: "Cooperativas" },
   { href: "/admin/puntos-operacion", etiqueta: "Puntos de operación" },
+  { href: "/admin/banners", etiqueta: "Banners" },
 ];
 
 /**

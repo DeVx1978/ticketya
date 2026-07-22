@@ -17,6 +17,7 @@ export interface PuntoOperacion {
 export interface ResultadoViaje {
   viajeId: string;
   cooperativaNombre: string;
+  cooperativaLogoUrl: string | null;
   rutaId: string;
   horaSalidaProgramada: string;
   horaLlegadaEstimada: string | null;
@@ -480,4 +481,111 @@ export async function crearPuntoOperacionAdmin(
     throw new Error(mensaje ?? "No se pudo crear el punto de operación.");
   }
 }
+
+// ---------------------------------------------------------------------
+// Perfil de cooperativa (logo) — ver 22-jul-2026.
+// ---------------------------------------------------------------------
+
+export interface PerfilCoop {
+  logoUrl: string | null;
+}
+
+export async function obtenerPerfilCoop(token: string): Promise<PerfilCoop> {
+  const res = await fetch(`${API_URL}/coop/perfil`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el perfil.");
+  return cuerpo as PerfilCoop;
+}
+
+export async function actualizarPerfilCoop(token: string, logoUrl: string): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/perfil`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ logoUrl }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar el logo.");
+  }
+}
+
+// ---------------------------------------------------------------------
+// Banners propios — promoción interna (DevX, Surebets24/7, etc.), NO
+// parte del sistema comercial de terceros. Ver 22-jul-2026.
+// ---------------------------------------------------------------------
+
+export interface BannerPropio {
+  id: string;
+  titulo: string;
+  imagenUrl: string;
+  enlaceUrl: string;
+  activo?: boolean;
+  orden?: number;
+}
+
+export async function listarBannersPropiosAdmin(token: string): Promise<BannerPropio[]> {
+  const res = await fetch(`${API_URL}/admin/banners-propios`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los banners.");
+  return cuerpo as BannerPropio[];
+}
+
+export async function crearBannerPropioAdmin(
+  token: string,
+  datos: { titulo: string; imagenUrl: string; enlaceUrl: string; orden?: number },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/banners-propios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el banner.");
+  }
+}
+
+export async function actualizarBannerPropioAdmin(
+  token: string,
+  id: string,
+  datos: { activo?: boolean; orden?: number },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/banners-propios/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo actualizar el banner.");
+  }
+}
+
+export async function eliminarBannerPropioAdmin(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/banners-propios/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const cuerpo = await res.json();
+    throw new Error(cuerpo?.message ?? "No se pudo eliminar el banner.");
+  }
+}
+
+export async function listarBannersActivos(): Promise<BannerPropio[]> {
+  const res = await fetch(`${API_URL}/banners-propios`, { cache: "no-store" });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los banners.");
+  return cuerpo as BannerPropio[];
+}
+
 

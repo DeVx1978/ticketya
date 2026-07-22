@@ -53,4 +53,28 @@ export class AdminService {
       usuarioId,
     );
   }
+
+  async listarBannersPropios() {
+    return this.admin.listarBannersPropios();
+  }
+
+  async crearBannerPropio(datos: {
+    titulo: string;
+    imagenUrl: string;
+    enlaceUrl: string;
+    orden?: number;
+  }) {
+    return this.admin.crearBannerPropio(datos);
+  }
+
+  async actualizarBannerPropio(
+    id: string,
+    datos: { activo?: boolean; orden?: number },
+  ) {
+    return this.admin.actualizarBannerPropio(id, datos);
+  }
+
+  async eliminarBannerPropio(id: string) {
+    return this.admin.eliminarBannerPropio(id);
+  }
 }

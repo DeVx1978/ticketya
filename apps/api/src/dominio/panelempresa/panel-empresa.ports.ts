@@ -208,6 +208,13 @@ export interface PanelEmpresaRepositorio {
   /** RF-COOP-004 — dashboard de ventas del día, tenant-scoped de verdad. */
   dashboardVentasDelDia(cooperativaId: string): Promise<FilaVentaDelDia[]>;
 
+  /** Perfil visual de la cooperativa — hoy solo el logo (22-jul-2026). */
+  obtenerPerfil(cooperativaId: string): Promise<{ logoUrl: string | null }>;
+  actualizarPerfil(
+    cooperativaId: string,
+    datos: { logoUrl: string | null },
+  ): Promise<void>;
+
   /** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable. */
   obtenerConfiguracionFiscal(cooperativaId: string): Promise<{
     ivaPorcentaje: number;
