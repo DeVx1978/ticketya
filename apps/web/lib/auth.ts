@@ -54,3 +54,21 @@ export function decodificarToken(token: string): PayloadToken | null {
 export function tokenExpirado(payload: PayloadToken): boolean {
   return Date.now() >= payload.exp * 1000;
 }
+
+/**
+ * Token guardado Y todavía vigente, en una sola llamada — hallazgo
+ * real del 22-jul-2026: varias pantallas solo revisaban "¿existe un
+ * token guardado?" (obtenerToken() truthy), no si ya había expirado.
+ * Eso dejaba pasar un token vencido hasta el backend, que lo rechazaba
+ * con un "Unauthorized" crudo, sin que el usuario entendiera qué pasó
+ * ni lo mandaran de vuelta a iniciar sesión. Usar esta función en vez
+ * de `obtenerToken()` a secas evita repetir ese hueco en pantallas
+ * nuevas.
+ */
+export function tokenValido(): string | null {
+  const token = obtenerToken();
+  if (!token) return null;
+  const payload = decodificarToken(token);
+  if (!payload || tokenExpirado(payload)) return null;
+  return token;
+}

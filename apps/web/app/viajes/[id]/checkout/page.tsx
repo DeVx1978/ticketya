@@ -4,7 +4,7 @@ import { Suspense, useState, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { crearCompra, calificarViaje, type ResultadoCompra } from "@/lib/api";
-import { obtenerToken } from "@/lib/auth";
+import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
 const TARIFAS = [
@@ -23,8 +23,12 @@ function CalificarViaje({ boletoId }: { boletoId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   async function enviar() {
-    const token = obtenerToken();
-    if (!token || puntuacion === 0) return;
+    const token = tokenValido();
+    if (!token) {
+      setError("Tu sesión expiró — vuelve a iniciar sesión para calificar el viaje.");
+      return;
+    }
+    if (puntuacion === 0) return;
     setEnviando(true);
     setError(null);
     try {
@@ -101,7 +105,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
   async function pagar(e: React.FormEvent) {
     e.preventDefault();
-    const token = obtenerToken();
+    const token = tokenValido();
     if (!token) {
       router.push(`/ingresar?volverA=${encodeURIComponent(`/viajes/${viajeId}/checkout?asiento=${numeroAsiento}`)}`);
       return;

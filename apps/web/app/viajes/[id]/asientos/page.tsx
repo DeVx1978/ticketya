@@ -4,7 +4,7 @@ import { useEffect, useState, Fragment, use as usePromise } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { obtenerMapaAsientos, bloquearAsiento, type MapaAsientos } from "@/lib/api";
-import { obtenerToken } from "@/lib/auth";
+import { tokenValido } from "@/lib/auth";
 
 /**
  * Genera un mapa de asientos simple 2+2 (4 por fila, pasillo al medio) a
@@ -67,7 +67,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
 
   async function continuar() {
     if (!seleccionado) return;
-    const token = obtenerToken();
+    const token = tokenValido();
     if (!token) {
       router.push(`/ingresar?volverA=${encodeURIComponent(`/viajes/${viajeId}/asientos`)}`);
       return;
