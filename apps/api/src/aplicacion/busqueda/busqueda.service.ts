@@ -26,6 +26,23 @@ export class BusquedaService {
 
   /** RF-BUS-002 — autocompletado de ciudades/terminales. */
   async buscarPuntosOperacion(texto: string) {
+    const textoNormalizado = texto.trim();
+    // Prioridad de relevancia (hallazgo documentado, cerrado
+    // 22-jul-2026): antes no había ORDER BY, así que Postgres devolvía
+    // los resultados en el orden que le resultara más cómodo
+    // internamente, no por qué tan bien coincidían con lo escrito.
+    // Ahora: coincidencia exacta de ciudad primero, luego "la ciudad
+    // empieza con...", luego "el nombre del punto empieza con...",
+    // luego cualquier coincidencia parcial — y alfabético como
+    // desempate dentro de cada grupo.
+    const relevancia = sql<number>`
+      CASE
+        WHEN ${puntosOperacion.ciudad} ILIKE ${textoNormalizado} THEN 0
+        WHEN ${puntosOperacion.ciudad} ILIKE ${textoNormalizado + '%'} THEN 1
+        WHEN ${puntosOperacion.nombre} ILIKE ${textoNormalizado + '%'} THEN 2
+        ELSE 3
+      END
+    `;
     return this.db
       .select({
         id: puntosOperacion.id,
@@ -37,10 +54,11 @@ export class BusquedaService {
       .from(puntosOperacion)
       .where(
         or(
-          ilike(puntosOperacion.ciudad, `%${texto}%`),
-          ilike(puntosOperacion.nombre, `%${texto}%`),
+          ilike(puntosOperacion.ciudad, `%${textoNormalizado}%`),
+          ilike(puntosOperacion.nombre, `%${textoNormalizado}%`),
         ),
       )
+      .orderBy(relevancia, puntosOperacion.ciudad)
       .limit(10);
   }
 

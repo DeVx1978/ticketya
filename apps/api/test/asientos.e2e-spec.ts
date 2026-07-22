@@ -103,7 +103,7 @@ describe('Selección de asientos (e2e)', () => {
     const tipo = await request(app.getHttpServer())
       .post('/coop/tipos-vehiculo')
       .set('Authorization', `Bearer ${tokenCoop}`)
-      .send({ nombre: `Tipo Asientos ${sufijo}`, capacidadTotal: 4 });
+      .send({ nombre: `Tipo Asientos ${sufijo}`, capacidadTotal: 8 }); // 2 filas completas (2+2) — deja "2A" como asiento real y válido para las pruebas de abajo
 
     const unidad = await request(app.getHttpServer())
       .post('/coop/unidades')
@@ -212,10 +212,11 @@ describe('Selección de asientos (e2e)', () => {
     expect(statusCodes).toEqual([201, 409]);
   });
 
-  it('HALLAZGO DOCUMENTADO (no un error de la prueba): bloquear un número de asiento que NO existe en la distribución de esa unidad hoy se acepta igual (201) — el sistema no valida el numeroAsiento contra distribucionAsientos antes de crear el registro de hold. No genera doble venta ni se cae, pero es un hueco de validación real, anotado para corregir.', async () => {
+  it('bloquear un número de asiento que NO existe en el vehículo se rechaza (404) — hallazgo cerrado 22-jul-2026, antes se aceptaba igual (201)', async () => {
     const res = await request(app.getHttpServer())
       .post(`/viajes/${viajeId}/asientos/ZZ99/bloquear`)
       .set('Authorization', `Bearer ${tokenPasajero1}`);
-    expect(res.status).toBe(201); // comportamiento actual real, no el deseado — ver título de la prueba
+    expect(res.status).toBe(404);
+    expect(res.body.message).toContain('ZZ99');
   });
 });

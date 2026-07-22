@@ -124,12 +124,6 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
   });
 
   it('si el correo del primer usuario ya existe, la cooperativa NO queda huérfana — todo o nada (hallazgo real 22-jul-2026, reportado en vivo por el usuario)', async () => {
-    const antes = await request(app.getHttpServer())
-      .get('/admin/cooperativas')
-      .set('Authorization', `Bearer ${tokenAdmin}`)
-      .expect(200);
-    const totalAntes = antes.body.length;
-
     // Mismo correoCoop que la cooperativa ya creada arriba → viola la
     // restricción de unicidad de correo, a propósito.
     const intento = await request(app.getHttpServer())
@@ -158,8 +152,12 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .expect(200);
 
     // El punto central de esta prueba: el intento fallido NO debe haber
-    // dejado ninguna cooperativa nueva a medias.
-    expect(despues.body.length).toBe(totalAntes);
+    // dejado ninguna cooperativa nueva a medias. Se verifica por nombre
+    // específico, no por conteo total — Jest corre los archivos de
+    // prueba en paralelo contra la misma base de datos, así que un
+    // conteo global "antes/después" puede cambiar por completo ajeno a
+    // esta prueba (otro archivo creando SU propia cooperativa al mismo
+    // tiempo), dando un falso negativo sin que haya ningún bug real.
     expect(
       despues.body.some(
         (c: { nombreComercial: string }) =>

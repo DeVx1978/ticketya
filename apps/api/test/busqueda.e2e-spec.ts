@@ -18,6 +18,8 @@ describe('Búsqueda de rutas (e2e)', () => {
 
   let puntoOrigenId: string;
   let puntoDestinoId: string;
+  let puntoRelevanciaExactoId: string;
+  let puntoRelevanciaParcialId: string;
   let tokenCoopA: string;
   let tokenCoopB: string;
 
@@ -164,6 +166,31 @@ describe('Búsqueda de rutas (e2e)', () => {
       });
     puntoDestinoId = destino.body.puntoOperacionId;
 
+    // Dos puntos deliberadamente parecidos en el texto, para probar el
+    // orden por relevancia sin depender de datos de otras corridas de
+    // pruebas (que sí acumulan "Machala" real de sesiones anteriores).
+    const exacto = await request(app.getHttpServer())
+      .post('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${loginDirector.body.accessToken}`)
+      .send({
+        tipo: 'terminal_terrestre',
+        nombre: `Terminal Relevancia ${sufijo}`,
+        ciudad: `ZzRelevancia${sufijo}`, // coincidencia EXACTA de ciudad con el texto buscado
+        provincia: 'El Oro',
+      });
+    puntoRelevanciaExactoId = exacto.body.puntoOperacionId;
+
+    const parcial = await request(app.getHttpServer())
+      .post('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${loginDirector.body.accessToken}`)
+      .send({
+        tipo: 'oficina_agencia',
+        nombre: `ZzRelevancia${sufijo} Sucursal Norte`, // solo el NOMBRE empieza así, la ciudad es otra
+        ciudad: 'Otra Ciudad',
+        provincia: 'El Oro',
+      });
+    puntoRelevanciaParcialId = parcial.body.puntoOperacionId;
+
     tokenCoopB = await crearCooperativaConAdmin(
       `Coop Búsqueda B ${sufijo}`,
       `admin.b.${sufijo}@ticketya.ec`,
@@ -195,7 +222,22 @@ describe('Búsqueda de rutas (e2e)', () => {
         .expect(400);
     });
 
-    it('HALLAZGO DOCUMENTADO: el endpoint no ordena resultados por relevancia y limita a 10 — con una búsqueda genérica como "Machala" (muchas coincidencias acumuladas en el entorno de pruebas), no hay garantía de qué 10 aparecen. En producción, con muchas oficinas pequeñas en la misma ciudad (RF-FLOTA-003), esto puede esconder justo el punto que el usuario busca. Vale la pena agregar ORDER BY relevancia (coincidencia exacta primero) antes del piloto.', async () => {
+    it('ordena por relevancia: coincidencia EXACTA de ciudad antes que una coincidencia parcial de nombre (hallazgo cerrado 22-jul-2026)', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/puntos-operacion/buscar')
+        .query({ texto: `ZzRelevancia${sufijo}` })
+        .expect(200);
+
+      const ids = res.body.map((p: { id: string }) => p.id);
+      const posExacto = ids.indexOf(puntoRelevanciaExactoId);
+      const posParcial = ids.indexOf(puntoRelevanciaParcialId);
+
+      expect(posExacto).toBeGreaterThanOrEqual(0);
+      expect(posParcial).toBeGreaterThanOrEqual(0);
+      expect(posExacto).toBeLessThan(posParcial);
+    });
+
+    it('respeta el límite de 10 resultados', async () => {
       const res = await request(app.getHttpServer())
         .get('/puntos-operacion/buscar')
         .query({ texto: 'Machala' })
