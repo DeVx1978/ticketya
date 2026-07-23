@@ -1,136 +1,147 @@
-# TicketYa — Estado del proyecto y ruta de trabajo por fases
+# TicketYa — Estado y Ruta del Proyecto
 
-**Última actualización:** 21 de julio de 2026 (Panel Empresa completado al 100%)
+**Última actualización:** 23 de julio de 2026
 **Repositorio:** https://github.com/DeVx1978/ticketya (privado)
-**Último commit subido:** `db49354` — "paso 6: validar boleto por QR, probado con boleto real"
-
-Este documento es el punto de partida para cualquier sesión de trabajo
-futura — reemplaza la necesidad de "memoria". Está basado en 4 documentos
-de mayor autoridad:
-
-1. `TicketYa_SRS_v1.3` — Especificación de Requerimientos.
-2. `TicketYa_Arquitectura_Tecnica_v1.0` — Stack y decisiones técnicas.
-3. `TicketYa_Auditoria_Estado_Proyecto_v1.1` — Auditoría verificada del código real.
-4. Este documento — estado de avance día a día y próximos pasos.
+**Última rama/commit verificado:** `main` @ `f46378b`
 
 ---
 
-## ⚠️ PROTOCOLO DE VERIFICACIÓN — OBLIGATORIO, SIN EXCEPCIÓN
+## 1. Qué es TicketYa
 
-*(sin cambios respecto a la versión anterior — ver commit `0ba476f` para el
-texto completo. Resumen: nunca declarar algo resuelto solo porque un
-comando no tiró error; verificar contenido real con `Select-String` o
-`git --no-pager show HEAD:archivo`; probar primero en el entorno de
-Claude, luego repetir en la PC real; nunca confiar en la pestaña
-"Problems" de VS Code por encima de la terminal.)*
-
-**Aprendizaje nuevo de esta sesión:** al pedir verificación de contenido,
-hay que buscar un texto que realmente viva en el código fuente (nombres
-de función, texto de UI escrito literal), no un mensaje que solo existe
-en la respuesta del backend en tiempo de ejecución — buscar ese tipo de
-texto en el archivo del frontend siempre va a dar "vacío" aunque el
-archivo esté perfecto, y genera una alarma falsa.
+SaaS de venta de pasajes de bus interprovincial para Ecuador, con visión de escalar a nivel nacional y, después, a otros países. Modelo multi-tenant real: múltiples cooperativas de transporte operan sobre la misma plataforma, con aislamiento de datos garantizado por Row-Level Security de PostgreSQL, no solo por lógica de aplicación.
 
 ---
 
-## ✅ Fase 0 — Fundaciones de datos (COMPLETADA)
-## ✅ Fase 1 — Fundaciones de código (COMPLETADA)
-## ✅ Fase 2 — Núcleo de venta (MVP) — ciclo completo funcionando, 56 pruebas automatizadas
-## ✅ PANEL EMPRESA — COMPLETADO AL 100% (backend + frontend + pruebas + verificado en vivo)
+## 2. Estado por fase
 
-Las 5 pantallas de Panel Empresa están construidas, verificadas en código
-(ESLint + TypeScript + build de producción) y probadas en vivo con datos
-reales usando Playwright, con capturas de pantalla confirmando cada una:
+| Fase | Estado |
+|---|---|
+| Fase 0 — Base de datos (41 tablas, RLS) | ✅ Completa |
+| Fase 1 — Fundaciones de código (NestJS + Next.js) | ✅ Completa |
+| Fase 2 — Núcleo de venta (MVP) | ✅ Completa |
+| Fase 3 — Panel Empresa | ✅ Completa |
+| Fase 3 — Panel Admin | ✅ Completa |
+| Fase 3.5 — Diseño visual final | ⏳ No iniciada, a propósito (ver sección 6) |
+| Fase 4 — Piloto real en Machala | ⏳ Pendiente |
+| Fase 5 — Pagos reales, publicidad, notificaciones | ⏳ Pendiente |
 
-| Pantalla | Qué hace | Verificado en vivo con |
+**Pruebas automatizadas: 85, todas pasando**, verificadas en la máquina real del usuario (Windows), no solo en el entorno de desarrollo.
+
+---
+
+## 3. Todo lo cerrado en la sesión del 22-23 de julio de 2026
+
+Fue una sesión extensa de un solo día, con ~30 entregas verificadas de punta a punta (backend + frontend + pruebas + confirmación en vivo). Resumen por categoría:
+
+### Configuración de negocio (antes fija, ahora configurable)
+- **IVA por cooperativa** — 15% incluido en el precio por defecto, configurable, ocultable.
+- **IVA nacional propagable** — el admin de plataforma lo cambia una vez y se propaga a todas las cooperativas en modo automático (las que fijaron su propio valor manualmente no se tocan).
+- **Cargo fijo de plataforma por pasajero** — antes caía en $0 sin forma de cambiarlo; ahora configurable desde Panel Admin.
+- **Tasa de terminal** — editable en línea (antes solo se podía fijar al crear el punto de operación).
+- **Ventana de cancelación** — configurable (por defecto 2 horas antes de la salida).
+
+### Panel Admin (completo, las 4 pantallas)
+Dashboard nacional (ventas agregadas por cooperativa), Cooperativas (crear + listar), Puntos de Operación (crear + listar + editar tasa), Banners propios (promoción interna, no venta a terceros).
+
+### Confiabilidad y seguridad
+- **Creación de cooperativa + primer usuario** ahora es atómica (todo o nada) — antes un correo duplicado podía dejar una cooperativa huérfana sin ningún usuario administrador.
+- **Sesión expirada** manejada correctamente en checkout/asientos/calificar (antes mostraba "Unauthorized" crudo).
+- **Mensajes de error traducidos** — antes cualquier fallo de base de datos llegaba como "Internal server error" genérico.
+
+### Experiencia de usuario
+- Notificaciones de éxito (verde) y error (rojo) en todos los formularios de creación.
+- Mostrar/ocultar contraseña.
+- Header público con acceso a Iniciar sesión / Registrarse / Mi perfil / Mis boletos.
+- Logo de cooperativa (visible en resultados de búsqueda).
+- Perfil de usuario con foto, "miembro desde", viajes completados, edición de datos.
+- Cambio de contraseña (logueado) — antes no existía ninguna forma de hacerlo.
+
+### Funcionalidad crítica que faltaba por completo
+- **Autorizaciones de menores de edad** — validación real al comprar (adulto acompañante o autorización con responsable), verificación de documentos en el andén.
+- **Cancelación de boletos** (por el pasajero) — antes no existía ninguna forma.
+- **Cancelación de un viaje completo** (por la cooperativa) — cascada automática a todos los boletos vendidos.
+- **Cambio de unidad en un viaje programado** ("vehículo de reemplazo") — para cuando el bus se daña, sin tocar los boletos ya vendidos. Validado contra capacidad para no invalidar asientos ya vendidos. Investigado con base real: patrón estándar del sector (FlixBus) + respaldo legal ecuatoriano (la ANT sanciona la interrupción del servicio como infracción administrativa muy grave, LOTTTSV).
+- **Recuperación del código QR** desde "Mis boletos" — antes, si cerrabas la pantalla de confirmación de compra sin captura, perdías el boleto para siempre.
+- **Lista de pasajeros por viaje ("manifiesto")** — antes la cooperativa no tenía forma de ver quién iba a abordar un viaje específico.
+- **Pantalla "Personal"** en Panel Empresa — crear y ver vendedores y conductores (antes el backend lo permitía, pero no existía ninguna pantalla).
+- **Sistema de calificaciones de viaje** — 1-5 estrellas + comentario, promedio visible en la búsqueda. Corregido a tiempo: originalmente se podía calificar justo al comprar (antes de viajar); ahora solo se habilita después de la hora estimada de llegada.
+
+### Calidad técnica
+- Buscador de ciudades ordenado por relevancia (antes sin ningún criterio).
+- Validación de número de asiento contra la capacidad real del vehículo (antes se podía bloquear un asiento inexistente).
+- Desglose de precio por boleto en la respuesta y pantalla de compra (tarifa, tasa de terminal, IVA, total).
+- **Limpieza real de datos de prueba** — las pruebas automatizadas ahora borran de verdad lo que crean (antes decían hacerlo en un comentario, pero no era cierto; llegamos a acumular ~250 registros de prueba en la base de datos real, incluyendo una confusión real de terminales duplicados que hubo que limpiar a mano).
+
+---
+
+## 4. Pendientes explícitos, con la razón de por qué no se hicieron hoy
+
+| Pendiente | Por qué se dejó pendiente |
+|---|---|
+| **Recuperación de contraseña por correo** | Requiere un servicio de envío de correo real (Resend), no conectado todavía — construir la mitad sin la otra mitad sería inseguro. |
+| **Reparto de pago (cooperativa / plataforma / terminal)** | Decisión de negocio + verificación técnica pendiente: confirmar con Kushki si su función de "Comisiones a terceros" soporta repartir entre 3 destinatarios en una sola transacción, o si la parte del terminal necesita resolverse aparte (liquidación periódica). Principio ya acordado: TicketYa nunca debe tener control ni custodia del dinero que no le corresponde. |
+| **Notificaciones automáticas (correo / WhatsApp)** | Diseñado en el esquema (tabla `notificaciones`), no conectado — Fase 5. |
+| **Reprogramación completa de un viaje con crédito/voucher** | Distinto de "cambiar unidad" (que sí se construyó) — este es para cuando el viaje en sí no puede pasar (clima, ruta suspendida), y necesita un sistema de crédito que no existe todavía (los pagos son simulados). |
+| **Diseño visual final** | Deliberado — se construye después de tener la funcionalidad sólida, no antes, para no rediseñar dos veces. |
+| **Reparto en 3 partes (split de pago)** | Ver arriba, ligado al mismo tema de Kushki. |
+
+---
+
+## 5. Decisiones de negocio que el usuario todavía tiene que tomar
+
+- % de comisión de la plataforma (necesario para que la liquidación tenga sentido completo).
+- Modelo final de reparto de pago (split directo vía Kushki vs. liquidación periódica).
+- Tasa real del terminal de Machala, para el piloto.
+- Política exacta de reembolso al cancelar (hoy no hay reembolso monetario real porque los pagos son simulados).
+
+---
+
+## 6. Hallazgos menores, todavía sin cerrar
+
+- El nombre "Bus estándar 2+2 RED" y similares (símbolos de codificación raros) pueden aparecer si se crean datos desde PowerShell sin especificar `-Encoding UTF8`.
+- No hay forma de editar hora/precio de un viaje ya creado (solo se puede cambiar la unidad o cancelarlo completo).
+
+---
+
+## 7. Cuentas de prueba (en la máquina del usuario)
+
+| Rol | Correo | Contraseña |
 |---|---|---|
-| Panel (dashboard) | Ventas de hoy, resumen y detalle por ruta/vendedor | Una venta real de un pasajero, mostrada correctamente ($8.50, 1 boleto) |
-| Rutas | Crear y listar rutas (origen, destino, precio base) | Ruta nueva creada por la UI, aparece de inmediato en la lista |
-| Unidades | Crear tipos de vehículo y unidades (placa + identificador operativo) | Tipo "Bus doble piso VIP" (52 asientos) y unidad "GYE-9821 / Disco 14" creados y vinculados correctamente |
-| Viajes | Programar viajes combinando ruta + unidad + fecha/hora/precio | Viaje real creado; encontrado y corregido un bug real de zona horaria en el camino (ver abajo) |
-| Validar boleto | Escanear/pegar código QR para confirmar abordaje | Un boleto real generado de punta a punta (compra de pasajero) y validado dos veces: primera vez válido, segunda vez correctamente rechazado por "ya utilizado" |
-
-**Backend agregado en el camino** (no existía antes de esta sesión): las
-5 pantallas necesitaban poder **listar** lo ya creado, no solo crear —
-se agregaron `GET /coop/rutas`, `GET /coop/tipos-vehiculo`,
-`GET /coop/unidades` y `GET /coop/viajes`, cada uno con su propia prueba
-automatizada. El total de pruebas del backend subió de 52 a **56**.
-
-**Bug real encontrado y corregido gracias a la verificación visual (no
-se habría visto solo con `tsc`/`eslint`):** la hora de salida de un viaje
-se mostraba desplazada varias horas en el Panel Empresa —
-`toLocaleTimeString` sin especificar `timeZone` usa la zona horaria del
-navegador/servidor, no la de Ecuador. Se corrigió agregando
-`timeZone: "America/Guayaquil"` explícito. De paso se confirmó que la
-página pública de búsqueda de pasajeros (`app/buscar/page.tsx`) ya tenía
-este detalle bien resuelto desde antes — el bug era solo del código
-nuevo de esta sesión.
-
-## 🔶 Fase 3 (resto) — Panel Admin: backend confirmado, frontend con solo la pantalla base (sin listas ni formularios todavía)
+| Admin de plataforma | `director.demo@ticketya.ec` | `Demo12345` |
+| Admin de cooperativa | `coop.demo@ticketya.ec` | `Demo12345` |
 
 ---
 
-## Hallazgos reales encontrados durante todo el proceso (sin cambios, siguen anotados)
+## 8. Protocolo de verificación (obligatorio en toda la sesión)
 
-- La respuesta de `/compras` no incluye el precio desglosado por boleto (solo `id` y `codigoQr`).
-- No existe ninguna fila en `configuracion_plataforma` — el cargo de plataforma por pasajero cae en $0 por defecto.
-- El buscador de ciudades no ordena por relevancia y corta en 10 resultados.
-- Bloquear un número de asiento que no existe físicamente en el bus (ej. "ZZ99") hoy se acepta igual.
-
-## 📍 Punto exacto de pausa — empezar aquí la próxima sesión
-
-Con Panel Empresa 100% terminado, el siguiente paso — mismo patrón,
-mismo cuidado — es **Panel Admin**:
-
-1. **Cooperativas** — listar las cooperativas afiliadas (el backend
-   `GET /admin/cooperativas` ya existe) y crear nuevas desde la interfaz
-   (el backend `POST /admin/cooperativas` también ya existe — es la
-   misma llamada que se ha usado todo este tiempo por comando para crear
-   cooperativas de prueba).
-2. **Puntos de operación** — listar y crear terminales/oficinas/paradas
-   (el backend `POST /admin/puntos-operacion` ya existe; falta el `GET`
-   de listado, igual que pasó con rutas/unidades/viajes — hay que
-   agregarlo primero).
-3. **Dashboard nacional** — ya tiene una versión mínima funcionando
-   (`GET /admin/dashboard`), se puede mejorar visualmente después.
-
-El patrón a seguir es idéntico al que ya funcionó 6 veces seguidas hoy:
-revisar si falta el `GET` de listado en el backend → agregarlo con su
-propia prueba automatizada → construir la página → verificar código
-(ESLint + TypeScript + build) → probar en vivo con Playwright y capturas
-reales → entregar en un solo paso reemplazable → verificar en la PC real
-→ hacer commit y push.
+1. Nunca declarar algo resuelto sin comprobarlo con comandos reales (`npm run test:e2e`, `npx next build`).
+2. Cada entrega de código se empaqueta en un `.zip`, se instala en la máquina real del usuario, se corren las pruebas ahí — no basta con que pase en el entorno de desarrollo.
+3. Toda migración de base de datos se aplica manualmente en pgAdmin, con el SQL exacto entregado paso a paso.
+4. Después de cada migración de esquema, reconstruir el paquete `@ticketya/db` (`npx tsc -p tsconfig.build.json` dentro de `packages/db`) — si no, el backend no reconoce las columnas nuevas.
+5. PowerShell: usar `-Encoding UTF8` para texto con tildes/ñ.
+6. Cada archivo de prueba que cree su propia cooperativa/datos debe limpiarlos en un `afterAll` real (ver `apps/api/test/helpers/limpieza.ts`) — no basta con decirlo en un comentario.
 
 ---
 
-## Decisiones de negocio pendientes (sin cambios, siguen abiertas)
+## 9. Cómo levantar el proyecto localmente
 
-- Comisión de plataforma (RN-003)
-- Ventana de bloqueo temporal de asiento (RN-004)
-- Política de cancelación/reembolso (RN-005)
-- Cuenta bancaria y periodicidad de liquidación del Terminal de Machala
-- Nombre exacto del identificador operativo de unidad ("disco"/turno)
-- Arquitectura de 3 comprobantes SRI por venta (validar con contador)
-- Tarifas de planes comerciales de publicidad
-- Credenciales reales de PayPhone/Kushki
+```powershell
+# Terminal 1 — backend
+cd C:\Users\exitoso\Desktop\ticketya\apps\api
+npm run start:dev
 
-## Fases futuras (sin cambios respecto al plan original)
+# Terminal 2 — frontend
+cd C:\Users\exitoso\Desktop\ticketya\apps\web
+npm run dev
+```
 
-- **Fase 3.5** — Diseño visual final del frontend (sistema ClickBus vía Tailwind, ya en marcha — `app/globals.css` tiene los colores de marca definidos y varias páginas ya los usan).
-- **Fase 4** — Piloto real con cooperativa del Terminal de Machala.
-- **Fase 5** — RF-API (Modelo B), RF-COMM (publicidad), Kushki, reportes avanzados.
-- **Fase 6** — Apps móviles (React Native).
-- **Fase 7** — Escala nacional/internacional, expansión a Colombia.
-- **Fase 8** — Producto separado de largo plazo (transporte tipo InDrive/Uber).
+Frontend normalmente en `http://localhost:3001` (el 3000 lo ocupa el backend).
 
 ---
 
-## Nota sobre la forma de trabajo
+## 10. Próximo paso recomendado
 
-El director de este proyecto tiene experiencia técnica y prefiere
-instrucciones directas, **un solo paso a la vez, con el comando exacto
-para copiar y pegar**, sin explicaciones largas antes de actuar. Exige
-—correctamente— que nada se declare "normal" o "resuelto" sin evidencia
-real y verificada, y que todo lo visual se muestre en vivo (capturas
-reales de Playwright, no solo confirmación de que el código compila).
-Ver el protocolo de verificación al inicio de este documento.
+Con la funcionalidad crítica ya cerrada, las opciones reales para la siguiente sesión son:
+1. Definir el reparto de pago con Kushki (conversación de negocio, no de código).
+2. Empezar el diseño visual final (Fase 3.5).
+3. Seguir cerrando hallazgos menores según se encuentren en pruebas reales.

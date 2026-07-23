@@ -161,6 +161,7 @@ export interface UnidadResumen {
   identificadorOperativo: string;
   tipoVehiculoId: string;
   tipoVehiculoNombre: string;
+  activo: boolean;
 }
 
 export interface ViajeResumen {
@@ -215,6 +216,20 @@ export interface PanelEmpresaRepositorio {
   ): Promise<{ id: string }>;
   /** Unidades (buses) de la cooperativa, con el nombre de su tipo ya resuelto. */
   listarUnidades(cooperativaId: string): Promise<UnidadResumen[]>;
+
+  /**
+   * Activar/desactivar una unidad — hallazgo real 22-jul-2026: la
+   * columna `activo` existía desde el esquema original, pero no había
+   * forma de cambiarla ni de verla, así que una unidad en
+   * mantenimiento/retirada seguía apareciendo como opción normal al
+   * crear un viaje o cambiar la unidad de uno. No borra nada — los
+   * viajes históricos con esa unidad no se ven afectados.
+   */
+  actualizarEstadoUnidad(
+    cooperativaId: string,
+    unidadId: string,
+    activo: boolean,
+  ): Promise<void>;
   crearRuta(
     cooperativaId: string,
     datos: DatosNuevaRuta,
@@ -258,6 +273,21 @@ export interface PanelEmpresaRepositorio {
     cooperativaId: string,
     viajeId: string,
     nuevaUnidadId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  /**
+   * Editar hora y/o precio de un viaje — hallazgo real 22-jul-2026:
+   * antes no existía ninguna forma de corregir un error de captura
+   * (hora mal puesta, precio equivocado) sin cancelar y volver a
+   * crear el viaje entero. Solo se permite si TODAVÍA no se ha
+   * vendido ningún boleto — sin sistema de notificaciones, cambiar la
+   * hora/precio de un viaje que un pasajero ya compró lo dejaría sin
+   * enterarse del cambio, lo cual es peor que no permitirlo.
+   */
+  editarViaje(
+    cooperativaId: string,
+    viajeId: string,
+    datos: { horaSalidaProgramada?: string; precioBase?: number },
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 
   /**

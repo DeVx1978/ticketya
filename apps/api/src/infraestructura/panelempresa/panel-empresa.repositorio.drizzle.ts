@@ -91,7 +91,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   async listarUnidades(cooperativaId: string): Promise<UnidadResumen[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
-        SELECT u.id, u.placa, u.identificador_operativo, u.tipo_vehiculo_id, tv.nombre AS tipo_vehiculo_nombre
+        SELECT u.id, u.placa, u.identificador_operativo, u.tipo_vehiculo_id, tv.nombre AS tipo_vehiculo_nombre, u.activo
         FROM unidades u
         JOIN tipos_vehiculo tv ON tv.id = u.tipo_vehiculo_id
         WHERE u.cooperativa_id = ${cooperativaId}
@@ -104,6 +104,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           identificador_operativo: string;
           tipo_vehiculo_id: string;
           tipo_vehiculo_nombre: string;
+          activo: boolean;
         };
         return {
           id: f.id,
@@ -111,8 +112,22 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           identificadorOperativo: f.identificador_operativo,
           tipoVehiculoId: f.tipo_vehiculo_id,
           tipoVehiculoNombre: f.tipo_vehiculo_nombre,
+          activo: f.activo,
         };
       });
+    });
+  }
+
+  async actualizarEstadoUnidad(
+    cooperativaId: string,
+    unidadId: string,
+    activo: boolean,
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE unidades SET activo = ${activo}
+        WHERE id = ${unidadId} AND cooperativa_id = ${cooperativaId}
+      `);
     });
   }
 
@@ -243,17 +258,24 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       }
 
       const unidadFilas = await tx.execute(sql`
-        SELECT tv.capacidad_total AS capacidad_nueva
+        SELECT tv.capacidad_total AS capacidad_nueva, u.activo
         FROM unidades u
         JOIN tipos_vehiculo tv ON tv.id = u.tipo_vehiculo_id
         WHERE u.id = ${nuevaUnidadId} AND u.cooperativa_id = ${cooperativaId}
       `);
       const unidadNueva = unidadFilas.rows[0] as
-        { capacidad_nueva: number } | undefined;
+        { capacidad_nueva: number; activo: boolean } | undefined;
       if (!unidadNueva) {
         return {
           ok: false as const,
           motivo: 'Esa unidad no existe o no pertenece a tu cooperativa.',
+        };
+      }
+      if (!unidadNueva.activo) {
+        return {
+          ok: false as const,
+          motivo:
+            'Esa unidad está inactiva — actívala primero en Unidades si quieres asignarla a un viaje.',
         };
       }
       if (unidadNueva.capacidad_nueva < viaje.capacidad_actual) {
@@ -266,6 +288,55 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       await tx.execute(sql`
         UPDATE viajes SET unidad_id = ${nuevaUnidadId} WHERE id = ${viajeId}
       `);
+      return { ok: true as const };
+    });
+  }
+
+  async editarViaje(
+    cooperativaId: string,
+    viajeId: string,
+    datos: { horaSalidaProgramada?: string; precioBase?: number },
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        SELECT v.estado,
+               (SELECT COUNT(*) FROM boletos b
+                JOIN viaje_asientos va ON va.id = b.viaje_asiento_id
+                WHERE va.viaje_id = v.id AND b.estado != 'cancelado') AS boletos_vendidos
+        FROM viajes v
+        WHERE v.id = ${viajeId} AND v.cooperativa_id = ${cooperativaId}
+      `);
+      const viaje = filas.rows[0] as
+        { estado: string; boletos_vendidos: number } | undefined;
+      if (!viaje) {
+        return { ok: false as const, motivo: 'Este viaje no existe.' };
+      }
+      if (viaje.estado !== 'programado') {
+        return {
+          ok: false as const,
+          motivo: `Este viaje ya está "${viaje.estado}" — solo se puede editar un viaje programado.`,
+        };
+      }
+      if (Number(viaje.boletos_vendidos) > 0) {
+        return {
+          ok: false as const,
+          motivo:
+            'Este viaje ya tiene boletos vendidos — cambiar la hora o el precio dejaría a esos pasajeros sin enterarse. Usa "Cambiar unidad" o "Cancelar viaje" en su lugar.',
+        };
+      }
+
+      if (datos.horaSalidaProgramada !== undefined) {
+        await tx.execute(sql`
+          UPDATE viajes SET hora_salida_programada = ${datos.horaSalidaProgramada}
+          WHERE id = ${viajeId}
+        `);
+      }
+      if (datos.precioBase !== undefined) {
+        await tx.execute(sql`
+          UPDATE viajes SET precio_base = ${String(datos.precioBase)}
+          WHERE id = ${viajeId}
+        `);
+      }
       return { ok: true as const };
     });
   }

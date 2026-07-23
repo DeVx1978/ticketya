@@ -35,6 +35,14 @@ export class PanelEmpresaService {
     return this.panel.listarUnidades(cooperativaId);
   }
 
+  actualizarEstadoUnidad(
+    cooperativaId: string,
+    unidadId: string,
+    activo: boolean,
+  ) {
+    return this.panel.actualizarEstadoUnidad(cooperativaId, unidadId, activo);
+  }
+
   crearRuta(cooperativaId: string, datos: DatosNuevaRuta) {
     return this.panel.crearRuta(cooperativaId, datos);
   }
@@ -61,6 +69,14 @@ export class PanelEmpresaService {
     nuevaUnidadId: string,
   ) {
     return this.panel.cambiarUnidadViaje(cooperativaId, viajeId, nuevaUnidadId);
+  }
+
+  editarViaje(
+    cooperativaId: string,
+    viajeId: string,
+    datos: { horaSalidaProgramada?: string; precioBase?: number },
+  ) {
+    return this.panel.editarViaje(cooperativaId, viajeId, datos);
   }
 
   listarPasajerosDeViaje(cooperativaId: string, viajeId: string) {

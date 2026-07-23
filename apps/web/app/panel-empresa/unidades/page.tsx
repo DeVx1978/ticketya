@@ -6,11 +6,52 @@ import {
   crearUnidadCoop,
   listarTiposVehiculoCoop,
   listarUnidadesCoop,
+  actualizarEstadoUnidadCoop,
   type TipoVehiculoResumen,
   type UnidadResumen,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
+
+function BotonEstadoUnidad({
+  unidad,
+  onCambiado,
+  onError,
+}: {
+  unidad: UnidadResumen;
+  onCambiado: () => void;
+  onError: (mensaje: string) => void;
+}) {
+  const [guardando, setGuardando] = useState(false);
+
+  async function alternar() {
+    const token = obtenerToken();
+    if (!token) return;
+    setGuardando(true);
+    try {
+      await actualizarEstadoUnidadCoop(token, unidad.id, !unidad.activo);
+      onCambiado();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo actualizar la unidad.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={alternar}
+      disabled={guardando}
+      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition disabled:opacity-50 ${
+        unidad.activo
+          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+      }`}
+    >
+      {unidad.activo ? "Activa" : "Inactiva"}
+    </button>
+  );
+}
 
 export default function UnidadesPage() {
   const [tipos, setTipos] = useState<TipoVehiculoResumen[] | null>(null);
@@ -264,6 +305,7 @@ export default function UnidadesPage() {
                   <th className="px-6 py-3">Placa</th>
                   <th className="px-6 py-3">Identificador operativo</th>
                   <th className="px-6 py-3">Tipo de vehículo</th>
+                  <th className="px-6 py-3">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
@@ -272,6 +314,16 @@ export default function UnidadesPage() {
                     <td className="px-6 py-3 font-medium text-brand-dark">{u.placa}</td>
                     <td className="px-6 py-3 text-brand-dark/70">{u.identificadorOperativo}</td>
                     <td className="px-6 py-3 text-brand-dark/70">{u.tipoVehiculoNombre}</td>
+                    <td className="px-6 py-3">
+                      <BotonEstadoUnidad
+                        unidad={u}
+                        onCambiado={() => {
+                          setMensajeExito(u.activo ? "Unidad desactivada." : "Unidad activada.");
+                          cargarTodo();
+                        }}
+                        onError={setMensajeError}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>

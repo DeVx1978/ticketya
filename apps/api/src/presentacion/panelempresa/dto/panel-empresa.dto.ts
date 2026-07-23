@@ -139,6 +139,24 @@ export class CambiarUnidadViajeDto {
   nuevaUnidadId!: string;
 }
 
+/** Editar hora/precio de un viaje sin boletos vendidos — hallazgo cerrado 22-jul-2026. */
+export class EditarViajeDto {
+  @IsOptional()
+  @IsISO8601()
+  horaSalidaProgramada?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  precioBase?: number;
+}
+
+/** Activar/desactivar una unidad — hallazgo cerrado 22-jul-2026. */
+export class ActualizarEstadoUnidadDto {
+  @IsBoolean()
+  activo!: boolean;
+}
+
 export class ValidarQrDto {
   @IsString()
   codigoQr!: string;

@@ -21,6 +21,8 @@ import {
   ImportarDatosDto,
   ValidarQrDto,
   CambiarUnidadViajeDto,
+  EditarViajeDto,
+  ActualizarEstadoUnidadDto,
   VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
   ActualizarPerfilDto,
@@ -77,6 +79,22 @@ export class PanelEmpresaController {
   @Get('unidades')
   async listarUnidades(@Request() req: { user: PayloadToken }) {
     return this.panel.listarUnidades(cooperativaDelToken(req.user));
+  }
+
+  /** Activar/desactivar una unidad — hallazgo cerrado 22-jul-2026. */
+  @Roles('admin_cooperativa')
+  @Patch('unidades/:unidadId/estado')
+  async actualizarEstadoUnidad(
+    @Param('unidadId') unidadId: string,
+    @Body() dto: ActualizarEstadoUnidadDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarEstadoUnidad(
+      cooperativaDelToken(req.user),
+      unidadId,
+      dto.activo,
+    );
+    return { ok: true };
   }
 
   @Roles('admin_cooperativa')
@@ -142,6 +160,25 @@ export class PanelEmpresaController {
       cooperativaDelToken(req.user),
       viajeId,
       dto.nuevaUnidadId,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
+  }
+
+  /** Editar hora/precio de un viaje sin boletos vendidos — hallazgo cerrado 22-jul-2026. */
+  @Roles('admin_cooperativa')
+  @Patch('viajes/:viajeId')
+  async editarViaje(
+    @Param('viajeId') viajeId: string,
+    @Body() dto: EditarViajeDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.editarViaje(
+      cooperativaDelToken(req.user),
+      viajeId,
+      dto,
     );
     if (!resultado.ok) {
       throw new BadRequestException(resultado.motivo);

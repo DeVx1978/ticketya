@@ -625,6 +625,161 @@ describe('Checkout y pago (e2e)', () => {
     expect(validacion.body.valido).toBe(true);
   });
 
+  it('la cooperativa puede editar la hora y el precio de un viaje SIN boletos vendidos — hallazgo cerrado 22-jul-2026 (antes no existía ninguna forma de corregir un error de captura)', async () => {
+    const rutaRes = await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        origenPuntoOperacionId: puntoOrigenId,
+        destinoPuntoOperacionId: puntoDestinoId,
+        precioBaseReferencia: PRECIO_BASE,
+      });
+    const viajeEditableRes = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        rutaId: rutaRes.body.id,
+        unidadId: unidadIdRechazo,
+        fechaSalida: '2026-06-03',
+        horaSalidaProgramada: '2026-06-03T08:00:00-05:00',
+        precioBase: PRECIO_BASE,
+      });
+    const viajeEditableId = viajeEditableRes.body.id;
+
+    await request(app.getHttpServer())
+      .patch(`/coop/viajes/${viajeEditableId}`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        horaSalidaProgramada: '2026-06-03T09:30:00-05:00',
+        precioBase: 12.5,
+      })
+      .expect(200);
+
+    const listado = await request(app.getHttpServer())
+      .get('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .expect(200);
+    const editado = listado.body.find(
+      (v: { id: string }) => v.id === viajeEditableId,
+    );
+    expect(editado.precioBase).toBe(12.5);
+  });
+
+  it('se puede desactivar una unidad, y ya no se puede asignar a un viaje ("cambiar unidad" la rechaza) — hallazgo real cerrado 22-jul-2026 (antes no había forma de marcarla inactiva)', async () => {
+    const tipoRes = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ nombre: `Tipo Inactivo ${sufijo}`, capacidadTotal: 20 });
+    const unidadInactivaRes = await request(app.getHttpServer())
+      .post('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        tipoVehiculoId: tipoRes.body.id,
+        placa: `INA-${sufijo % 100000}`,
+        identificadorOperativo: `InaOp-${sufijo % 100000}`,
+      });
+
+    const listaAntes = await request(app.getHttpServer())
+      .get('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .expect(200);
+    const unidadEnLista = listaAntes.body.find(
+      (u: { id: string }) => u.id === unidadInactivaRes.body.id,
+    );
+    expect(unidadEnLista.activo).toBe(true); // activa por defecto
+
+    await request(app.getHttpServer())
+      .patch(`/coop/unidades/${unidadInactivaRes.body.id}/estado`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ activo: false })
+      .expect(200);
+
+    const listaDespues = await request(app.getHttpServer())
+      .get('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .expect(200);
+    const unidadYaInactiva = listaDespues.body.find(
+      (u: { id: string }) => u.id === unidadInactivaRes.body.id,
+    );
+    expect(unidadYaInactiva.activo).toBe(false);
+
+    // Intentar asignarla a un viaje vía "cambiar unidad" debe rechazarse.
+    const rutaRes = await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        origenPuntoOperacionId: puntoOrigenId,
+        destinoPuntoOperacionId: puntoDestinoId,
+        precioBaseReferencia: PRECIO_BASE,
+      });
+    const viajeParaRechazoRes = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        rutaId: rutaRes.body.id,
+        unidadId: unidadIdRechazo,
+        fechaSalida: '2026-06-05',
+        horaSalidaProgramada: '2026-06-05T08:00:00-05:00',
+        precioBase: PRECIO_BASE,
+      });
+
+    const intento = await request(app.getHttpServer())
+      .patch(`/coop/viajes/${viajeParaRechazoRes.body.id}/unidad`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ nuevaUnidadId: unidadInactivaRes.body.id })
+      .expect(400);
+    expect(intento.body.message).toContain('inactiva');
+  });
+
+  it('rechaza editar un viaje que ya tiene boletos vendidos', async () => {
+    const rutaRes = await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        origenPuntoOperacionId: puntoOrigenId,
+        destinoPuntoOperacionId: puntoDestinoId,
+        precioBaseReferencia: PRECIO_BASE,
+      });
+    const viajeConVentaRes = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        rutaId: rutaRes.body.id,
+        unidadId: unidadIdRechazo,
+        fechaSalida: '2026-06-04',
+        horaSalidaProgramada: '2026-06-04T08:00:00-05:00',
+        precioBase: PRECIO_BASE,
+      });
+    const viajeConVentaId = viajeConVentaRes.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/viajes/${viajeConVentaId}/asientos/1A/bloquear`)
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId: viajeConVentaId,
+            numeroAsiento: '1A',
+            nombreCompleto: 'Pasajero Editar Rechazo E2E',
+            documento: '0922222299',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/coop/viajes/${viajeConVentaId}`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ precioBase: 99 })
+      .expect(400);
+    expect(res.body.message).toContain('boletos vendidos');
+  });
+
   it('cada boleto trae su propio desglose de precio en la respuesta — hallazgo cerrado 22-jul-2026 (antes solo traía id y codigoQr)', async () => {
     await bloquearYRegistrarAsiento('1D', tokenPasajero);
     const res = await request(app.getHttpServer())

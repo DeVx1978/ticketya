@@ -208,6 +208,24 @@ export interface UnidadResumen {
   identificadorOperativo: string;
   tipoVehiculoId: string;
   tipoVehiculoNombre: string;
+  activo: boolean;
+}
+
+export async function actualizarEstadoUnidadCoop(
+  token: string,
+  unidadId: string,
+  activo: boolean,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/unidades/${unidadId}/estado`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ activo }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo actualizar la unidad.");
+  }
 }
 
 export async function listarUnidadesCoop(token: string): Promise<UnidadResumen[]> {
@@ -826,6 +844,23 @@ export async function listarPasajerosDeViajeCoop(
   const cuerpo = await res.json();
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar la lista de pasajeros.");
   return cuerpo as PasajeroDeViaje[];
+}
+
+export async function editarViajeCoop(
+  token: string,
+  viajeId: string,
+  datos: { horaSalidaProgramada?: string; precioBase?: number },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/viajes/${viajeId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo editar el viaje.");
+  }
 }
 
 export async function cambiarUnidadViajeCoop(

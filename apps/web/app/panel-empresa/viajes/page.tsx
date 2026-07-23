@@ -9,6 +9,7 @@ import {
   listarViajesCoop,
   cancelarViajeCoop,
   cambiarUnidadViajeCoop,
+  editarViajeCoop,
   type RutaResumen,
   type UnidadResumen,
   type ViajeCoopResumen,
@@ -25,6 +26,88 @@ const ESTADO_ESTILO: Record<string, string> = {
 
 function formatearDolares(monto: number) {
   return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
+}
+
+function BotonEditarViaje({
+  viaje,
+  onEditado,
+  onError,
+}: {
+  viaje: ViajeCoopResumen;
+  onEditado: () => void;
+  onError: (mensaje: string) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const horaActual = new Date(viaje.horaSalidaProgramada).toLocaleTimeString("es-EC", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "America/Guayaquil",
+  });
+  const [hora, setHora] = useState(horaActual);
+  const [precio, setPrecio] = useState(String(viaje.precioBase));
+  const [guardando, setGuardando] = useState(false);
+
+  async function confirmar() {
+    const token = obtenerToken();
+    if (!token) return;
+    setGuardando(true);
+    try {
+      await editarViajeCoop(token, viaje.id, {
+        horaSalidaProgramada: `${viaje.fechaSalida}T${hora}:00-05:00`,
+        precioBase: Number(precio),
+      });
+      onEditado();
+      setAbierto(false);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo editar el viaje.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  if (!abierto) {
+    return (
+      <button
+        onClick={() => setAbierto(true)}
+        className="text-xs font-semibold text-brand-dark/70 hover:underline"
+      >
+        Editar
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <input
+        type="time"
+        value={hora}
+        onChange={(e) => setHora(e.target.value)}
+        className="w-24 rounded border border-brand-light px-1.5 py-1 text-xs"
+      />
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={precio}
+        onChange={(e) => setPrecio(e.target.value)}
+        className="w-16 rounded border border-brand-light px-1.5 py-1 text-xs"
+      />
+      <button
+        onClick={confirmar}
+        disabled={guardando}
+        className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+      >
+        ✓
+      </button>
+      <button
+        onClick={() => setAbierto(false)}
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+      >
+        ✕
+      </button>
+    </div>
+  );
 }
 
 function BotonCambiarUnidad({
@@ -275,11 +358,13 @@ export default function ViajesPage() {
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
           >
             <option value="">Selecciona...</option>
-            {unidades?.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.placa} — {u.tipoVehiculoNombre}
-              </option>
-            ))}
+            {unidades
+              ?.filter((u) => u.activo)
+              .map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.placa} — {u.tipoVehiculoNombre}
+                </option>
+              ))}
           </select>
         </div>
         <div>
@@ -388,9 +473,17 @@ export default function ViajesPage() {
                       </Link>
                       {v.estado === "programado" && (
                         <>
+                          <BotonEditarViaje
+                            viaje={v}
+                            onEditado={() => {
+                              setMensajeExito("Viaje actualizado.");
+                              cargarTodo();
+                            }}
+                            onError={setMensajeError}
+                          />
                           <BotonCambiarUnidad
                             viajeId={v.id}
-                            unidades={unidades ?? []}
+                            unidades={(unidades ?? []).filter((u) => u.activo)}
                             onCambiado={() => {
                               setMensajeExito("Unidad del viaje actualizada — los boletos ya vendidos no se vieron afectados.");
                               cargarTodo();
