@@ -294,7 +294,7 @@ describe('Calificaciones de viaje (e2e)', () => {
     expect(res.body[0].cooperativaCalificacionCantidad).toBe(1);
   });
 
-  it('"mis boletos" refleja correctamente cuándo sí se puede calificar y cuándo ya se calificó', async () => {
+  it('"mis boletos" refleja correctamente cuándo sí se puede calificar, y trae el código QR de cada boleto — hallazgo real cerrado 22-jul-2026 (antes no venía, sin forma de recuperar el QR si se cerraba la pantalla de compra)', async () => {
     const res = await request(app.getHttpServer())
       .get('/calificaciones/mis-boletos')
       .set('Authorization', `Bearer ${tokenPasajero}`)
@@ -305,6 +305,8 @@ describe('Calificaciones de viaje (e2e)', () => {
     );
     expect(yaCalificado.yaCalificado).toBe(true);
     expect(yaCalificado.puedeCalificar).toBe(false);
+    expect(yaCalificado.codigoQr).toBeDefined();
+    expect(typeof yaCalificado.codigoQr).toBe('string');
     expect(res.body.length).toBeGreaterThanOrEqual(2);
   });
 });

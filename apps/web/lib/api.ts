@@ -860,6 +860,7 @@ export async function calificarViaje(
 
 export interface MiBoleto {
   boletoId: string;
+  codigoQr: string;
   estado: string;
   cooperativaNombre: string;
   origenCiudad: string;

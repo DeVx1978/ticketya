@@ -98,6 +98,7 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
   async listarBoletosDePasajero(usuarioId: string): Promise<
     {
       boletoId: string;
+      codigoQr: string;
       cooperativaNombre: string;
       origenCiudad: string;
       destinoCiudad: string;
@@ -114,6 +115,7 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
     const filas = await this.db
       .select({
         boletoId: boletos.id,
+        codigoQr: boletos.codigoQr,
         estado: boletos.estado,
         cooperativaNombre: cooperativas.nombreComercial,
         origenCiudad: puntosOrigen.ciudad,
@@ -143,6 +145,7 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
 
     return filas.map((f) => ({
       boletoId: f.boletoId,
+      codigoQr: f.codigoQr,
       estado: f.estado,
       cooperativaNombre: f.cooperativaNombre,
       origenCiudad: f.origenCiudad,

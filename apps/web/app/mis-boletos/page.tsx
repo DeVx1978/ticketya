@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { listarMisBoletos, calificarViaje, cancelarBoleto, type MiBoleto } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
+import { CodigoQr } from "@/components/CodigoQr";
 
 function formatearFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-EC", {
@@ -14,6 +15,26 @@ function formatearFechaHora(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function BotonMostrarQr({ codigoQr }: { codigoQr: string }) {
+  const [mostrando, setMostrando] = useState(false);
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setMostrando((v) => !v)}
+        className="block text-xs font-semibold text-brand underline decoration-dotted underline-offset-2 hover:text-brand-dark"
+      >
+        {mostrando ? "Ocultar código QR" : "Ver código QR"}
+      </button>
+      {mostrando && (
+        <div className="mt-2 flex justify-center rounded-lg bg-brand-light/30 p-4">
+          <CodigoQr valor={codigoQr} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function BotonCancelar({
@@ -216,6 +237,8 @@ export default function MisBoletosPage() {
               >
                 {b.estado === "cancelado" ? "Cancelado" : b.estado === "usado" ? "Usado" : "Vigente"}
               </span>
+
+              {b.estado === "vigente" && <BotonMostrarQr codigoQr={b.codigoQr} />}
 
               {b.estado === "vigente" && new Date() < new Date(b.horaSalidaProgramada) && (
                 <BotonCancelar
