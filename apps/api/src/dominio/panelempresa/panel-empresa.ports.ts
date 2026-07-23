@@ -176,6 +176,23 @@ export interface ViajeResumen {
   tipoVehiculoNombre: string;
 }
 
+export interface UsuarioStaffResumen {
+  id: string;
+  correo: string;
+  nombreCompleto: string;
+  rol: 'vendedor' | 'admin_cooperativa';
+  activo: boolean;
+}
+
+export interface ConductorResumen {
+  id: string;
+  nombreCompleto: string;
+  cedula: string;
+  licenciaNumero: string | null;
+  licenciaCategoria: string | null;
+  telefono: string | null;
+}
+
 export interface PanelEmpresaRepositorio {
   crearTipoVehiculo(
     cooperativaId: string,
@@ -205,10 +222,13 @@ export interface PanelEmpresaRepositorio {
     cooperativaId: string,
     datos: DatosNuevoUsuarioStaff,
   ): Promise<{ usuarioId: string }>;
+  /** "Personal" (22-jul-2026) — antes se podía crear staff, pero no había forma de VER quién ya estaba registrado. */
+  listarUsuariosStaff(cooperativaId: string): Promise<UsuarioStaffResumen[]>;
   crearConductor(
     cooperativaId: string,
     datos: DatosNuevoConductor,
   ): Promise<{ id: string }>;
+  listarConductores(cooperativaId: string): Promise<ConductorResumen[]>;
 
   /** Carga masiva — ver comentario de DatosImportacion arriba. */
   importarDatos(

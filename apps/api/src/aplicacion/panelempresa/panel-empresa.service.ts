@@ -55,8 +55,16 @@ export class PanelEmpresaService {
     return this.panel.crearUsuarioStaff(cooperativaId, datos);
   }
 
+  listarUsuariosStaff(cooperativaId: string) {
+    return this.panel.listarUsuariosStaff(cooperativaId);
+  }
+
   crearConductor(cooperativaId: string, datos: DatosNuevoConductor) {
     return this.panel.crearConductor(cooperativaId, datos);
+  }
+
+  listarConductores(cooperativaId: string) {
+    return this.panel.listarConductores(cooperativaId);
   }
 
   importarDatos(cooperativaId: string, datos: DatosImportacion) {

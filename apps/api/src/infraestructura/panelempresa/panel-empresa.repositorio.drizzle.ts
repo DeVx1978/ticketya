@@ -234,6 +234,33 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async listarUsuariosStaff(cooperativaId: string) {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        SELECT id, correo, nombre_completo, rol, activo
+        FROM usuarios
+        WHERE cooperativa_id = ${cooperativaId} AND rol IN ('vendedor', 'admin_cooperativa')
+        ORDER BY creado_en DESC
+      `);
+      return filas.rows.map((f) => {
+        const fila = f as {
+          id: string;
+          correo: string;
+          nombre_completo: string;
+          rol: 'vendedor' | 'admin_cooperativa';
+          activo: boolean;
+        };
+        return {
+          id: fila.id,
+          correo: fila.correo,
+          nombreCompleto: fila.nombre_completo,
+          rol: fila.rol,
+          activo: fila.activo,
+        };
+      });
+    });
+  }
+
   async crearConductor(
     cooperativaId: string,
     datos: DatosNuevoConductor,
@@ -245,6 +272,35 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
+    });
+  }
+
+  async listarConductores(cooperativaId: string) {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        SELECT id, nombre_completo, cedula, licencia_numero, licencia_categoria, telefono
+        FROM conductores
+        WHERE cooperativa_id = ${cooperativaId}
+        ORDER BY creado_en DESC
+      `);
+      return filas.rows.map((f) => {
+        const fila = f as {
+          id: string;
+          nombre_completo: string;
+          cedula: string;
+          licencia_numero: string | null;
+          licencia_categoria: string | null;
+          telefono: string | null;
+        };
+        return {
+          id: fila.id,
+          nombreCompleto: fila.nombre_completo,
+          cedula: fila.cedula,
+          licenciaNumero: fila.licencia_numero,
+          licenciaCategoria: fila.licencia_categoria,
+          telefono: fila.telefono,
+        };
+      });
     });
   }
 

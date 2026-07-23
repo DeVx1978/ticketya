@@ -9,6 +9,7 @@ const ENLACES = [
   { href: "/panel-empresa", etiqueta: "Panel" },
   { href: "/panel-empresa/rutas", etiqueta: "Rutas" },
   { href: "/panel-empresa/unidades", etiqueta: "Unidades" },
+  { href: "/panel-empresa/personal", etiqueta: "Personal" },
   { href: "/panel-empresa/viajes", etiqueta: "Viajes" },
   { href: "/panel-empresa/validar-qr", etiqueta: "Validar boleto" },
 ];

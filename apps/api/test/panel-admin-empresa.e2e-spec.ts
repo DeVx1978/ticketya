@@ -513,6 +513,20 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .expect(201);
   });
 
+  it('el vendedor recién creado aparece al listar el personal — hallazgo cerrado 22-jul-2026 (antes no había forma de ver quién ya estaba registrado)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/coop/usuarios')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    const vendedor = res.body.find(
+      (u: { correo: string }) =>
+        u.correo === `vendedor.e2e.${sufijo}@ticketya.ec`,
+    );
+    expect(vendedor).toBeDefined();
+    expect(vendedor.rol).toBe('vendedor');
+    expect(vendedor.activo).toBe(true);
+  });
+
   it('da de alta un conductor', async () => {
     await request(app.getHttpServer())
       .post('/coop/conductores')
@@ -523,6 +537,18 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
         licenciaNumero: 'E-000000',
       })
       .expect(201);
+  });
+
+  it('el conductor recién creado aparece al listar — hallazgo cerrado 22-jul-2026', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/coop/conductores')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    const conductor = res.body.find(
+      (c: { nombreCompleto: string }) => c.nombreCompleto === 'Conductor E2E',
+    );
+    expect(conductor).toBeDefined();
+    expect(conductor.licenciaNumero).toBe('E-000000');
   });
 
   it('carga masiva vía JSON crea varios registros a la vez y reporta cuántos (RF-COOP-008)', async () => {

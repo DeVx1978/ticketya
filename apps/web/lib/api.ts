@@ -737,6 +737,75 @@ export async function cambiarPassword(
   }
 }
 
+export interface UsuarioStaffResumen {
+  id: string;
+  correo: string;
+  nombreCompleto: string;
+  rol: "vendedor" | "admin_cooperativa";
+  activo: boolean;
+}
+
+export async function listarUsuariosStaffCoop(token: string): Promise<UsuarioStaffResumen[]> {
+  const res = await fetch(`${API_URL}/coop/usuarios`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el personal.");
+  return cuerpo as UsuarioStaffResumen[];
+}
+
+export async function crearUsuarioStaffCoop(
+  token: string,
+  datos: { correo: string; password: string; nombreCompleto: string; rol: "vendedor" | "admin_cooperativa" },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/usuarios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el usuario.");
+  }
+}
+
+export interface ConductorResumen {
+  id: string;
+  nombreCompleto: string;
+  cedula: string;
+  licenciaNumero: string | null;
+  licenciaCategoria: string | null;
+  telefono: string | null;
+}
+
+export async function listarConductoresCoop(token: string): Promise<ConductorResumen[]> {
+  const res = await fetch(`${API_URL}/coop/conductores`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los conductores.");
+  return cuerpo as ConductorResumen[];
+}
+
+export async function crearConductorCoop(
+  token: string,
+  datos: { nombreCompleto: string; cedula: string; licenciaNumero?: string; licenciaCategoria?: string; telefono?: string },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/conductores`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el conductor.");
+  }
+}
+
 export async function cancelarBoleto(token: string, boletoId: string): Promise<void> {
   const res = await fetch(`${API_URL}/compras/boletos/${boletoId}/cancelar`, {
     method: "POST",

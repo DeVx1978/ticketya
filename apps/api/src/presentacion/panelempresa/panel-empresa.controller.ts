@@ -117,12 +117,24 @@ export class PanelEmpresaController {
   }
 
   @Roles('admin_cooperativa')
+  @Get('usuarios')
+  async listarUsuariosStaff(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarUsuariosStaff(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
   @Post('conductores')
   async crearConductor(
     @Body() dto: CrearConductorDto,
     @Request() req: { user: PayloadToken },
   ) {
     return this.panel.crearConductor(cooperativaDelToken(req.user), dto);
+  }
+
+  @Roles('admin_cooperativa')
+  @Get('conductores')
+  async listarConductores(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarConductores(cooperativaDelToken(req.user));
   }
 
   /**
