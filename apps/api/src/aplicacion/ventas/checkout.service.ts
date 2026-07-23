@@ -142,4 +142,8 @@ export class CheckoutService {
       ivaVisible,
     };
   }
+
+  async cancelarBoleto(boletoId: string, usuarioId: string) {
+    return this.compras.cancelarBoleto(boletoId, usuarioId);
+  }
 }

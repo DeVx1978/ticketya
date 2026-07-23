@@ -355,6 +355,81 @@ describe('Checkout y pago (e2e)', () => {
       .expect(201);
   });
 
+  it('el pasajero puede cancelar su propio boleto — hallazgo real cerrado 22-jul-2026 (antes no existía ninguna forma de cancelar)', async () => {
+    await bloquearYRegistrarAsiento('3C', tokenPasajero);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '3C',
+            nombreCompleto: 'Pasajero Cancelacion E2E',
+            documento: '0966666666',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+    const boletoId = compra.body.boletos[0].id;
+
+    await request(app.getHttpServer())
+      .post(`/compras/boletos/${boletoId}/cancelar`)
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(201);
+
+    // El asiento debe volver a estar disponible para otra persona.
+    const mapa = await request(app.getHttpServer())
+      .get(`/viajes/${viajeId}/asientos`)
+      .expect(200);
+    const asiento3C = mapa.body.asientosNoDisponibles.find(
+      (a: { numeroAsiento: string }) => a.numeroAsiento === '3C',
+    );
+    expect(asiento3C).toBeUndefined();
+
+    // Y ya no se puede cancelar dos veces.
+    const segundoIntento = await request(app.getHttpServer())
+      .post(`/compras/boletos/${boletoId}/cancelar`)
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(400);
+    expect(segundoIntento.body.message).toContain('cancelado');
+  });
+
+  it('un pasajero no puede cancelar el boleto de otro', async () => {
+    await bloquearYRegistrarAsiento('3D', tokenPasajero);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '3D',
+            nombreCompleto: 'Pasajero Cancelacion Ajena E2E',
+            documento: '0977777777',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+    const boletoId = compra.body.boletos[0].id;
+
+    const otroPasajero = await request(app.getHttpServer())
+      .post('/auth/registro')
+      .send({
+        correo: `otro.cancelacion.${sufijo}@ticketya.ec`,
+        password: 'ClaveSegura123',
+        nombreCompleto: 'Otro Pasajero Cancelacion E2E',
+      });
+
+    const res = await request(app.getHttpServer())
+      .post(`/compras/boletos/${boletoId}/cancelar`)
+      .set('Authorization', `Bearer ${otroPasajero.body.accessToken}`)
+      .expect(400);
+    expect(res.body.message).toContain('no te pertenece');
+  });
+
   it('cada boleto trae su propio desglose de precio en la respuesta — hallazgo cerrado 22-jul-2026 (antes solo traía id y codigoQr)', async () => {
     await bloquearYRegistrarAsiento('1D', tokenPasajero);
     const res = await request(app.getHttpServer())

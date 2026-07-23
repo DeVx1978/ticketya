@@ -60,6 +60,17 @@ export const configuracionPlataforma = pgTable('configuracion_plataforma', {
   // uniforme vs. por cooperativa).
   politicaCancelacionNotas: text('politica_cancelacion_notas'),
 
+  // Ventana mínima antes de la salida para poder cancelar un boleto
+  // (22-jul-2026) — sí se implementó la ACCIÓN de cancelar (antes no
+  // existía ninguna forma de hacerlo, ni siquiera manualmente), pero el
+  // reembolso monetario real queda fuera de este alcance porque los
+  // pagos hoy son simulados (ver infraestructura/pagos/simulador.pasarela.ts)
+  // — no hay dinero real que devolver todavía. Nullable, mismo criterio
+  // que el resto de este archivo: si está en null, la capa de aplicación
+  // usa un valor de reserva conservador (2 horas) y lo señala como
+  // configuración pendiente, no como decisión ya tomada.
+  cancelacionHorasMinimasAntes: integer('cancelacion_horas_minimas_antes'),
+
   // IVA vigente a nivel nacional (Ecuador, 15% al momento de este
   // diseño — 21-jul-2026). Es el valor que se propaga a todas las
   // cooperativas que tengan "iva_sigue_tasa_nacional = true" cuando el

@@ -41,6 +41,7 @@ export interface CalificacionesRepositorio {
   listarBoletosDePasajero(usuarioId: string): Promise<
     {
       boletoId: string;
+      estado: string;
       cooperativaNombre: string;
       origenCiudad: string;
       destinoCiudad: string;

@@ -683,6 +683,18 @@ export async function listarBannersActivos(): Promise<BannerPropio[]> {
 // Calificaciones de viaje — 22-jul-2026.
 // ---------------------------------------------------------------------
 
+export async function cancelarBoleto(token: string, boletoId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/compras/boletos/${boletoId}/cancelar`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo cancelar el boleto.");
+  }
+}
+
 export async function calificarViaje(
   token: string,
   boletoId: string,
@@ -703,6 +715,7 @@ export async function calificarViaje(
 
 export interface MiBoleto {
   boletoId: string;
+  estado: string;
   cooperativaNombre: string;
   origenCiudad: string;
   destinoCiudad: string;

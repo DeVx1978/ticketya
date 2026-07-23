@@ -13,6 +13,7 @@ import {
   boletos,
   comprobantesTasaTerminal,
   autorizacionesMenor,
+  configuracionPlataforma,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -339,5 +340,63 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .update(pagos)
       .set({ estado: 'rechazado', respuestaProveedor: { motivo } })
       .where(eq(pagos.compraId, compraId));
+  }
+
+  async cancelarBoleto(
+    boletoId: string,
+    usuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const [fila] = await this.dbPublico
+      .select({
+        estado: boletos.estado,
+        viajeAsientoId: boletos.viajeAsientoId,
+        compradorUsuarioId: compras.compradorUsuarioId,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+      })
+      .from(boletos)
+      .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .where(eq(boletos.id, boletoId));
+
+    if (!fila || fila.compradorUsuarioId !== usuarioId) {
+      return { ok: false, motivo: 'Este boleto no existe o no te pertenece.' };
+    }
+    if (fila.estado !== 'vigente') {
+      return {
+        ok: false,
+        motivo:
+          fila.estado === 'usado'
+            ? 'Este boleto ya fue usado, no se puede cancelar.'
+            : 'Este boleto ya estaba cancelado.',
+      };
+    }
+
+    const [config] = await this.dbPublico
+      .select({ horas: configuracionPlataforma.cancelacionHorasMinimasAntes })
+      .from(configuracionPlataforma)
+      .limit(1);
+    // Valor de reserva conservador si nadie lo ha configurado todavía —
+    // ver comentario completo en packages/db/schema/configuracion.ts.
+    const horasMinimas = config?.horas ?? 2;
+    const limite = new Date(fila.horaSalidaProgramada);
+    limite.setHours(limite.getHours() - horasMinimas);
+    if (new Date() > limite) {
+      return {
+        ok: false,
+        motivo: `Ya no se puede cancelar — faltan menos de ${horasMinimas} horas para la salida.`,
+      };
+    }
+
+    await this.dbPublico
+      .update(boletos)
+      .set({ estado: 'cancelado' })
+      .where(eq(boletos.id, boletoId));
+    await this.dbPublico
+      .update(viajeAsientos)
+      .set({ estado: 'disponible', holdUsuarioId: null, holdExpiraEn: null })
+      .where(eq(viajeAsientos.id, fila.viajeAsientoId));
+
+    return { ok: true };
   }
 }

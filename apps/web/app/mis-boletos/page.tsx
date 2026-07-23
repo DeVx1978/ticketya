@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listarMisBoletos, calificarViaje, type MiBoleto } from "@/lib/api";
+import { listarMisBoletos, calificarViaje, cancelarBoleto, type MiBoleto } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
 
@@ -14,6 +14,64 @@ function formatearFechaHora(iso: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function BotonCancelar({
+  boletoId,
+  onCancelado,
+  onError,
+}: {
+  boletoId: string;
+  onCancelado: () => void;
+  onError: (mensaje: string) => void;
+}) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+
+  async function confirmar() {
+    const token = tokenValido();
+    if (!token) return;
+    setCancelando(true);
+    try {
+      await cancelarBoleto(token, boletoId);
+      onCancelado();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo cancelar el boleto.");
+    } finally {
+      setCancelando(false);
+      setConfirmando(false);
+    }
+  }
+
+  if (confirmando) {
+    return (
+      <div className="mt-2 flex items-center gap-2">
+        <span className="text-xs text-brand-dark/60">¿Seguro que quieres cancelar este boleto?</span>
+        <button
+          onClick={confirmar}
+          disabled={cancelando}
+          className="rounded-lg bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {cancelando ? "Cancelando..." : "Sí, cancelar"}
+        </button>
+        <button
+          onClick={() => setConfirmando(false)}
+          className="rounded-lg border border-brand-light px-3 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+        >
+          No
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirmando(true)}
+      className="mt-2 text-xs font-semibold text-red-600 underline decoration-dotted underline-offset-2 hover:text-red-700"
+    >
+      Cancelar boleto
+    </button>
+  );
 }
 
 function FormularioCalificar({ boletoId, onEnviado }: { boletoId: string; onEnviado: () => void }) {
@@ -147,9 +205,31 @@ export default function MisBoletosPage() {
               <p className="text-sm text-brand-dark/60">
                 {b.cooperativaNombre} · Sale {formatearFechaHora(b.horaSalidaProgramada)}
               </p>
+              <span
+                className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  b.estado === "cancelado"
+                    ? "bg-red-100 text-red-700"
+                    : b.estado === "usado"
+                      ? "bg-slate-100 text-slate-600"
+                      : "bg-emerald-100 text-emerald-700"
+                }`}
+              >
+                {b.estado === "cancelado" ? "Cancelado" : b.estado === "usado" ? "Usado" : "Vigente"}
+              </span>
+
+              {b.estado === "vigente" && new Date() < new Date(b.horaSalidaProgramada) && (
+                <BotonCancelar
+                  boletoId={b.boletoId}
+                  onCancelado={() => {
+                    setMensajeExito("Boleto cancelado — el asiento quedó libre para otro pasajero.");
+                    cargar();
+                  }}
+                  onError={setError}
+                />
+              )}
 
               <div className="mt-3">
-                {b.yaCalificado ? (
+                {b.estado !== "vigente" ? null : b.yaCalificado ? (
                   <p className="text-sm font-medium text-emerald-600">Ya calificaste este viaje. ¡Gracias!</p>
                 ) : b.puedeCalificar ? (
                   <FormularioCalificar

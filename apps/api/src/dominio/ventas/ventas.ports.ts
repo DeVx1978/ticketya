@@ -150,4 +150,17 @@ export interface CompraRepositorio {
 
   /** Registra el rechazo sin tocar los asientos (su hold expira solo). */
   rechazarPago(compraId: string, motivo: string): Promise<void>;
+
+  /**
+   * Cancela un boleto propio — hallazgo real 22-jul-2026: antes no
+   * existía NINGUNA forma de cancelar un boleto ya comprado, ni
+   * siquiera manualmente. No procesa reembolso real (los pagos hoy son
+   * simulados, no hay dinero real que devolver) — libera el asiento
+   * (vuelve a 'disponible', comprable por otro pasajero) y marca el
+   * boleto como 'cancelado'.
+   */
+  cancelarBoleto(
+    boletoId: string,
+    usuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 }

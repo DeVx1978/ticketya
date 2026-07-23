@@ -105,6 +105,7 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
       horaSalidaProgramada: Date;
       horaLlegadaEstimada: Date | null;
       yaCalificado: boolean;
+      estado: string;
     }[]
   > {
     const puntosOrigen = alias(puntosOperacion, 'puntos_origen');
@@ -113,6 +114,7 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
     const filas = await this.db
       .select({
         boletoId: boletos.id,
+        estado: boletos.estado,
         cooperativaNombre: cooperativas.nombreComercial,
         origenCiudad: puntosOrigen.ciudad,
         destinoCiudad: puntosDestino.ciudad,
@@ -141,6 +143,7 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
 
     return filas.map((f) => ({
       boletoId: f.boletoId,
+      estado: f.estado,
       cooperativaNombre: f.cooperativaNombre,
       origenCiudad: f.origenCiudad,
       destinoCiudad: f.destinoCiudad,

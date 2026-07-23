@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Param,
+  Request,
+  UseGuards,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { CheckoutService } from '../../aplicacion/ventas/checkout.service';
 import { CrearCompraDto } from './dto/crear-compra.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -20,5 +29,27 @@ export class VentasController {
       req.user.sub,
       dto.idempotencyKey,
     );
+  }
+
+  /**
+   * Cancelar un boleto propio — hallazgo real, 22-jul-2026: antes no
+   * existía ninguna forma de hacerlo. No procesa reembolso monetario
+   * (pagos hoy son simulados); libera el asiento y marca el boleto
+   * como cancelado.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('boletos/:boletoId/cancelar')
+  async cancelarBoleto(
+    @Param('boletoId') boletoId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.checkout.cancelarBoleto(
+      boletoId,
+      req.user.sub,
+    );
+    if (!resultado.ok) {
+      throw new HttpException(resultado.motivo, HttpStatus.BAD_REQUEST);
+    }
+    return { ok: true };
   }
 }
