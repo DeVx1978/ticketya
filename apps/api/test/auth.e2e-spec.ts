@@ -193,13 +193,72 @@ describe('Autenticación (e2e)', () => {
         .expect(401);
     });
 
-    it('devuelve el payload del token (el endpoint no vuelve a consultar la base de datos, solo decodifica el JWT)', async () => {
+    it('devuelve el perfil real del usuario, no solo el payload del token — hallazgo cerrado 22-jul-2026 (antes solo decodificaba el JWT, sin consultar la base de datos)', async () => {
       const res = await request(app.getHttpServer())
         .get('/auth/perfil')
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
-      expect(res.body.sub).toBeDefined();
+      expect(res.body.id).toBeDefined();
       expect(res.body.rol).toBe('pasajero');
+      expect(res.body.correo).toBeDefined();
+      expect(res.body.nombreCompleto).toBeDefined();
+      expect(res.body.viajesCompletados).toBe(0);
+    });
+
+    it('permite actualizar el nombre, teléfono y foto del propio perfil', async () => {
+      await request(app.getHttpServer())
+        .patch('/auth/perfil')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          nombreCompleto: 'Nombre Actualizado E2E',
+          telefono: '0987654321',
+          fotoUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+        })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get('/auth/perfil')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(res.body.nombreCompleto).toBe('Nombre Actualizado E2E');
+      expect(res.body.telefono).toBe('0987654321');
+      expect(res.body.fotoUrl).toBe(
+        'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+      );
+    });
+
+    it('permite cambiar la contraseña con la actual correcta, y el nuevo login funciona con ella — hallazgo cerrado 22-jul-2026 (antes no existía ninguna forma de cambiarla)', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/cambiar-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          passwordActual: 'ClaveSegura123',
+          passwordNueva: 'NuevaClaveSegura456',
+        })
+        .expect(201);
+
+      // El login viejo ya no debe funcionar.
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo, password: 'ClaveSegura123' })
+        .expect(401);
+
+      // El nuevo sí.
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo, password: 'NuevaClaveSegura456' })
+        .expect(201);
+    });
+
+    it('rechaza cambiar la contraseña si la actual está mal', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/cambiar-password')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          passwordActual: 'esta-no-es-la-clave',
+          passwordNueva: 'OtraClave12345',
+        })
+        .expect(400);
     });
   });
 });

@@ -3,6 +3,8 @@ import {
   Inject,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import type {
   UsuarioRepositorio,
@@ -108,5 +110,59 @@ export class AuthService {
       cooperativaId: usuario.cooperativaId,
     });
     return { accessToken };
+  }
+
+  /** Perfil real (22-jul-2026) — antes GET /auth/perfil solo devolvía el payload del token, no los datos reales del usuario. */
+  async obtenerMiPerfil(usuarioId: string) {
+    const usuario = await this.usuarios.buscarPorId(usuarioId);
+    if (!usuario) throw new NotFoundException('Usuario no encontrado.');
+
+    const viajesCompletados =
+      usuario.rol === 'pasajero'
+        ? await this.usuarios.contarViajesCompletados(usuarioId)
+        : undefined;
+
+    return {
+      id: usuario.id,
+      rol: usuario.rol,
+      correo: usuario.correo,
+      nombreCompleto: usuario.nombreCompleto,
+      telefono: usuario.telefono,
+      fotoUrl: usuario.fotoUrl,
+      creadoEn: usuario.creadoEn,
+      viajesCompletados,
+    };
+  }
+
+  async actualizarMiPerfil(
+    usuarioId: string,
+    datos: { nombreCompleto?: string; telefono?: string; fotoUrl?: string },
+  ) {
+    await this.usuarios.actualizarPerfil(usuarioId, datos);
+  }
+
+  async cambiarPassword(
+    usuarioId: string,
+    passwordActual: string,
+    passwordNueva: string,
+  ) {
+    const usuario = await this.usuarios.buscarPorId(usuarioId);
+    if (!usuario || !usuario.passwordHash) {
+      throw new NotFoundException('Usuario no encontrado.');
+    }
+    const valido = await this.hasher.comparar(
+      passwordActual,
+      usuario.passwordHash,
+    );
+    if (!valido) {
+      throw new BadRequestException('La contraseña actual no es correcta.');
+    }
+    if (passwordNueva.length < 8) {
+      throw new BadRequestException(
+        'La nueva contraseña debe tener al menos 8 caracteres.',
+      );
+    }
+    const nuevoHash = await this.hasher.hash(passwordNueva);
+    await this.usuarios.actualizarPasswordHash(usuarioId, nuevoHash);
   }
 }

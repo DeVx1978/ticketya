@@ -683,6 +683,60 @@ export async function listarBannersActivos(): Promise<BannerPropio[]> {
 // Calificaciones de viaje — 22-jul-2026.
 // ---------------------------------------------------------------------
 
+export interface MiPerfil {
+  id: string;
+  rol: "pasajero" | "vendedor" | "admin_cooperativa" | "admin_plataforma";
+  correo: string;
+  nombreCompleto: string;
+  telefono: string | null;
+  fotoUrl: string | null;
+  creadoEn: string;
+  viajesCompletados?: number;
+}
+
+export async function obtenerMiPerfil(token: string): Promise<MiPerfil> {
+  const res = await fetch(`${API_URL}/auth/perfil`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar tu perfil.");
+  return cuerpo as MiPerfil;
+}
+
+export async function actualizarMiPerfil(
+  token: string,
+  datos: { nombreCompleto?: string; telefono?: string; fotoUrl?: string },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/perfil`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo actualizar tu perfil.");
+  }
+}
+
+export async function cambiarPassword(
+  token: string,
+  passwordActual: string,
+  passwordNueva: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/cambiar-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ passwordActual, passwordNueva }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo cambiar la contraseña.");
+  }
+}
+
 export async function cancelarBoleto(token: string, boletoId: string): Promise<void> {
   const res = await fetch(`${API_URL}/compras/boletos/${boletoId}/cancelar`, {
     method: "POST",

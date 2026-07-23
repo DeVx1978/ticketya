@@ -54,12 +54,20 @@ export function HeaderPublico() {
         {payload ? (
           <div className="flex items-center gap-3">
             {payload.rol === "pasajero" ? (
-              <Link
-                href="/mis-boletos"
-                className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
-              >
-                Mis boletos
-              </Link>
+              <>
+                <Link
+                  href="/perfil"
+                  className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
+                >
+                  Mi perfil
+                </Link>
+                <Link
+                  href="/mis-boletos"
+                  className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
+                >
+                  Mis boletos
+                </Link>
+              </>
             ) : (
               <Link
                 href={RUTA_POR_ROL[payload.rol]}

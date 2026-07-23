@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Request,
   UseGuards,
@@ -9,6 +10,8 @@ import {
 import { AuthService } from '../../aplicacion/auth/auth.service';
 import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
+import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -28,14 +31,35 @@ export class AuthController {
     return this.authService.login(datos.correo, datos.password);
   }
 
-  /**
-   * RF-AUTH-006 (parcial — solo lectura del token, no el historial de
-   * compras todavía) y demostración práctica de RF-AUTH-004: cualquier
-   * usuario logueado con cualquier rol puede ver su propio payload.
-   */
+  /** RF-AUTH-006 — perfil real del usuario (nombre, teléfono, foto, viajes completados), no solo el payload del token. */
   @UseGuards(JwtAuthGuard)
   @Get('perfil')
-  perfil(@Request() req: { user: PayloadToken }) {
-    return req.user;
+  async perfil(@Request() req: { user: PayloadToken }) {
+    return this.authService.obtenerMiPerfil(req.user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('perfil')
+  async actualizarPerfil(
+    @Body() dto: ActualizarPerfilDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.authService.actualizarMiPerfil(req.user.sub, dto);
+    return { ok: true };
+  }
+
+  /** Cambiar contraseña estando logueado — hallazgo real cerrado 22-jul-2026, antes no existía ninguna forma de hacerlo. */
+  @UseGuards(JwtAuthGuard)
+  @Post('cambiar-password')
+  async cambiarPassword(
+    @Body() dto: CambiarPasswordDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.authService.cambiarPassword(
+      req.user.sub,
+      dto.passwordActual,
+      dto.passwordNueva,
+    );
+    return { ok: true };
   }
 }

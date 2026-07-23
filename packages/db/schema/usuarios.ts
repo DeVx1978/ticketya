@@ -21,6 +21,7 @@ import {
   pgTable,
   uuid,
   varchar,
+  text,
   timestamp,
   integer,
   boolean,
@@ -52,6 +53,12 @@ export const usuarios = pgTable(
     cedula: varchar('cedula', { length: 20 }),
     nombreCompleto: varchar('nombre_completo', { length: 200 }).notNull(),
     telefono: varchar('telefono', { length: 20 }),
+
+    // Foto de perfil (22-jul-2026) — mismo criterio que el logo de
+    // cooperativa: solo se guarda la URL de una imagen ya subida a un
+    // servicio externo (ej. Cloudinary), no el archivo en sí. No hay
+    // pipeline de subida propio todavía.
+    fotoUrl: text('foto_url'),
 
     // RF-AUTH-001 — null si el usuario se registró vía proveedor externo.
     passwordHash: varchar('password_hash', { length: 255 }),

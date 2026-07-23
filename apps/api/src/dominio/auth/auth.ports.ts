@@ -13,6 +13,9 @@ export interface UsuarioDominio {
   cooperativaId: string | null;
   correo: string;
   nombreCompleto: string;
+  telefono: string | null;
+  fotoUrl: string | null;
+  creadoEn: Date;
   passwordHash: string | null;
   intentosFallidos: number;
   bloqueadoHasta: Date | null;
@@ -43,6 +46,21 @@ export interface UsuarioRepositorio {
     bloqueadoHasta: Date | null,
   ): Promise<void>;
   reiniciarIntentosFallidos(usuarioId: string): Promise<void>;
+
+  /** Perfil (22-jul-2026) — nombre, teléfono, foto; solo se tocan los campos enviados. */
+  actualizarPerfil(
+    usuarioId: string,
+    datos: {
+      nombreCompleto?: string;
+      telefono?: string;
+      fotoUrl?: string | null;
+    },
+  ): Promise<void>;
+
+  actualizarPasswordHash(usuarioId: string, nuevoHash: string): Promise<void>;
+
+  /** Solo tiene sentido para 'pasajero' — cuenta boletos con estado 'usado'. */
+  contarViajesCompletados(usuarioId: string): Promise<number>;
 }
 
 /** Puerto de hashing de contraseñas — la capa de infra decide el algoritmo. */

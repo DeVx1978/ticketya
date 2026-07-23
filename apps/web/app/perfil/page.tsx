@@ -1,0 +1,256 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { obtenerMiPerfil, actualizarMiPerfil, cambiarPassword, type MiPerfil } from "@/lib/api";
+import { tokenValido, borrarToken } from "@/lib/auth";
+import { Toast } from "@/components/Toast";
+import { CampoPassword } from "@/components/CampoPassword";
+
+const ETIQUETA_ROL: Record<string, string> = {
+  pasajero: "Pasajero",
+  vendedor: "Vendedor",
+  admin_cooperativa: "Administrador de cooperativa",
+  admin_plataforma: "Administrador de plataforma",
+};
+
+function formatearFecha(iso: string) {
+  return new Date(iso).toLocaleDateString("es-EC", {
+    timeZone: "America/Guayaquil",
+    year: "numeric",
+    month: "long",
+  });
+}
+
+export default function PerfilPage() {
+  const router = useRouter();
+  const [perfil, setPerfil] = useState<MiPerfil | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+
+  const [nombreCompleto, setNombreCompleto] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [fotoUrl, setFotoUrl] = useState("");
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+  const [errorPerfil, setErrorPerfil] = useState<string | null>(null);
+
+  const [passwordActual, setPasswordActual] = useState("");
+  const [passwordNueva, setPasswordNueva] = useState("");
+  const [cambiandoPassword, setCambiandoPassword] = useState(false);
+  const [errorPassword, setErrorPassword] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = tokenValido();
+    if (!token) {
+      router.push(`/ingresar?volverA=${encodeURIComponent("/perfil")}`);
+      return;
+    }
+    obtenerMiPerfil(token)
+      .then((p) => {
+        setPerfil(p);
+        setNombreCompleto(p.nombreCompleto);
+        setTelefono(p.telefono ?? "");
+        setFotoUrl(p.fotoUrl ?? "");
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar tu perfil."));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function guardarPerfil(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorPerfil(null);
+    const token = tokenValido();
+    if (!token) return;
+    setGuardandoPerfil(true);
+    try {
+      await actualizarMiPerfil(token, {
+        nombreCompleto: nombreCompleto.trim(),
+        telefono: telefono.trim(),
+        fotoUrl: fotoUrl.trim(),
+      });
+      setPerfil((p) => (p ? { ...p, nombreCompleto, telefono, fotoUrl } : p));
+      setMensajeExito("Perfil actualizado.");
+    } catch (err) {
+      setErrorPerfil(err instanceof Error ? err.message : "No se pudo guardar.");
+    } finally {
+      setGuardandoPerfil(false);
+    }
+  }
+
+  async function guardarPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorPassword(null);
+    const token = tokenValido();
+    if (!token) return;
+    setCambiandoPassword(true);
+    try {
+      await cambiarPassword(token, passwordActual, passwordNueva);
+      setPasswordActual("");
+      setPasswordNueva("");
+      setMensajeExito("Contraseña actualizada.");
+    } catch (err) {
+      setErrorPassword(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.");
+    } finally {
+      setCambiandoPassword(false);
+    }
+  }
+
+  function cerrarSesion() {
+    borrarToken();
+    router.push("/");
+  }
+
+  if (error) {
+    return (
+      <main className="mx-auto max-w-lg flex-1 px-4 py-16">
+        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
+          {error}
+        </div>
+      </main>
+    );
+  }
+
+  if (!perfil) {
+    return (
+      <main className="mx-auto max-w-lg flex-1 px-4 py-16 text-center text-sm text-brand-dark/50">
+        Cargando...
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto max-w-lg flex-1 px-4 py-10">
+      <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
+
+      {/* Tarjeta de identidad — el vistazo "exclusivo" del perfil */}
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-dark via-brand to-brand-medium p-6 text-white shadow-lg">
+        <div className="flex items-center gap-4">
+          {perfil.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica, no un asset local
+            <img
+              src={perfil.fotoUrl}
+              alt={perfil.nombreCompleto}
+              className="h-16 w-16 rounded-full object-cover ring-2 ring-white/40"
+            />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold ring-2 ring-white/40">
+              {perfil.nombreCompleto.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <p className="font-display text-xl font-extrabold">{perfil.nombreCompleto}</p>
+            <p className="text-sm text-white/75">{ETIQUETA_ROL[perfil.rol]}</p>
+          </div>
+        </div>
+        <div className="mt-4 flex items-center gap-6 border-t border-white/20 pt-4 text-sm">
+          <div>
+            <p className="text-white/60">Miembro desde</p>
+            <p className="font-semibold">{formatearFecha(perfil.creadoEn)}</p>
+          </div>
+          {perfil.viajesCompletados !== undefined && (
+            <div>
+              <p className="text-white/60">Viajes completados</p>
+              <p className="font-semibold">{perfil.viajesCompletados}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Datos editables */}
+      <form
+        onSubmit={guardarPerfil}
+        className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      >
+        <h2 className="font-display text-base font-bold text-brand-dark">Mis datos</h2>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Correo
+          </label>
+          <input
+            type="text"
+            value={perfil.correo}
+            disabled
+            className="w-full rounded-lg border border-brand-light bg-brand-light/30 px-3 py-2.5 text-base text-brand-dark/50"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Nombre completo
+          </label>
+          <input
+            type="text"
+            value={nombreCompleto}
+            onChange={(e) => setNombreCompleto(e.target.value)}
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Teléfono
+          </label>
+          <input
+            type="text"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            URL de foto de perfil (opcional)
+          </label>
+          <input
+            type="text"
+            value={fotoUrl}
+            onChange={(e) => setFotoUrl(e.target.value)}
+            placeholder="https://res.cloudinary.com/tu-cuenta/foto.jpg"
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+        {errorPerfil && <p className="text-sm font-medium text-red-600">{errorPerfil}</p>}
+        <button
+          type="submit"
+          disabled={guardandoPerfil}
+          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+        >
+          {guardandoPerfil ? "Guardando..." : "Guardar cambios"}
+        </button>
+      </form>
+
+      {/* Cambiar contraseña */}
+      <form
+        onSubmit={guardarPassword}
+        className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      >
+        <h2 className="font-display text-base font-bold text-brand-dark">Cambiar contraseña</h2>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Contraseña actual
+          </label>
+          <CampoPassword value={passwordActual} onChange={setPasswordActual} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Nueva contraseña
+          </label>
+          <CampoPassword value={passwordNueva} onChange={setPasswordNueva} placeholder="Mínimo 8 caracteres" />
+        </div>
+        {errorPassword && <p className="text-sm font-medium text-red-600">{errorPassword}</p>}
+        <button
+          type="submit"
+          disabled={cambiandoPassword || !passwordActual || !passwordNueva}
+          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+        >
+          {cambiandoPassword ? "Cambiando..." : "Cambiar contraseña"}
+        </button>
+      </form>
+
+      <button
+        onClick={cerrarSesion}
+        className="mt-6 w-full rounded-lg border border-brand-light px-5 py-2.5 text-sm font-semibold text-brand-dark/70 transition hover:bg-brand-light/40"
+      >
+        Cerrar sesión
+      </button>
+    </main>
+  );
+}

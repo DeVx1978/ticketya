@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { usuarios } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -88,11 +88,54 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       cooperativaId: fila.cooperativaId,
       correo: fila.correo,
       nombreCompleto: fila.nombreCompleto,
+      telefono: fila.telefono,
+      fotoUrl: fila.fotoUrl,
+      creadoEn: fila.creadoEn,
       passwordHash: fila.passwordHash,
       intentosFallidos: fila.intentosFallidos,
       bloqueadoHasta: fila.bloqueadoHasta,
       correoVerificado: fila.correoVerificado,
       activo: fila.activo,
     };
+  }
+
+  async actualizarPerfil(
+    usuarioId: string,
+    datos: {
+      nombreCompleto?: string;
+      telefono?: string;
+      fotoUrl?: string | null;
+    },
+  ): Promise<void> {
+    const valores: Record<string, unknown> = {};
+    if (datos.nombreCompleto !== undefined)
+      valores.nombreCompleto = datos.nombreCompleto;
+    if (datos.telefono !== undefined) valores.telefono = datos.telefono;
+    if (datos.fotoUrl !== undefined) valores.fotoUrl = datos.fotoUrl;
+    if (Object.keys(valores).length === 0) return;
+    await this.db
+      .update(usuarios)
+      .set(valores)
+      .where(eq(usuarios.id, usuarioId));
+  }
+
+  async actualizarPasswordHash(
+    usuarioId: string,
+    nuevoHash: string,
+  ): Promise<void> {
+    await this.db
+      .update(usuarios)
+      .set({ passwordHash: nuevoHash })
+      .where(eq(usuarios.id, usuarioId));
+  }
+
+  async contarViajesCompletados(usuarioId: string): Promise<number> {
+    const resultado = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total
+      FROM boletos b
+      JOIN compras c ON c.id = b.compra_id
+      WHERE c.comprador_usuario_id = ${usuarioId} AND b.estado = 'usado'
+    `);
+    return (resultado.rows[0] as { total: number })?.total ?? 0;
   }
 }
