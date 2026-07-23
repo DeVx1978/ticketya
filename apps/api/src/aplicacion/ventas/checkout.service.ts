@@ -1,10 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
   CompraRepositorio,
   PasajeroCheckout,
   PasarelaPago,
 } from '../../dominio/ventas/ventas.ports';
+import { esMenorDeEdad } from '../../dominio/ventas/ventas.ports';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
@@ -47,6 +48,46 @@ export class CheckoutService {
         boletos: existente.boletos,
         reintento: true,
       };
+    }
+
+    // RF-MENOR — hallazgo real, 22-jul-2026: las tablas de autorización
+    // de menores existían en el esquema desde el diseño original, pero
+    // nunca se exigía nada al comprar — un pasajero con tarifa 'nino'
+    // pasaba sin ningún control. Se valida ANTES de bloquear asientos o
+    // cobrar nada (fail fast), no después.
+    for (let i = 0; i < pasajeros.length; i++) {
+      const p = pasajeros[i];
+      if (!esMenorDeEdad(p.tipoTarifa, p.fechaNacimiento)) continue;
+
+      const auth = p.autorizacionMenor;
+      if (!auth) {
+        throw new BadRequestException(
+          `El pasajero "${p.nombreCompleto}" es menor de edad — falta indicar cómo viaja acompañado (autorizacionMenor).`,
+        );
+      }
+      if (auth.tipoAcompanamiento === 'con_padre_madre_tutor') {
+        if (
+          auth.adultoAcompananteIndice === undefined ||
+          auth.adultoAcompananteIndice === i ||
+          !pasajeros[auth.adultoAcompananteIndice]
+        ) {
+          throw new BadRequestException(
+            `El pasajero "${p.nombreCompleto}" debe indicar el índice de un adulto acompañante distinto, dentro de la misma compra.`,
+          );
+        }
+        const adulto = pasajeros[auth.adultoAcompananteIndice];
+        if (esMenorDeEdad(adulto.tipoTarifa, adulto.fechaNacimiento)) {
+          throw new BadRequestException(
+            `El acompañante indicado para "${p.nombreCompleto}" también es menor de edad — debe ser un adulto.`,
+          );
+        }
+      } else if (auth.tipoAcompanamiento === 'con_autorizacion') {
+        if (!auth.adultoResponsableNombre || !auth.adultoResponsableDocumento) {
+          throw new BadRequestException(
+            `El pasajero "${p.nombreCompleto}" viaja con autorización — falta el nombre y documento del adulto responsable.`,
+          );
+        }
+      }
     }
 
     const desglose = await this.compras.validarYCalcularAsientos(

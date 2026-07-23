@@ -18,6 +18,7 @@ import {
   CrearConductorDto,
   ImportarDatosDto,
   ValidarQrDto,
+  VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
   ActualizarPerfilDto,
 } from './dto/panel-empresa.dto';
@@ -197,5 +198,22 @@ export class PanelEmpresaController {
       dto.codigoQr,
       req.user.sub,
     );
+  }
+
+  /** RF-MENOR-004 — verificación de documentos del menor en abordaje (22-jul-2026). */
+  @Roles('vendedor', 'admin_cooperativa')
+  @Post('verificar-menor')
+  async verificarMenor(
+    @Body() dto: VerificarMenorDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.verificarMenor(
+      cooperativaDelToken(req.user),
+      dto.boletoId,
+      req.user.sub,
+      dto.documentoIdentidadVerificado,
+      dto.documentoAutorizacionVerificado,
+    );
+    return { ok: true };
   }
 }

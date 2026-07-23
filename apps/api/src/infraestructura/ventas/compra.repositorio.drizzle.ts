@@ -12,6 +12,7 @@ import {
   pagos,
   boletos,
   comprobantesTasaTerminal,
+  autorizacionesMenor,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -200,6 +201,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .returning();
 
     const mapeo: MapeoAsientoPasajero[] = [];
+    const pasajeroCompraIds: string[] = [];
 
     for (let i = 0; i < pasajeros.length; i++) {
       const p = pasajeros[i];
@@ -215,6 +217,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           esMenorEdad: esMenorDeEdad(p.tipoTarifa, p.fechaNacimiento),
         })
         .returning();
+      pasajeroCompraIds.push(pasajeroCompra.id);
 
       mapeo.push({
         viajeId: p.viajeId,
@@ -225,6 +228,26 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         tasaTerminal: d.tasaTerminal,
         cargoPlataforma: d.cargoPlataforma,
         ivaMonto: d.ivaMonto,
+      });
+    }
+
+    // RF-MENOR — segunda pasada, ya con todos los pasajeroCompra.id
+    // conocidos: recién aquí se puede resolver la referencia al adulto
+    // acompañante (es otro pasajero DENTRO de esta misma compra).
+    for (let i = 0; i < pasajeros.length; i++) {
+      const auth = pasajeros[i].autorizacionMenor;
+      if (!auth) continue;
+      await this.dbPublico.insert(autorizacionesMenor).values({
+        pasajeroCompraId: pasajeroCompraIds[i],
+        tipoAcompanamiento: auth.tipoAcompanamiento,
+        adultoAcompananteEnCompraId:
+          auth.adultoAcompananteIndice !== undefined
+            ? pasajeroCompraIds[auth.adultoAcompananteIndice]
+            : undefined,
+        adultoResponsableNombre: auth.adultoResponsableNombre,
+        adultoResponsableDocumento: auth.adultoResponsableDocumento,
+        adultoResponsableTelefono: auth.adultoResponsableTelefono,
+        documentoAutorizacionUrl: auth.documentoAutorizacionUrl,
       });
     }
 

@@ -277,10 +277,40 @@ export async function crearViajeCoop(
   return cuerpo as { id: string };
 }
 
+export interface InfoMenor {
+  boletoId: string;
+  tipoAcompanamiento: "con_padre_madre_tutor" | "con_autorizacion";
+  adultoAcompananteNombre: string | null;
+  adultoResponsableNombre: string | null;
+  adultoResponsableDocumento: string | null;
+  adultoResponsableTelefono: string | null;
+  documentoAutorizacionUrl: string | null;
+  yaVerificado: boolean;
+}
+
 export interface ResultadoValidacionQr {
   valido: boolean;
   mensaje: string;
   pasajeroNombre?: string;
+  menor?: InfoMenor;
+}
+
+export async function verificarMenorCoop(
+  token: string,
+  boletoId: string,
+  documentoIdentidadVerificado: boolean,
+  documentoAutorizacionVerificado: boolean,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/verificar-menor`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ boletoId, documentoIdentidadVerificado, documentoAutorizacionVerificado }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo registrar la verificación.");
+  }
 }
 
 export async function validarQrCoop(token: string, codigoQr: string): Promise<ResultadoValidacionQr> {
@@ -296,6 +326,15 @@ export async function validarQrCoop(token: string, codigoQr: string): Promise<Re
   return cuerpo as ResultadoValidacionQr;
 }
 
+export interface AutorizacionMenorInput {
+  tipoAcompanamiento: "con_padre_madre_tutor" | "con_autorizacion";
+  adultoAcompananteIndice?: number;
+  adultoResponsableNombre?: string;
+  adultoResponsableDocumento?: string;
+  adultoResponsableTelefono?: string;
+  documentoAutorizacionUrl?: string;
+}
+
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;
@@ -303,6 +342,7 @@ export interface PasajeroCompraInput {
   documento: string;
   tipoTarifa: "adulto" | "nino" | "tercera_edad" | "discapacidad";
   fechaNacimiento?: string;
+  autorizacionMenor?: AutorizacionMenorInput;
 }
 
 export interface BoletoEmitido {

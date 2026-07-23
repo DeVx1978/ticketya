@@ -23,6 +23,9 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const [documento, setDocumento] = useState("");
   const [tipoTarifa, setTipoTarifa] = useState<(typeof TARIFAS)[number]["valor"]>("adulto");
   const [fechaNacimiento, setFechaNacimiento] = useState("");
+  const [adultoResponsableNombre, setAdultoResponsableNombre] = useState("");
+  const [adultoResponsableDocumento, setAdultoResponsableDocumento] = useState("");
+  const [adultoResponsableTelefono, setAdultoResponsableTelefono] = useState("");
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoCompra | null>(null);
@@ -32,6 +35,10 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     const token = tokenValido();
     if (!token) {
       router.push(`/ingresar?volverA=${encodeURIComponent(`/viajes/${viajeId}/checkout?asiento=${numeroAsiento}`)}`);
+      return;
+    }
+    if (tipoTarifa === "nino" && (!adultoResponsableNombre.trim() || !adultoResponsableDocumento.trim())) {
+      setError("Para un pasajero niño, indica el nombre y documento del adulto responsable.");
       return;
     }
     setProcesando(true);
@@ -47,6 +54,15 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             documento,
             tipoTarifa,
             fechaNacimiento: fechaNacimiento || undefined,
+            autorizacionMenor:
+              tipoTarifa === "nino"
+                ? {
+                    tipoAcompanamiento: "con_autorizacion",
+                    adultoResponsableNombre: adultoResponsableNombre.trim(),
+                    adultoResponsableDocumento: adultoResponsableDocumento.trim(),
+                    adultoResponsableTelefono: adultoResponsableTelefono.trim() || undefined,
+                  }
+                : undefined,
           },
         ],
         token,
@@ -195,6 +211,50 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 onChange={(e) => setFechaNacimiento(e.target.value)}
                 className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
               />
+            </div>
+          )}
+
+          {tipoTarifa === "nino" && (
+            <div className="rounded-lg bg-brand-light/30 p-4">
+              <p className="text-sm font-semibold text-brand-dark">Autorización de viaje (RF-MENOR)</p>
+              <p className="mt-1 text-xs text-brand-dark/60">
+                Por ser un pasajero menor de edad, indica el adulto responsable que autoriza el viaje.
+              </p>
+              <div className="mt-3 space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                    Nombre del adulto responsable
+                  </label>
+                  <input
+                    type="text"
+                    value={adultoResponsableNombre}
+                    onChange={(e) => setAdultoResponsableNombre(e.target.value)}
+                    className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                    Documento del adulto responsable
+                  </label>
+                  <input
+                    type="text"
+                    value={adultoResponsableDocumento}
+                    onChange={(e) => setAdultoResponsableDocumento(e.target.value)}
+                    className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                    Teléfono del adulto responsable (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={adultoResponsableTelefono}
+                    onChange={(e) => setAdultoResponsableTelefono(e.target.value)}
+                    className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                  />
+                </div>
+              </div>
             </div>
           )}
 

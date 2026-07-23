@@ -101,4 +101,20 @@ export class PanelEmpresaService {
       validadoPorUsuarioId,
     );
   }
+
+  verificarMenor(
+    cooperativaId: string,
+    boletoId: string,
+    verificadoPorUsuarioId: string,
+    documentoIdentidadVerificado: boolean,
+    documentoAutorizacionVerificado: boolean,
+  ) {
+    return this.panel.verificarMenor(
+      cooperativaId,
+      boletoId,
+      verificadoPorUsuarioId,
+      documentoIdentidadVerificado,
+      documentoAutorizacionVerificado,
+    );
+  }
 }

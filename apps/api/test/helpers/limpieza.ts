@@ -57,10 +57,18 @@ export async function limpiarCooperativasDePrueba(
       `DELETE FROM calificaciones WHERE boleto_id IN (SELECT id FROM _boletos_test)`,
     );
     await pg.query(
+      `DELETE FROM verificaciones_menor WHERE boleto_id IN (SELECT id FROM _boletos_test)`,
+    );
+    await pg.query(
       `DELETE FROM boletos WHERE id IN (SELECT id FROM _boletos_test)`,
     );
     await pg.query(
       `DELETE FROM pagos WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,
+    );
+    await pg.query(
+      `DELETE FROM autorizaciones_menor WHERE pasajero_compra_id IN (
+         SELECT id FROM pasajeros_compra WHERE compra_id IN (SELECT compra_id FROM _boletos_test)
+       )`,
     );
     await pg.query(
       `DELETE FROM pasajeros_compra WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,

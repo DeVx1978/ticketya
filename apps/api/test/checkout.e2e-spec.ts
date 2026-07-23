@@ -220,7 +220,7 @@ describe('Checkout y pago (e2e)', () => {
     expect(res.body.montoTotal).toBe(PRECIO_BASE); // el IVA NO se suma aparte, ya está adentro
   });
 
-  it('aplica el 50% de descuento a un pasajero niño (RN-001, RF-CHECK-002)', async () => {
+  it('aplica el 50% de descuento a un pasajero niño, con autorización de viaje (RN-001, RF-CHECK-002 + RF-MENOR, hallazgo cerrado 22-jul-2026)', async () => {
     await bloquearYRegistrarAsiento('1B', tokenPasajero);
 
     const res = await request(app.getHttpServer())
@@ -235,6 +235,12 @@ describe('Checkout y pago (e2e)', () => {
             documento: '0922222222',
             tipoTarifa: 'nino',
             fechaNacimiento: '2018-01-01',
+            autorizacionMenor: {
+              tipoAcompanamiento: 'con_autorizacion',
+              adultoResponsableNombre: 'Madre Responsable E2E',
+              adultoResponsableDocumento: '0911111111',
+              adultoResponsableTelefono: '0999999999',
+            },
           },
         ],
       })
@@ -244,6 +250,109 @@ describe('Checkout y pago (e2e)', () => {
     // plataforma en 0 hoy (ver hallazgo más abajo) → montoTotal debe dar
     // exactamente 5.
     expect(Number(res.body.montoTotal)).toBe(5);
+  });
+
+  it('rechaza comprar para un menor sin indicar cómo viaja acompañado — hallazgo real cerrado 22-jul-2026 (antes pasaba sin ningún control)', async () => {
+    await bloquearYRegistrarAsiento('2B', tokenPasajero);
+    const res = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '2B',
+            nombreCompleto: 'Pasajero Niño Sin Autorizacion E2E',
+            documento: '0922222223',
+            tipoTarifa: 'nino',
+            fechaNacimiento: '2018-01-01',
+          },
+        ],
+      })
+      .expect(400);
+    expect(res.body.message).toContain('menor de edad');
+  });
+
+  it('permite que el menor viaje con un adulto de la misma compra, sin datos de autorización', async () => {
+    await bloquearYRegistrarAsiento('2C', tokenPasajero);
+    await bloquearYRegistrarAsiento('2D', tokenPasajero);
+    const res = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '2C',
+            nombreCompleto: 'Padre E2E',
+            documento: '0933333333',
+            tipoTarifa: 'adulto',
+          },
+          {
+            viajeId,
+            numeroAsiento: '2D',
+            nombreCompleto: 'Hijo E2E',
+            documento: '0933333334',
+            tipoTarifa: 'nino',
+            fechaNacimiento: '2019-01-01',
+            autorizacionMenor: {
+              tipoAcompanamiento: 'con_padre_madre_tutor',
+              adultoAcompananteIndice: 0,
+            },
+          },
+        ],
+      })
+      .expect(201);
+    expect(res.body.boletos).toHaveLength(2);
+  });
+
+  it('el personal de la cooperativa puede verificar los documentos del menor al validar el boleto en el andén (RF-MENOR-004)', async () => {
+    await bloquearYRegistrarAsiento('3B', tokenPasajero);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '3B',
+            nombreCompleto: 'Pasajero Niño Verificacion E2E',
+            documento: '0944444444',
+            tipoTarifa: 'nino',
+            fechaNacimiento: '2017-01-01',
+            autorizacionMenor: {
+              tipoAcompanamiento: 'con_autorizacion',
+              adultoResponsableNombre: 'Padre Verificacion E2E',
+              adultoResponsableDocumento: '0955555555',
+            },
+          },
+        ],
+      })
+      .expect(201);
+    const codigoQr = compra.body.boletos[0].codigoQr;
+    const boletoId = compra.body.boletos[0].id;
+
+    const validacion = await request(app.getHttpServer())
+      .post('/coop/validar-qr')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ codigoQr })
+      .expect(201);
+    expect(validacion.body.menor).toBeDefined();
+    expect(validacion.body.menor.tipoAcompanamiento).toBe('con_autorizacion');
+    expect(validacion.body.menor.adultoResponsableNombre).toBe(
+      'Padre Verificacion E2E',
+    );
+    expect(validacion.body.menor.yaVerificado).toBe(false);
+
+    await request(app.getHttpServer())
+      .post('/coop/verificar-menor')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        boletoId,
+        documentoIdentidadVerificado: true,
+        documentoAutorizacionVerificado: true,
+      })
+      .expect(201);
   });
 
   it('cada boleto trae su propio desglose de precio en la respuesta — hallazgo cerrado 22-jul-2026 (antes solo traía id y codigoQr)', async () => {

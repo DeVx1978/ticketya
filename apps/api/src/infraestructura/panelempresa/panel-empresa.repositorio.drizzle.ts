@@ -524,7 +524,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<ResultadoValidacionQr> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
-        SELECT b.id, b.estado, pc.nombre_completo
+        SELECT b.id, b.estado, pc.id AS pasajero_compra_id, pc.nombre_completo, pc.es_menor_edad
         FROM boletos b
         JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
         WHERE b.codigo_qr = ${codigoQr}
@@ -542,7 +542,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       const fila = filas.rows[0] as {
         id: string;
         estado: string;
+        pasajero_compra_id: string;
         nombre_completo: string;
+        es_menor_edad: boolean;
       };
 
       if (fila.estado === 'usado') {
@@ -571,11 +573,62 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         };
       }
 
+      let menor: ResultadoValidacionQr['menor'];
+      if (fila.es_menor_edad) {
+        const autRows = await tx.execute(sql`
+          SELECT am.tipo_acompanamiento, am.adulto_responsable_nombre,
+                 am.adulto_responsable_documento, am.adulto_responsable_telefono,
+                 am.documento_autorizacion_url, acompanante.nombre_completo AS adulto_acompanante_nombre,
+                 vm.id AS verificacion_id
+          FROM autorizaciones_menor am
+          LEFT JOIN pasajeros_compra acompanante ON acompanante.id = am.adulto_acompanante_en_compra_id
+          LEFT JOIN verificaciones_menor vm ON vm.boleto_id = ${fila.id}
+          WHERE am.pasajero_compra_id = ${fila.pasajero_compra_id}
+        `);
+        if (autRows.rows.length > 0) {
+          const a = autRows.rows[0] as {
+            tipo_acompanamiento: 'con_padre_madre_tutor' | 'con_autorizacion';
+            adulto_responsable_nombre: string | null;
+            adulto_responsable_documento: string | null;
+            adulto_responsable_telefono: string | null;
+            documento_autorizacion_url: string | null;
+            adulto_acompanante_nombre: string | null;
+            verificacion_id: string | null;
+          };
+          menor = {
+            boletoId: fila.id,
+            tipoAcompanamiento: a.tipo_acompanamiento,
+            adultoAcompananteNombre: a.adulto_acompanante_nombre,
+            adultoResponsableNombre: a.adulto_responsable_nombre,
+            adultoResponsableDocumento: a.adulto_responsable_documento,
+            adultoResponsableTelefono: a.adulto_responsable_telefono,
+            documentoAutorizacionUrl: a.documento_autorizacion_url,
+            yaVerificado: a.verificacion_id !== null,
+          };
+        }
+      }
+
       return {
         valido: true,
         mensaje: 'Boleto válido. Abordaje confirmado.',
         pasajeroNombre: fila.nombre_completo,
+        menor,
       };
+    });
+  }
+
+  async verificarMenor(
+    cooperativaId: string,
+    boletoId: string,
+    verificadoPorUsuarioId: string,
+    documentoIdentidadVerificado: boolean,
+    documentoAutorizacionVerificado: boolean,
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        INSERT INTO verificaciones_menor (boleto_id, verificado_por_usuario_id, documento_identidad_verificado, documento_autorizacion_verificado)
+        VALUES (${boletoId}, ${verificadoPorUsuarioId}, ${documentoIdentidadVerificado}, ${documentoAutorizacionVerificado})
+      `);
     });
   }
 }

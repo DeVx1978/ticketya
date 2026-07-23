@@ -128,6 +128,17 @@ export interface ResultadoValidacionQr {
   valido: boolean;
   mensaje: string;
   pasajeroNombre?: string;
+  /** RF-MENOR — presente solo si el pasajero de este boleto es menor de edad. */
+  menor?: {
+    boletoId: string;
+    tipoAcompanamiento: 'con_padre_madre_tutor' | 'con_autorizacion';
+    adultoAcompananteNombre: string | null;
+    adultoResponsableNombre: string | null;
+    adultoResponsableDocumento: string | null;
+    adultoResponsableTelefono: string | null;
+    documentoAutorizacionUrl: string | null;
+    yaVerificado: boolean;
+  };
 }
 
 export interface RutaResumen {
@@ -236,4 +247,13 @@ export interface PanelEmpresaRepositorio {
     codigoQr: string,
     validadoPorUsuarioId: string,
   ): Promise<ResultadoValidacionQr>;
+
+  /** RF-MENOR-004 — verificación de documentos del menor, en ventanilla/abordaje. */
+  verificarMenor(
+    cooperativaId: string,
+    boletoId: string,
+    verificadoPorUsuarioId: string,
+    documentoIdentidadVerificado: boolean,
+    documentoAutorizacionVerificado: boolean,
+  ): Promise<void>;
 }

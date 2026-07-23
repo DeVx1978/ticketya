@@ -1,10 +1,81 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { validarQrCoop, type ResultadoValidacionQr } from "@/lib/api";
+import { validarQrCoop, verificarMenorCoop, type ResultadoValidacionQr, type InfoMenor } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 
 type Resultado = ResultadoValidacionQr & { codigo: string };
+
+const ETIQUETA_ACOMPANAMIENTO: Record<string, string> = {
+  con_padre_madre_tutor: "Viaja con padre/madre/tutor en esta misma compra",
+  con_autorizacion: "Viaja con autorización de un adulto responsable",
+};
+
+function BloqueMenor({ menor, onVerificado }: { menor: InfoMenor; onVerificado: () => void }) {
+  const [docIdentidad, setDocIdentidad] = useState(false);
+  const [docAutorizacion, setDocAutorizacion] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirmar() {
+    const token = obtenerToken();
+    if (!token) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      await verificarMenorCoop(token, menor.boletoId, docIdentidad, docAutorizacion);
+      onVerificado();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo registrar la verificación.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-xl bg-amber-50 p-4 text-left ring-1 ring-amber-200">
+      <p className="text-sm font-bold text-amber-800">Pasajero menor de edad — RF-MENOR</p>
+      <p className="mt-1 text-sm text-amber-700">{ETIQUETA_ACOMPANAMIENTO[menor.tipoAcompanamiento]}</p>
+      {menor.adultoAcompananteNombre && (
+        <p className="mt-1 text-sm text-amber-700">Acompañante: {menor.adultoAcompananteNombre}</p>
+      )}
+      {menor.adultoResponsableNombre && (
+        <p className="mt-1 text-sm text-amber-700">
+          Responsable: {menor.adultoResponsableNombre} — {menor.adultoResponsableDocumento}
+          {menor.adultoResponsableTelefono && ` — ${menor.adultoResponsableTelefono}`}
+        </p>
+      )}
+
+      {menor.yaVerificado ? (
+        <p className="mt-3 text-sm font-semibold text-emerald-700">✓ Documentos ya verificados.</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <label className="flex items-center gap-2 text-sm text-amber-800">
+            <input type="checkbox" checked={docIdentidad} onChange={(e) => setDocIdentidad(e.target.checked)} />
+            Documento de identidad del menor verificado
+          </label>
+          <label className="flex items-center gap-2 text-sm text-amber-800">
+            <input
+              type="checkbox"
+              checked={docAutorizacion}
+              onChange={(e) => setDocAutorizacion(e.target.checked)}
+            />
+            Documento de autorización verificado
+          </label>
+          <button
+            type="button"
+            onClick={confirmar}
+            disabled={guardando || (!docIdentidad && !docAutorizacion)}
+            className="rounded-lg bg-amber-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700 disabled:opacity-50"
+          >
+            {guardando ? "Guardando..." : "Confirmar verificación"}
+          </button>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ValidarQrPage() {
   const [codigo, setCodigo] = useState("");
@@ -102,6 +173,16 @@ export default function ValidarQrPage() {
           </p>
           {ultimoResultado.pasajeroNombre && (
             <p className="mt-1 text-base text-brand-dark/70">{ultimoResultado.pasajeroNombre}</p>
+          )}
+          {ultimoResultado.menor && (
+            <BloqueMenor
+              menor={ultimoResultado.menor}
+              onVerificado={() =>
+                setUltimoResultado((prev) =>
+                  prev ? { ...prev, menor: { ...prev.menor!, yaVerificado: true } } : prev,
+                )
+              }
+            />
           )}
         </div>
       )}

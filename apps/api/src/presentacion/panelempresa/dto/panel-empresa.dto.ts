@@ -138,6 +138,18 @@ export class ValidarQrDto {
   codigoQr!: string;
 }
 
+/** RF-MENOR-004 — verificación de documentos del menor en abordaje (22-jul-2026). */
+export class VerificarMenorDto {
+  @IsString()
+  boletoId!: string;
+
+  @IsBoolean()
+  documentoIdentidadVerificado!: boolean;
+
+  @IsBoolean()
+  documentoAutorizacionVerificado!: boolean;
+}
+
 /** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable, ver 21-jul-2026. */
 export class ActualizarConfiguracionFiscalDto {
   @IsNumber()

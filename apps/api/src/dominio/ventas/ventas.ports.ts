@@ -42,6 +42,15 @@ export function esMenorDeEdad(
   return edadAnios < 18;
 }
 
+export interface AutorizacionMenor {
+  tipoAcompanamiento: 'con_padre_madre_tutor' | 'con_autorizacion';
+  adultoAcompananteIndice?: number;
+  adultoResponsableNombre?: string;
+  adultoResponsableDocumento?: string;
+  adultoResponsableTelefono?: string;
+  documentoAutorizacionUrl?: string;
+}
+
 export interface PasajeroCheckout {
   viajeId: string;
   numeroAsiento: string;
@@ -49,6 +58,7 @@ export interface PasajeroCheckout {
   documento: string;
   tipoTarifa: TipoTarifa;
   fechaNacimiento?: string;
+  autorizacionMenor?: AutorizacionMenor;
 }
 
 export interface DesgloseAsiento {
