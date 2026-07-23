@@ -463,6 +463,168 @@ describe('Checkout y pago (e2e)', () => {
     expect(res.body.message).toContain('no te pertenece');
   });
 
+  it('la cooperativa puede cancelar un viaje completo, y cascada automáticamente a los boletos ya vendidos — hallazgo real cerrado 22-jul-2026 (antes no existía ninguna forma de hacerlo)', async () => {
+    // Viaje aparte (no el fixture principal — cancelarlo rompería otras
+    // pruebas de este archivo).
+    const rutaRes = await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        origenPuntoOperacionId: puntoOrigenId,
+        destinoPuntoOperacionId: puntoDestinoId,
+        precioBaseReferencia: PRECIO_BASE,
+      });
+    const viajeCancelableRes = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        rutaId: rutaRes.body.id,
+        unidadId: unidadIdRechazo,
+        fechaSalida: '2026-06-01',
+        horaSalidaProgramada: '2026-06-01T08:00:00-05:00',
+        precioBase: PRECIO_BASE,
+      });
+    const viajeCancelableId = viajeCancelableRes.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/viajes/${viajeCancelableId}/asientos/1A/bloquear`)
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(201);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId: viajeCancelableId,
+            numeroAsiento: '1A',
+            nombreCompleto: 'Pasajero Viaje Cancelado E2E',
+            documento: '0999999999',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .post(`/coop/viajes/${viajeCancelableId}/cancelar`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .expect(201);
+    expect(res.body.boletosCancelados).toBe(1);
+
+    // Confirma la cascada: el boleto queda 'cancelado', ya no se puede
+    // validar en el andén.
+    const validacion = await request(app.getHttpServer())
+      .post('/coop/validar-qr')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ codigoQr: compra.body.boletos[0].codigoQr })
+      .expect(201);
+    expect(validacion.body.valido).toBe(false);
+    expect(validacion.body.mensaje).toContain('cancelado');
+
+    // No se puede cancelar dos veces.
+    const segundoIntento = await request(app.getHttpServer())
+      .post(`/coop/viajes/${viajeCancelableId}/cancelar`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .expect(400);
+    expect(segundoIntento.body.message).toContain('cancelado');
+  });
+
+  it('la cooperativa puede cambiar la unidad de un viaje programado ("vehículo de reemplazo") sin tocar los boletos ya vendidos — investigado y confirmado 22-jul-2026 (patrón real del sector + respaldo legal ANT/LOTTTSV)', async () => {
+    // Viaje aparte, con un boleto ya vendido en un asiento que solo
+    // existe si la capacidad es suficiente.
+    const rutaRes = await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        origenPuntoOperacionId: puntoOrigenId,
+        destinoPuntoOperacionId: puntoDestinoId,
+        precioBaseReferencia: PRECIO_BASE,
+      });
+    const viajeParaCambioRes = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        rutaId: rutaRes.body.id,
+        unidadId: unidadIdRechazo, // capacidad 20
+        fechaSalida: '2026-06-02',
+        horaSalidaProgramada: '2026-06-02T08:00:00-05:00',
+        precioBase: PRECIO_BASE,
+      });
+    const viajeParaCambioId = viajeParaCambioRes.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/viajes/${viajeParaCambioId}/asientos/5A/bloquear`) // solo existe con capacidad >= 18
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(201);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId: viajeParaCambioId,
+            numeroAsiento: '5A',
+            nombreCompleto: 'Pasajero Cambio Unidad E2E',
+            documento: '0911111199',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+
+    // Unidad de reemplazo MÁS CHICA (capacidad 4) — debe rechazarse,
+    // dejaría inválido el asiento 5A ya vendido.
+    const tipoChicoRes = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ nombre: `Tipo Chico Reemplazo ${sufijo}`, capacidadTotal: 4 });
+    const unidadChicaRes = await request(app.getHttpServer())
+      .post('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        tipoVehiculoId: tipoChicoRes.body.id,
+        placa: `CHI-${sufijo % 100000}`,
+        identificadorOperativo: `ChicoOp-${sufijo % 100000}`,
+      });
+
+    const intentoChico = await request(app.getHttpServer())
+      .patch(`/coop/viajes/${viajeParaCambioId}/unidad`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ nuevaUnidadId: unidadChicaRes.body.id })
+      .expect(400);
+    expect(intentoChico.body.message).toContain('menos capacidad');
+
+    // Unidad de reemplazo con capacidad SUFICIENTE — debe aceptarse, y
+    // el boleto ya vendido no debe verse afectado para nada.
+    const tipoGrandeRes = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ nombre: `Tipo Reemplazo ${sufijo}`, capacidadTotal: 20 });
+    const unidadGrandeRes = await request(app.getHttpServer())
+      .post('/coop/unidades')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({
+        tipoVehiculoId: tipoGrandeRes.body.id,
+        placa: `REP-${sufijo % 100000}`,
+        identificadorOperativo: `RepOp-${sufijo % 100000}`,
+      });
+
+    await request(app.getHttpServer())
+      .patch(`/coop/viajes/${viajeParaCambioId}/unidad`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ nuevaUnidadId: unidadGrandeRes.body.id })
+      .expect(200);
+
+    // El boleto sigue exactamente igual — sin cascada, sin cancelación.
+    const validacion = await request(app.getHttpServer())
+      .post('/coop/validar-qr')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ codigoQr: compra.body.boletos[0].codigoQr })
+      .expect(201);
+    expect(validacion.body.valido).toBe(true);
+  });
+
   it('cada boleto trae su propio desglose de precio en la respuesta — hallazgo cerrado 22-jul-2026 (antes solo traía id y codigoQr)', async () => {
     await bloquearYRegistrarAsiento('1D', tokenPasajero);
     const res = await request(app.getHttpServer())

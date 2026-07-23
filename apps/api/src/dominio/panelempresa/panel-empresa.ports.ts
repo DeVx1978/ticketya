@@ -229,6 +229,38 @@ export interface PanelEmpresaRepositorio {
   listarViajes(cooperativaId: string): Promise<ViajeResumen[]>;
 
   /**
+   * Cancelar un viaje completo — hallazgo real 22-jul-2026: antes no
+   * existía ninguna forma de hacerlo (ej. si el bus se daña). Cancela
+   * el viaje Y cascada automáticamente a cancelar todos los boletos ya
+   * vendidos de ese viaje — un pasajero no debería tener que darse
+   * cuenta solo de que su viaje ya no existe.
+   */
+  cancelarViaje(
+    cooperativaId: string,
+    viajeId: string,
+  ): Promise<
+    { ok: true; boletosCancelados: number } | { ok: false; motivo: string }
+  >;
+
+  /**
+   * Cambiar la unidad asignada a un viaje ya programado — investigado y
+   * confirmado el 22-jul-2026: es el patrón real que usan las
+   * plataformas más grandes del sector cuando un bus se daña
+   * ("vehículo de reemplazo" — FlixBus), y en Ecuador tiene además
+   * respaldo legal real: la ANT sanciona la INTERRUPCIÓN del servicio
+   * (infracción administrativa muy grave, LOTTTSV) — reemplazar la
+   * unidad en vez de cancelar el viaje evita esa sanción. No toca
+   * boletos ni asientos para nada — el viaje sigue siendo el mismo
+   * viaje. Solo se permite si la unidad nueva tiene capacidad igual o
+   * mayor a la actual, para no invalidar ningún asiento ya vendido.
+   */
+  cambiarUnidadViaje(
+    cooperativaId: string,
+    viajeId: string,
+    nuevaUnidadId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  /**
    * Lista de pasajeros de un viaje concreto ("manifiesto") — hallazgo
    * real 22-jul-2026: hoy la cooperativa puede ver cuántos boletos se
    * vendieron en total (dashboard), pero no QUIÉN va a abordar un viaje

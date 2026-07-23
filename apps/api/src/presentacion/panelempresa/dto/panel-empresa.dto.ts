@@ -133,6 +133,12 @@ export class ActualizarPerfilDto {
   logoUrl?: string;
 }
 
+/** Cambio de unidad en un viaje ya programado — hallazgo cerrado 22-jul-2026. */
+export class CambiarUnidadViajeDto {
+  @IsString()
+  nuevaUnidadId!: string;
+}
+
 export class ValidarQrDto {
   @IsString()
   codigoQr!: string;

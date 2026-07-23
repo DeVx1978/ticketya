@@ -174,6 +174,102 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async cancelarViaje(
+    cooperativaId: string,
+    viajeId: string,
+  ): Promise<
+    { ok: true; boletosCancelados: number } | { ok: false; motivo: string }
+  > {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        SELECT estado FROM viajes WHERE id = ${viajeId} AND cooperativa_id = ${cooperativaId}
+      `);
+      const fila = filas.rows[0] as { estado: string } | undefined;
+      if (!fila) {
+        return { ok: false as const, motivo: 'Este viaje no existe.' };
+      }
+      if (fila.estado !== 'programado') {
+        return {
+          ok: false as const,
+          motivo: `Este viaje ya está "${fila.estado}" — solo se puede cancelar un viaje que todavía está programado.`,
+        };
+      }
+
+      await tx.execute(sql`
+        UPDATE viajes SET estado = 'cancelado' WHERE id = ${viajeId}
+      `);
+
+      // Cascada: todo boleto vigente de este viaje se cancela también —
+      // un pasajero no debería tener que darse cuenta solo de que su
+      // viaje ya no existe.
+      const boletosCancelados = await tx.execute(sql`
+        UPDATE boletos SET estado = 'cancelado'
+        WHERE estado = 'vigente' AND viaje_asiento_id IN (
+          SELECT id FROM viaje_asientos WHERE viaje_id = ${viajeId}
+        )
+        RETURNING id
+      `);
+
+      return {
+        ok: true as const,
+        boletosCancelados: boletosCancelados.rows.length,
+      };
+    });
+  }
+
+  async cambiarUnidadViaje(
+    cooperativaId: string,
+    viajeId: string,
+    nuevaUnidadId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const viajeFilas = await tx.execute(sql`
+        SELECT v.estado, tv.capacidad_total AS capacidad_actual
+        FROM viajes v
+        JOIN unidades u ON u.id = v.unidad_id
+        JOIN tipos_vehiculo tv ON tv.id = u.tipo_vehiculo_id
+        WHERE v.id = ${viajeId} AND v.cooperativa_id = ${cooperativaId}
+      `);
+      const viaje = viajeFilas.rows[0] as
+        { estado: string; capacidad_actual: number } | undefined;
+      if (!viaje) {
+        return { ok: false as const, motivo: 'Este viaje no existe.' };
+      }
+      if (viaje.estado !== 'programado') {
+        return {
+          ok: false as const,
+          motivo: `Este viaje ya está "${viaje.estado}" — solo se puede cambiar la unidad de un viaje programado.`,
+        };
+      }
+
+      const unidadFilas = await tx.execute(sql`
+        SELECT tv.capacidad_total AS capacidad_nueva
+        FROM unidades u
+        JOIN tipos_vehiculo tv ON tv.id = u.tipo_vehiculo_id
+        WHERE u.id = ${nuevaUnidadId} AND u.cooperativa_id = ${cooperativaId}
+      `);
+      const unidadNueva = unidadFilas.rows[0] as
+        { capacidad_nueva: number } | undefined;
+      if (!unidadNueva) {
+        return {
+          ok: false as const,
+          motivo: 'Esa unidad no existe o no pertenece a tu cooperativa.',
+        };
+      }
+      if (unidadNueva.capacidad_nueva < viaje.capacidad_actual) {
+        return {
+          ok: false as const,
+          motivo: `La unidad nueva tiene menos capacidad (${unidadNueva.capacidad_nueva}) que la actual (${viaje.capacidad_actual}) — cambiarla dejaría inválidos asientos ya vendidos.`,
+        };
+      }
+
+      await tx.execute(sql`
+        UPDATE viajes SET unidad_id = ${nuevaUnidadId} WHERE id = ${viajeId}
+      `);
+      return { ok: true as const };
+    });
+  }
+
   async listarViajes(cooperativaId: string): Promise<ViajeResumen[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`

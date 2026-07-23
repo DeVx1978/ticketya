@@ -7,6 +7,8 @@ import {
   listarRutasCoop,
   listarUnidadesCoop,
   listarViajesCoop,
+  cancelarViajeCoop,
+  cambiarUnidadViajeCoop,
   type RutaResumen,
   type UnidadResumen,
   type ViajeCoopResumen,
@@ -23,6 +25,136 @@ const ESTADO_ESTILO: Record<string, string> = {
 
 function formatearDolares(monto: number) {
   return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
+}
+
+function BotonCambiarUnidad({
+  viajeId,
+  unidades,
+  onCambiado,
+  onError,
+}: {
+  viajeId: string;
+  unidades: UnidadResumen[];
+  onCambiado: () => void;
+  onError: (mensaje: string) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [unidadElegida, setUnidadElegida] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  async function confirmar() {
+    const token = obtenerToken();
+    if (!token || !unidadElegida) return;
+    setGuardando(true);
+    try {
+      await cambiarUnidadViajeCoop(token, viajeId, unidadElegida);
+      onCambiado();
+      setAbierto(false);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo cambiar la unidad.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  if (!abierto) {
+    return (
+      <button
+        onClick={() => setAbierto(true)}
+        className="text-xs font-semibold text-brand-dark/70 hover:underline"
+      >
+        Cambiar unidad
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <select
+        value={unidadElegida}
+        onChange={(e) => setUnidadElegida(e.target.value)}
+        className="rounded border border-brand-light px-1.5 py-1 text-xs"
+      >
+        <option value="">Elige unidad...</option>
+        {unidades.map((u) => (
+          <option key={u.id} value={u.id}>
+            {u.placa}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={confirmar}
+        disabled={guardando || !unidadElegida}
+        className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+      >
+        ✓
+      </button>
+      <button
+        onClick={() => setAbierto(false)}
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function BotonCancelarViaje({
+  viajeId,
+  onCancelado,
+  onError,
+}: {
+  viajeId: string;
+  onCancelado: (boletosCancelados: number) => void;
+  onError: (mensaje: string) => void;
+}) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+
+  async function confirmar() {
+    const token = obtenerToken();
+    if (!token) return;
+    setCancelando(true);
+    try {
+      const { boletosCancelados } = await cancelarViajeCoop(token, viajeId);
+      onCancelado(boletosCancelados);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo cancelar el viaje.");
+    } finally {
+      setCancelando(false);
+      setConfirmando(false);
+    }
+  }
+
+  if (confirmando) {
+    return (
+      <div className="flex items-center justify-end gap-2">
+        <span className="text-xs text-brand-dark/60">¿Cancelar?</span>
+        <button
+          onClick={confirmar}
+          disabled={cancelando}
+          className="rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {cancelando ? "..." : "Sí"}
+        </button>
+        <button
+          onClick={() => setConfirmando(false)}
+          className="rounded-lg border border-brand-light px-2.5 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+        >
+          No
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirmando(true)}
+      className="text-xs font-semibold text-red-600 hover:underline"
+    >
+      Cancelar viaje
+    </button>
+  );
 }
 
 export default function ViajesPage() {
@@ -247,12 +379,37 @@ export default function ViajesPage() {
                     {formatearDolares(v.precioBase)}
                   </td>
                   <td className="px-6 py-3 text-right">
-                    <Link
-                      href={`/panel-empresa/viajes/${v.id}/pasajeros`}
-                      className="text-xs font-semibold text-brand hover:underline"
-                    >
-                      Ver pasajeros
-                    </Link>
+                    <div className="flex flex-col items-end gap-1">
+                      <Link
+                        href={`/panel-empresa/viajes/${v.id}/pasajeros`}
+                        className="text-xs font-semibold text-brand hover:underline"
+                      >
+                        Ver pasajeros
+                      </Link>
+                      {v.estado === "programado" && (
+                        <>
+                          <BotonCambiarUnidad
+                            viajeId={v.id}
+                            unidades={unidades ?? []}
+                            onCambiado={() => {
+                              setMensajeExito("Unidad del viaje actualizada — los boletos ya vendidos no se vieron afectados.");
+                              cargarTodo();
+                            }}
+                            onError={setMensajeError}
+                          />
+                          <BotonCancelarViaje
+                            viajeId={v.id}
+                            onCancelado={(boletosCancelados) => {
+                              setMensajeExito(
+                                `Viaje cancelado — ${boletosCancelados} boleto${boletosCancelados === 1 ? "" : "s"} cancelado${boletosCancelados === 1 ? "" : "s"} automáticamente.`,
+                              );
+                              cargarTodo();
+                            }}
+                            onError={setMensajeError}
+                          />
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

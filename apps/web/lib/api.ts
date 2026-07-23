@@ -828,6 +828,39 @@ export async function listarPasajerosDeViajeCoop(
   return cuerpo as PasajeroDeViaje[];
 }
 
+export async function cambiarUnidadViajeCoop(
+  token: string,
+  viajeId: string,
+  nuevaUnidadId: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/viajes/${viajeId}/unidad`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ nuevaUnidadId }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo cambiar la unidad.");
+  }
+}
+
+export async function cancelarViajeCoop(
+  token: string,
+  viajeId: string,
+): Promise<{ boletosCancelados: number }> {
+  const res = await fetch(`${API_URL}/coop/viajes/${viajeId}/cancelar`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo cancelar el viaje.");
+  }
+  return cuerpo;
+}
+
 export async function cancelarBoleto(token: string, boletoId: string): Promise<void> {
   const res = await fetch(`${API_URL}/compras/boletos/${boletoId}/cancelar`, {
     method: "POST",

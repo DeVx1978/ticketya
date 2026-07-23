@@ -51,6 +51,18 @@ export class PanelEmpresaService {
     return this.panel.listarViajes(cooperativaId);
   }
 
+  cancelarViaje(cooperativaId: string, viajeId: string) {
+    return this.panel.cancelarViaje(cooperativaId, viajeId);
+  }
+
+  cambiarUnidadViaje(
+    cooperativaId: string,
+    viajeId: string,
+    nuevaUnidadId: string,
+  ) {
+    return this.panel.cambiarUnidadViaje(cooperativaId, viajeId, nuevaUnidadId);
+  }
+
   listarPasajerosDeViaje(cooperativaId: string, viajeId: string) {
     return this.panel.listarPasajerosDeViaje(cooperativaId, viajeId);
   }

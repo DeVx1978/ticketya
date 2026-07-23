@@ -8,6 +8,7 @@ import {
   Request,
   UseGuards,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PanelEmpresaService } from '../../aplicacion/panelempresa/panel-empresa.service';
 import {
@@ -19,6 +20,7 @@ import {
   CrearConductorDto,
   ImportarDatosDto,
   ValidarQrDto,
+  CambiarUnidadViajeDto,
   VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
   ActualizarPerfilDto,
@@ -105,6 +107,46 @@ export class PanelEmpresaController {
   @Get('viajes')
   async listarViajes(@Request() req: { user: PayloadToken }) {
     return this.panel.listarViajes(cooperativaDelToken(req.user));
+  }
+
+  /** Cancelar un viaje completo (cascada a sus boletos) — hallazgo cerrado 22-jul-2026. Solo el admin, no el vendedor. */
+  @Roles('admin_cooperativa')
+  @Post('viajes/:viajeId/cancelar')
+  async cancelarViaje(
+    @Param('viajeId') viajeId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.cancelarViaje(
+      cooperativaDelToken(req.user),
+      viajeId,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
+  }
+
+  /**
+   * Cambiar la unidad de un viaje ya programado — "vehículo de
+   * reemplazo" (investigado y confirmado 22-jul-2026, ver comentario
+   * completo en panel-empresa.ports.ts). No toca boletos ni asientos.
+   */
+  @Roles('admin_cooperativa')
+  @Patch('viajes/:viajeId/unidad')
+  async cambiarUnidadViaje(
+    @Param('viajeId') viajeId: string,
+    @Body() dto: CambiarUnidadViajeDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.cambiarUnidadViaje(
+      cooperativaDelToken(req.user),
+      viajeId,
+      dto.nuevaUnidadId,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
   }
 
   /** Lista de pasajeros de un viaje ("manifiesto") — hallazgo cerrado 22-jul-2026. */
