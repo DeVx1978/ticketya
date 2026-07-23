@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   crearViajeCoop,
   listarRutasCoop,
@@ -217,6 +218,7 @@ export default function ViajesPage() {
                 <th className="px-6 py-3">Unidad</th>
                 <th className="px-6 py-3">Estado</th>
                 <th className="px-6 py-3 text-right">Precio</th>
+                <th className="px-6 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -243,6 +245,14 @@ export default function ViajesPage() {
                   </td>
                   <td className="px-6 py-3 text-right font-semibold text-brand-dark">
                     {formatearDolares(v.precioBase)}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    <Link
+                      href={`/panel-empresa/viajes/${v.id}/pasajeros`}
+                      className="text-xs font-semibold text-brand hover:underline"
+                    >
+                      Ver pasajeros
+                    </Link>
                   </td>
                 </tr>
               ))}

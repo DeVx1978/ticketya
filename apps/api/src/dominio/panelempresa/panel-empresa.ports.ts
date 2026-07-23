@@ -193,6 +193,15 @@ export interface ConductorResumen {
   telefono: string | null;
 }
 
+export interface PasajeroDeViaje {
+  numeroAsiento: string;
+  nombreCompleto: string;
+  documento: string;
+  tipoTarifa: string;
+  esMenorEdad: boolean;
+  estadoBoleto: string;
+}
+
 export interface PanelEmpresaRepositorio {
   crearTipoVehiculo(
     cooperativaId: string,
@@ -218,6 +227,19 @@ export interface PanelEmpresaRepositorio {
   ): Promise<{ id: string }>;
   /** Viajes programados de la cooperativa — el mismo listado que RF-BUS termina mostrando al pasajero, pero visto desde adentro. */
   listarViajes(cooperativaId: string): Promise<ViajeResumen[]>;
+
+  /**
+   * Lista de pasajeros de un viaje concreto ("manifiesto") — hallazgo
+   * real 22-jul-2026: hoy la cooperativa puede ver cuántos boletos se
+   * vendieron en total (dashboard), pero no QUIÉN va a abordar un viaje
+   * específico, con qué asiento, ni si ya se validó su boleto. Sin esto,
+   * el personal en el terminal no tiene ninguna lista real de a quién
+   * esperar.
+   */
+  listarPasajerosDeViaje(
+    cooperativaId: string,
+    viajeId: string,
+  ): Promise<PasajeroDeViaje[]>;
   crearUsuarioStaff(
     cooperativaId: string,
     datos: DatosNuevoUsuarioStaff,

@@ -806,6 +806,28 @@ export async function crearConductorCoop(
   }
 }
 
+export interface PasajeroDeViaje {
+  numeroAsiento: string;
+  nombreCompleto: string;
+  documento: string;
+  tipoTarifa: string;
+  esMenorEdad: boolean;
+  estadoBoleto: string;
+}
+
+export async function listarPasajerosDeViajeCoop(
+  token: string,
+  viajeId: string,
+): Promise<PasajeroDeViaje[]> {
+  const res = await fetch(`${API_URL}/coop/viajes/${viajeId}/pasajeros`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar la lista de pasajeros.");
+  return cuerpo as PasajeroDeViaje[];
+}
+
 export async function cancelarBoleto(token: string, boletoId: string): Promise<void> {
   const res = await fetch(`${API_URL}/compras/boletos/${boletoId}/cancelar`, {
     method: "POST",

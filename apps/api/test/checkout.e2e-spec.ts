@@ -355,6 +355,39 @@ describe('Checkout y pago (e2e)', () => {
       .expect(201);
   });
 
+  it('la cooperativa puede ver la lista de pasajeros ("manifiesto") de un viaje concreto — hallazgo real cerrado 22-jul-2026 (antes no existía ninguna forma de ver quién iba a abordar)', async () => {
+    await bloquearYRegistrarAsiento('4A', tokenPasajero);
+    await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '4A',
+            nombreCompleto: 'Pasajero Manifiesto E2E',
+            documento: '0988888888',
+            tipoTarifa: 'adulto',
+          },
+        ],
+      })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get(`/coop/viajes/${viajeId}/pasajeros`)
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .expect(200);
+
+    const fila = res.body.find(
+      (p: { numeroAsiento: string }) => p.numeroAsiento === '4A',
+    );
+    expect(fila).toBeDefined();
+    expect(fila.nombreCompleto).toBe('Pasajero Manifiesto E2E');
+    expect(fila.documento).toBe('0988888888');
+    expect(fila.estadoBoleto).toBe('vigente');
+    expect(fila.esMenorEdad).toBe(false);
+  });
+
   it('el pasajero puede cancelar su propio boleto — hallazgo real cerrado 22-jul-2026 (antes no existía ninguna forma de cancelar)', async () => {
     await bloquearYRegistrarAsiento('3C', tokenPasajero);
     const compra = await request(app.getHttpServer())

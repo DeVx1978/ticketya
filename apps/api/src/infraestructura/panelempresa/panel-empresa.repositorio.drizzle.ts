@@ -219,6 +219,39 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async listarPasajerosDeViaje(cooperativaId: string, viajeId: string) {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT va.numero_asiento, pc.nombre_completo, pc.documento,
+               pc.tipo_tarifa, pc.es_menor_edad, b.estado
+        FROM viaje_asientos va
+        JOIN boletos b ON b.viaje_asiento_id = va.id
+        JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
+        JOIN viajes v ON v.id = va.viaje_id
+        WHERE va.viaje_id = ${viajeId} AND v.cooperativa_id = ${cooperativaId}
+        ORDER BY va.numero_asiento
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          numero_asiento: string;
+          nombre_completo: string;
+          documento: string;
+          tipo_tarifa: string;
+          es_menor_edad: boolean;
+          estado: string;
+        };
+        return {
+          numeroAsiento: f.numero_asiento,
+          nombreCompleto: f.nombre_completo,
+          documento: f.documento,
+          tipoTarifa: f.tipo_tarifa,
+          esMenorEdad: f.es_menor_edad,
+          estadoBoleto: f.estado,
+        };
+      });
+    });
+  }
+
   async crearUsuarioStaff(
     cooperativaId: string,
     datos: DatosNuevoUsuarioStaff,

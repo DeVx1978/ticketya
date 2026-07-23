@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Patch,
+  Param,
   Request,
   UseGuards,
   ForbiddenException,
@@ -104,6 +105,19 @@ export class PanelEmpresaController {
   @Get('viajes')
   async listarViajes(@Request() req: { user: PayloadToken }) {
     return this.panel.listarViajes(cooperativaDelToken(req.user));
+  }
+
+  /** Lista de pasajeros de un viaje ("manifiesto") — hallazgo cerrado 22-jul-2026. */
+  @Roles('admin_cooperativa', 'vendedor')
+  @Get('viajes/:viajeId/pasajeros')
+  async listarPasajerosDeViaje(
+    @Param('viajeId') viajeId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.listarPasajerosDeViaje(
+      cooperativaDelToken(req.user),
+      viajeId,
+    );
   }
 
   /** RF-COOP-007 — múltiples usuarios por cooperativa con permisos diferenciados. */
