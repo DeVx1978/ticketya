@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { PanelEmpresaController } from './panel-empresa.controller';
 import {
   PanelEmpresaService,
@@ -6,8 +6,10 @@ import {
 } from '../../aplicacion/panelempresa/panel-empresa.service';
 import { PanelEmpresaRepositorioDrizzle } from '../../infraestructura/panelempresa/panel-empresa.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
+  imports: [AuthModule],
   controllers: [PanelEmpresaController],
   providers: [
     PanelEmpresaService,

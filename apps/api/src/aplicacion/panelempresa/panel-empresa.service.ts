@@ -1,4 +1,6 @@
 ﻿import { Inject, Injectable } from '@nestjs/common';
+import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
+import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
@@ -19,6 +21,8 @@ export class PanelEmpresaService {
   constructor(
     @Inject(PANEL_EMPRESA_REPOSITORIO)
     private readonly panel: PanelEmpresaRepositorio,
+    @Inject(ALMACENAMIENTO_ARCHIVOS)
+    private readonly almacenamiento: AlmacenamientoArchivos,
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
@@ -127,6 +131,20 @@ export class PanelEmpresaService {
 
   actualizarPerfil(cooperativaId: string, datos: { logoUrl: string | null }) {
     return this.panel.actualizarPerfil(cooperativaId, datos);
+  }
+
+  async subirLogoCooperativa(
+    cooperativaId: string,
+    buffer: Buffer,
+    nombreOriginal: string,
+  ) {
+    const resultado = await this.almacenamiento.guardarImagen(
+      buffer,
+      nombreOriginal,
+      'logos',
+    );
+    await this.panel.actualizarPerfil(cooperativaId, { logoUrl: resultado.url });
+    return { url: resultado.url };
   }
 
   obtenerConfiguracionFiscal(cooperativaId: string) {

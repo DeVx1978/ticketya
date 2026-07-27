@@ -1,15 +1,18 @@
 ﻿import {
+  BadRequestException,
   Body,
   Controller,
-  Get,
-  Post,
-  Patch,
-  Param,
-  Request,
-  UseGuards,
   ForbiddenException,
-  BadRequestException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Request,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PanelEmpresaService } from '../../aplicacion/panelempresa/panel-empresa.service';
 import {
   CrearTipoVehiculoDto,
@@ -307,6 +310,31 @@ export class PanelEmpresaController {
       logoUrl: dto.logoUrl && dto.logoUrl.trim() !== '' ? dto.logoUrl : null,
     });
     return { ok: true };
+  }
+
+  /** 27-jul-2026 -- subida real de logo, con simulador de almacenamiento (mismo patron que la foto de perfil). */
+  @Roles('admin_cooperativa')
+  @Post('perfil/logo')
+  @UseInterceptors(
+    FileInterceptor('logo', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  async subirLogo(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: PayloadToken },
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se recibio ningun archivo.');
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Solo se permiten imagenes JPG, PNG o WEBP.',
+      );
+    }
+    return this.panel.subirLogoCooperativa(
+      cooperativaDelToken(req.user),
+      file.buffer,
+      file.originalname,
+    );
   }
 
   /** IVA de la cooperativa — solo el admin puede verla/cambiarla (21-jul-2026). */
