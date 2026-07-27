@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Interfaces (puertos) del dominio de autenticación — RF-AUTH.
  *
  * Nada en este archivo depende de NestJS, Drizzle, bcrypt ni JWT. La capa
@@ -61,6 +61,22 @@ export interface UsuarioRepositorio {
 
   /** Solo tiene sentido para 'pasajero' — cuenta boletos con estado 'usado'. */
   contarViajesCompletados(usuarioId: string): Promise<number>;
+
+  guardarTokenReset(
+    usuarioId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void>;
+
+  buscarTokenResetVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string } | null>;
+
+  marcarTokenResetUsado(tokenId: string): Promise<void>;
+}
+
+export interface NotificadorEmail {
+  enviarResetPassword(correo: string, tokenPlano: string): Promise<void>;
 }
 
 /** Puerto de hashing de contraseñas — la capa de infra decide el algoritmo. */

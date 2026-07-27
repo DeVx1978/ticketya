@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   Inject,
   ConflictException,
@@ -6,12 +6,14 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { randomBytes, createHash } from 'node:crypto';
 import type {
   UsuarioRepositorio,
   HasherContrasena,
   EmisorTokens,
   DatosRegistro,
   UsuarioDominio,
+  NotificadorEmail,
 } from '../../dominio/auth/auth.ports';
 import {
   calcularBloqueoTrasIntentoFallido,
@@ -21,6 +23,7 @@ import {
 export const USUARIO_REPOSITORIO = 'USUARIO_REPOSITORIO';
 export const HASHER_CONTRASENA = 'HASHER_CONTRASENA';
 export const EMISOR_TOKENS = 'EMISOR_TOKENS';
+export const NOTIFICADOR_EMAIL = 'NOTIFICADOR_EMAIL';
 
 /**
  * Casos de uso de autenticación (RF-AUTH-001, RF-AUTH-002). Orquesta el
@@ -34,6 +37,7 @@ export class AuthService {
     @Inject(USUARIO_REPOSITORIO) private readonly usuarios: UsuarioRepositorio,
     @Inject(HASHER_CONTRASENA) private readonly hasher: HasherContrasena,
     @Inject(EMISOR_TOKENS) private readonly tokens: EmisorTokens,
+    @Inject(NOTIFICADOR_EMAIL) private readonly email: NotificadorEmail,
   ) {}
 
   /** RF-AUTH-001 — registro de pasajero. */
@@ -164,5 +168,43 @@ export class AuthService {
     }
     const nuevoHash = await this.hasher.hash(passwordNueva);
     await this.usuarios.actualizarPasswordHash(usuarioId, nuevoHash);
+  }
+
+  async solicitarResetPassword(correo: string) {
+    const usuario = await this.usuarios.buscarPorCorreo(correo);
+
+    if (usuario) {
+      const tokenPlano = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+      const expiraEn = new Date(Date.now() + 30 * 60 * 1000);
+
+      await this.usuarios.guardarTokenReset(usuario.id, tokenHash, expiraEn);
+      await this.email.enviarResetPassword(usuario.correo, tokenPlano);
+    }
+
+    return { ok: true };
+  }
+
+  async restablecerPassword(tokenPlano: string, passwordNueva: string) {
+    if (passwordNueva.length < 8) {
+      throw new BadRequestException(
+        'La nueva contrasena debe tener al menos 8 caracteres.',
+      );
+    }
+
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const token = await this.usuarios.buscarTokenResetVigente(tokenHash);
+
+    if (!token) {
+      throw new BadRequestException(
+        'Este enlace de recuperacion no es valido o ya expiro. Solicita uno nuevo.',
+      );
+    }
+
+    const nuevoHash = await this.hasher.hash(passwordNueva);
+    await this.usuarios.actualizarPasswordHash(token.usuarioId, nuevoHash);
+    await this.usuarios.marcarTokenResetUsado(token.id);
+
+    return { ok: true };
   }
 }

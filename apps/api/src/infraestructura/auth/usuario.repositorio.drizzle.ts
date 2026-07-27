@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable } from '@nestjs/common';
 import { eq, sql } from 'drizzle-orm';
 import { usuarios } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
@@ -137,5 +137,38 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       WHERE c.comprador_usuario_id = ${usuarioId} AND b.estado = 'usado'
     `);
     return (resultado.rows[0] as { total: number })?.total ?? 0;
+  }
+
+  async guardarTokenReset(
+    usuarioId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO tokens_usuario (usuario_id, proposito, token_hash, expira_en)
+      VALUES (${usuarioId}, 'reset_password', ${tokenHash}, ${expiraEn.toISOString()})
+    `);
+  }
+
+  async buscarTokenResetVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string } | null> {
+    const resultado = await this.db.execute(sql`
+      SELECT id, usuario_id
+      FROM tokens_usuario
+      WHERE token_hash = ${tokenHash}
+        AND proposito = 'reset_password'
+        AND usado_en IS NULL
+        AND expira_en > now()
+    `);
+    const fila = resultado.rows[0] as { id: string; usuario_id: string } | undefined;
+    if (!fila) return null;
+    return { id: fila.id, usuarioId: fila.usuario_id };
+  }
+
+  async marcarTokenResetUsado(tokenId: string): Promise<void> {
+    await this.db.execute(sql`
+      UPDATE tokens_usuario SET usado_en = now() WHERE id = ${tokenId}
+    `);
   }
 }

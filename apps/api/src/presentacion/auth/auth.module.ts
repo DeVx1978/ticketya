@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -8,10 +8,12 @@ import {
   USUARIO_REPOSITORIO,
   HASHER_CONTRASENA,
   EMISOR_TOKENS,
+  NOTIFICADOR_EMAIL,
 } from '../../aplicacion/auth/auth.service';
 import { UsuarioRepositorioDrizzle } from '../../infraestructura/auth/usuario.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 import { JwtEmisorTokens } from '../../infraestructura/auth/jwt.emisor-tokens';
+import { SimuladorNotificador } from '../../infraestructura/notificaciones/simulador.notificador';
 import { JwtStrategy } from './guards/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -47,6 +49,7 @@ import { RolesGuard } from './guards/roles.guard';
     { provide: USUARIO_REPOSITORIO, useClass: UsuarioRepositorioDrizzle },
     { provide: HASHER_CONTRASENA, useClass: BcryptHasher },
     { provide: EMISOR_TOKENS, useClass: JwtEmisorTokens },
+    { provide: NOTIFICADOR_EMAIL, useClass: SimuladorNotificador },
   ],
   exports: [RolesGuard],
 })

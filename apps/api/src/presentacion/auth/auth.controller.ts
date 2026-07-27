@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Get,
@@ -12,6 +12,8 @@ import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import { SolicitarResetDto } from './dto/solicitar-reset.dto';
+import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -61,5 +63,15 @@ export class AuthController {
       dto.passwordNueva,
     );
     return { ok: true };
+  }
+
+  @Post('solicitar-reset')
+  async solicitarReset(@Body() dto: SolicitarResetDto) {
+    return this.authService.solicitarResetPassword(dto.correo);
+  }
+
+  @Post('restablecer-password')
+  async restablecerPassword(@Body() dto: RestablecerPasswordDto) {
+    return this.authService.restablecerPassword(dto.token, dto.passwordNueva);
   }
 }
