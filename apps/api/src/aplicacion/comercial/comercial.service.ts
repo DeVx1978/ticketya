@@ -3,6 +3,9 @@ import type {
   ComercialRepositorio,
   DatosNuevoEspacioPublicitario,
   DatosNuevoPlanComercial,
+  DatosNuevoLead,
+  DatosNuevaCampana,
+  EstadoLead,
 } from '../../dominio/comercial/comercial.ports';
 
 export const COMERCIAL_REPOSITORIO = 'COMERCIAL_REPOSITORIO';
@@ -28,5 +31,36 @@ export class ComercialService {
 
   listarPlanesComerciales() {
     return this.comercial.listarPlanesComerciales();
+  }
+
+  crearLead(datos: DatosNuevoLead) {
+    return this.comercial.crearLead(datos);
+  }
+
+  listarLeads() {
+    return this.comercial.listarLeads();
+  }
+
+  actualizarEstadoLead(
+    id: string,
+    datos: { estado?: EstadoLead; notasSeguimiento?: string },
+  ) {
+    return this.comercial.actualizarEstadoLead(id, datos);
+  }
+
+  crearCampana(datos: DatosNuevaCampana) {
+    return this.comercial.crearCampana(datos);
+  }
+
+  listarCampanas() {
+    return this.comercial.listarCampanas();
+  }
+
+  aprobarCampana(campanaId: string, usuarioId: string) {
+    return this.comercial.aprobarCampana(campanaId, usuarioId);
+  }
+
+  rechazarCampana(campanaId: string) {
+    return this.comercial.rechazarCampana(campanaId);
   }
 }

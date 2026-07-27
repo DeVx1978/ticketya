@@ -1,11 +1,24 @@
-﻿import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+﻿import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Param,
+  Request,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { ComercialService } from '../../aplicacion/comercial/comercial.service';
 import {
   CrearEspacioPublicitarioDto,
   CrearPlanComercialDto,
+  ActualizarEstadoLeadDto,
+  CrearCampanaDto,
 } from './dto/comercial.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
+import { PayloadToken } from '../../dominio/auth/auth.ports';
 
 /** RF-COMM -- gestion comercial/publicitaria, exclusiva de admin_plataforma. */
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,5 +45,50 @@ export class ComercialController {
   @Get('planes-comerciales')
   async listarPlanesComerciales() {
     return this.comercial.listarPlanesComerciales();
+  }
+
+  @Get('leads')
+  async listarLeads() {
+    return this.comercial.listarLeads();
+  }
+
+  @Patch('leads/:id')
+  async actualizarEstadoLead(
+    @Param('id') id: string,
+    @Body() dto: ActualizarEstadoLeadDto,
+  ) {
+    await this.comercial.actualizarEstadoLead(id, dto);
+    return { ok: true };
+  }
+
+  @Post('campanas')
+  async crearCampana(@Body() dto: CrearCampanaDto) {
+    return this.comercial.crearCampana(dto);
+  }
+
+  @Get('campanas')
+  async listarCampanas() {
+    return this.comercial.listarCampanas();
+  }
+
+  @Patch('campanas/:id/aprobar')
+  async aprobarCampana(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.comercial.aprobarCampana(id, req.user.sub);
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
+  }
+
+  @Patch('campanas/:id/rechazar')
+  async rechazarCampana(@Param('id') id: string) {
+    const resultado = await this.comercial.rechazarCampana(id);
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
   }
 }

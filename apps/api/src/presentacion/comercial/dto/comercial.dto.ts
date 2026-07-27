@@ -1,7 +1,9 @@
 ﻿import {
   IsBoolean,
+  IsEmail,
   IsIn,
   IsInt,
+  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
@@ -49,4 +51,63 @@ export class CrearPlanComercialDto {
   duracionDiasDefault?: number;
 
   formatosPermitidos!: unknown;
+}
+
+export class CrearLeadDto {
+  @IsString()
+  @MinLength(2)
+  nombreEmpresa!: string;
+
+  @IsOptional()
+  @IsString()
+  contactoNombre?: string;
+
+  @IsEmail()
+  contactoCorreo!: string;
+
+  @IsOptional()
+  @IsString()
+  contactoTelefono?: string;
+
+  @IsOptional()
+  @IsString()
+  mensaje?: string;
+}
+
+export class ActualizarEstadoLeadDto {
+  @IsOptional()
+  @IsIn(['nuevo', 'contactado', 'cerrado'])
+  estado?: 'nuevo' | 'contactado' | 'cerrado';
+
+  @IsOptional()
+  @IsString()
+  notasSeguimiento?: string;
+}
+
+export class CrearCampanaDto {
+  @IsString()
+  espacioPublicitarioId!: string;
+
+  @IsString()
+  planComercialId!: string;
+
+  @IsOptional()
+  @IsString()
+  leadAnuncianteId?: string;
+
+  @IsString()
+  @MinLength(2)
+  nombreAnunciante!: string;
+
+  @IsIn(['imagen_texto', 'imagen_texto_video'])
+  formato!: 'imagen_texto' | 'imagen_texto_video';
+
+  @IsString()
+  archivoUrl!: string;
+
+  @IsISO8601()
+  fechaInicio!: string;
+
+  @IsISO8601()
+  fechaFin!: string;
 }
