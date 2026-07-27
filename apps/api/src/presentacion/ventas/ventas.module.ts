@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { VentasController } from './ventas.controller';
 import {
   CheckoutService,
@@ -7,8 +7,10 @@ import {
 } from '../../aplicacion/ventas/checkout.service';
 import { CompraRepositorioDrizzle } from '../../infraestructura/ventas/compra.repositorio.drizzle';
 import { SimuladorPasarelaPago } from '../../infraestructura/pagos/simulador.pasarela';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
+  imports: [AuthModule],
   controllers: [VentasController],
   providers: [
     CheckoutService,

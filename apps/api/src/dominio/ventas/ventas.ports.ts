@@ -169,6 +169,13 @@ export interface CompraRepositorio {
     boletoId: string,
     usuarioId: string,
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  /** Registra y envia (via NotificadorEmail) la confirmacion de una compra ya aprobada. Nunca lanza -- si falla, queda registrado como fallido, sin afectar la venta. */
+  notificarCompraConfirmada(
+    compraId: string,
+    montoTotal: number,
+    cantidadBoletos: number,
+  ): Promise<void>;
 }
 
 export interface DetalleBoletoRecibo {

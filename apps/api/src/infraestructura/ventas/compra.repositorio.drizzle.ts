@@ -1,6 +1,8 @@
-﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { eq, and, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import type { NotificadorEmail } from '../../dominio/auth/auth.ports';
+import { NOTIFICADOR_EMAIL } from '../../aplicacion/auth/auth.service';
 import { randomUUID } from 'node:crypto';
 import {
   viajes,
@@ -15,6 +17,7 @@ import {
   comprobantesTasaTerminal,
   autorizacionesMenor,
   configuracionPlataforma,
+  notificaciones,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -35,9 +38,12 @@ import {
 
 @Injectable()
 export class CompraRepositorioDrizzle implements CompraRepositorio {
+  private readonly logger = new Logger(CompraRepositorioDrizzle.name);
+
   constructor(
     @Inject(DRIZZLE_DB_PUBLICO) private readonly dbPublico: DrizzleDb,
     @Inject(DRIZZLE_DB) private readonly dbApp: DrizzleDb,
+    @Inject(NOTIFICADOR_EMAIL) private readonly email: NotificadorEmail,
   ) {}
 
   async buscarPagoPorIdempotencyKey(
@@ -484,5 +490,56 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         horaSalidaProgramada: b.horaSalidaProgramada,
       })),
     };
+  }
+
+  async notificarCompraConfirmada(
+    compraId: string,
+    montoTotal: number,
+    cantidadBoletos: number,
+  ): Promise<void> {
+    const filas = await this.dbPublico.execute(sql`
+      SELECT u.correo
+      FROM compras c
+      JOIN usuarios u ON u.id = c.comprador_usuario_id
+      WHERE c.id = ${compraId}
+    `);
+    const fila = filas.rows[0] as { correo: string } | undefined;
+
+    // RF-CHECK-006 -- una venta de ventanilla puede no tener comprador
+    // con cuenta propia; sin correo, no hay a quien notificar.
+    if (!fila?.correo) return;
+
+    const [notif] = await this.dbPublico
+      .insert(notificaciones)
+      .values({
+        tipo: 'confirmacion_compra',
+        canal: 'correo',
+        compraId,
+        correoDestino: fila.correo,
+        estadoEnvio: 'pendiente',
+      })
+      .returning();
+
+    try {
+      await this.email.enviarConfirmacionCompra(fila.correo, {
+        compraId,
+        montoTotal,
+        cantidadBoletos,
+      });
+      await this.dbPublico
+        .update(notificaciones)
+        .set({ estadoEnvio: 'enviado', enviadoEn: new Date() })
+        .where(eq(notificaciones.id, notif.id));
+    } catch (error) {
+      // RNF-DISP-002 -- ninguna venta confirmada se pierde silenciosamente,
+      // pero un fallo de notificacion tampoco debe reventar la venta ya
+      // aprobada. Se registra el fallo y se sigue.
+      const mensaje = error instanceof Error ? error.message : 'Error desconocido';
+      this.logger.error(`No se pudo notificar la compra ${compraId}: ${mensaje}`);
+      await this.dbPublico
+        .update(notificaciones)
+        .set({ estadoEnvio: 'fallido', errorDetalle: mensaje })
+        .where(eq(notificaciones.id, notif.id));
+    }
   }
 }

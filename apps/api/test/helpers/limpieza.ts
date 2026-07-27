@@ -1,4 +1,4 @@
-import { Client } from 'pg';
+﻿import { Client } from 'pg';
 
 /**
  * Limpieza real de datos de prueba — 22-jul-2026.
@@ -72,6 +72,9 @@ export async function limpiarCooperativasDePrueba(
     );
     await pg.query(
       `DELETE FROM pasajeros_compra WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,
+    );
+    await pg.query(
+      `DELETE FROM notificaciones WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,
     );
     await pg.query(
       `DELETE FROM compras WHERE id IN (SELECT compra_id FROM _boletos_test)`,

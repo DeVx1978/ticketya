@@ -18,4 +18,13 @@ export class SimuladorNotificador implements NotificadorEmail {
       `[SIMULADO] Correo de recuperacion para ${correo} -> ${link}`,
     );
   }
+
+  async enviarConfirmacionCompra(
+    correo: string,
+    detalle: { compraId: string; montoTotal: number; cantidadBoletos: number },
+  ): Promise<void> {
+    this.logger.log(
+      `[SIMULADO] Confirmacion de compra para ${correo} -> compra ${detalle.compraId}, ${detalle.cantidadBoletos} boleto(s), total $${detalle.montoTotal.toFixed(2)}`,
+    );
+  }
 }

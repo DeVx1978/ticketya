@@ -51,7 +51,7 @@ import { RolesGuard } from './guards/roles.guard';
     { provide: EMISOR_TOKENS, useClass: JwtEmisorTokens },
     { provide: NOTIFICADOR_EMAIL, useClass: SimuladorNotificador },
   ],
-  exports: [RolesGuard],
+  exports: [RolesGuard, NOTIFICADOR_EMAIL],
 })
 export class AuthModule {}
 

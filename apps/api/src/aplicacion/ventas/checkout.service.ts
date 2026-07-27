@@ -128,6 +128,16 @@ export class CheckoutService {
       resultadoPago.referenciaExterna,
       mapeo,
     );
+
+    const montoTotalNotif = mapeo.reduce(
+      (acc, m) => acc + m.precioPagado + m.tasaTerminal + m.cargoPlataforma,
+      0,
+    );
+    await this.compras.notificarCompraConfirmada(
+      compraId,
+      montoTotalNotif,
+      boletos.length,
+    );
     const ivaTotal = desglose.reduce((acc, d) => acc + d.ivaMonto, 0);
     // Si la compra mezcla boletos de cooperativas con distinta
     // configuración de visibilidad, se prefiere mostrarlo (más

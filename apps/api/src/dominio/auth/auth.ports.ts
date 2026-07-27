@@ -77,6 +77,11 @@ export interface UsuarioRepositorio {
 
 export interface NotificadorEmail {
   enviarResetPassword(correo: string, tokenPlano: string): Promise<void>;
+
+  enviarConfirmacionCompra(
+    correo: string,
+    detalle: { compraId: string; montoTotal: number; cantidadBoletos: number },
+  ): Promise<void>;
 }
 
 /** Puerto de hashing de contraseñas — la capa de infra decide el algoritmo. */
