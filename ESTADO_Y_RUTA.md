@@ -1,6 +1,6 @@
 # Colombus — Documento de traspaso definitivo y completo
 
-**Última actualización:** 27 de julio de 2026 (actualizado al cierre de cada sesión de trabajo real — este es un documento vivo, no una foto fija de un solo día)
+**Última actualización:** 27 de julio de 2026, sesión extendida (actualizado al cierre de cada sesión de trabajo real — este es un documento vivo, no una foto fija de un solo día)
 **Propósito:** que una nueva conversación de Claude tenga TODO el contexto del proyecto, de principio a fin — qué es, qué existe, qué falta, y cómo se va a desplegar — sin tener que reconstruir nada de memoria ni repetir preguntas ya respondidas.
 
 **Este documento reemplaza y consolida los traspasos anteriores** (`Colombus_Contexto_Traspaso.md`, `Colombus_Informe_de_Estado.md`, `Colombus_Auditoria_Verificada.md`, y `ESTADO_Y_RUTA.md` que vivía dentro del propio repo). Es la única fuente de verdad a partir de ahora.
@@ -50,13 +50,15 @@ Esta sección viene de una auditoría real: el usuario pegó el contenido de sus
 **Módulos que son SOLO esquema — cero endpoint, cero lógica construida encima:**
 - **Facturación electrónica SRI** (`comprobantes_tasa_terminal`, `comprobantes_electronicos`)
 - **Liquidaciones** (`liquidaciones_cooperativa`, `liquidaciones_terminal`, `ajustes_liquidacion` — con `CHECK` de integridad real en SQL, buen diseño previo)
-- **Notificaciones** (cola de envío completa, sin integración de email/WhatsApp)
 - **Comercial/Publicidad real (RF-COMM)** — espacios, planes, leads, campañas, métricas. **Cero endpoints.** Todo lo publicitario que existe hoy es únicamente la maqueta visual del demo HTML
 - **API externa Modelo B** (credenciales, webhooks, reservas)
 
+**Módulo parcialmente implementado (actualizado 27-jul):**
+- **Notificaciones** — ya no es solo esquema. `confirmacion_compra` funciona de punta a punta (correo simulado, ver sección 7). `recordatorio_viaje` y `cambio_operativo` (los tipos que requieren disparo automático sin acción del usuario, no como reacción a un checkout) siguen sin construir.
+
 **Pagos:** 100% simulados (`infraestructura/pagos/simulador.pasarela.ts`). La tabla `pagos` ya soporta cualquier proveedor e idempotencia real, pero nada está conectado.
 
-**Recuperación de contraseña:** la tabla `tokensUsuario` con propósito `'reset_password'` ya existe — falta solo el endpoint + servicio de email.
+**Recuperación de contraseña:** ✅ construida el 27-jul (ver sección 7) — ya no es pendiente.
 
 **Descubrimiento nuevo:** existe `ruta_paradas` (Fase 2) pensada para comprar solo hasta una parada intermedia — solo esquema, sin lógica ni pantalla.
 
@@ -142,6 +144,12 @@ Construida, probada dos veces (88/88 tests e2e) y en GitHub:
 ### Extra — Coordenadas de origen/destino en búsqueda: ✅ COMPLETA (27-jul-2026)
 Para soportar a futuro un botón "Ver trayecto en Maps" en el frontend (idea del usuario): `buscarPuntosOperacion` y `buscarViajes` ahora devuelven `latitud`/`longitud` de cada punto de operación (usando `alias()` de Drizzle para el doble-join de origen y destino). Probado, 88/88 tests. Commit `2605f21`. **Falta:** cargar coordenadas reales de cada terminal (ver limpieza de datos abajo) y construir el botón en frontend cuando llegue esa fase.
 
+### Recuperación de contraseña: ✅ COMPLETA (27-jul-2026)
+`POST /auth/solicitar-reset` y `POST /auth/restablecer-password` — token real generado con `crypto.randomBytes`, guardado como hash SHA-256 (no el token en texto plano) en `tokens_usuario`, expira en 30 min, un solo uso. Responde siempre `{ok:true}` exista o no el correo (no revela qué correos están registrados). El envío real de correo queda simulado (`SimuladorNotificador`, imprime en consola) hasta conectar Resend al final — mismo patrón que `simulador.pasarela.ts` para pagos. 7 archivos, incluye un archivo nuevo (`infraestructura/notificaciones/simulador.notificador.ts`) y 2 DTOs nuevos. Probado, 88/88 tests. Commit `40235cd`.
+
+### Notificación automática de compra confirmada: ✅ COMPLETA (27-jul-2026)
+Al confirmar un pago en el checkout, se registra una fila en `notificaciones` (tabla que antes era solo esquema, ahora tiene uso real) y se llama al mismo `NotificadorEmail` construido para recuperación de contraseña (se le agregó `enviarConfirmacionCompra`) — reutilizado entre módulos exportando `NOTIFICADOR_EMAIL` desde `AuthModule` e importándolo en `VentasModule`. Un fallo de notificación nunca revienta ni deshace la venta ya aprobada (try/catch, se marca `'fallido'` y sigue). **Bug real encontrado y corregido en el proceso:** el helper de limpieza de tests (`test/helpers/limpieza.ts`) no borraba `notificaciones` antes de `compras`, causando fallo de llave foránea al final de `checkout.e2e-spec.ts` y `calificaciones.e2e-spec.ts` — corregido agregando el `DELETE` en el orden correcto. 8 archivos, probado, 88/88 tests. Commit `10f9f7d`.
+
 ### Limpieza de datos de prueba — ✅ COMPLETA (27-jul-2026)
 Se detectaron y eliminaron 2 registros falsos que habían quedado de pruebas anteriores en `puntos_operacion` ("Terminal Terrestre Machala RED", "Terminal de Prueba"), incluyendo una compra/boleto/pago de prueba ("Pasajero Red Uno") que dependía de uno de ellos — se borró la cadena completa en el orden correcto (pagos → boletos → comprobantes → pasajeros_compra → compras → puntos_operacion). **Lección aprendida:** antes de reportar datos de la base como reales, verificar si son de prueba — este error ya se había cometido una vez (reportar los 2 terminales falsos como si fueran reales).
 
@@ -152,14 +160,12 @@ Se detectaron y eliminaron 2 registros falsos que habían quedado de pruebas ant
 **Pendiente de esto:** cargar `latitud`/`longitud` reales de cada terminal (el usuario debe sacarlas de Google Maps, clic derecho sobre el edificio exacto — no solo el centro de la ciudad) y, si aplica, registrar oficinas propias de cooperativas específicas (ej. "Panamericana tiene oficina en la Colón, Quito" — el esquema ya soporta esto vía `puntos_operacion.tipo='oficina_agencia'` + `cooperativaPropietariaId`, no requiere cambio de esquema).
 
 ### Siguiente en la fila (no iniciado)
-2. Recuperación de contraseña (tabla ya existe, falta endpoint + Resend)
-3. Notificaciones automáticas
-4. Liquidaciones
-5. Facturación electrónica SRI
-6. Módulo comercial/publicidad real
-7. Pagos reales con Kushki
-8. Ejecutar despliegue a Render/Vercel (decisión ya tomada, ver sección 4.2)
-9. Frontend completo (rebrand + diseño)
+1. Liquidaciones
+2. Facturación electrónica SRI
+3. Módulo comercial/publicidad real
+4. Pagos reales con Kushki
+5. Ejecutar despliegue a Render/Vercel (decisión ya tomada, ver sección 4.2)
+6. Frontend completo (rebrand + diseño)
 
 ### Cómo levantar el proyecto en local (de `ESTADO_Y_RUTA.md`, fusionado aquí el 27-jul)
 ```powershell
@@ -222,4 +228,4 @@ Si no se hace esto, el backend no reconoce columnas/tablas nuevas aunque la migr
 
 ## 10. Resumen de una línea para arrancar rápido
 
-*Colombus (antes TicketYa) es una plataforma de venta de pasajes de bus interprovincial en Ecuador, con vocación de cobertura nacional completa (26 puntos de operación ya cargados en 25 ciudades). Software real (NestJS+Next.js+Postgres) con backend auditado y en construcción activa siguiendo el orden "funcionalidad primero, frontend al final": Fase 1 completa (editar rutas/tipos de vehículo, recibo de compra) más coordenadas de búsqueda para un futuro botón de Maps, todo probado (88/88 tests) y en GitHub. El despliegue a producción YA está decidido (Render + Vercel, con justificación técnica documentada por el usuario) pero aún no ejecutado — sigue en localhost. Aún dice "TicketYa" en el código de `apps/web`, pendiente de rebrand cuando llegue la fase de frontend. Existe además un demo HTML de pitch, ya rebrandeado a Colombus, con despliegue en Netlify ya resuelto, en proceso de pulido visual. Siguiente paso técnico: recuperación de contraseña.*
+*Colombus (antes TicketYa) es una plataforma de venta de pasajes de bus interprovincial en Ecuador, con vocación de cobertura nacional completa (26 puntos de operación cargados en 25 ciudades). Software real (NestJS+Next.js+Postgres) con backend en construcción activa siguiendo "funcionalidad primero, frontend al final": Fase 1 completa, coordenadas para Maps, recuperación de contraseña, y notificación automática de compra confirmada — todo probado (88/88 tests, seis rondas seguidas) y en GitHub (commit `10f9f7d`). El despliegue a producción YA está decidido (Render + Vercel) pero aún no ejecutado — sigue en localhost. Aún dice "TicketYa" en `apps/web`, pendiente de rebrand en la fase de frontend. Existe además un demo HTML de pitch, ya rebrandeado a Colombus, con Netlify resuelto, en proceso de pulido visual. Siguiente paso técnico: liquidaciones, facturación SRI, módulo comercial, o pagos con Kushki — en ese orden.*
