@@ -1,12 +1,16 @@
 ﻿import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Patch,
   Post,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from '../../aplicacion/auth/auth.service';
 import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
@@ -73,5 +77,30 @@ export class AuthController {
   @Post('restablecer-password')
   async restablecerPassword(@Body() dto: RestablecerPasswordDto) {
     return this.authService.restablecerPassword(dto.token, dto.passwordNueva);
+  }
+
+  /** 27-jul-2026 -- subida real de foto de perfil, con simulador de almacenamiento. */
+  @UseGuards(JwtAuthGuard)
+  @Post('perfil/foto')
+  @UseInterceptors(
+    FileInterceptor('foto', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  async subirFotoPerfil(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: PayloadToken },
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se recibio ningun archivo.');
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      throw new BadRequestException(
+        'Solo se permiten imagenes JPG, PNG o WEBP.',
+      );
+    }
+    return this.authService.subirFotoPerfil(
+      req.user.sub,
+      file.buffer,
+      file.originalname,
+    );
   }
 }

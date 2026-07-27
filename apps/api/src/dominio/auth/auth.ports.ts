@@ -84,6 +84,25 @@ export interface NotificadorEmail {
   ): Promise<void>;
 }
 
+/**
+ * 27-jul-2026 -- almacenamiento de archivos (fotos de perfil, logo de
+ * cooperativa). Mismo criterio que NotificadorEmail/PasarelaPago: el
+ * simulador guarda el archivo real en disco local; al final se
+ * reemplaza por Cloudinary/S3 sin tocar nada mas del sistema.
+ */
+export interface ArchivoSubido {
+  url: string;
+  nombreArchivo: string;
+}
+
+export interface AlmacenamientoArchivos {
+  guardarImagen(
+    buffer: Buffer,
+    nombreOriginal: string,
+    carpeta: string,
+  ): Promise<ArchivoSubido>;
+}
+
 /** Puerto de hashing de contraseñas — la capa de infra decide el algoritmo. */
 export interface HasherContrasena {
   hash(passwordPlano: string): Promise<string>;

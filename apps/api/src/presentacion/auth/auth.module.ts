@@ -9,11 +9,13 @@ import {
   HASHER_CONTRASENA,
   EMISOR_TOKENS,
   NOTIFICADOR_EMAIL,
+  ALMACENAMIENTO_ARCHIVOS,
 } from '../../aplicacion/auth/auth.service';
 import { UsuarioRepositorioDrizzle } from '../../infraestructura/auth/usuario.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 import { JwtEmisorTokens } from '../../infraestructura/auth/jwt.emisor-tokens';
 import { SimuladorNotificador } from '../../infraestructura/notificaciones/simulador.notificador';
+import { SimuladorAlmacenamiento } from '../../infraestructura/almacenamiento/simulador.almacenamiento';
 import { JwtStrategy } from './guards/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -50,8 +52,9 @@ import { RolesGuard } from './guards/roles.guard';
     { provide: HASHER_CONTRASENA, useClass: BcryptHasher },
     { provide: EMISOR_TOKENS, useClass: JwtEmisorTokens },
     { provide: NOTIFICADOR_EMAIL, useClass: SimuladorNotificador },
+    { provide: ALMACENAMIENTO_ARCHIVOS, useClass: SimuladorAlmacenamiento },
   ],
-  exports: [RolesGuard, NOTIFICADOR_EMAIL],
+  exports: [RolesGuard, NOTIFICADOR_EMAIL, ALMACENAMIENTO_ARCHIVOS],
 })
 export class AuthModule {}
 

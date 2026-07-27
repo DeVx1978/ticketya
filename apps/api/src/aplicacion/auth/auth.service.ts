@@ -14,6 +14,7 @@ import type {
   DatosRegistro,
   UsuarioDominio,
   NotificadorEmail,
+  AlmacenamientoArchivos,
 } from '../../dominio/auth/auth.ports';
 import {
   calcularBloqueoTrasIntentoFallido,
@@ -24,6 +25,7 @@ export const USUARIO_REPOSITORIO = 'USUARIO_REPOSITORIO';
 export const HASHER_CONTRASENA = 'HASHER_CONTRASENA';
 export const EMISOR_TOKENS = 'EMISOR_TOKENS';
 export const NOTIFICADOR_EMAIL = 'NOTIFICADOR_EMAIL';
+export const ALMACENAMIENTO_ARCHIVOS = 'ALMACENAMIENTO_ARCHIVOS';
 
 /**
  * Casos de uso de autenticación (RF-AUTH-001, RF-AUTH-002). Orquesta el
@@ -38,6 +40,7 @@ export class AuthService {
     @Inject(HASHER_CONTRASENA) private readonly hasher: HasherContrasena,
     @Inject(EMISOR_TOKENS) private readonly tokens: EmisorTokens,
     @Inject(NOTIFICADOR_EMAIL) private readonly email: NotificadorEmail,
+    @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
   ) {}
 
   /** RF-AUTH-001 — registro de pasajero. */
@@ -183,6 +186,16 @@ export class AuthService {
     }
 
     return { ok: true };
+  }
+
+  async subirFotoPerfil(usuarioId: string, buffer: Buffer, nombreOriginal: string) {
+    const resultado = await this.almacenamiento.guardarImagen(
+      buffer,
+      nombreOriginal,
+      'perfiles',
+    );
+    await this.usuarios.actualizarPerfil(usuarioId, { fotoUrl: resultado.url });
+    return { url: resultado.url };
   }
 
   async restablecerPassword(tokenPlano: string, passwordNueva: string) {

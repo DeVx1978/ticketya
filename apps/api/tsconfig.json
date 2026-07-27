@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
@@ -19,7 +19,7 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "types": ["jest", "node"],
+    "types": ["jest", "node", "multer"],
     "noFallthroughCasesInSwitch": false
   }
 }
