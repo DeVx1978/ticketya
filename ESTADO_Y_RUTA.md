@@ -1,9 +1,9 @@
-# Colombus — Documento de traspaso definitivo y completo
+# Columbus — Documento de traspaso definitivo y completo
 
 **Última actualización:** 27 de julio de 2026, sesión extendida (actualizado al cierre de cada sesión de trabajo real — este es un documento vivo, no una foto fija de un solo día)
 **Propósito:** que una nueva conversación de Claude tenga TODO el contexto del proyecto, de principio a fin — qué es, qué existe, qué falta, y cómo se va a desplegar — sin tener que reconstruir nada de memoria ni repetir preguntas ya respondidas.
 
-**Este documento reemplaza y consolida los traspasos anteriores** (`Colombus_Contexto_Traspaso.md`, `Colombus_Informe_de_Estado.md`, `Colombus_Auditoria_Verificada.md`, y `ESTADO_Y_RUTA.md` que vivía dentro del propio repo). Es la única fuente de verdad a partir de ahora.
+**Este documento reemplaza y consolida los traspasos anteriores** (`Columbus_Contexto_Traspaso.md`, `Columbus_Informe_de_Estado.md`, `Columbus_Auditoria_Verificada.md`, y `ESTADO_Y_RUTA.md` que vivía dentro del propio repo). Es la única fuente de verdad a partir de ahora.
 
 **⚠️ Acción pendiente para el usuario:** existe un archivo `ESTADO_Y_RUTA.md` dentro de la carpeta del proyecto (`C:\Users\exitoso\Desktop\ticketya\ESTADO_Y_RUTA.md`, creado 23-jul-2026 por una sesión anterior) cuyo contenido útil ya se fusionó aquí el 27-jul. Recomendado: borrarlo o renombrarlo a `ESTADO_Y_RUTA_OBSOLETO.md` para que no compita como una segunda fuente de verdad desactualizada.
 
@@ -11,18 +11,18 @@
 
 ---
 
-## 1. Qué es Colombus, de principio a fin
+## 1. Qué es Columbus, de principio a fin
 
-Colombus es una plataforma SaaS para venta de pasajes de bus interprovincial en Ecuador. Nace en Machala (Terminal Terrestre de Machala, provincia de El Oro), con la intención explícita del usuario de expandirse a **todas las cooperativas y todas las ciudades y cantones del país**, no solo las principales — el usuario lo dijo desde la primera sesión: "aunque iniciemos en Machala vamos a hacer presencia en todos los rincones del país y con todas las cooperativas a nivel nacional en Ecuador."
+Columbus es una plataforma SaaS para venta de pasajes de bus interprovincial en Ecuador. Nace en Machala (Terminal Terrestre de Machala, provincia de El Oro), con la intención explícita del usuario de expandirse a **todas las cooperativas y todas las ciudades y cantones del país**, no solo las principales — el usuario lo dijo desde la primera sesión: "aunque iniciemos en Machala vamos a hacer presencia en todos los rincones del país y con todas las cooperativas a nivel nacional en Ecuador."
 
-**Nombre de marca:** Colombus (antes TicketYa). El usuario confirmó que necesita **logo/identidad visual real**, no solo texto estilizado — pendiente de diseño.
+**Nombre de marca:** Columbus (antes TicketYa). El usuario confirmó que necesita **logo/identidad visual real**, no solo texto estilizado — pendiente de diseño.
 
 **Existen DOS artefactos de código, completamente separados, que no deben confundirse:**
 
 | | Demo HTML | Software real |
 |---|---|---|
-| Archivo | `colombus-demo__2_.html` (un solo archivo autocontenido) | `apps/api` (NestJS) + `apps/web` (Next.js) + `packages/db` (Drizzle/Postgres) |
-| Marca | Colombus ✅ | **TicketYa** (nunca rebrandeado — ver hallazgo crítico abajo) |
+| Archivo | `columbus-demo__2_.html` (un solo archivo autocontenido) | `apps/api` (NestJS) + `apps/web` (Next.js) + `packages/db` (Drizzle/Postgres) |
+| Marca | Columbus ✅ | **TicketYa** (nunca rebrandeado — ver hallazgo crítico abajo) |
 | Backend real | No — todo simulado en JS del navegador | Sí, con base de datos Postgres real |
 | Propósito | Pitch visual a inversionistas/cooperativas | Producto de producción |
 | Despliegue | **Ya resuelto** (Netlify, ver sección 4) | **Decidido, sin ejecutar** (Render+Vercel, ver sección 4) |
@@ -31,7 +31,7 @@ Colombus es una plataforma SaaS para venta de pasajes de bus interprovincial en 
 
 ## 2. Hallazgo crítico que no debe olvidarse
 
-**El software real todavía dice "TicketYa" en el código de producción** (`apps/web/app/page.tsx`, literal: `<span>TicketYa</span>` y `¿Por qué TicketYa?`). El rebrand a Colombus **solo se aplicó al demo HTML**. Nadie ha tocado el código real con ese cambio. El usuario ya confirmó que el nombre real es Colombus — **esto sigue pendiente de ejecutar en `apps/web`** cuando se retome el desarrollo del software real.
+**El software real todavía dice "TicketYa" en el código de producción** (`apps/web/app/page.tsx`, literal: `<span>TicketYa</span>` y `¿Por qué TicketYa?`). El rebrand a Columbus **solo se aplicó al demo HTML**. Nadie ha tocado el código real con ese cambio. El usuario ya confirmó que el nombre real es Columbus — **esto sigue pendiente de ejecutar en `apps/web`** cuando se retome el desarrollo del software real.
 
 Además, la landing del software real es mucho más simple que la del demo HTML (hero + buscador + 3 tarjetas + franja de banners, sin mapa de asientos visual, sin destinos, sin cooperativas, sin publicidad real todavía). Son diseños completamente distintos hoy.
 
@@ -76,7 +76,7 @@ El demo es un único archivo autocontenido (HTML+CSS+JS, sin build step, fuentes
 - Se renombra a `index.html` y se sube directo a **Netlify Drop** (`https://app.netlify.com/drop`), o
 - Se empaqueta en un `.zip` junto a un `netlify.toml` con configuración de headers de seguridad (`X-Frame-Options`, `X-Content-Type-Options`) y redirect a `index.html`.
 - No requiere cuenta para el primer despliegue; se recomienda crear cuenta gratis para poder editarlo después.
-- Puede conectarse un dominio propio (ej. `colombus.ec`) después, desde el panel de Netlify.
+- Puede conectarse un dominio propio (ej. `columbus.ec`) después, desde el panel de Netlify.
 - Advertencia ya comunicada al usuario en su momento: el demo funciona todo en el navegador (búsqueda, selección de asiento, pago, boleto QR) pero con datos simulados — no hay servidor real detrás.
 
 **No hace falta redefinir esto** — ya funciona y está probado. Si se necesita volver a desplegar la versión actual del demo, el mismo flujo aplica.
@@ -120,7 +120,7 @@ El usuario preguntó explícitamente cómo se manejaría la publicidad real. Ya 
 
 ## 6. Demo HTML — estado visual y lo que aún falta
 
-Ya se resolvió: rebrand completo a Colombus (logo, footer, paneles internos — verificado sin ningún "TicketYa" residual), paleta rojo/negro/dorado, publicidad redistribuida en formatos variados (nativo, video simulado, vertical, leaderboard) en vez de amontonada, hero con imagen de fondo de bus, buscador en proceso de rediseño a barra horizontal alargada.
+Ya se resolvió: rebrand completo a Columbus (logo, footer, paneles internos — verificado sin ningún "TicketYa" residual), paleta rojo/negro/dorado, publicidad redistribuida en formatos variados (nativo, video simulado, vertical, leaderboard) en vez de amontonada, hero con imagen de fondo de bus, buscador en proceso de rediseño a barra horizontal alargada.
 
 **Pendiente puntual en el demo:**
 - Confirmar que la foto del hero se vea "supermoderna" (la actual es una foto libre genérica, funcional pero mejorable)
@@ -159,11 +159,32 @@ Se detectaron y eliminaron 2 registros falsos que habían quedado de pruebas ant
 
 **Pendiente de esto:** cargar `latitud`/`longitud` reales de cada terminal (el usuario debe sacarlas de Google Maps, clic derecho sobre el edificio exacto — no solo el centro de la ciudad) y, si aplica, registrar oficinas propias de cooperativas específicas (ej. "Panamericana tiene oficina en la Colón, Quito" — el esquema ya soporta esto vía `puntos_operacion.tipo='oficina_agencia'` + `cooperativaPropietariaId`, no requiere cambio de esquema).
 
-### Siguiente en la fila (no iniciado)
-1. Liquidaciones
-2. Facturación electrónica SRI
-3. Módulo comercial/publicidad real
-4. Pagos reales con Kushki
+### Diseño final de landing acordado — 27-jul-2026 (exploración visual con Imagine, no código todavía)
+
+**Hero:** ocupa 100vh (pantalla completa), slider automático de 3 fotos HD de buses modernos (cambia cada 4s o con puntos de navegación). Buscador de pasajes en barra horizontal delgada, flotando sobre el borde inferior del hero — no el formulario alto original.
+
+**4 espacios publicitarios definidos** (bajó de 5 a 4 tras análisis de ad-tech — se sacó el espacio dentro de la grilla de cooperativas por ser zona de confianza, y se corrigió la posición del banner grande que estaba en la peor zona de visibilidad, justo antes del footer):
+
+| Espacio | Medidas | Ubicación | Notas |
+|---|---|---|---|
+| 1. Banner horizontal | 970×250 | Justo después de "Cómo funciona" | Usuario todavía comprometido, no en la salida |
+| 2. Tarjeta nativa destinos | 300×250 | Mezclada en la grilla de "Destinos populares" | — |
+| 3. Unidad de video | **640×360 (16:9)**, ancho completo de la sección | Después de la sección de cooperativas | Corregido de 400×300 (se veía como miniatura, no como algo premium) — solo Plan Premium |
+| 4. Tarjeta vertical | 300×600 | Junto a "Por qué Columbus", layout 2 columnas | — |
+
+**Secciones adicionales aprobadas para una landing "verdaderamente moderna"**: contador de números reales (boletos vendidos, cooperativas, calificación), cooperativas con tarjetas expandibles al clic (muestra ciudades destino, número de rutas, precio desde), testimonios/reseñas de pasajeros reales, insignias de pago seguro cerca del buscador y en el footer, sección de preguntas frecuentes, burbuja de chat de soporte flotante en toda la página.
+
+**2 endpoints de backend nuevos identificados, pendientes para cuando llegue esta fase** (no bloquean el trabajo actual):
+- Ciudades destino por cooperativa, para las tarjetas expandibles (`GET /coop/:id/ciudades-destino` o similar — agrupa por ciudad las rutas activas de esa cooperativa)
+- Contador de disponibilidad en vivo — parcialmente ya existe (`asientosDisponibles` ya se devuelve en `buscarViajes`), solo falta mostrarlo en frontend como "quedan X asientos"
+
+**Regla de contenido importante, ya decidida:** ningún espacio publicitario aparece dentro del flujo de compra (resultados de búsqueda, mapa de asientos, checkout) — todos viven únicamente en la landing pública, antes de que el usuario entre a comprar.
+
+
+1. Módulo comercial/publicidad real (el próximo a construir)
+2. Facturación electrónica SRI — nota importante: el propio código marca el diseño de "3 comprobantes por venta" (cooperativa/terminal/plataforma) como propuesta técnica pendiente de validar con un contador/tributarista real; no construir a fondo sin esa validación, o dejar explícitamente marcado como "propuesto, no validado legalmente"
+3. Pagos reales con Kushki
+4. Liquidaciones (ver investigación de mercado en esta sesión: Kushki solo divide 2 vías por transacción; el modelo real de redBus/Busbud/Uber/Airbnb es cobrar todo y liquidar periódicamente — nuestro diseño ya usa ese híbrido correcto)
 5. Ejecutar despliegue a Render/Vercel (decisión ya tomada, ver sección 4.2)
 6. Frontend completo (rebrand + diseño)
 
@@ -228,4 +249,4 @@ Si no se hace esto, el backend no reconoce columnas/tablas nuevas aunque la migr
 
 ## 10. Resumen de una línea para arrancar rápido
 
-*Colombus (antes TicketYa) es una plataforma de venta de pasajes de bus interprovincial en Ecuador, con vocación de cobertura nacional completa (26 puntos de operación cargados en 25 ciudades). Software real (NestJS+Next.js+Postgres) con backend en construcción activa siguiendo "funcionalidad primero, frontend al final": Fase 1 completa, coordenadas para Maps, recuperación de contraseña, y notificación automática de compra confirmada — todo probado (88/88 tests, seis rondas seguidas) y en GitHub (commit `10f9f7d`). El despliegue a producción YA está decidido (Render + Vercel) pero aún no ejecutado — sigue en localhost. Aún dice "TicketYa" en `apps/web`, pendiente de rebrand en la fase de frontend. Existe además un demo HTML de pitch, ya rebrandeado a Colombus, con Netlify resuelto, en proceso de pulido visual. Siguiente paso técnico: liquidaciones, facturación SRI, módulo comercial, o pagos con Kushki — en ese orden.*
+*Columbus (antes TicketYa) es una plataforma de venta de pasajes de bus interprovincial en Ecuador, con vocación de cobertura nacional completa (26 puntos de operación cargados en 25 ciudades). Software real (NestJS+Next.js+Postgres) con backend en construcción activa siguiendo "funcionalidad primero, frontend al final": Fase 1 completa, coordenadas para Maps, recuperación de contraseña, y notificación automática de compra confirmada — todo probado (88/88 tests, seis rondas seguidas) y en GitHub (commit `10f9f7d`). El despliegue a producción YA está decidido (Render + Vercel) pero aún no ejecutado — sigue en localhost. Aún dice "TicketYa" en `apps/web`, pendiente de rebrand en la fase de frontend. Existe además un demo HTML de pitch, ya rebrandeado a Columbus, con Netlify resuelto, en proceso de pulido visual. Siguiente paso técnico: liquidaciones, facturación SRI, módulo comercial, o pagos con Kushki — en ese orden.*
