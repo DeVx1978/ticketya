@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -11,6 +11,7 @@ import { VentasModule } from './presentacion/ventas/ventas.module';
 import { AdminModule } from './presentacion/admin/admin.module';
 import { PanelEmpresaModule } from './presentacion/panelempresa/panel-empresa.module';
 import { CalificacionesModule } from './presentacion/calificaciones/calificaciones.module';
+import { ComercialModule } from './presentacion/comercial/comercial.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CalificacionesModule } from './presentacion/calificaciones/calificacion
     AdminModule,
     PanelEmpresaModule,
     CalificacionesModule,
+    ComercialModule,
   ],
   controllers: [AppController, SaludController],
   providers: [AppService],
