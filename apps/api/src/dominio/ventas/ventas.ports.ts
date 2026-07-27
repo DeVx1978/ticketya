@@ -203,6 +203,7 @@ export interface ReciboCompra {
   montoCargoPlataforma: number;
   montoTasaTerminal: number;
   montoImpuestos: number;
+  ivaVisible: boolean;
   pagoProveedor: string;
   pagoEstado: string;
   boletos: DetalleBoletoRecibo[];

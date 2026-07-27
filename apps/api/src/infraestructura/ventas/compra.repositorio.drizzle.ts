@@ -466,13 +466,27 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .innerJoin(destino, eq(rutas.destinoPuntoOperacionId, destino.id))
       .where(eq(boletos.compraId, compraId));
 
+    // 27-jul-2026 -- mismo criterio que en CheckoutService: el valor
+    // real sigue en compras.montoImpuestos sin tocarse; solo se
+    // transforma lo que se le devuelve al pasajero en este recibo,
+    // segun el modo configurado desde el Panel Admin.
+    const modoIva = await this.obtenerModoIvaBoleto();
+    let montoImpuestosRespuesta = Number(compra.montoImpuestos);
+    let ivaVisible = true;
+    if (modoIva === 'cero') {
+      montoImpuestosRespuesta = 0;
+    } else if (modoIva === 'oculto') {
+      ivaVisible = false;
+    }
+
     return {
       compraId: compra.id,
       montoTotal: Number(compra.montoTotal),
       montoTarifasCooperativa: Number(compra.montoTarifasCooperativa),
       montoCargoPlataforma: Number(compra.montoCargoPlataforma),
       montoTasaTerminal: Number(compra.montoTasaTerminal),
-      montoImpuestos: Number(compra.montoImpuestos),
+      montoImpuestos: montoImpuestosRespuesta,
+      ivaVisible,
       pagoProveedor: pago?.proveedor ?? 'desconocido',
       pagoEstado: pago?.estado ?? 'desconocido',
       boletos: filasBoletos.map((b) => ({
