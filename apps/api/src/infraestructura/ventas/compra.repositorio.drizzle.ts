@@ -1,5 +1,6 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { eq, and, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { randomUUID } from 'node:crypto';
 import {
   viajes,
@@ -25,6 +26,7 @@ import type {
   MapeoAsientoPasajero,
   PagoExistente,
   BoletoEmitido,
+  ReciboCompra,
 } from '../../dominio/ventas/ventas.ports';
 import {
   factorDescuento,
@@ -398,5 +400,89 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .where(eq(viajeAsientos.id, fila.viajeAsientoId));
 
     return { ok: true };
+  }
+
+  async obtenerReciboCompra(
+    compraId: string,
+    usuarioId: string,
+  ): Promise<ReciboCompra | null> {
+    const [compra] = await this.dbPublico
+      .select({
+        id: compras.id,
+        compradorUsuarioId: compras.compradorUsuarioId,
+        montoTotal: compras.montoTotal,
+        montoTarifasCooperativa: compras.montoTarifasCooperativa,
+        montoCargoPlataforma: compras.montoCargoPlataforma,
+        montoTasaTerminal: compras.montoTasaTerminal,
+        montoImpuestos: compras.montoImpuestos,
+      })
+      .from(compras)
+      .where(eq(compras.id, compraId));
+
+    // Igual que en validarBoletoPorQr: no se distingue "no existe" de
+    // "no te pertenece" -- nunca se revela si una compra ajena existe.
+    if (!compra || compra.compradorUsuarioId !== usuarioId) {
+      return null;
+    }
+
+    const [pago] = await this.dbPublico
+      .select({ proveedor: pagos.proveedor, estado: pagos.estado })
+      .from(pagos)
+      .where(eq(pagos.compraId, compraId));
+
+    // Drizzle exige alias() para unir la misma tabla dos veces en una
+    // sola consulta (aqui: puntos_operacion como origen Y como destino).
+    const origen = alias(puntosOperacion, 'origen');
+    const destino = alias(puntosOperacion, 'destino');
+
+    const filasBoletos = await this.dbPublico
+      .select({
+        boletoId: boletos.id,
+        codigoQr: boletos.codigoQr,
+        numeroAsiento: viajeAsientos.numeroAsiento,
+        precioPagado: boletos.precioPagado,
+        estado: boletos.estado,
+        pasajeroNombre: pasajerosCompra.nombreCompleto,
+        pasajeroDocumento: pasajerosCompra.documento,
+        cooperativaNombre: cooperativas.nombreComercial,
+        rutaOrigenCiudad: origen.ciudad,
+        rutaDestinoCiudad: destino.ciudad,
+        fechaSalida: viajes.fechaSalida,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+      })
+      .from(boletos)
+      .innerJoin(pasajerosCompra, eq(boletos.pasajeroCompraId, pasajerosCompra.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
+      .innerJoin(cooperativas, eq(boletos.cooperativaId, cooperativas.id))
+      .innerJoin(origen, eq(rutas.origenPuntoOperacionId, origen.id))
+      .innerJoin(destino, eq(rutas.destinoPuntoOperacionId, destino.id))
+      .where(eq(boletos.compraId, compraId));
+
+    return {
+      compraId: compra.id,
+      montoTotal: Number(compra.montoTotal),
+      montoTarifasCooperativa: Number(compra.montoTarifasCooperativa),
+      montoCargoPlataforma: Number(compra.montoCargoPlataforma),
+      montoTasaTerminal: Number(compra.montoTasaTerminal),
+      montoImpuestos: Number(compra.montoImpuestos),
+      pagoProveedor: pago?.proveedor ?? 'desconocido',
+      pagoEstado: pago?.estado ?? 'desconocido',
+      boletos: filasBoletos.map((b) => ({
+        boletoId: b.boletoId,
+        codigoQr: b.codigoQr,
+        numeroAsiento: b.numeroAsiento,
+        precioPagado: Number(b.precioPagado),
+        estado: b.estado,
+        pasajeroNombre: b.pasajeroNombre,
+        pasajeroDocumento: b.pasajeroDocumento,
+        cooperativaNombre: b.cooperativaNombre,
+        rutaOrigenCiudad: b.rutaOrigenCiudad,
+        rutaDestinoCiudad: b.rutaDestinoCiudad,
+        fechaSalida: b.fechaSalida,
+        horaSalidaProgramada: b.horaSalidaProgramada,
+      })),
+    };
   }
 }

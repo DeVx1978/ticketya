@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Dominio de ventas — RF-CHECK, RN-001, RN-002.
  */
 
@@ -159,8 +159,41 @@ export interface CompraRepositorio {
    * (vuelve a 'disponible', comprable por otro pasajero) y marca el
    * boleto como 'cancelado'.
    */
+  /** Recibo completo de una compra -- solo si le pertenece al usuario. */
+  obtenerReciboCompra(
+    compraId: string,
+    usuarioId: string,
+  ): Promise<ReciboCompra | null>;
+
   cancelarBoleto(
     boletoId: string,
     usuarioId: string,
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+}
+
+export interface DetalleBoletoRecibo {
+  boletoId: string;
+  codigoQr: string;
+  numeroAsiento: string;
+  precioPagado: number;
+  estado: string;
+  pasajeroNombre: string;
+  pasajeroDocumento: string;
+  cooperativaNombre: string;
+  rutaOrigenCiudad: string;
+  rutaDestinoCiudad: string;
+  fechaSalida: string;
+  horaSalidaProgramada: string;
+}
+
+export interface ReciboCompra {
+  compraId: string;
+  montoTotal: number;
+  montoTarifasCooperativa: number;
+  montoCargoPlataforma: number;
+  montoTasaTerminal: number;
+  montoImpuestos: number;
+  pagoProveedor: string;
+  pagoEstado: string;
+  boletos: DetalleBoletoRecibo[];
 }

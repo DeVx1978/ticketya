@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
   CompraRepositorio,
@@ -145,5 +145,9 @@ export class CheckoutService {
 
   async cancelarBoleto(boletoId: string, usuarioId: string) {
     return this.compras.cancelarBoleto(boletoId, usuarioId);
+  }
+
+  async obtenerReciboCompra(compraId: string, usuarioId: string) {
+    return this.compras.obtenerReciboCompra(compraId, usuarioId);
   }
 }

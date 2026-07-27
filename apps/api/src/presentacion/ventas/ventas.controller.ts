@@ -1,7 +1,8 @@
-import {
+﻿import {
   Body,
   Controller,
   Post,
+  Get,
   Param,
   Request,
   UseGuards,
@@ -51,5 +52,22 @@ export class VentasController {
       throw new HttpException(resultado.motivo, HttpStatus.BAD_REQUEST);
     }
     return { ok: true };
+  }
+
+  /** Recibo completo de una compra propia -- detalle de viaje, pasajeros y pago. */
+  @UseGuards(JwtAuthGuard)
+  @Get(':compraId')
+  async obtenerRecibo(
+    @Param('compraId') compraId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const recibo = await this.checkout.obtenerReciboCompra(
+      compraId,
+      req.user.sub,
+    );
+    if (!recibo) {
+      throw new HttpException('Compra no encontrada.', HttpStatus.NOT_FOUND);
+    }
+    return recibo;
   }
 }
