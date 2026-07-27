@@ -264,6 +264,46 @@ Decisión de negocio: cada cooperativa maneja su propia relación con el SRI de 
 
 ---
 
+## 8.5 MAPA COMPLETO Y DEFINITIVO — todo lo que falta para terminar el software (27-jul-2026)
+
+Consolidado a pedido explícito del usuario: "necesito que terminemos el software". Este es el orden de trabajo acordado, de aquí hasta el final.
+
+### Fase A — Funcionalidad restante que NO depende de decisiones de negocio (siguiente en construirse)
+1. **Subida real de archivos (fotos de perfil, logo de cooperativa)** — con `SimuladorAlmacenamiento` (mismo patrón que pagos/notificaciones), conectar Cloudinary/S3 real al final
+2. **Verificación de correo al registrarse** — el campo `correoVerificado` existe, nada lo activa todavía
+3. **`GET /compras/:id` (recibo) debe respetar `modoIvaBoleto`** — quedó fuera de alcance a propósito el 27-jul, falta cerrarlo
+4. **Reprogramación de viaje con crédito/voucher** cuando la cooperativa cancela por causa mayor (clima, avería total) — distinto de "cambiar unidad", que ya existe
+5. **Editar tipos de vehículo con boletos ya vendidos** — hoy bloqueado por completo, evaluar flexibilizar en casos específicos
+
+### Fase B — Seguridad de producción (nadie la había mencionado hasta el 27-jul — crítico antes de producción real)
+6. **Rate limiting** en endpoints públicos (login, registro, búsqueda) — hoy sin límite
+7. **2FA para cuentas admin** (`admin_plataforma`, `admin_cooperativa`)
+8. **Refresh tokens reales** — la tabla `tokens_usuario` con propósito `refresh_session` ya existe, el flujo no
+9. **Revisar cumplimiento de la Ley Orgánica de Protección de Datos Personales de Ecuador** (vigente desde 2021) — maneja cédulas, menores de edad, ubicación
+10. **Backups automáticos de base de datos** — depende de dónde se despliegue
+11. **Monitoreo y alertas** de caídas/errores en producción
+12. **`npm audit`** — nunca corrido en esta sesión
+
+### Fase C — Dinero e impuestos reales (deliberadamente al final, ya acordado)
+13. **Facturación electrónica SRI** — comprobante de Columbus por su cargo de plataforma únicamente (no por la tarifa completa — ver investigación de precedente Uber). Diseño de "hasta 3 comprobantes por venta" sigue marcado como propuesto, pendiente de validar con contador real
+14. **Pagos reales con Kushki** — split 2 vías por transacción para el caso simple (una cooperativa), liquidación periódica para el resto
+15. **Liquidaciones** (cooperativa y terminal) — mismo modelo que usa redBus/Uber a nivel mundial: cobrar todo, liquidar por periodo
+16. **Reembolso monetario real** al cancelar un boleto — depende de que haya pagos reales primero
+
+### Fase D — Infraestructura
+17. **Ejecutar el despliegue** a Render (backend + Postgres) y Vercel (frontend) — decisión ya tomada, falta ejecutarla
+18. **Cache (Redis u otro)** para búsquedas frecuentes — no urgente al volumen del piloto, sí a nivel nacional
+19. **Prueba de carga real** — nunca se ha simulado tráfico alto
+
+### Fase E — Frontend (al final de todo, ya acordado)
+20. **Rebrand de `apps/web`** — sigue diciendo "TicketYa" en el código real
+21. **Diseño visual final**, llevando `apps/web` al nivel del demo HTML (hero, buscador horizontal, cooperativas expandibles, publicidad, todo lo ya definido)
+
+### Aclaración de metodología ya acordada hoy, aplica a TODA la Fase C y a la Fase A-1
+**Se construye el flujo completo y funcional primero, con un simulador en el lugar de cada herramienta externa** (pagos, correo, almacenamiento de archivos, proveedor SRI) — al final, cuando todo lo demás esté terminado, se conectan las herramientas reales una por una, sin tocar el resto del sistema. Mismo patrón ya probado con éxito en `simulador.pasarela.ts` y `SimuladorNotificador`.
+
+---
+
 ## 9. Decisiones de negocio aún pendientes (no técnicas)
 
 - % de comisión final de la plataforma (referencia $0.50 fijo, no confirmado oficialmente)
