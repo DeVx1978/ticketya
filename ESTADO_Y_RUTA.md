@@ -104,7 +104,7 @@ El demo es un único archivo autocontenido (HTML+CSS+JS, sin build step, fuentes
 
 ---
 
-## 5. El módulo de publicidad — análisis y plan ya definido (pendiente de construir)
+## 5. El módulo de publicidad — ✅ construido (ver sección 7 para el detalle completo de los 3 bloques)
 
 El usuario preguntó explícitamente cómo se manejaría la publicidad real. Ya se le dio una respuesta completa como experto en ad-tech, resumida aquí para no repetirla:
 
@@ -221,6 +221,34 @@ Si no se hace esto, el backend no reconoce columnas/tablas nuevas aunque la migr
 - Comitear y subir a GitHub al cierre de cada bloque de funcionalidad cerrada, no acumular cambios sin respaldar.
 - Para cambios en base de datos con riesgo de llaves foráneas (`DELETE`/`UPDATE`), dar **un solo paso SQL a la vez**, nunca varios bloques seguidos — el usuario pidió esto explícitamente tras confundirse con pasos encadenados.
 
+### Módulo comercial (RF-COMM) — ✅ COMPLETO, los 3 bloques (27-jul-2026)
+- **Bloque 1:** `POST/GET /admin/espacios-publicitarios`, `POST/GET /admin/planes-comerciales`
+- **Bloque 2:** `POST /publicidad/leads` (público), `GET/PATCH /admin/leads`, `POST/GET /admin/campanas`, `PATCH /admin/campanas/:id/aprobar|rechazar` (moderación obligatoria, nunca pasa a activa sin aprobación explícita)
+- **Bloque 3:** `GET /publicidad/activas?ubicacion=X` (público, filtra por vigencia real de fecha), `POST /publicidad/:id/impresion|clic` (público, solo cuenta si la campaña sigue activa), `GET /admin/campanas/:id/metricas`
+- Los 4 espacios publicitarios acordados (banner 970×250, nativo 300×250, video 640×360, vertical 300×600) listos para insertarse como datos iniciales
+- **Probado en vivo de punta a punta** con llamadas HTTP reales: se creó un espacio, un plan, una campaña, se aprobó, y apareció correctamente en `/publicidad/activas` con todos sus datos — incluida la protección de "no se puede aprobar dos veces".
+- Commits: `e8fb0f3` (bloque 1), `28eb281` (bloque 2), `60e5e38` (bloque 3 + arreglos)
+- Con esto, el módulo comercial/publicidad real queda fuera de la lista de pendientes.
+
+### ⚠️ Hallazgo crítico de verificación — cambia el protocolo de aquí en adelante
+**`npm run test:e2e` (Jest) no detecta todos los errores de compilación de TypeScript.** Se descubrió al correr `npm run start:dev` (que usa `tsc --watch` real) y aparecieron 3 errores reales que Jest nunca había señalado en docenas de corridas exitosas anteriores.
+
+**Los 3 errores reales que esto dejó pasar sin que Jest se diera cuenta:**
+1. `editarTipoVehiculo`/`editarRuta` nunca se agregaron a la interfaz `PanelEmpresaRepositorio` en `panel-empresa.ports.ts` (Fase 1, 26-jul) — solo se agregaron los tipos de datos, no la firma del método en la interfaz principal.
+2. `horaSalidaProgramada` en el recibo de compra se tipó como `string` en el dominio pero la columna real es `timestamp` (Drizzle la mapea a `Date`) — faltaba `.toISOString()`.
+3. `formatosPermitidos` en `CrearPlanComercialDto` no tenía ningún decorador de `class-validator` — el modo `whitelist` de NestJS lo rechazaba en tiempo de ejecución, un error que ni Jest ni `tsc` detectan (es de validación en runtime, no de tipos) — se encontró recién al probar con una llamada HTTP real.
+
+**Nueva regla de verificación, vigente desde ahora:** para trabajo de backend importante/delicado, no basta con `npm run test:e2e` — hay que además (a) tener `npm run start:dev` corriendo en una terminal aparte y confirmar "Found 0 errors" tras cada cambio, y (b) para módulos nuevos, hacer al menos una prueba real con `Invoke-RestMethod` de punta a punta. El código de sesiones anteriores puede tener huecos similares nunca detectados por Jest — no asumir que está limpio hasta confirmarlo con `tsc --watch`.
+
+
+
+### Modo de IVA del boleto configurable — ✅ COMPLETO (27-jul-2026)
+Decisión de negocio: cada cooperativa maneja su propia relación con el SRI de forma independiente; Colombus no debe afirmar un IVA sobre la tarifa del pasaje que no le corresponde declarar legalmente. Se agregó `configuracion_plataforma.modo_iva_boleto` (`'calculado' | 'cero' | 'oculto'`), editable desde `GET/PATCH /admin/modo-iva-boleto` — **el valor real del IVA nunca se pierde**, sigue calculándose y guardándose igual en `boletos.ivaMonto`; solo se transforma lo que ve el pasajero en la respuesta del checkout. **Probado con una compra real de punta a punta**: se cambió el modo a `'cero'` desde el endpoint de admin, se completó una compra real (bloqueo de asiento + pago) con un pasajero de prueba, y `ivaTotal` salió en `0` tal como se esperaba. Queda activo en modo `'cero'` en la base de datos por decisión del usuario — se puede cambiar a `'calculado'` en cualquier momento con un solo `PATCH`, sin tocar código. Commit `70813cd`.
+
+**Contexto de negocio importante que motivó esto:** se investigó cómo Uber factura en Ecuador (el precedente más cercano) — la plataforma factura solo su comisión, el conductor factura su propio servicio por separado, cada uno con su propio RUC. Esto confirma que el diseño de Colombus (comprobante propio solo por el cargo de plataforma, no por la tarifa completa) es coherente con la regla general del SRI (la base imponible de cada contribuyente es el valor de lo que él mismo vendió) y con el precedente real más fuerte del país para este tipo de plataforma.
+
+**Hallazgo menor anotado, sin resolver todavía:** al buscar puntos de operación de Machala apareció basura de pruebas automatizadas nueva ("Origen Calif...", "Origen Checkout...") — mismo patrón recurrente de siempre, revisar cuando se retome limpieza de datos.
+
 ---
 
 ## 8. Reglas de trabajo obligatorias (aprendidas a pulso en esta conversación)
@@ -249,4 +277,4 @@ Si no se hace esto, el backend no reconoce columnas/tablas nuevas aunque la migr
 
 ## 10. Resumen de una línea para arrancar rápido
 
-*Columbus (antes TicketYa) es una plataforma de venta de pasajes de bus interprovincial en Ecuador, con vocación de cobertura nacional completa (26 puntos de operación cargados en 25 ciudades). Software real (NestJS+Next.js+Postgres) con backend en construcción activa siguiendo "funcionalidad primero, frontend al final": Fase 1 completa, coordenadas para Maps, recuperación de contraseña, y notificación automática de compra confirmada — todo probado (88/88 tests, seis rondas seguidas) y en GitHub (commit `10f9f7d`). El despliegue a producción YA está decidido (Render + Vercel) pero aún no ejecutado — sigue en localhost. Aún dice "TicketYa" en `apps/web`, pendiente de rebrand en la fase de frontend. Existe además un demo HTML de pitch, ya rebrandeado a Columbus, con Netlify resuelto, en proceso de pulido visual. Siguiente paso técnico: liquidaciones, facturación SRI, módulo comercial, o pagos con Kushki — en ese orden.*
+*Columbus (antes TicketYa) es una plataforma de venta de pasajes de bus interprovincial en Ecuador, con vocación de cobertura nacional completa (26 puntos de operación cargados en 25 ciudades). Software real (NestJS+Next.js+Postgres) con backend en construcción activa siguiendo "funcionalidad primero, frontend al final": Fase 1, coordenadas de búsqueda, recuperación de contraseña, notificaciones de compra, módulo comercial/publicidad completo, y modo de IVA del boleto configurable desde el Panel Admin — todo probado con llamadas HTTP reales, no solo tests automatizados, y respaldado en GitHub (commit `70813cd`). Hallazgo importante de hoy: Jest no detecta todos los errores de compilación reales — desde ahora se verifica también con `npm run start:dev` (tsc --watch) y pruebas HTTP reales para trabajo delicado. El despliegue a producción ya está decidido (Render + Vercel) pero no ejecutado — sigue en localhost. Aún dice "TicketYa" en `apps/web`, pendiente de rebrand en la fase de frontend. Existe además un demo HTML de pitch, ya rebrandeado a Columbus (ortografía corregida el 27-jul), con despliegue en Netlify resuelto. Siguiente en la fila: facturación electrónica SRI, pagos Kushki, y liquidaciones — deliberadamente al final por tocar dinero e impuestos reales.*
