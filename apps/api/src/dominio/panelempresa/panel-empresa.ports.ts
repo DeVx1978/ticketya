@@ -223,6 +223,11 @@ export interface PanelEmpresaRepositorio {
   ): Promise<{ id: string }>;
   /** Tipos de vehículo de la cooperativa — se necesita antes de poder crear una unidad. */
   listarTiposVehiculo(cooperativaId: string): Promise<TipoVehiculoResumen[]>;
+  editarTipoVehiculo(
+    cooperativaId: string,
+    tipoVehiculoId: string,
+    datos: DatosEditarTipoVehiculo,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
   crearUnidad(
     cooperativaId: string,
     datos: DatosNuevaUnidad,
@@ -249,6 +254,11 @@ export interface PanelEmpresaRepositorio {
   ): Promise<{ id: string }>;
   /** Rutas de la cooperativa, para elegir al armar un viaje o solo para revisar lo que ya existe. */
   listarRutas(cooperativaId: string): Promise<RutaResumen[]>;
+  editarRuta(
+    cooperativaId: string,
+    rutaId: string,
+    datos: DatosEditarRuta,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
   crearViaje(
     cooperativaId: string,
     datos: DatosNuevoViaje,

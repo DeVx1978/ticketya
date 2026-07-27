@@ -1,4 +1,5 @@
 ﻿import {
+  IsArray,
   IsBoolean,
   IsEmail,
   IsIn,
@@ -50,7 +51,8 @@ export class CrearPlanComercialDto {
   @Min(1)
   duracionDiasDefault?: number;
 
-  formatosPermitidos!: unknown;
+  @IsArray()
+  formatosPermitidos!: string[];
 }
 
 export class CrearLeadDto {
@@ -110,4 +112,10 @@ export class CrearCampanaDto {
 
   @IsISO8601()
   fechaFin!: string;
+}
+
+export class ListarActivasDto {
+  @IsString()
+  @MinLength(1)
+  ubicacion!: string;
 }

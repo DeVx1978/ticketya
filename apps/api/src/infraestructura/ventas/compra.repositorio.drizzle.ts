@@ -487,7 +487,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         rutaOrigenCiudad: b.rutaOrigenCiudad,
         rutaDestinoCiudad: b.rutaDestinoCiudad,
         fechaSalida: b.fechaSalida,
-        horaSalidaProgramada: b.horaSalidaProgramada,
+        horaSalidaProgramada: b.horaSalidaProgramada.toISOString(),
       })),
     };
   }

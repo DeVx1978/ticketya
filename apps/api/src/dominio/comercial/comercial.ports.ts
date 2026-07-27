@@ -2,6 +2,7 @@
  * Dominio comercial y monetizacion publicitaria -- RF-COMM.
  * Bloque 1: espacios publicitarios + planes comerciales.
  * Bloque 2: leads de anunciantes + campanas + moderacion.
+ * Bloque 3: servir campanas activas a la landing + metricas.
  */
 
 export interface DatosNuevoEspacioPublicitario {
@@ -95,6 +96,22 @@ export interface CampanaResumen {
   aprobadoEn: Date | null;
 }
 
+/** RF-COMM-005 -- lo que la landing publica necesita para renderizar un anuncio, sin exponer nada mas. */
+export interface CampanaActiva {
+  campanaId: string;
+  nombreAnunciante: string;
+  formato: string;
+  archivoUrl: string;
+  anchoPx: number | null;
+  altoPx: number | null;
+}
+
+export interface MetricaDia {
+  fecha: string;
+  impresiones: number;
+  clics: number;
+}
+
 export interface ComercialRepositorio {
   crearEspacioPublicitario(
     datos: DatosNuevoEspacioPublicitario,
@@ -122,4 +139,21 @@ export interface ComercialRepositorio {
   rechazarCampana(
     campanaId: string,
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  /**
+   * RF-COMM-005 -- solo campanas con estado='activa' Y hoy dentro de su
+   * vigencia (fechaInicio/fechaFin), para el espacio pedido. Publico,
+   * sin login -- es lo que alimenta la landing en vivo.
+   */
+  listarCampanasActivas(ubicacion: string): Promise<CampanaActiva[]>;
+
+  /**
+   * Solo incrementa si la campana existe y sigue 'activa' -- protege
+   * contra inflar metricas de campanas vencidas/rechazadas con un ID
+   * inventado o viejo.
+   */
+  registrarImpresion(campanaId: string): Promise<void>;
+  registrarClic(campanaId: string): Promise<void>;
+
+  obtenerMetricasCampana(campanaId: string): Promise<MetricaDia[]>;
 }

@@ -91,4 +91,9 @@ export class ComercialController {
     }
     return resultado;
   }
+
+  @Get('campanas/:id/metricas')
+  async obtenerMetricasCampana(@Param('id') id: string) {
+    return this.comercial.obtenerMetricasCampana(id);
+  }
 }

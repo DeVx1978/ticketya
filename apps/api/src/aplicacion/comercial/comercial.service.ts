@@ -63,4 +63,20 @@ export class ComercialService {
   rechazarCampana(campanaId: string) {
     return this.comercial.rechazarCampana(campanaId);
   }
+
+  listarCampanasActivas(ubicacion: string) {
+    return this.comercial.listarCampanasActivas(ubicacion);
+  }
+
+  registrarImpresion(campanaId: string) {
+    return this.comercial.registrarImpresion(campanaId);
+  }
+
+  registrarClic(campanaId: string) {
+    return this.comercial.registrarClic(campanaId);
+  }
+
+  obtenerMetricasCampana(campanaId: string) {
+    return this.comercial.obtenerMetricasCampana(campanaId);
+  }
 }

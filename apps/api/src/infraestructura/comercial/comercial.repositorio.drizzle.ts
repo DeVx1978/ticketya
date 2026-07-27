@@ -1,10 +1,11 @@
 ﻿import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import {
   espaciosPublicitarios,
   planesComerciales,
   leadsAnunciantes,
   campanasPublicitarias,
+  metricasPublicitarias,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -18,6 +19,8 @@ import type {
   PlanComercialResumen,
   LeadResumen,
   CampanaResumen,
+  CampanaActiva,
+  MetricaDia,
   EstadoLead,
 } from '../../dominio/comercial/comercial.ports';
 
@@ -212,5 +215,100 @@ export class ComercialRepositorioDrizzle implements ComercialRepositorio {
       .set({ estado: 'rechazada' })
       .where(eq(campanasPublicitarias.id, campanaId));
     return { ok: true };
+  }
+
+  async listarCampanasActivas(ubicacion: string): Promise<CampanaActiva[]> {
+    const hoy = new Date().toISOString().slice(0, 10);
+    const filas = await this.db
+      .select({
+        campanaId: campanasPublicitarias.id,
+        nombreAnunciante: campanasPublicitarias.nombreAnunciante,
+        formato: campanasPublicitarias.formato,
+        archivoUrl: campanasPublicitarias.archivoUrl,
+        anchoPx: espaciosPublicitarios.anchoPx,
+        altoPx: espaciosPublicitarios.altoPx,
+      })
+      .from(campanasPublicitarias)
+      .innerJoin(
+        espaciosPublicitarios,
+        eq(campanasPublicitarias.espacioPublicitarioId, espaciosPublicitarios.id),
+      )
+      .where(
+        and(
+          eq(campanasPublicitarias.estado, 'activa'),
+          eq(espaciosPublicitarios.ubicacion, ubicacion),
+          eq(espaciosPublicitarios.activo, true),
+          lte(campanasPublicitarias.fechaInicio, hoy),
+          gte(campanasPublicitarias.fechaFin, hoy),
+        ),
+      );
+    return filas;
+  }
+
+  /**
+   * Verifica primero, luego inserta o actualiza -- no hay restriccion
+   * unica (campana, fecha) en la base todavia (solo un indice), asi que
+   * no se usa un upsert real de SQL. Aceptable para el volumen del
+   * piloto; si el trafico crece mucho, conviene agregar la restriccion
+   * unica en una migracion futura.
+   */
+  private async incrementarMetrica(
+    campanaId: string,
+    tipo: 'impresiones' | 'clics',
+  ): Promise<void> {
+    const campana = await this.db.query.campanasPublicitarias.findFirst({
+      where: eq(campanasPublicitarias.id, campanaId),
+    });
+    if (!campana || campana.estado !== 'activa') return;
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const existente = await this.db.query.metricasPublicitarias.findFirst({
+      where: and(
+        eq(metricasPublicitarias.campanaPublicitariaId, campanaId),
+        eq(metricasPublicitarias.fecha, hoy),
+      ),
+    });
+
+    if (existente) {
+      if (tipo === 'impresiones') {
+        await this.db
+          .update(metricasPublicitarias)
+          .set({ impresiones: existente.impresiones + 1 })
+          .where(eq(metricasPublicitarias.id, existente.id));
+      } else {
+        await this.db
+          .update(metricasPublicitarias)
+          .set({ clics: existente.clics + 1 })
+          .where(eq(metricasPublicitarias.id, existente.id));
+      }
+    } else {
+      await this.db.insert(metricasPublicitarias).values({
+        campanaPublicitariaId: campanaId,
+        fecha: hoy,
+        impresiones: tipo === 'impresiones' ? 1 : 0,
+        clics: tipo === 'clics' ? 1 : 0,
+      });
+    }
+  }
+
+  async registrarImpresion(campanaId: string): Promise<void> {
+    await this.incrementarMetrica(campanaId, 'impresiones');
+  }
+
+  async registrarClic(campanaId: string): Promise<void> {
+    await this.incrementarMetrica(campanaId, 'clics');
+  }
+
+  async obtenerMetricasCampana(campanaId: string): Promise<MetricaDia[]> {
+    const filas = await this.db
+      .select({
+        fecha: metricasPublicitarias.fecha,
+        impresiones: metricasPublicitarias.impresiones,
+        clics: metricasPublicitarias.clics,
+      })
+      .from(metricasPublicitarias)
+      .where(eq(metricasPublicitarias.campanaPublicitariaId, campanaId))
+      .orderBy(metricasPublicitarias.fecha);
+    return filas;
   }
 }
