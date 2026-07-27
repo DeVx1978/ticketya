@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable } from '@nestjs/common';
+import { alias } from 'drizzle-orm/pg-core';
 import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import {
   viajes,
@@ -51,6 +52,8 @@ export class BusquedaService {
         ciudad: puntosOperacion.ciudad,
         provincia: puntosOperacion.provincia,
         tipo: puntosOperacion.tipo,
+        latitud: puntosOperacion.latitud,
+        longitud: puntosOperacion.longitud,
       })
       .from(puntosOperacion)
       .where(
@@ -77,6 +80,10 @@ export class BusquedaService {
     fecha: string,
     pasajerosMinimos: number,
   ) {
+    // Union doble de puntos_operacion: una vez como origen, otra como destino.
+    const origen = alias(puntosOperacion, 'origen');
+    const destino = alias(puntosOperacion, 'destino');
+
     // Subconsulta escalar: asientos NO disponibles (ocupados o en hold)
     // para este viaje específico. Si el viaje todavía no tiene filas en
     // viaje_asientos (nunca se inicializó su mapa), el count da 0 y toda
@@ -116,12 +123,18 @@ export class BusquedaService {
         precioBase: viajes.precioBase,
         tipoVehiculoNombre: tiposVehiculo.nombre,
         asientosDisponibles: asientosDisponibles.as('asientos_disponibles'),
+        origenLatitud: origen.latitud,
+        origenLongitud: origen.longitud,
+        destinoLatitud: destino.latitud,
+        destinoLongitud: destino.longitud,
       })
       .from(viajes)
       .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
       .innerJoin(cooperativas, eq(viajes.cooperativaId, cooperativas.id))
       .innerJoin(unidades, eq(viajes.unidadId, unidades.id))
       .innerJoin(tiposVehiculo, eq(unidades.tipoVehiculoId, tiposVehiculo.id))
+      .innerJoin(origen, eq(rutas.origenPuntoOperacionId, origen.id))
+      .innerJoin(destino, eq(rutas.destinoPuntoOperacionId, destino.id))
       .where(
         and(
           eq(rutas.origenPuntoOperacionId, origenId),
