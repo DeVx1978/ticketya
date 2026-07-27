@@ -170,6 +170,9 @@ export interface CompraRepositorio {
     usuarioId: string,
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 
+  /** 27-jul-2026 -- controla como se muestra el IVA al pasajero en el checkout. */
+  obtenerModoIvaBoleto(): Promise<'calculado' | 'cero' | 'oculto'>;
+
   /** Registra y envia (via NotificadorEmail) la confirmacion de una compra ya aprobada. Nunca lanza -- si falla, queda registrado como fallido, sin afectar la venta. */
   notificarCompraConfirmada(
     compraId: string,

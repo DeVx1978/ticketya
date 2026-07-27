@@ -20,7 +20,7 @@ export class CheckoutService {
   /**
    * RF-CHECK-001 a 005 completo: valida los asientos, calcula el
    * desglose (RN-001, RN-002), crea la compra pendiente, procesa el pago
-   * (simulado — ver infraestructura/pagos/simulador.pasarela.ts), y según
+   * (simulado -- ver infraestructura/pagos/simulador.pasarela.ts), y segun
    * el resultado confirma (genera boletos + QR, RF-TICKET) o rechaza
    * (deja el hold expirar solo, RF-CHECK-004: "sin bloquear el asiento
    * indefinidamente").
@@ -32,10 +32,9 @@ export class CheckoutService {
   ) {
     const idempotencyKey = idempotencyKeyCliente ?? randomUUID();
 
-    // RF-CHECK-005 — si esta misma clave ya se procesó antes (reintento
+    // RF-CHECK-005 -- si esta misma clave ya se proceso antes (reintento
     // de red del cliente), se devuelve el resultado original en vez de
-    // volver a cobrar. Esto es lo que hace que un doble clic o un
-    // reintento automático del navegador no genere un cargo duplicado.
+    // volver a cobrar.
     const existente =
       await this.compras.buscarPagoPorIdempotencyKey(idempotencyKey);
     if (existente) {
@@ -50,11 +49,8 @@ export class CheckoutService {
       };
     }
 
-    // RF-MENOR — hallazgo real, 22-jul-2026: las tablas de autorización
-    // de menores existían en el esquema desde el diseño original, pero
-    // nunca se exigía nada al comprar — un pasajero con tarifa 'nino'
-    // pasaba sin ningún control. Se valida ANTES de bloquear asientos o
-    // cobrar nada (fail fast), no después.
+    // RF-MENOR -- se valida ANTES de bloquear asientos o cobrar nada
+    // (fail fast), no despues.
     for (let i = 0; i < pasajeros.length; i++) {
       const p = pasajeros[i];
       if (!esMenorDeEdad(p.tipoTarifa, p.fechaNacimiento)) continue;
@@ -62,7 +58,7 @@ export class CheckoutService {
       const auth = p.autorizacionMenor;
       if (!auth) {
         throw new BadRequestException(
-          `El pasajero "${p.nombreCompleto}" es menor de edad — falta indicar cómo viaja acompañado (autorizacionMenor).`,
+          `El pasajero "${p.nombreCompleto}" es menor de edad -- falta indicar como viaja acompanado (autorizacionMenor).`,
         );
       }
       if (auth.tipoAcompanamiento === 'con_padre_madre_tutor') {
@@ -72,19 +68,19 @@ export class CheckoutService {
           !pasajeros[auth.adultoAcompananteIndice]
         ) {
           throw new BadRequestException(
-            `El pasajero "${p.nombreCompleto}" debe indicar el índice de un adulto acompañante distinto, dentro de la misma compra.`,
+            `El pasajero "${p.nombreCompleto}" debe indicar el indice de un adulto acompanante distinto, dentro de la misma compra.`,
           );
         }
         const adulto = pasajeros[auth.adultoAcompananteIndice];
         if (esMenorDeEdad(adulto.tipoTarifa, adulto.fechaNacimiento)) {
           throw new BadRequestException(
-            `El acompañante indicado para "${p.nombreCompleto}" también es menor de edad — debe ser un adulto.`,
+            `El acompanante indicado para "${p.nombreCompleto}" tambien es menor de edad -- debe ser un adulto.`,
           );
         }
       } else if (auth.tipoAcompanamiento === 'con_autorizacion') {
         if (!auth.adultoResponsableNombre || !auth.adultoResponsableDocumento) {
           throw new BadRequestException(
-            `El pasajero "${p.nombreCompleto}" viaja con autorización — falta el nombre y documento del adulto responsable.`,
+            `El pasajero "${p.nombreCompleto}" viaja con autorizacion -- falta el nombre y documento del adulto responsable.`,
           );
         }
       }
@@ -138,17 +134,37 @@ export class CheckoutService {
       montoTotalNotif,
       boletos.length,
     );
+
     const ivaTotal = desglose.reduce((acc, d) => acc + d.ivaMonto, 0);
     // Si la compra mezcla boletos de cooperativas con distinta
-    // configuración de visibilidad, se prefiere mostrarlo (más
+    // configuracion de visibilidad, se prefiere mostrarlo (mas
     // transparente) en vez de ocultarlo por defecto.
-    const ivaVisible = desglose.some((d) => d.ivaVisible);
+    let ivaVisible = desglose.some((d) => d.ivaVisible);
+
+    // 27-jul-2026 -- el valor REAL ya quedo calculado y persistido en
+    // boletos.ivaMonto (dentro de confirmarPago, arriba). Esto solo
+    // transforma lo que se le devuelve al pasajero en la respuesta,
+    // segun el modo configurado desde el Panel Admin -- Colombus no
+    // debe afirmar un IVA sobre la tarifa que no le corresponde
+    // declarar legalmente (cada cooperativa maneja su propia relacion
+    // con el SRI, de forma independiente).
+    const modoIva = await this.compras.obtenerModoIvaBoleto();
+    let ivaTotalRespuesta = Number(ivaTotal.toFixed(2));
+    let boletosRespuesta = boletos;
+
+    if (modoIva === 'cero') {
+      ivaTotalRespuesta = 0;
+      boletosRespuesta = boletos.map((b) => ({ ...b, ivaMonto: 0 }));
+    } else if (modoIva === 'oculto') {
+      ivaVisible = false;
+    }
+
     return {
       compraId,
       estado: 'aprobado' as const,
-      boletos,
+      boletos: boletosRespuesta,
       montoTotal,
-      ivaTotal: Number(ivaTotal.toFixed(2)),
+      ivaTotal: ivaTotalRespuesta,
       ivaVisible,
     };
   }

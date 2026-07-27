@@ -1,4 +1,4 @@
-import {
+﻿import {
   IsEmail,
   IsIn,
   IsNumber,
@@ -80,7 +80,6 @@ export class CrearPuntoOperacionDto {
   tasaMonto?: number;
 }
 
-/** Editar un punto de operación existente — todos los campos opcionales (22-jul-2026). */
 export class ActualizarPuntoOperacionDto {
   @IsOptional()
   @IsIn(['terminal_terrestre', 'oficina_agencia', 'parada_intermedia'])
@@ -108,6 +107,7 @@ export class ActualizarPuntoOperacionDto {
   @Min(0)
   tasaMonto?: number;
 }
+
 export class ActualizarIvaNacionalDto {
   @IsNumber()
   @Min(0)
@@ -115,7 +115,6 @@ export class ActualizarIvaNacionalDto {
   ivaPorcentaje!: number;
 }
 
-/** Banners propios — promoción interna, NO parte de RF-COMM (22-jul-2026). */
 export class CrearBannerPropioDto {
   @IsString()
   @MinLength(2)
@@ -135,15 +134,19 @@ export class CrearBannerPropioDto {
 export class ActualizarBannerPropioDto {
   @IsOptional()
   activo?: boolean;
-
   @IsOptional()
   @IsNumber()
   orden?: number;
 }
 
-/** Cargo fijo de plataforma por pasajero — hallazgo cerrado 22-jul-2026. */
 export class ActualizarCargoPlataformaDto {
   @IsNumber()
   @Min(0)
   monto!: number;
+}
+
+/** 27-jul-2026 -- editable desde el Panel Admin. */
+export class ActualizarModoIvaBoletoDto {
+  @IsIn(['calculado', 'cero', 'oculto'])
+  modo!: 'calculado' | 'cero' | 'oculto';
 }

@@ -542,4 +542,12 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         .where(eq(notificaciones.id, notif.id));
     }
   }
+
+  async obtenerModoIvaBoleto(): Promise<'calculado' | 'cero' | 'oculto'> {
+    const resultado = await this.dbPublico.execute(
+      sql`SELECT modo_iva_boleto FROM configuracion_plataforma LIMIT 1`,
+    );
+    const fila = resultado.rows[0] as { modo_iva_boleto: string } | undefined;
+    return (fila?.modo_iva_boleto as 'calculado' | 'cero' | 'oculto') ?? 'calculado';
+  }
 }

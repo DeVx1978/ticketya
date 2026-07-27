@@ -1,9 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable } from '@nestjs/common';
 import type {
   AdminRepositorio,
   DatosNuevaCooperativa,
   DatosPrimerUsuarioCooperativa,
   DatosNuevoPuntoOperacion,
+  ModoIvaBoleto,
 } from '../../dominio/admin/admin.ports';
 
 export const ADMIN_REPOSITORIO = 'ADMIN_REPOSITORIO';
@@ -91,5 +92,13 @@ export class AdminService {
 
   async eliminarBannerPropio(id: string) {
     return this.admin.eliminarBannerPropio(id);
+  }
+
+  async obtenerModoIvaBoleto() {
+    return this.admin.obtenerModoIvaBoleto();
+  }
+
+  async actualizarModoIvaBoleto(modo: ModoIvaBoleto) {
+    return this.admin.actualizarModoIvaBoleto(modo);
   }
 }

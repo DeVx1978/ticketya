@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+﻿import { Injectable, ConflictException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { sql, eq } from 'drizzle-orm';
 import {
@@ -16,6 +16,7 @@ import type {
   DatosPrimerUsuarioCooperativa,
   DatosNuevoPuntoOperacion,
   FilaVentaNacional,
+  ModoIvaBoleto,
 } from '../../dominio/admin/admin.ports';
 
 /**
@@ -323,5 +324,32 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
 
   async eliminarBannerPropio(id: string): Promise<void> {
     await this.db.delete(bannersPropios).where(eq(bannersPropios.id, id));
+  }
+
+  async obtenerModoIvaBoleto(): Promise<ModoIvaBoleto> {
+    const resultado = await this.db.execute(
+      sql`SELECT modo_iva_boleto FROM configuracion_plataforma LIMIT 1`,
+    );
+    const fila = resultado.rows[0] as { modo_iva_boleto: string } | undefined;
+    return (fila?.modo_iva_boleto as ModoIvaBoleto) ?? 'calculado';
+  }
+
+  async actualizarModoIvaBoleto(modo: ModoIvaBoleto): Promise<void> {
+    const filaExistente = await this.db.execute(
+      sql`SELECT id FROM configuracion_plataforma LIMIT 1`,
+    );
+    if (filaExistente.rows.length === 0) {
+      await this.db.execute(sql`
+        INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, modo_iva_boleto)
+        VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${modo})
+      `);
+    } else {
+      const configuracionId = (filaExistente.rows[0] as { id: string }).id;
+      await this.db.execute(sql`
+        UPDATE configuracion_plataforma
+        SET modo_iva_boleto = ${modo}, actualizado_en = now()
+        WHERE id = ${configuracionId}
+      `);
+    }
   }
 }

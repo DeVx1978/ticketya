@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Get,
@@ -18,20 +18,20 @@ import {
   CrearBannerPropioDto,
   ActualizarBannerPropioDto,
   ActualizarCargoPlataformaDto,
+  ActualizarModoIvaBoletoDto,
 } from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
-/** Todo este controller es exclusivo del admin_plataforma — RF-ADMIN. */
+/** Todo este controller es exclusivo del admin_plataforma -- RF-ADMIN. */
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_plataforma')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
-  /** RF-ADMIN-001 — alta de cooperativa + su primer usuario administrador. */
   @Post('cooperativas')
   async crearCooperativa(@Body() dto: CrearCooperativaDto) {
     return this.admin.crearCooperativaConPrimerUsuario(
@@ -64,13 +64,11 @@ export class AdminController {
     return { ok: true };
   }
 
-  /** RF-ADMIN-002 — dashboard nacional agregado de todas las cooperativas. */
   @Get('dashboard')
   async dashboardNacional() {
     return this.admin.dashboardNacional();
   }
 
-  /** IVA nacional — valor que se propaga a las cooperativas en modo automático (21-jul-2026). */
   @Get('iva-nacional')
   async obtenerIvaNacional() {
     return { ivaPorcentaje: await this.admin.obtenerIvaNacional() };
@@ -87,7 +85,6 @@ export class AdminController {
     );
   }
 
-  /** Banners propios — promoción interna, NO parte de RF-COMM (22-jul-2026). */
   @Get('banners-propios')
   async listarBannersPropios() {
     return this.admin.listarBannersPropios();
@@ -113,7 +110,6 @@ export class AdminController {
     return { ok: true };
   }
 
-  /** Cargo fijo de plataforma por pasajero — hallazgo cerrado 22-jul-2026. */
   @Get('cargo-plataforma')
   async obtenerCargoPlataforma() {
     return { monto: await this.admin.obtenerCargoPlataforma() };
@@ -122,6 +118,18 @@ export class AdminController {
   @Patch('cargo-plataforma')
   async actualizarCargoPlataforma(@Body() dto: ActualizarCargoPlataformaDto) {
     await this.admin.actualizarCargoPlataforma(dto.monto);
+    return { ok: true };
+  }
+
+  /** 27-jul-2026 -- editable desde el Panel Admin, sin tocar codigo. */
+  @Get('modo-iva-boleto')
+  async obtenerModoIvaBoleto() {
+    return { modo: await this.admin.obtenerModoIvaBoleto() };
+  }
+
+  @Patch('modo-iva-boleto')
+  async actualizarModoIvaBoleto(@Body() dto: ActualizarModoIvaBoletoDto) {
+    await this.admin.actualizarModoIvaBoleto(dto.modo);
     return { ok: true };
   }
 }
