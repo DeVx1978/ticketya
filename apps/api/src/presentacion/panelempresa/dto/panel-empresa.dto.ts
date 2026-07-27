@@ -190,3 +190,18 @@ export class ActualizarConfiguracionFiscalDto {
   @IsBoolean()
   ivaSigueTasaNacional!: boolean;
 }
+
+/** Editar o desactivar un tipo de vehiculo. */
+export class EditarTipoVehiculoDto {
+  @IsOptional() @IsString() @MinLength(2) nombre?: string;
+  @IsOptional() @IsInt() @Min(1) capacidadTotal?: number;
+  @IsOptional() distribucionAsientos?: unknown;
+  @IsOptional() @IsBoolean() activo?: boolean;
+}
+
+/** Editar o desactivar una ruta. */
+export class EditarRutaDto {
+  @IsOptional() @IsString() nombre?: string;
+  @IsOptional() @IsNumber() @Min(0) precioBaseReferencia?: number;
+  @IsOptional() @IsBoolean() activa?: boolean;
+}

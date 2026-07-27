@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Get,
@@ -26,6 +26,8 @@ import {
   VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
   ActualizarPerfilDto,
+  EditarTipoVehiculoDto,
+  EditarRutaDto,
 } from './dto/panel-empresa.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
@@ -64,6 +66,24 @@ export class PanelEmpresaController {
   @Get('tipos-vehiculo')
   async listarTiposVehiculo(@Request() req: { user: PayloadToken }) {
     return this.panel.listarTiposVehiculo(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('tipos-vehiculo/:tipoVehiculoId')
+  async editarTipoVehiculo(
+    @Param('tipoVehiculoId') tipoVehiculoId: string,
+    @Body() dto: EditarTipoVehiculoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.editarTipoVehiculo(
+      cooperativaDelToken(req.user),
+      tipoVehiculoId,
+      dto,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
   }
 
   @Roles('admin_cooperativa')
@@ -110,6 +130,24 @@ export class PanelEmpresaController {
   @Get('rutas')
   async listarRutas(@Request() req: { user: PayloadToken }) {
     return this.panel.listarRutas(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('rutas/:rutaId')
+  async editarRuta(
+    @Param('rutaId') rutaId: string,
+    @Body() dto: EditarRutaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.editarRuta(
+      cooperativaDelToken(req.user),
+      rutaId,
+      dto,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return resultado;
   }
 
   @Roles('admin_cooperativa')

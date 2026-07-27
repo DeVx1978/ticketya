@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -8,6 +8,8 @@ import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
   DatosNuevaUnidad,
+  DatosEditarTipoVehiculo,
+  DatosEditarRuta,
   DatosNuevaRuta,
   DatosNuevoViaje,
   DatosNuevoUsuarioStaff,
@@ -71,6 +73,60 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           capacidadTotal: f.capacidad_total,
         };
       });
+    });
+  }
+
+  async editarTipoVehiculo(
+    cooperativaId: string,
+    tipoVehiculoId: string,
+    datos: DatosEditarTipoVehiculo,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        SELECT id FROM tipos_vehiculo
+        WHERE id = ${tipoVehiculoId} AND cooperativa_id = ${cooperativaId}
+      `);
+      if (filas.rows.length === 0) {
+        return { ok: false as const, motivo: 'Este tipo de vehiculo no existe.' };
+      }
+
+      const cambiaCapacidadOAsientos =
+        datos.capacidadTotal !== undefined ||
+        datos.distribucionAsientos !== undefined;
+
+      if (cambiaCapacidadOAsientos) {
+        const boletosFilas = await tx.execute(sql`
+          SELECT COUNT(*)::int AS total
+          FROM boletos b
+          JOIN viaje_asientos va ON va.id = b.viaje_asiento_id
+          JOIN viajes v ON v.id = va.viaje_id
+          JOIN unidades u ON u.id = v.unidad_id
+          WHERE u.tipo_vehiculo_id = ${tipoVehiculoId}
+            AND b.estado != 'cancelado'
+        `);
+        const totalBoletos = (boletosFilas.rows[0] as { total: number }).total;
+        if (totalBoletos > 0) {
+          return {
+            ok: false as const,
+            motivo:
+              'Ya hay boletos vigentes vendidos en viajes con unidades de este tipo -- solo se pueden cambiar el nombre o el estado activo.',
+          };
+        }
+      }
+
+      if (datos.nombre !== undefined) {
+        await tx.execute(sql`UPDATE tipos_vehiculo SET nombre = ${datos.nombre} WHERE id = ${tipoVehiculoId}`);
+      }
+      if (datos.capacidadTotal !== undefined) {
+        await tx.execute(sql`UPDATE tipos_vehiculo SET capacidad_total = ${datos.capacidadTotal} WHERE id = ${tipoVehiculoId}`);
+      }
+      if (datos.distribucionAsientos !== undefined) {
+        await tx.execute(sql`UPDATE tipos_vehiculo SET distribucion_asientos = ${JSON.stringify(datos.distribucionAsientos)} WHERE id = ${tipoVehiculoId}`);
+      }
+      if (datos.activo !== undefined) {
+        await tx.execute(sql`UPDATE tipos_vehiculo SET activo = ${datos.activo} WHERE id = ${tipoVehiculoId}`);
+      }
+      return { ok: true as const };
     });
   }
 
@@ -172,6 +228,32 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           precioBaseReferencia: Number(f.precio_base_referencia),
         };
       });
+    });
+  }
+
+  async editarRuta(
+    cooperativaId: string,
+    rutaId: string,
+    datos: DatosEditarRuta,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        SELECT id FROM rutas WHERE id = ${rutaId} AND cooperativa_id = ${cooperativaId}
+      `);
+      if (filas.rows.length === 0) {
+        return { ok: false as const, motivo: 'Esta ruta no existe.' };
+      }
+
+      if (datos.nombre !== undefined) {
+        await tx.execute(sql`UPDATE rutas SET nombre = ${datos.nombre} WHERE id = ${rutaId}`);
+      }
+      if (datos.precioBaseReferencia !== undefined) {
+        await tx.execute(sql`UPDATE rutas SET precio_base_referencia = ${String(datos.precioBaseReferencia)} WHERE id = ${rutaId}`);
+      }
+      if (datos.activa !== undefined) {
+        await tx.execute(sql`UPDATE rutas SET activa = ${datos.activa} WHERE id = ${rutaId}`);
+      }
+      return { ok: true as const };
     });
   }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Dominio del Panel Empresa — RF-COOP, RF-FLOTA.
  */
 
@@ -6,6 +6,19 @@ export interface DatosNuevoTipoVehiculo {
   nombre: string;
   capacidadTotal: number;
   distribucionAsientos?: unknown;
+}
+
+export interface DatosEditarTipoVehiculo {
+  nombre?: string;
+  capacidadTotal?: number;
+  distribucionAsientos?: unknown;
+  activo?: boolean;
+}
+
+export interface DatosEditarRuta {
+  nombre?: string;
+  precioBaseReferencia?: number;
+  activa?: boolean;
 }
 
 export interface DatosNuevaUnidad {

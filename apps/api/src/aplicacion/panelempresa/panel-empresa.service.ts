@@ -1,8 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable } from '@nestjs/common';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
   DatosNuevaUnidad,
+  DatosEditarTipoVehiculo,
+  DatosEditarRuta,
   DatosNuevaRuta,
   DatosNuevoViaje,
   DatosNuevoUsuarioStaff,
@@ -27,6 +29,14 @@ export class PanelEmpresaService {
     return this.panel.listarTiposVehiculo(cooperativaId);
   }
 
+  editarTipoVehiculo(
+    cooperativaId: string,
+    tipoVehiculoId: string,
+    datos: DatosEditarTipoVehiculo,
+  ) {
+    return this.panel.editarTipoVehiculo(cooperativaId, tipoVehiculoId, datos);
+  }
+
   crearUnidad(cooperativaId: string, datos: DatosNuevaUnidad) {
     return this.panel.crearUnidad(cooperativaId, datos);
   }
@@ -49,6 +59,10 @@ export class PanelEmpresaService {
 
   listarRutas(cooperativaId: string) {
     return this.panel.listarRutas(cooperativaId);
+  }
+
+  editarRuta(cooperativaId: string, rutaId: string, datos: DatosEditarRuta) {
+    return this.panel.editarRuta(cooperativaId, rutaId, datos);
   }
 
   crearViaje(cooperativaId: string, datos: DatosNuevoViaje) {
