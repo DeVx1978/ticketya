@@ -68,11 +68,10 @@ export interface UsuarioRepositorio {
     expiraEn: Date,
   ): Promise<void>;
 
-  buscarTokenResetVigente(
+  /** Atómico: busca y consume en una sola operación (mismo fix que refresh_session, 28-jul-2026). */
+  consumirTokenResetVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null>;
-
-  marcarTokenResetUsado(tokenId: string): Promise<void>;
 
   /** 27-jul-2026 -- verificacion de correo al registrarse (RF-AUTH-001). Mismo mecanismo que reset_password, proposito distinto. */
   guardarTokenVerificacion(
@@ -81,11 +80,10 @@ export interface UsuarioRepositorio {
     expiraEn: Date,
   ): Promise<void>;
 
-  buscarTokenVerificacionVigente(
+  /** Atómico: busca y consume en una sola operación (mismo fix que refresh_session, 28-jul-2026). */
+  consumirTokenVerificacionVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null>;
-
-  marcarTokenVerificacionUsado(tokenId: string): Promise<void>;
 
   marcarCorreoVerificado(usuarioId: string): Promise<void>;
 
@@ -96,11 +94,20 @@ export interface UsuarioRepositorio {
     expiraEn: Date,
   ): Promise<void>;
 
-  buscarTokenRefreshVigente(
+  /**
+   * Busca un refresh token vigente Y lo marca como usado en una sola
+   * operación atómica (UPDATE ... WHERE usado_en IS NULL ... RETURNING).
+   * Corrige un hallazgo real de auditoría (28-jul-2026): con "buscar" y
+   * "marcar usado" como dos pasos separados, dos peticiones concurrentes
+   * con el mismo token podían pasar ambas la validación antes de que
+   * cualquiera lo marcara como usado — confirmado con una prueba de
+   * concurrencia real, no solo revisión de código. Una sola sentencia
+   * UPDATE con condición WHERE es atómica a nivel de fila en Postgres:
+   * solo una de las peticiones concurrentes puede "ganar" la fila.
+   */
+  consumirTokenRefreshVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null>;
-
-  marcarTokenRefreshUsado(tokenId: string): Promise<void>;
 }
 
 export interface NotificadorEmail {

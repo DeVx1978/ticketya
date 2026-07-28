@@ -136,7 +136,7 @@ export class AuthService {
 
   async refrescarToken(refreshTokenPlano: string) {
     const tokenHash = createHash('sha256').update(refreshTokenPlano).digest('hex');
-    const token = await this.usuarios.buscarTokenRefreshVigente(tokenHash);
+    const token = await this.usuarios.consumirTokenRefreshVigente(tokenHash);
 
     if (!token) {
       throw new UnauthorizedException(
@@ -149,7 +149,6 @@ export class AuthService {
       throw new UnauthorizedException('Usuario no encontrado o inactivo.');
     }
 
-    await this.usuarios.marcarTokenRefreshUsado(token.id);
     return this.emitirTokenPara(usuario);
   }
 
@@ -240,7 +239,7 @@ export class AuthService {
     }
 
     const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
-    const token = await this.usuarios.buscarTokenResetVigente(tokenHash);
+    const token = await this.usuarios.consumirTokenResetVigente(tokenHash);
 
     if (!token) {
       throw new BadRequestException(
@@ -250,14 +249,13 @@ export class AuthService {
 
     const nuevoHash = await this.hasher.hash(passwordNueva);
     await this.usuarios.actualizarPasswordHash(token.usuarioId, nuevoHash);
-    await this.usuarios.marcarTokenResetUsado(token.id);
 
     return { ok: true };
   }
 
   async verificarCorreo(tokenPlano: string) {
     const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
-    const token = await this.usuarios.buscarTokenVerificacionVigente(tokenHash);
+    const token = await this.usuarios.consumirTokenVerificacionVigente(tokenHash);
 
     if (!token) {
       throw new BadRequestException(
@@ -266,7 +264,6 @@ export class AuthService {
     }
 
     await this.usuarios.marcarCorreoVerificado(token.usuarioId);
-    await this.usuarios.marcarTokenVerificacionUsado(token.id);
 
     return { ok: true };
   }

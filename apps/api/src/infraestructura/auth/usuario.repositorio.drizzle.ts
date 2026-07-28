@@ -150,26 +150,21 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     `);
   }
 
-  async buscarTokenResetVigente(
+  async consumirTokenResetVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null> {
     const resultado = await this.db.execute(sql`
-      SELECT id, usuario_id
-      FROM tokens_usuario
+      UPDATE tokens_usuario
+      SET usado_en = now()
       WHERE token_hash = ${tokenHash}
         AND proposito = 'reset_password'
         AND usado_en IS NULL
         AND expira_en > now()
+      RETURNING id, usuario_id
     `);
     const fila = resultado.rows[0] as { id: string; usuario_id: string } | undefined;
     if (!fila) return null;
     return { id: fila.id, usuarioId: fila.usuario_id };
-  }
-
-  async marcarTokenResetUsado(tokenId: string): Promise<void> {
-    await this.db.execute(sql`
-      UPDATE tokens_usuario SET usado_en = now() WHERE id = ${tokenId}
-    `);
   }
 
   async guardarTokenVerificacion(
@@ -183,26 +178,21 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     `);
   }
 
-  async buscarTokenVerificacionVigente(
+  async consumirTokenVerificacionVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null> {
     const resultado = await this.db.execute(sql`
-      SELECT id, usuario_id
-      FROM tokens_usuario
+      UPDATE tokens_usuario
+      SET usado_en = now()
       WHERE token_hash = ${tokenHash}
         AND proposito = 'verificar_correo'
         AND usado_en IS NULL
         AND expira_en > now()
+      RETURNING id, usuario_id
     `);
     const fila = resultado.rows[0] as { id: string; usuario_id: string } | undefined;
     if (!fila) return null;
     return { id: fila.id, usuarioId: fila.usuario_id };
-  }
-
-  async marcarTokenVerificacionUsado(tokenId: string): Promise<void> {
-    await this.db.execute(sql`
-      UPDATE tokens_usuario SET usado_en = now() WHERE id = ${tokenId}
-    `);
   }
 
   async marcarCorreoVerificado(usuarioId: string): Promise<void> {
@@ -222,25 +212,25 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     `);
   }
 
-  async buscarTokenRefreshVigente(
+  async consumirTokenRefreshVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null> {
+    // Atómico: el UPDATE con WHERE usado_en IS NULL solo puede aplicar a
+    // la fila una vez, incluso si dos peticiones concurrentes ejecutan
+    // esta misma sentencia al mismo tiempo — Postgres serializa el
+    // acceso a nivel de fila. La segunda petición simplemente no
+    // encuentra ninguna fila que actualizar (0 filas afectadas).
     const resultado = await this.db.execute(sql`
-      SELECT id, usuario_id
-      FROM tokens_usuario
+      UPDATE tokens_usuario
+      SET usado_en = now()
       WHERE token_hash = ${tokenHash}
         AND proposito = 'refresh_session'
         AND usado_en IS NULL
         AND expira_en > now()
+      RETURNING id, usuario_id
     `);
     const fila = resultado.rows[0] as { id: string; usuario_id: string } | undefined;
     if (!fila) return null;
     return { id: fila.id, usuarioId: fila.usuario_id };
-  }
-
-  async marcarTokenRefreshUsado(tokenId: string): Promise<void> {
-    await this.db.execute(sql`
-      UPDATE tokens_usuario SET usado_en = now() WHERE id = ${tokenId}
-    `);
   }
 }

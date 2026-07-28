@@ -1,4 +1,4 @@
-﻿import { Injectable, ConflictException } from '@nestjs/common';
+﻿import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { sql, eq } from 'drizzle-orm';
 import {
@@ -169,10 +169,20 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
 
     if (Object.keys(valores).length === 0) return; // nada que actualizar
 
-    await this.db
+    // Hallazgo real de auditoría (28-jul-2026): antes este UPDATE no
+    // revisaba si el id realmente existía — un id inválido "tenía éxito"
+    // en silencio, sin cambiar nada, sin avisarle al admin.
+    const filasActualizadas = await this.db
       .update(puntosOperacion)
       .set(valores)
-      .where(eq(puntosOperacion.id, id));
+      .where(eq(puntosOperacion.id, id))
+      .returning({ id: puntosOperacion.id });
+
+    if (filasActualizadas.length === 0) {
+      throw new NotFoundException(
+        `No existe un punto de operación con id ${id}.`,
+      );
+    }
   }
 
   async dashboardNacional(): Promise<FilaVentaNacional[]> {
@@ -316,14 +326,26 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     id: string,
     datos: { activo?: boolean; orden?: number },
   ): Promise<void> {
-    await this.db
+    const filasActualizadas = await this.db
       .update(bannersPropios)
       .set(datos)
-      .where(eq(bannersPropios.id, id));
+      .where(eq(bannersPropios.id, id))
+      .returning({ id: bannersPropios.id });
+
+    if (filasActualizadas.length === 0) {
+      throw new NotFoundException(`No existe un banner con id ${id}.`);
+    }
   }
 
   async eliminarBannerPropio(id: string): Promise<void> {
-    await this.db.delete(bannersPropios).where(eq(bannersPropios.id, id));
+    const filasBorradas = await this.db
+      .delete(bannersPropios)
+      .where(eq(bannersPropios.id, id))
+      .returning({ id: bannersPropios.id });
+
+    if (filasBorradas.length === 0) {
+      throw new NotFoundException(`No existe un banner con id ${id}.`);
+    }
   }
 
   async obtenerModoIvaBoleto(): Promise<ModoIvaBoleto> {

@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, eq, gte, lte } from 'drizzle-orm';
 import {
   espaciosPublicitarios,
@@ -124,10 +124,19 @@ export class ComercialRepositorioDrizzle implements ComercialRepositorio {
     if (datos.notasSeguimiento !== undefined)
       valores.notasSeguimiento = datos.notasSeguimiento;
     if (Object.keys(valores).length === 0) return;
-    await this.db
+
+    // Mismo hallazgo y mismo fix que en admin.repositorio.drizzle.ts
+    // (auditoría 28-jul-2026): antes este UPDATE no revisaba si el id
+    // realmente existía.
+    const filasActualizadas = await this.db
       .update(leadsAnunciantes)
       .set(valores)
-      .where(eq(leadsAnunciantes.id, id));
+      .where(eq(leadsAnunciantes.id, id))
+      .returning({ id: leadsAnunciantes.id });
+
+    if (filasActualizadas.length === 0) {
+      throw new NotFoundException(`No existe un lead con id ${id}.`);
+    }
   }
 
   async crearCampana(datos: DatosNuevaCampana): Promise<{ id: string }> {

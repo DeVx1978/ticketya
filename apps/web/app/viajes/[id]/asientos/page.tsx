@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Fragment, use as usePromise } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { obtenerMapaAsientos, bloquearAsiento, type MapaAsientos } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
@@ -31,10 +31,19 @@ function generarNumerosAsiento(capacidadTotal: number): string[][] {
 export default function SeleccionAsientosPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: viajeId } = usePromise(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [mapa, setMapa] = useState<MapaAsientos | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [seleccionado, setSeleccionado] = useState<string | null>(null);
+  // Hallazgo real de auditoría (28-jul-2026): si el usuario elegía un
+  // asiento sin sesión iniciada, lo mandábamos a /ingresar y al volver
+  // este estado se perdía por completo (vivía solo en memoria del
+  // componente) — tenía que elegir el asiento otra vez. Ahora, si
+  // volvemos de login con `?preseleccionado=8A` en la URL (ver
+  // `continuar()` más abajo), lo restauramos aquí.
+  const [seleccionado, setSeleccionado] = useState<string | null>(
+    () => searchParams.get("preseleccionado"),
+  );
   const [bloqueando, setBloqueando] = useState(false);
 
   useEffect(() => {
@@ -69,7 +78,8 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
     if (!seleccionado) return;
     const token = tokenValido();
     if (!token) {
-      router.push(`/ingresar?volverA=${encodeURIComponent(`/viajes/${viajeId}/asientos`)}`);
+      const volver = `/viajes/${viajeId}/asientos?preseleccionado=${encodeURIComponent(seleccionado)}`;
+      router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
       return;
     }
     setBloqueando(true);
