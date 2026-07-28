@@ -56,6 +56,14 @@ export class AuthService {
       password: passwordHash,
     });
 
+    // 27-jul-2026 -- RF-AUTH-001 "recibe confirmacion por correo",
+    // cerrado: token real, expira en 24h.
+    const tokenPlanoVerif = randomBytes(32).toString('hex');
+    const tokenHashVerif = createHash('sha256').update(tokenPlanoVerif).digest('hex');
+    const expiraEnVerif = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.usuarios.guardarTokenVerificacion(usuario.id, tokenHashVerif, expiraEnVerif);
+    await this.email.enviarVerificacionCorreo(usuario.correo, tokenPlanoVerif);
+
     // Nota: el envío real del correo de confirmación (RF-AUTH-001,
     // "recibe confirmación por correo") pertenece al módulo RF-NOTIF, que
     // todavía no está construido — queda pendiente conectar aquí cuando
@@ -219,5 +227,37 @@ export class AuthService {
     await this.usuarios.marcarTokenResetUsado(token.id);
 
     return { ok: true };
+  }
+
+  async verificarCorreo(tokenPlano: string) {
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const token = await this.usuarios.buscarTokenVerificacionVigente(tokenHash);
+
+    if (!token) {
+      throw new BadRequestException(
+        'Este enlace de verificacion no es valido o ya expiro. Solicita uno nuevo.',
+      );
+    }
+
+    await this.usuarios.marcarCorreoVerificado(token.usuarioId);
+    await this.usuarios.marcarTokenVerificacionUsado(token.id);
+
+    return { ok: true };
+  }
+
+  async reenviarVerificacion(usuarioId: string) {
+    const usuario = await this.usuarios.buscarPorId(usuarioId);
+    if (!usuario) throw new NotFoundException('Usuario no encontrado.');
+    if (usuario.correoVerificado) {
+      return { ok: true, yaVerificado: true };
+    }
+
+    const tokenPlano = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const expiraEn = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.usuarios.guardarTokenVerificacion(usuario.id, tokenHash, expiraEn);
+    await this.email.enviarVerificacionCorreo(usuario.correo, tokenPlano);
+
+    return { ok: true, yaVerificado: false };
   }
 }

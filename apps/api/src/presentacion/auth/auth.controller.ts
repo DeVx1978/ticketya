@@ -18,6 +18,7 @@ import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { SolicitarResetDto } from './dto/solicitar-reset.dto';
 import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
+import { VerificarCorreoDto } from './dto/verificar-correo.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -77,6 +78,18 @@ export class AuthController {
   @Post('restablecer-password')
   async restablecerPassword(@Body() dto: RestablecerPasswordDto) {
     return this.authService.restablecerPassword(dto.token, dto.passwordNueva);
+  }
+
+  /** 27-jul-2026 -- verificacion de correo al registrarse (RF-AUTH-001), publico, sin login. */
+  @Post('verificar-correo')
+  async verificarCorreo(@Body() dto: VerificarCorreoDto) {
+    return this.authService.verificarCorreo(dto.token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('reenviar-verificacion')
+  async reenviarVerificacion(@Request() req: { user: PayloadToken }) {
+    return this.authService.reenviarVerificacion(req.user.sub);
   }
 
   /** 27-jul-2026 -- subida real de foto de perfil, con simulador de almacenamiento. */

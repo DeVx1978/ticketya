@@ -73,6 +73,21 @@ export interface UsuarioRepositorio {
   ): Promise<{ id: string; usuarioId: string } | null>;
 
   marcarTokenResetUsado(tokenId: string): Promise<void>;
+
+  /** 27-jul-2026 -- verificacion de correo al registrarse (RF-AUTH-001). Mismo mecanismo que reset_password, proposito distinto. */
+  guardarTokenVerificacion(
+    usuarioId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void>;
+
+  buscarTokenVerificacionVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string } | null>;
+
+  marcarTokenVerificacionUsado(tokenId: string): Promise<void>;
+
+  marcarCorreoVerificado(usuarioId: string): Promise<void>;
 }
 
 export interface NotificadorEmail {
@@ -82,6 +97,8 @@ export interface NotificadorEmail {
     correo: string,
     detalle: { compraId: string; montoTotal: number; cantidadBoletos: number },
   ): Promise<void>;
+
+  enviarVerificacionCorreo(correo: string, tokenPlano: string): Promise<void>;
 }
 
 /**

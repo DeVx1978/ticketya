@@ -27,4 +27,11 @@ export class SimuladorNotificador implements NotificadorEmail {
       `[SIMULADO] Confirmacion de compra para ${correo} -> compra ${detalle.compraId}, ${detalle.cantidadBoletos} boleto(s), total $${detalle.montoTotal.toFixed(2)}`,
     );
   }
+
+  async enviarVerificacionCorreo(correo: string, tokenPlano: string): Promise<void> {
+    const link = `https://colombus.ec/verificar-correo?token=${tokenPlano}`;
+    this.logger.log(
+      `[SIMULADO] Correo de verificacion para ${correo} -> ${link}`,
+    );
+  }
 }
