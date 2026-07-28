@@ -1,0 +1,108 @@
+name: CI — pruebas automáticas
+
+# Corre en cada Pull Request hacia main, y en cada push a cualquier rama
+# que no sea main (main queda protegida — solo se actualiza fusionando
+# un PR que ya pasó este workflow en verde).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches-ignore: [main]
+
+jobs:
+  backend:
+    name: Backend — typecheck + 88 pruebas e2e reales
+    runs-on: ubuntu-latest
+
+    # Postgres real, no simulado — igual que como se verificó todo hoy.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ticketya_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependencias del monorepo
+        run: npm install --no-audit --no-fund
+
+      - name: Compilar el paquete de base de datos
+        run: |
+          cd packages/db
+          npx tsc -p tsconfig.build.json
+
+      - name: Aplicar migraciones (drizzle + manuales, en orden)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for f in packages/db/migrations/0*.sql; do
+            echo "Aplicando $f"
+            psql -h localhost -U postgres -d ticketya_ci -v ON_ERROR_STOP=1 -f "$f"
+          done
+          # Orden real de dependencia (probado en sandbox de auditoría,
+          # 28-jul-2026): login primero (para que los roles puedan
+          # conectarse), luego bypass RLS, grants, auditoría inmutable,
+          # y grants de banners al final.
+          psql -h localhost -U postgres -d ticketya_ci -v ON_ERROR_STOP=1 -f packages/db/migrations/manual/004_habilitar_login_roles.sql
+          psql -h localhost -U postgres -d ticketya_ci -v ON_ERROR_STOP=1 -f packages/db/migrations/manual/001_bypass_rls_admin.sql
+          psql -h localhost -U postgres -d ticketya_ci -v ON_ERROR_STOP=1 -f packages/db/migrations/manual/002_grants_app_role.sql
+          psql -h localhost -U postgres -d ticketya_ci -v ON_ERROR_STOP=1 -f packages/db/migrations/manual/003_auditoria_inmutable.sql
+          psql -h localhost -U postgres -d ticketya_ci -v ON_ERROR_STOP=1 -f packages/db/migrations/manual/005_grants_banners_y_default_privileges.sql
+
+      - name: Configurar variables de entorno para las pruebas
+        run: |
+          cat > apps/api/.env << EOF
+          DATABASE_URL=postgresql://ticketya_app:cambia_esta_contrasena_app@localhost:5432/ticketya_ci
+          DATABASE_URL_PUBLICO=postgresql://ticketya_platform_admin:cambia_esta_contrasena_admin@localhost:5432/ticketya_ci
+          JWT_SECRET=secreto-solo-para-ci-nunca-usar-en-produccion
+          EOF
+
+      - name: Verificar tipos (TypeScript)
+        run: |
+          cd apps/api
+          npx tsc --noEmit
+
+      - name: Correr las 88 pruebas e2e reales
+        run: |
+          cd apps/api
+          npm run test:e2e
+
+  frontend:
+    name: Frontend — typecheck + build de producción
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependencias del monorepo
+        run: npm install --no-audit --no-fund
+
+      - name: Verificar tipos (TypeScript)
+        run: |
+          cd apps/web
+          npx tsc --noEmit
+
+      - name: Build de producción completo
+        run: |
+          cd apps/web
+          npx next build
