@@ -118,13 +118,39 @@ export class AuthService {
     return this.emitirTokenPara(usuario);
   }
 
-  private emitirTokenPara(usuario: UsuarioDominio) {
+  private async emitirTokenPara(usuario: UsuarioDominio) {
     const accessToken = this.tokens.firmar({
       sub: usuario.id,
       rol: usuario.rol,
       cooperativaId: usuario.cooperativaId,
     });
-    return { accessToken };
+
+    // 27-jul-2026 -- refresh token, 30 dias, un solo uso.
+    const refreshTokenPlano = randomBytes(32).toString('hex');
+    const refreshTokenHash = createHash('sha256').update(refreshTokenPlano).digest('hex');
+    const expiraEn = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await this.usuarios.guardarTokenRefresh(usuario.id, refreshTokenHash, expiraEn);
+
+    return { accessToken, refreshToken: refreshTokenPlano };
+  }
+
+  async refrescarToken(refreshTokenPlano: string) {
+    const tokenHash = createHash('sha256').update(refreshTokenPlano).digest('hex');
+    const token = await this.usuarios.buscarTokenRefreshVigente(tokenHash);
+
+    if (!token) {
+      throw new UnauthorizedException(
+        'El token de sesion no es valido o ya expiro. Inicia sesion de nuevo.',
+      );
+    }
+
+    const usuario = await this.usuarios.buscarPorId(token.usuarioId);
+    if (!usuario || !usuario.activo) {
+      throw new UnauthorizedException('Usuario no encontrado o inactivo.');
+    }
+
+    await this.usuarios.marcarTokenRefreshUsado(token.id);
+    return this.emitirTokenPara(usuario);
   }
 
   /** Perfil real (22-jul-2026) — antes GET /auth/perfil solo devolvía el payload del token, no los datos reales del usuario. */

@@ -88,6 +88,19 @@ export interface UsuarioRepositorio {
   marcarTokenVerificacionUsado(tokenId: string): Promise<void>;
 
   marcarCorreoVerificado(usuarioId: string): Promise<void>;
+
+  /** 27-jul-2026 -- refresh tokens (RF-AUTH-005). Un solo uso: cada refresh emite un token nuevo y el viejo queda invalido. */
+  guardarTokenRefresh(
+    usuarioId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void>;
+
+  buscarTokenRefreshVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string } | null>;
+
+  marcarTokenRefreshUsado(tokenId: string): Promise<void>;
 }
 
 export interface NotificadorEmail {

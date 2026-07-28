@@ -20,6 +20,7 @@ import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { SolicitarResetDto } from './dto/solicitar-reset.dto';
 import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
 import { VerificarCorreoDto } from './dto/verificar-correo.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -89,6 +90,13 @@ export class AuthController {
   @Post('verificar-correo')
   async verificarCorreo(@Body() dto: VerificarCorreoDto) {
     return this.authService.verificarCorreo(dto.token);
+  }
+
+  /** 27-jul-2026 -- RF-AUTH-005: renueva el access token usando el refresh token, sin pedir contrasena de nuevo. */
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
+  @Post('refresh')
+  async refrescar(@Body() dto: RefreshTokenDto) {
+    return this.authService.refrescarToken(dto.refreshToken);
   }
 
   @UseGuards(JwtAuthGuard)

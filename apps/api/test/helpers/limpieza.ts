@@ -117,6 +117,11 @@ export async function limpiarCooperativasDePrueba(
       `DELETE FROM conductores WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
     );
     await pg.query(
+      `DELETE FROM tokens_usuario WHERE usuario_id IN (
+         SELECT id FROM usuarios WHERE cooperativa_id IN (SELECT id FROM _coop_test)
+       )`,
+    );
+    await pg.query(
       `DELETE FROM usuarios WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
     );
     await pg.query(

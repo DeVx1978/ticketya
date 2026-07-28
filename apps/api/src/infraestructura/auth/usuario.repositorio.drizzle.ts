@@ -210,4 +210,37 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       UPDATE usuarios SET correo_verificado = true WHERE id = ${usuarioId}
     `);
   }
+
+  async guardarTokenRefresh(
+    usuarioId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO tokens_usuario (usuario_id, proposito, token_hash, expira_en)
+      VALUES (${usuarioId}, 'refresh_session', ${tokenHash}, ${expiraEn.toISOString()})
+    `);
+  }
+
+  async buscarTokenRefreshVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string } | null> {
+    const resultado = await this.db.execute(sql`
+      SELECT id, usuario_id
+      FROM tokens_usuario
+      WHERE token_hash = ${tokenHash}
+        AND proposito = 'refresh_session'
+        AND usado_en IS NULL
+        AND expira_en > now()
+    `);
+    const fila = resultado.rows[0] as { id: string; usuario_id: string } | undefined;
+    if (!fila) return null;
+    return { id: fila.id, usuarioId: fila.usuario_id };
+  }
+
+  async marcarTokenRefreshUsado(tokenId: string): Promise<void> {
+    await this.db.execute(sql`
+      UPDATE tokens_usuario SET usado_en = now() WHERE id = ${tokenId}
+    `);
+  }
 }
