@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+﻿import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -24,6 +24,7 @@ describe('Checkout y pago (e2e)', () => {
   let puntoOrigenId: string;
   let puntoDestinoId: string;
   let unidadIdRechazo: string;
+  let modoIvaGuardado: string;
   const PRECIO_BASE = 10; // valor redondo para que los descuentos den números exactos
 
   async function bloquearYRegistrarAsiento(
@@ -61,6 +62,13 @@ describe('Checkout y pago (e2e)', () => {
     await pg.query(
       "UPDATE usuarios SET rol='admin_plataforma' WHERE correo=$1",
       [correoDirector],
+    );
+    const modoIvaFila = await pg.query(
+      `SELECT modo_iva_boleto FROM configuracion_plataforma LIMIT 1`,
+    );
+    modoIvaGuardado = modoIvaFila.rows[0]?.modo_iva_boleto ?? 'calculado';
+    await pg.query(
+      `UPDATE configuracion_plataforma SET modo_iva_boleto = 'calculado'`,
     );
     await pg.end();
 
@@ -169,6 +177,17 @@ describe('Checkout y pago (e2e)', () => {
     // archivo genera compras/boletos/comprobantes reales de prueba, la
     // cadena más larga de las cuatro.
     await limpiarCooperativasDePrueba([`Coop Checkout ${sufijo}`]);
+
+    const pgRestaurar = new Client({
+      connectionString: process.env.DATABASE_URL_PUBLICO,
+    });
+    await pgRestaurar.connect();
+    await pgRestaurar.query(
+      `UPDATE configuracion_plataforma SET modo_iva_boleto = $1`,
+      [modoIvaGuardado],
+    );
+    await pgRestaurar.end();
+
     await app.close();
   });
 
