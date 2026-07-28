@@ -90,11 +90,21 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         return { ok: false as const, motivo: 'Este tipo de vehiculo no existe.' };
       }
 
-      const cambiaCapacidadOAsientos =
-        datos.capacidadTotal !== undefined ||
-        datos.distribucionAsientos !== undefined;
-
-      if (cambiaCapacidadOAsientos) {
+      // 27-jul-2026 -- aumentar capacidad siempre es seguro; solo reducirla
+      // o cambiar el mapa de asientos arriesga invalidar boletos ya
+      // vendidos, asi que eso es lo unico que se sigue bloqueando.
+      let debeBloquearPorBoletos = datos.distribucionAsientos !== undefined;
+      if (datos.capacidadTotal !== undefined) {
+        const filaActual = await tx.execute(sql`
+          SELECT capacidad_total FROM tipos_vehiculo WHERE id = ${tipoVehiculoId}
+        `);
+        const capacidadActual = (filaActual.rows[0] as { capacidad_total: number })
+          .capacidad_total;
+        if (datos.capacidadTotal < capacidadActual) {
+          debeBloquearPorBoletos = true;
+        }
+      }
+      if (debeBloquearPorBoletos) {
         const boletosFilas = await tx.execute(sql`
           SELECT COUNT(*)::int AS total
           FROM boletos b
