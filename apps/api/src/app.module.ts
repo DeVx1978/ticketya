@@ -1,7 +1,8 @@
 ﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './infraestructura/database/database.module';
@@ -23,6 +24,11 @@ import { ComercialModule } from './presentacion/comercial/comercial.module';
  */
 @Module({
   imports: [
+    // Monitoreo de errores en producción (28-jul-2026, RF-OPS) — debe
+    // ir primero en la lista de imports, junto con SentryGlobalFilter
+    // más abajo (primero en providers), para capturar errores de toda
+    // la app, no solo de módulos que se registren después.
+    SentryModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([
       {
@@ -48,6 +54,13 @@ import { ComercialModule } from './presentacion/comercial/comercial.module';
   controllers: [AppController, SaludController],
   providers: [
     AppService,
+    // Debe ir ANTES que cualquier otro filtro de excepciones (no hay
+    // otro en este proyecto hoy, pero si se agrega uno en el futuro,
+    // este debe seguir siendo el primero).
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

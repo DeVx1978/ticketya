@@ -1,4 +1,8 @@
-﻿import { NestFactory } from '@nestjs/core';
+﻿// Debe ser el PRIMER import del archivo — requisito de Sentry para
+// poder instrumentar automáticamente todos los módulos de la app.
+import './instrument';
+
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'node:path';
@@ -10,7 +14,7 @@ async function bootstrap() {
   // @MinLength, etc.) -- sin esto, los decoradores de los DTO no hacen
   // nada, solo son anotaciones sin efecto.
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
   // El sitio web (apps/web, Next.js) corre en un puerto distinto al
   // backend -- sin CORS habilitado, el navegador bloquea esas llamadas
