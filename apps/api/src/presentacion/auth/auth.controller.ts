@@ -11,6 +11,7 @@
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../../aplicacion/auth/auth.service';
 import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
@@ -27,12 +28,16 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /** RF-AUTH-001 */
+  /** 27-jul-2026 -- limite estricto: 5 intentos por minuto, mas restrictivo que el global (Fase B, seguridad). */
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
   @Post('registro')
   async registro(@Body() datos: RegistroDto) {
     return this.authService.registrar(datos);
   }
 
   /** RF-AUTH-002 */
+  /** 27-jul-2026 -- limite estricto: 5 intentos por minuto, protege contra fuerza bruta (Fase B, seguridad). */
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
   @Post('login')
   async login(@Body() datos: LoginDto) {
     return this.authService.login(datos.correo, datos.password);
