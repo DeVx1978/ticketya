@@ -95,6 +95,20 @@ export interface BoletoEmitido {
   ivaMonto: number;
 }
 
+/**
+ * Vacío real de diseño encontrado el 29-jul-2026: el crédito de
+ * reprogramación existía en el backend desde el 28-jul, pero el
+ * pasajero no tenía ningún lugar donde consultar su saldo.
+ */
+export interface CreditoPasajero {
+  id: string;
+  cooperativaId: string;
+  cooperativaNombre: string;
+  monto: number;
+  usadoEn: string | null;
+  creadoEn: string;
+}
+
 export interface PagoExistente {
   compraId: string;
   estado: 'pendiente' | 'aprobado' | 'rechazado' | 'revertido';
@@ -204,6 +218,13 @@ export interface CompraRepositorio {
     monto: number,
     boletoOrigenId: string,
   ): Promise<void>;
+
+  /**
+   * Vacío real de diseño encontrado el 29-jul-2026: el crédito de
+   * reprogramación existía en el backend desde el 28-jul, pero el
+   * pasajero no tenía ningún lugar donde consultar su saldo.
+   */
+  listarCreditosUsuario(usuarioId: string): Promise<CreditoPasajero[]>;
 
   /** 27-jul-2026 -- controla como se muestra el IVA al pasajero en el checkout. */
   obtenerModoIvaBoleto(): Promise<'calculado' | 'cero' | 'oculto'>;

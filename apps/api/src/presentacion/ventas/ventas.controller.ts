@@ -55,6 +55,18 @@ export class VentasController {
     return { ok: true };
   }
 
+  /**
+   * Saldo de créditos del pasajero (vacío real de diseño encontrado
+   * 29-jul-2026) -- DEBE ir antes de GET ':compraId' en este archivo,
+   * si no, esa ruta comodín se lo come a "mis-creditos" como si fuera
+   * un id de compra y esta nunca se alcanza.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('mis-creditos')
+  async listarMisCreditos(@Request() req: { user: PayloadToken }) {
+    return this.checkout.listarMisCreditos(req.user.sub);
+  }
+
   /** Recibo completo de una compra propia -- detalle de viaje, pasajeros y pago. */
   @UseGuards(JwtAuthGuard)
   @Get(':compraId')

@@ -241,6 +241,31 @@ describe('Reprogramación con crédito (e2e)', () => {
     expect(Number(res.body.boletoNuevo.cargoPlataforma ?? 0)).toBe(0);
   });
 
+  it('el crédito generado aparece al consultar /compras/mis-creditos (vacío real de diseño encontrado 29-jul-2026)', async () => {
+    const boletoId = await comprar(viajeOriginalId, '1C');
+    await bloquear(viajeMasBaratoId, '1C', tokenPasajero);
+
+    const reprog = await request(app.getHttpServer())
+      .post(`/compras/boletos/${boletoId}/reprogramar`)
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({ nuevoViajeId: viajeMasBaratoId, nuevoNumeroAsiento: '1C' })
+      .expect(201);
+
+    // Esta ruta va ANTES de GET '/compras/:compraId' en el controlador
+    // a propósito -- si el orden estuviera mal, esto devolvería un 404
+    // "Compra no encontrada" en vez de la lista real.
+    const res = await request(app.getHttpServer())
+      .get('/compras/mis-creditos')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .expect(200);
+
+    const credito = res.body.find(
+      (c: { monto: number }) => c.monto === reprog.body.creditoGenerado,
+    );
+    expect(credito).toBeDefined();
+    expect(credito.usadoEn).toBeNull();
+  });
+
   it('reprogramar a un pasaje MÁS CARO cobra la diferencia, sin generar crédito', async () => {
     const boletoId = await comprar(viajeOriginalId, '1B');
     await bloquear(viajeMasCaroId, '1B', tokenPasajero);

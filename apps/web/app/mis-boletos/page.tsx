@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { listarMisBoletos, calificarViaje, cancelarBoleto, type MiBoleto } from "@/lib/api";
+import { listarMisBoletos, calificarViaje, cancelarBoleto, listarMisCreditos, type MiBoleto, type MiCredito } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
 import { CodigoQr } from "@/components/CodigoQr";
@@ -178,6 +178,7 @@ function FormularioCalificar({ boletoId, onEnviado }: { boletoId: string; onEnvi
 export default function MisBoletosPage() {
   const router = useRouter();
   const [boletos, setBoletos] = useState<MiBoleto[] | null>(null);
+  const [creditos, setCreditos] = useState<MiCredito[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
@@ -190,6 +191,11 @@ export default function MisBoletosPage() {
     listarMisBoletos(token)
       .then(setBoletos)
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudieron cargar tus boletos."));
+    listarMisCreditos(token)
+      .then(setCreditos)
+      .catch(() => {
+        /* silencioso a propósito: si falla, simplemente no se muestra la sección de créditos */
+      });
   }
 
   useEffect(cargar, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -201,6 +207,25 @@ export default function MisBoletosPage() {
       <p className="mt-1 text-sm text-brand-dark/60">
         Tu historial de viajes comprados. Podrás calificar cada uno después de la hora estimada de llegada.
       </p>
+
+      {creditos !== null && creditos.filter((c) => !c.usadoEn).length > 0 && (
+        <div className="mt-4 rounded-xl bg-brand-amber/10 px-4 py-3 ring-1 ring-brand-amber/30">
+          <p className="text-sm font-semibold text-brand-dark">Tienes crédito disponible</p>
+          <ul className="mt-1 space-y-0.5 text-sm text-brand-dark/70">
+            {creditos
+              .filter((c) => !c.usadoEn)
+              .map((c) => (
+                <li key={c.id}>
+                  ${c.monto.toFixed(2)} con <span className="font-medium">{c.cooperativaNombre}</span>
+                </li>
+              ))}
+          </ul>
+          <p className="mt-1 text-xs text-brand-dark/50">
+            Contacta directamente a la cooperativa para usarlo en tu próxima compra — todavía no se
+            aplica solo al pagar.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
