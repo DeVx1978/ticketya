@@ -37,7 +37,7 @@ describe('Selección de asientos (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombreCompleto: 'Director Asientos E2E',
+      nombres: 'Director', apellidos: 'Asientos E2E',
     });
 
     const pg = new Client({
@@ -142,7 +142,7 @@ describe('Selección de asientos (e2e)', () => {
       .send({
         correo: `pasajero1.asientos.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Pasajero Uno',
+        nombres: 'Pasajero', apellidos: 'Uno',
       });
     tokenPasajero1 = p1.body.accessToken;
 
@@ -151,7 +151,7 @@ describe('Selección de asientos (e2e)', () => {
       .send({
         correo: `pasajero2.asientos.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Pasajero Dos',
+        nombres: 'Pasajero', apellidos: 'Dos',
       });
     tokenPasajero2 = p2.body.accessToken;
   });

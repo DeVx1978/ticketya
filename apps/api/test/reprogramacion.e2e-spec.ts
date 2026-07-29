@@ -74,7 +74,7 @@ describe('Reprogramación con crédito (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombreCompleto: 'Director Reprogramación E2E',
+      nombres: 'Director', apellidos: 'Reprogramación E2E',
     });
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
@@ -214,7 +214,7 @@ describe('Reprogramación con crédito (e2e)', () => {
       .send({
         correo: `pasajero.reprog.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Pasajero Reprog E2E',
+        nombres: 'Pasajero', apellidos: 'Reprog E2E',
       });
     tokenPasajero = pasajero.body.accessToken;
   });
