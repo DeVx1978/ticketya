@@ -52,7 +52,7 @@ describe('Checkout y pago (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombreCompleto: 'Director Checkout E2E',
+      nombres: 'Director', apellidos: 'Checkout E2E',
     });
 
     const pg = new Client({
@@ -167,7 +167,7 @@ describe('Checkout y pago (e2e)', () => {
       .send({
         correo: `pasajero.checkout.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Pasajero Checkout E2E',
+        nombres: 'Pasajero', apellidos: 'Checkout E2E',
       });
     tokenPasajero = pasajero.body.accessToken;
   });
@@ -472,7 +472,7 @@ describe('Checkout y pago (e2e)', () => {
       .send({
         correo: `otro.cancelacion.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Otro Pasajero Cancelacion E2E',
+        nombres: 'Otro', apellidos: 'Pasajero Cancelacion E2E',
       });
 
     const res = await request(app.getHttpServer())

@@ -43,7 +43,7 @@ describe('Liquidaciones a cooperativas (e2e)', () => {
       .send({
         correo: correoAdmin,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Director Liquidaciones E2E',
+        nombres: 'Director', apellidos: 'Liquidaciones E2E',
         cedula: '0999999998',
       })
       .expect(201);

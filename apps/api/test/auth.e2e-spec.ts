@@ -41,12 +41,51 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo,
           password: 'ClaveSegura123',
-          nombreCompleto: 'Pasajero Prueba E2E',
+          nombres: 'Pasajero', apellidos: 'Prueba E2E',
           cedula: '0911111111',
         })
         .expect(201);
 
       expect(res.body.accessToken).toBeDefined();
+    });
+
+    it('RECHAZA registro con cédula que no tiene exactamente 10 dígitos (hallazgo del usuario, 29-jul-2026)', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/registro')
+        .send({
+          correo: `cedula.mala.${sufijo}@ticketya.ec`,
+          password: 'ClaveSegura123',
+          nombres: 'Pasajero',
+          apellidos: 'Cédula Mala',
+          cedula: '123', // muy corta
+        })
+        .expect(400);
+      expect(res.body.message.join(' ')).toContain('10 dígitos');
+    });
+
+    it('RECHAZA registro con teléfono que no tiene exactamente 10 dígitos', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/registro')
+        .send({
+          correo: `telefono.malo.${sufijo}@ticketya.ec`,
+          password: 'ClaveSegura123',
+          nombres: 'Pasajero',
+          apellidos: 'Teléfono Malo',
+          telefono: '099123', // muy corto
+        })
+        .expect(400);
+      expect(res.body.message.join(' ')).toContain('10 dígitos');
+    });
+
+    it('RECHAZA registro sin apellidos', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/registro')
+        .send({
+          correo: `sin.apellido.${sufijo}@ticketya.ec`,
+          password: 'ClaveSegura123',
+          nombres: 'Pasajero',
+        })
+        .expect(400);
     });
 
     it('rechaza un segundo registro con el mismo correo (409)', async () => {
@@ -55,7 +94,7 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo,
           password: 'ClaveSegura123',
-          nombreCompleto: 'Duplicado',
+          nombres: 'Duplicado', apellidos: 'Apellido',
           cedula: '0922222222',
         })
         .expect(409);
@@ -67,7 +106,7 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo: `otra.${sufijo}@ticketya.ec`,
           password: 'corta',
-          nombreCompleto: 'Alguien',
+          nombres: 'Alguien', apellidos: 'Apellido',
         })
         .expect(400);
     });
@@ -78,7 +117,7 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo: 'esto-no-es-un-correo',
           password: 'ClaveSegura123',
-          nombreCompleto: 'Alguien',
+          nombres: 'Alguien', apellidos: 'Apellido',
         })
         .expect(400);
     });
@@ -94,7 +133,7 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo,
           password: passwordCorrecta,
-          nombreCompleto: 'Login Prueba E2E',
+          nombres: 'Login', apellidos: 'Prueba E2E',
           cedula: '0933333333',
         })
         .expect(201);
@@ -134,7 +173,7 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo: correoBloqueo,
           password: passwordCorrecta,
-          nombreCompleto: 'Bloqueo Prueba E2E',
+          nombres: 'Bloqueo', apellidos: 'Prueba E2E',
           cedula: '0944444444',
         })
         .expect(201);
@@ -175,7 +214,7 @@ describe('Autenticación (e2e)', () => {
         .send({
           correo,
           password: 'ClaveSegura123',
-          nombreCompleto: 'Perfil Prueba E2E',
+          nombres: 'Perfil', apellidos: 'Prueba E2E',
           cedula: '0955555555',
         })
         .expect(201);

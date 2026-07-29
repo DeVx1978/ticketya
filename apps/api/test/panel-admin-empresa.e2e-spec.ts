@@ -62,7 +62,7 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .send({
         correo: correoAdmin,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Director de Prueba E2E',
+        nombres: 'Director', apellidos: 'de Prueba E2E',
         cedula: '0999999999',
       })
       .expect(201);
@@ -718,7 +718,7 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .send({
         correo: `pasajero.e2e.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Pasajero E2E',
+        nombres: 'Pasajero', apellidos: 'E2E',
       })
       .expect(201);
 

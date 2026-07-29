@@ -434,7 +434,10 @@ export async function login(correo: string, password: string): Promise<{ accessT
 export async function registrar(datos: {
   correo: string;
   password: string;
-  nombreCompleto: string;
+  nombres: string;
+  apellidos: string;
+  cedula: string;
+  telefono: string;
 }): Promise<{ accessToken: string }> {
   const res = await fetch(`${API_URL}/auth/registro`, {
     method: "POST",

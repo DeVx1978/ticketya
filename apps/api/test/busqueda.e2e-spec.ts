@@ -37,7 +37,7 @@ describe('Búsqueda de rutas (e2e)', () => {
       .send({
         correo: correoDirector,
         password: 'ClaveSegura123',
-        nombreCompleto: 'Director Búsqueda E2E',
+        nombres: 'Director', apellidos: 'Búsqueda E2E',
       })
       .catch(() => {});
 

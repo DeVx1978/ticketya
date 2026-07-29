@@ -33,7 +33,16 @@ export class AuthController {
   @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
   @Post('registro')
   async registro(@Body() datos: RegistroDto) {
-    return this.authService.registrar(datos);
+    // 29-jul-2026 -- el formulario ahora pide nombres y apellidos por
+    // separado (mejor validación, más claro para el usuario), pero el
+    // resto del sistema (boletos, comprobantes, recibos) ya depende de
+    // un solo campo `nombreCompleto` en muchos lugares — se combinan
+    // aquí, en el borde, sin propagar el cambio a todo lo demás.
+    const { nombres, apellidos, ...resto } = datos;
+    return this.authService.registrar({
+      ...resto,
+      nombreCompleto: `${nombres.trim()} ${apellidos.trim()}`,
+    });
   }
 
   /** RF-AUTH-002 */
