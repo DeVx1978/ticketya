@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import type {
@@ -13,6 +13,7 @@ import type {
   DatosNuevoConductor,
   DatosImportacion,
 } from '../../dominio/panelempresa/panel-empresa.ports';
+import { validarDistribucionAsientos } from '../../dominio/panelempresa/panel-empresa.ports';
 
 export const PANEL_EMPRESA_REPOSITORIO = 'PANEL_EMPRESA_REPOSITORIO';
 
@@ -26,6 +27,21 @@ export class PanelEmpresaService {
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
+    // Vacío real de diseño encontrado el 29-jul-2026 — se valida solo
+    // cuando de verdad se está configurando una distribución real. El
+    // DTO manda `{}` por defecto cuando el cliente no envía nada
+    // (la columna es NOT NULL) — eso NO es un intento de configurar
+    // pisos, es el valor de reserva, y no debe rechazarse.
+    if (
+      datos.distribucionAsientos !== undefined &&
+      Object.keys(datos.distribucionAsientos as object).length > 0
+    ) {
+      const resultado = validarDistribucionAsientos(
+        datos.distribucionAsientos,
+        datos.capacidadTotal,
+      );
+      if (!resultado.ok) throw new BadRequestException(resultado.motivo);
+    }
     return this.panel.crearTipoVehiculo(cooperativaId, datos);
   }
 
@@ -38,6 +54,22 @@ export class PanelEmpresaService {
     tipoVehiculoId: string,
     datos: DatosEditarTipoVehiculo,
   ) {
+    // Solo se puede validar la coherencia con la capacidad si ambos
+    // valores llegan juntos en la misma edición — si solo se manda
+    // distribucionAsientos sin capacidadTotal, no hay con qué
+    // comparar sin una consulta extra (fuera del alcance de esta
+    // entrega, ver LEEME del mapa de asientos).
+    if (
+      datos.distribucionAsientos !== undefined &&
+      Object.keys(datos.distribucionAsientos as object).length > 0 &&
+      datos.capacidadTotal !== undefined
+    ) {
+      const resultado = validarDistribucionAsientos(
+        datos.distribucionAsientos,
+        datos.capacidadTotal,
+      );
+      if (!resultado.ok) throw new BadRequestException(resultado.motivo);
+    }
     return this.panel.editarTipoVehiculo(cooperativaId, tipoVehiculoId, datos);
   }
 

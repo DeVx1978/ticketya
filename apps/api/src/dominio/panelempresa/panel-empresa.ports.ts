@@ -2,6 +2,97 @@
  * Dominio del Panel Empresa — RF-COOP, RF-FLOTA.
  */
 
+/**
+ * Vacío real de diseño encontrado el 29-jul-2026: `distribucionAsientos`
+ * ya se guardaba (tipo `unknown`), pero nunca tuvo una forma definida
+ * ni el frontend la usaba — el mapa de asientos siempre dibujaba una
+ * simplificación de 2+2, sin importar si el bus real tenía dos pisos o
+ * sección VIP. Esta es la forma real, mínima pero completa:
+ *
+ * - Uno o más "pisos" (buses de un piso solo declaran uno).
+ * - Cada piso tiene filas; cada fila es una lista de celdas.
+ * - Una celda es el número de asiento (string) o `null` — `null`
+ *   representa el pasillo (hueco visual entre columnas de asientos).
+ * - `categoria` en el piso es opcional, solo para mostrar una
+ *   etiqueta/color distinto en el frontend (ej. "VIP", "Cama").
+ */
+export interface PisoDistribucionAsientos {
+  nombre: string;
+  categoria?: string;
+  filas: Array<{ celdas: Array<string | null> }>;
+}
+
+export interface DistribucionAsientos {
+  pisos: PisoDistribucionAsientos[];
+}
+
+/**
+ * Valida que la distribución tenga forma correcta y que la cantidad
+ * real de asientos (celdas no nulas, sin duplicados) coincida
+ * exactamente con `capacidadTotal` — evita que un tipo de vehículo
+ * quede con un mapa de asientos que miente sobre cuántos puestos
+ * vende de verdad.
+ */
+export function validarDistribucionAsientos(
+  distribucion: unknown,
+  capacidadTotal: number,
+): { ok: true } | { ok: false; motivo: string } {
+  if (
+    typeof distribucion !== 'object' ||
+    distribucion === null ||
+    !Array.isArray((distribucion as DistribucionAsientos).pisos) ||
+    (distribucion as DistribucionAsientos).pisos.length === 0
+  ) {
+    return {
+      ok: false,
+      motivo: 'La distribución de asientos debe tener al menos un piso con filas.',
+    };
+  }
+
+  const numeros = new Set<string>();
+  for (const piso of (distribucion as DistribucionAsientos).pisos) {
+    if (typeof piso.nombre !== 'string' || !piso.nombre.trim()) {
+      return { ok: false, motivo: 'Cada piso necesita un nombre.' };
+    }
+    if (!Array.isArray(piso.filas)) {
+      return { ok: false, motivo: `El piso "${piso.nombre}" no tiene filas.` };
+    }
+    for (const fila of piso.filas) {
+      if (!Array.isArray(fila.celdas)) {
+        return {
+          ok: false,
+          motivo: `Una fila del piso "${piso.nombre}" no tiene celdas válidas.`,
+        };
+      }
+      for (const celda of fila.celdas) {
+        if (celda === null) continue;
+        if (typeof celda !== 'string' || !celda.trim()) {
+          return {
+            ok: false,
+            motivo: `Un asiento del piso "${piso.nombre}" tiene un número inválido.`,
+          };
+        }
+        if (numeros.has(celda)) {
+          return {
+            ok: false,
+            motivo: `El número de asiento "${celda}" está repetido — cada asiento debe ser único en todo el vehículo.`,
+          };
+        }
+        numeros.add(celda);
+      }
+    }
+  }
+
+  if (numeros.size !== capacidadTotal) {
+    return {
+      ok: false,
+      motivo: `La distribución tiene ${numeros.size} asientos, pero la capacidad declarada es ${capacidadTotal} — deben coincidir exactamente.`,
+    };
+  }
+
+  return { ok: true };
+}
+
 export interface DatosNuevoTipoVehiculo {
   nombre: string;
   capacidadTotal: number;
