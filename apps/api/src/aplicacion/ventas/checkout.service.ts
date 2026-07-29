@@ -29,6 +29,7 @@ export class CheckoutService {
     pasajeros: PasajeroCheckout[],
     usuarioId: string,
     idempotencyKeyCliente?: string,
+    creditoIdAUsar?: string,
   ) {
     const idempotencyKey = idempotencyKeyCliente ?? randomUUID();
 
@@ -95,6 +96,35 @@ export class CheckoutService {
       0,
     );
 
+    // Consumir un crédito en una compra nueva (29-jul-2026) — cierra el
+    // ciclo que quedó a medias el 28-jul: el crédito solo se generaba,
+    // nunca se podía gastar. Solo aplica si TODOS los asientos de esta
+    // compra son de la misma cooperativa que emitió el crédito — un
+    // crédito de la cooperativa A no puede usarse para pagarle a la B.
+    let montoAPagar = montoTotal;
+    let creditoAplicado = 0;
+    if (creditoIdAUsar) {
+      const cooperativasEnCompra = new Set(desglose.map((d) => d.cooperativaId));
+      if (cooperativasEnCompra.size !== 1) {
+        throw new BadRequestException(
+          'No se puede usar un crédito en una compra que mezcla boletos de varias cooperativas.',
+        );
+      }
+      const [cooperativaId] = cooperativasEnCompra;
+      const credito = await this.compras.obtenerCreditoParaUsar(
+        creditoIdAUsar,
+        usuarioId,
+        cooperativaId,
+      );
+      if (!credito) {
+        throw new BadRequestException(
+          'Este crédito no existe, ya se usó, o no corresponde a la cooperativa de este viaje.',
+        );
+      }
+      creditoAplicado = Math.min(credito.monto, montoTotal);
+      montoAPagar = Number((montoTotal - creditoAplicado).toFixed(2));
+    }
+
     const { compraId, mapeo } = await this.compras.crearCompraPendiente(
       usuarioId,
       pasajeros,
@@ -103,7 +133,7 @@ export class CheckoutService {
     );
 
     const resultadoPago = await this.pasarela.procesar(
-      montoTotal,
+      montoAPagar,
       idempotencyKey,
     );
 
@@ -124,6 +154,13 @@ export class CheckoutService {
       resultadoPago.referenciaExterna,
       mapeo,
     );
+
+    // El crédito se marca usado DESPUÉS de que el pago se aprueba y el
+    // boleto ya existe -- si el pago hubiera fallado, el crédito sigue
+    // disponible para intentarlo de nuevo.
+    if (creditoIdAUsar && boletos[0]) {
+      await this.compras.marcarCreditoUsado(creditoIdAUsar, boletos[0].id);
+    }
 
     const montoTotalNotif = mapeo.reduce(
       (acc, m) => acc + m.precioPagado + m.tasaTerminal + m.cargoPlataforma,
@@ -164,6 +201,8 @@ export class CheckoutService {
       estado: 'aprobado' as const,
       boletos: boletosRespuesta,
       montoTotal,
+      montoPagado: montoAPagar,
+      creditoAplicado,
       ivaTotal: ivaTotalRespuesta,
       ivaVisible,
     };

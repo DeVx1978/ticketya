@@ -397,6 +397,8 @@ export interface ResultadoCompra {
   boletos?: BoletoEmitido[];
   motivo?: string;
   montoTotal?: number;
+  montoPagado?: number;
+  creditoAplicado?: number;
   ivaTotal?: number;
   ivaVisible?: boolean;
 }
@@ -405,11 +407,12 @@ export async function crearCompra(
   pasajeros: PasajeroCompraInput[],
   token: string,
   idempotencyKey: string,
+  creditoIdAUsar?: string,
 ): Promise<ResultadoCompra> {
   const res = await fetch(`${API_URL}/compras`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ pasajeros, idempotencyKey }),
+    body: JSON.stringify({ pasajeros, idempotencyKey, creditoIdAUsar }),
   });
   const cuerpo = await res.json();
   if (!res.ok) {

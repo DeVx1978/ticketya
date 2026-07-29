@@ -350,4 +350,118 @@ describe('Reprogramación con crédito (e2e)', () => {
       .send({ horas: 12 })
       .expect(200);
   });
+
+  describe('Usar el crédito en una compra nueva (29-jul-2026) — cierra el ciclo, antes solo se generaba', () => {
+    let creditoId: string;
+    let montoCredito: number;
+
+    beforeAll(async () => {
+      // Genera un crédito real, reprogramando a un pasaje más barato.
+      const boletoId = await comprar(viajeOriginalId, '4A');
+      await bloquear(viajeMasBaratoId, '4A', tokenPasajero);
+      const reprog = await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/reprogramar`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({ nuevoViajeId: viajeMasBaratoId, nuevoNumeroAsiento: '4A' })
+        .expect(201);
+      montoCredito = reprog.body.creditoGenerado;
+
+      const lista = await request(app.getHttpServer())
+        .get('/compras/mis-creditos')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(200);
+      creditoId = lista.body.find((c: { monto: number }) => c.monto === montoCredito).id;
+    });
+
+    it('aplica el crédito en una compra nueva de la misma cooperativa, descontando exactamente su monto', async () => {
+      await bloquear(viajeOriginalId, '4B', tokenPasajero);
+      const res = await request(app.getHttpServer())
+        .post('/compras')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({
+          pasajeros: [
+            {
+              viajeId: viajeOriginalId,
+              numeroAsiento: '4B',
+              nombreCompleto: 'Pasajero Usa Credito E2E',
+              documento: '0104123456',
+              tipoTarifa: 'adulto',
+            },
+          ],
+          creditoIdAUsar: creditoId,
+        })
+        .expect(201);
+
+      expect(res.body.creditoAplicado).toBe(montoCredito);
+      expect(res.body.montoPagado).toBe(
+        Number((res.body.montoTotal - montoCredito).toFixed(2)),
+      );
+
+      // El crédito ya no debe aparecer disponible.
+      const lista = await request(app.getHttpServer())
+        .get('/compras/mis-creditos')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(200);
+      const credito = lista.body.find((c: { id: string }) => c.id === creditoId);
+      expect(credito.usadoEn).not.toBeNull();
+    });
+
+    it('RECHAZA reutilizar el mismo crédito una segunda vez', async () => {
+      await bloquear(viajeOriginalId, '4C', tokenPasajero);
+      const res = await request(app.getHttpServer())
+        .post('/compras')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({
+          pasajeros: [
+            {
+              viajeId: viajeOriginalId,
+              numeroAsiento: '4C',
+              nombreCompleto: 'Pasajero Reusa Credito E2E',
+              documento: '0104123456',
+              tipoTarifa: 'adulto',
+            },
+          ],
+          creditoIdAUsar: creditoId,
+        })
+        .expect(400);
+      expect(res.body.message).toContain('ya se usó');
+    });
+
+    it('RECHAZA usar un crédito de OTRA cooperativa', async () => {
+      const boletoId = await comprar(viajeOriginalId, '4D');
+      await bloquear(viajeMasBaratoId, '4D', tokenPasajero);
+      const reprog = await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/reprogramar`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({ nuevoViajeId: viajeMasBaratoId, nuevoNumeroAsiento: '4D' })
+        .expect(201);
+      const lista = await request(app.getHttpServer())
+        .get('/compras/mis-creditos')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(200);
+      const otroCreditoId = lista.body.find(
+        (c: { monto: number; usadoEn: null }) =>
+          c.monto === reprog.body.creditoGenerado && !c.usadoEn,
+      ).id;
+
+      await bloquear(viajeOtraCoopId, '5A', tokenPasajero);
+      const res = await request(app.getHttpServer())
+        .post('/compras')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({
+          pasajeros: [
+            {
+              viajeId: viajeOtraCoopId,
+              numeroAsiento: '5A',
+              nombreCompleto: 'Pasajero Credito Cruzado E2E',
+              documento: '0104123456',
+              tipoTarifa: 'adulto',
+            },
+          ],
+          creditoIdAUsar: otroCreditoId,
+        })
+        .expect(400);
+      expect(res.body.message).toContain('no corresponde a la cooperativa');
+    });
+  });
 });

@@ -221,8 +221,7 @@ export default function MisBoletosPage() {
               ))}
           </ul>
           <p className="mt-1 text-xs text-brand-dark/50">
-            Contacta directamente a la cooperativa para usarlo en tu próxima compra — todavía no se
-            aplica solo al pagar.
+            Podrás usarlo eligiéndolo en el checkout de tu próxima compra con esa cooperativa.
           </p>
         </div>
       )}

@@ -30,6 +30,7 @@ export class VentasController {
       dto.pasajeros,
       req.user.sub,
       dto.idempotencyKey,
+      dto.creditoIdAUsar,
     );
   }
 
