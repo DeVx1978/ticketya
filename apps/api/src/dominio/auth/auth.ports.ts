@@ -87,6 +87,28 @@ export interface UsuarioRepositorio {
 
   marcarCorreoVerificado(usuarioId: string): Promise<void>;
 
+  /**
+   * Cambio de correo (29-jul-2026, hallazgo real del usuario): si
+   * pierde acceso a su correo, sin esto queda fuera de su cuenta para
+   * siempre, sin ningún camino de autoservicio. Mismo mecanismo de
+   * token de un solo uso que el resto, con el correo nuevo guardado
+   * hasta que se confirme. Reutiliza buscarPorCorreo (ya existe) para
+   * comprobar que el correo nuevo no esté tomado.
+   */
+  guardarTokenCambioCorreo(
+    usuarioId: string,
+    correoNuevo: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void>;
+
+  /** Atómico: mismo patrón que los demás tokens (fix de condición de carrera, 28-jul-2026). */
+  consumirTokenCambioCorreoVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string; correoNuevo: string } | null>;
+
+  actualizarCorreo(usuarioId: string, correoNuevo: string): Promise<void>;
+
   /** 27-jul-2026 -- refresh tokens (RF-AUTH-005). Un solo uso: cada refresh emite un token nuevo y el viejo queda invalido. */
   guardarTokenRefresh(
     usuarioId: string,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { obtenerMiPerfil, actualizarMiPerfil, cambiarPassword, subirFotoPerfil, type MiPerfil } from "@/lib/api";
+import { obtenerMiPerfil, actualizarMiPerfil, cambiarPassword, subirFotoPerfil, solicitarCambioCorreo, type MiPerfil } from "@/lib/api";
 import { tokenValido, borrarToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
 import { CampoPassword } from "@/components/CampoPassword";
@@ -39,6 +39,12 @@ export default function PerfilPage() {
   const [passwordNueva, setPasswordNueva] = useState("");
   const [cambiandoPassword, setCambiandoPassword] = useState(false);
   const [errorPassword, setErrorPassword] = useState<string | null>(null);
+
+  const [correoNuevo, setCorreoNuevo] = useState("");
+  const [passwordParaCorreo, setPasswordParaCorreo] = useState("");
+  const [solicitandoCambioCorreo, setSolicitandoCambioCorreo] = useState(false);
+  const [errorCambioCorreo, setErrorCambioCorreo] = useState<string | null>(null);
+  const [correoSolicitudEnviada, setCorreoSolicitudEnviada] = useState(false);
 
   useEffect(() => {
     const token = tokenValido();
@@ -93,6 +99,32 @@ export default function PerfilPage() {
       setErrorPassword(err instanceof Error ? err.message : "No se pudo cambiar la contraseña.");
     } finally {
       setCambiandoPassword(false);
+    }
+  }
+
+  /**
+   * Cambio de correo (29-jul-2026, hallazgo real del usuario) — sin
+   * esto, quien pierde acceso a su correo queda fuera de su cuenta
+   * para siempre. El correo no cambia todavía aquí: recién cambia
+   * cuando el usuario confirma desde el enlace que le llega al correo
+   * nuevo (ver /confirmar-cambio-correo).
+   */
+  async function solicitarCambio(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorCambioCorreo(null);
+    const token = tokenValido();
+    if (!token) return;
+    setSolicitandoCambioCorreo(true);
+    try {
+      await solicitarCambioCorreo(token, correoNuevo, passwordParaCorreo);
+      setCorreoSolicitudEnviada(true);
+      setPasswordParaCorreo("");
+    } catch (err) {
+      setErrorCambioCorreo(
+        err instanceof Error ? err.message : "No se pudo solicitar el cambio de correo.",
+      );
+    } finally {
+      setSolicitandoCambioCorreo(false);
     }
   }
 
@@ -265,6 +297,53 @@ export default function PerfilPage() {
         >
           {cambiandoPassword ? "Cambiando..." : "Cambiar contraseña"}
         </button>
+      </form>
+
+      {/* Cambiar correo — hallazgo real del usuario (29-jul-2026): si pierdes acceso a tu correo, quedarías fuera de tu cuenta sin esto. */}
+      <form
+        onSubmit={solicitarCambio}
+        className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      >
+        <h2 className="font-display text-base font-bold text-brand-dark">Cambiar correo</h2>
+        <p className="text-xs text-brand-dark/50">
+          Correo actual: <span className="font-semibold">{perfil.correo}</span>
+        </p>
+        {correoSolicitudEnviada ? (
+          <p className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">
+            Te enviamos un enlace de confirmación a tu correo nuevo. Tu correo actual sigue activo
+            hasta que confirmes.
+          </p>
+        ) : (
+          <>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                Correo nuevo
+              </label>
+              <input
+                type="email"
+                value={correoNuevo}
+                onChange={(e) => setCorreoNuevo(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                Tu contraseña actual (para confirmar que eres tú)
+              </label>
+              <CampoPassword value={passwordParaCorreo} onChange={setPasswordParaCorreo} />
+            </div>
+            {errorCambioCorreo && (
+              <p className="text-sm font-medium text-red-600">{errorCambioCorreo}</p>
+            )}
+            <button
+              type="submit"
+              disabled={solicitandoCambioCorreo || !correoNuevo || !passwordParaCorreo}
+              className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            >
+              {solicitandoCambioCorreo ? "Enviando..." : "Solicitar cambio de correo"}
+            </button>
+          </>
+        )}
       </form>
 
       <button

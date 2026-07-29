@@ -798,6 +798,41 @@ export async function cambiarPassword(
   }
 }
 
+/**
+ * Cambio de correo (29-jul-2026, hallazgo real del usuario): sin esto,
+ * quien pierde acceso a su correo queda fuera de su cuenta para
+ * siempre — el reset de contraseña también depende de ese correo.
+ */
+export async function solicitarCambioCorreo(
+  token: string,
+  correoNuevo: string,
+  passwordActual: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/solicitar-cambio-correo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ correoNuevo, passwordActual }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo solicitar el cambio de correo.");
+  }
+}
+
+export async function confirmarCambioCorreo(token: string): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/confirmar-cambio-correo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo confirmar el cambio de correo.");
+  }
+}
+
 export interface UsuarioStaffResumen {
   id: string;
   correo: string;
