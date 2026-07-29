@@ -71,14 +71,14 @@ export interface DatosNuevoConductor {
  * creados en una importación anterior.
  */
 export interface ItemImportTipoVehiculo {
-  ref: string;
+  ref?: string;
   nombre: string;
   capacidadTotal: number;
   distribucionAsientos?: unknown;
 }
 
 export interface ItemImportConductor {
-  ref: string;
+  ref?: string;
   nombreCompleto: string;
   cedula: string;
   licenciaNumero?: string;
@@ -87,14 +87,14 @@ export interface ItemImportConductor {
 }
 
 export interface ItemImportUnidad {
-  ref: string;
+  ref?: string;
   tipoVehiculoRef: string;
   placa: string;
   identificadorOperativo: string;
 }
 
 export interface ItemImportRuta {
-  ref: string;
+  ref?: string;
   origenPuntoOperacionId: string;
   destinoPuntoOperacionId: string;
   precioBaseReferencia: number;
@@ -366,6 +366,18 @@ export interface PanelEmpresaRepositorio {
       ivaVisibleEnBoleto: boolean;
       ivaSigueTasaNacional: boolean;
     },
+  ): Promise<void>;
+
+  /**
+   * Reprogramación con crédito (Fase C, 28-jul-2026) — horas mínimas
+   * antes de la salida para poder reprogramar. Cada cooperativa
+   * configura la suya; null = usa el valor de reserva conservador de
+   * la capa de aplicación.
+   */
+  obtenerHorasLimiteReprogramacion(cooperativaId: string): Promise<number | null>;
+  actualizarHorasLimiteReprogramacion(
+    cooperativaId: string,
+    horas: number,
   ): Promise<void>;
 
   /** RF-COOP-006 — validación de boleto por QR en abordaje. */

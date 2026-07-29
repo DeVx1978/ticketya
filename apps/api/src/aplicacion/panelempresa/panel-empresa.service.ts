@@ -162,6 +162,14 @@ export class PanelEmpresaService {
     return this.panel.actualizarConfiguracionFiscal(cooperativaId, datos);
   }
 
+  obtenerHorasLimiteReprogramacion(cooperativaId: string) {
+    return this.panel.obtenerHorasLimiteReprogramacion(cooperativaId);
+  }
+
+  actualizarHorasLimiteReprogramacion(cooperativaId: string, horas: number) {
+    return this.panel.actualizarHorasLimiteReprogramacion(cooperativaId, horas);
+  }
+
   validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,

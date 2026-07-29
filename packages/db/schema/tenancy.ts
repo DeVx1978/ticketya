@@ -17,6 +17,7 @@ import {
   doublePrecision,
   timestamp,
   boolean,
+  integer,
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -76,6 +77,17 @@ export const cooperativas = pgTable(
     // archivos propio todavía, sería sobre-construcción para lo que se
     // necesita hoy. Nullable: no toda cooperativa tiene logo cargado.
     logoUrl: text('logo_url'),
+
+    // Reprogramación con crédito (28-jul-2026, Fase C) — horas mínimas
+    // antes de la salida programada para poder reprogramar un boleto.
+    // Configurable por cooperativa: no todas manejan la misma ventana
+    // (confirmado en análisis de negocio con el usuario, comparado
+    // contra prácticas reales de la industria — Flixbus, Peter Pan,
+    // OurBus usan entre 15 min y 24h según el operador). Nullable: si
+    // no está configurado, la capa de aplicación usa un valor de
+    // reserva conservador — mismo patrón que
+    // configuracionPlataforma.cancelacionHorasMinimasAntes.
+    horasLimiteReprogramacion: integer('horas_limite_reprogramacion'),
 
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),

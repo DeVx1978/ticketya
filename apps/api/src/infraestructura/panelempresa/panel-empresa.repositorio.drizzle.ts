@@ -623,10 +623,12 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             VALUES (${cooperativaId}, ${item.nombre}, ${item.capacidadTotal}, ${JSON.stringify(item.distribucionAsientos ?? {})})
             RETURNING id
           `);
-            refsTipoVehiculo.set(
-              item.ref,
-              (filas.rows[0] as { id: string }).id,
-            );
+            if (item.ref) {
+              refsTipoVehiculo.set(
+                item.ref,
+                (filas.rows[0] as { id: string }).id,
+              );
+            }
           }
 
           for (const item of datos.conductores ?? []) {
@@ -635,7 +637,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             VALUES (${cooperativaId}, ${item.nombreCompleto}, ${item.cedula}, ${item.licenciaNumero ?? null}, ${item.licenciaCategoria ?? null}, ${item.telefono ?? null})
             RETURNING id
           `);
-            refsConductor.set(item.ref, (filas.rows[0] as { id: string }).id);
+            if (item.ref) {
+              refsConductor.set(item.ref, (filas.rows[0] as { id: string }).id);
+            }
           }
 
           for (const item of datos.unidades ?? []) {
@@ -651,7 +655,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             VALUES (${cooperativaId}, ${tipoVehiculoId}, ${item.placa}, ${item.identificadorOperativo})
             RETURNING id
           `);
-            refsUnidad.set(item.ref, (filas.rows[0] as { id: string }).id);
+            if (item.ref) {
+              refsUnidad.set(item.ref, (filas.rows[0] as { id: string }).id);
+            }
           }
 
           for (const item of datos.rutas ?? []) {
@@ -660,7 +666,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             VALUES (${cooperativaId}, ${item.origenPuntoOperacionId}, ${item.destinoPuntoOperacionId}, ${item.precioBaseReferencia}, ${item.nombre ?? null})
             RETURNING id
           `);
-            refsRuta.set(item.ref, (filas.rows[0] as { id: string }).id);
+            if (item.ref) {
+              refsRuta.set(item.ref, (filas.rows[0] as { id: string }).id);
+            }
           }
 
           let horariosCreados = 0;
@@ -861,6 +869,27 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             iva_visible_en_boleto = ${datos.ivaVisibleEnBoleto},
             iva_sigue_tasa_nacional = ${datos.ivaSigueTasaNacional}
         WHERE id = ${cooperativaId}
+      `);
+    });
+  }
+
+  async obtenerHorasLimiteReprogramacion(cooperativaId: string): Promise<number | null> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT horas_limite_reprogramacion FROM cooperativas WHERE id = ${cooperativaId}
+      `);
+      const f = resultado.rows[0] as { horas_limite_reprogramacion: number | null };
+      return f.horas_limite_reprogramacion;
+    });
+  }
+
+  async actualizarHorasLimiteReprogramacion(
+    cooperativaId: string,
+    horas: number,
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE cooperativas SET horas_limite_reprogramacion = ${horas} WHERE id = ${cooperativaId}
       `);
     });
   }
