@@ -116,6 +116,18 @@ export async function limpiarCooperativasDePrueba(
     await pg.query(
       `DELETE FROM conductores WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
     );
+    // 28-jul-2026 -- agregado junto con el módulo de liquidaciones: sin
+    // esto, correr los tests de liquidaciones repetidamente dejaría
+    // liquidaciones huérfanas acumulándose, el mismo problema que este
+    // archivo entero existe para evitar.
+    await pg.query(
+      `DELETE FROM ajustes_liquidacion WHERE liquidacion_cooperativa_id IN (
+         SELECT id FROM liquidaciones_cooperativa WHERE cooperativa_id IN (SELECT id FROM _coop_test)
+       )`,
+    );
+    await pg.query(
+      `DELETE FROM liquidaciones_cooperativa WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
+    );
     await pg.query(
       `DELETE FROM tokens_usuario WHERE usuario_id IN (
          SELECT id FROM usuarios WHERE cooperativa_id IN (SELECT id FROM _coop_test)
