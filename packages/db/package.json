@@ -10,6 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrar": "node scripts/aplicar-migraciones.cjs",
     "db:migrar:marcar": "node scripts/aplicar-migraciones.cjs --marcar-como-aplicadas",
+    "db:respaldar": "node scripts/respaldar.cjs",
+    "db:verificar-backup": "node scripts/verificar-backup.cjs",
     "verify:migration": "node verify_migration.cjs",
     "verify:rls": "node verify_rls_isolation.cjs",
     "verify:edge-cases": "node verify_edge_cases.cjs",
