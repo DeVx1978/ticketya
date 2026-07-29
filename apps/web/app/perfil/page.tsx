@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { obtenerMiPerfil, actualizarMiPerfil, cambiarPassword, type MiPerfil } from "@/lib/api";
+import { obtenerMiPerfil, actualizarMiPerfil, cambiarPassword, subirFotoPerfil, type MiPerfil } from "@/lib/api";
 import { tokenValido, borrarToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
 import { CampoPassword } from "@/components/CampoPassword";
@@ -31,6 +31,7 @@ export default function PerfilPage() {
   const [nombreCompleto, setNombreCompleto] = useState("");
   const [telefono, setTelefono] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null);
 
@@ -197,15 +198,34 @@ export default function PerfilPage() {
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
-            URL de foto de perfil (opcional)
+            Foto de perfil
           </label>
           <input
-            type="text"
-            value={fotoUrl}
-            onChange={(e) => setFotoUrl(e.target.value)}
-            placeholder="https://res.cloudinary.com/tu-cuenta/foto.jpg"
-            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={async (e) => {
+              const archivo = e.target.files?.[0];
+              if (!archivo) return;
+              const token = tokenValido();
+              if (!token) return;
+              setErrorPerfil(null);
+              setSubiendoFoto(true);
+              try {
+                const url = await subirFotoPerfil(token, archivo);
+                setFotoUrl(url);
+                setPerfil((p) => (p ? { ...p, fotoUrl: url } : p));
+                setMensajeExito("Foto de perfil actualizada.");
+              } catch (err) {
+                setErrorPerfil(err instanceof Error ? err.message : "No se pudo subir la foto.");
+              } finally {
+                setSubiendoFoto(false);
+              }
+            }}
+            disabled={subiendoFoto}
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-sm text-brand-dark file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white disabled:opacity-50"
           />
+          {subiendoFoto && <p className="mt-1 text-xs text-brand-dark/60">Subiendo…</p>}
+          <p className="mt-1 text-xs text-brand-dark/50">JPG, PNG o WEBP, hasta 5 MB.</p>
         </div>
         {errorPerfil && <p className="text-sm font-medium text-red-600">{errorPerfil}</p>}
         <button

@@ -738,6 +738,29 @@ export async function actualizarMiPerfil(
   }
 }
 
+/**
+ * Vacío real de diseño encontrado el 29-jul-2026: el backend ya tenía
+ * un endpoint real de subida de archivo (POST /auth/perfil/foto), pero
+ * el perfil solo dejaba pegar una URL a mano, sin usarlo. Esta función
+ * reconecta eso — sube el archivo real, y el backend ya actualiza el
+ * perfil solo (no hace falta un segundo PATCH después).
+ */
+export async function subirFotoPerfil(token: string, archivo: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("foto", archivo);
+  const res = await fetch(`${API_URL}/auth/perfil/foto`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo subir la foto.");
+  }
+  return cuerpo.url as string;
+}
+
 export async function cambiarPassword(
   token: string,
   passwordActual: string,

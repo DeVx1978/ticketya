@@ -150,6 +150,12 @@ export const puntosOperacion = pgTable(
     liquidacionTitular: varchar('liquidacion_titular', { length: 150 }),
     liquidacionPeriodicidadDias: numeric('liquidacion_periodicidad_dias', { precision: 3, scale: 0 }),
 
+    // Vacío real de diseño encontrado el 29-jul-2026: cooperativas ya
+    // tenía su propio logo, los terminales no. Agregado para que la
+    // plataforma se vea profesional en cada punto de operación, no
+    // solo en las cooperativas.
+    logoUrl: text('logo_url'),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },

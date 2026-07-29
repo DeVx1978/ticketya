@@ -122,6 +122,7 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
         ciudad: puntosOperacion.ciudad,
         provincia: puntosOperacion.provincia,
         tasaMonto: puntosOperacion.tasaMonto,
+        logoUrl: puntosOperacion.logoUrl,
         cooperativaPropietariaNombre: cooperativas.nombreComercial,
       })
       .from(puntosOperacion)
@@ -166,6 +167,7 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
       valores.cooperativaPropietariaId = datos.cooperativaPropietariaId;
     if (datos.tasaMonto !== undefined)
       valores.tasaMonto = String(datos.tasaMonto);
+    if (datos.logoUrl !== undefined) valores.logoUrl = datos.logoUrl;
 
     if (Object.keys(valores).length === 0) return; // nada que actualizar
 
