@@ -25,6 +25,8 @@ export interface DatosNuevoPuntoOperacion {
   provincia: string;
   cooperativaPropietariaId?: string;
   tasaMonto?: number;
+  /** Vacío real de diseño encontrado el 29-jul-2026 -- terminales no tenían logo, cooperativas sí. */
+  logoUrl?: string;
 }
 
 export interface FilaVentaNacional {

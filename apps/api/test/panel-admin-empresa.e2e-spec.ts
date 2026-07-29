@@ -233,6 +233,25 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(actualizado.tasaMonto).toBe(0.75);
   });
 
+  it('se puede cargar el logo de un terminal (vacío de diseño encontrado 29-jul-2026)', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/puntos-operacion/${puntoOrigenId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ logoUrl: 'https://res.cloudinary.com/ticketya/terminal-machala.png' })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    const actualizado = res.body.find(
+      (p: { id: string }) => p.id === puntoOrigenId,
+    );
+    expect(actualizado.logoUrl).toBe(
+      'https://res.cloudinary.com/ticketya/terminal-machala.png',
+    );
+  });
+
   it('GET /admin/dashboard refleja la cooperativa creada (RF-ADMIN-002)', async () => {
     const res = await request(app.getHttpServer())
       .get('/admin/dashboard')

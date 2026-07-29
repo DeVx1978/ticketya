@@ -102,6 +102,11 @@ export class ActualizarPuntoOperacionDto {
   @IsString()
   cooperativaPropietariaId?: string;
 
+  /** Vacío real de diseño encontrado el 29-jul-2026 -- terminales no tenían logo, cooperativas sí. */
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
