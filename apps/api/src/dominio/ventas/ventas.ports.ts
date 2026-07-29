@@ -170,6 +170,41 @@ export interface CompraRepositorio {
     usuarioId: string,
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 
+  /**
+   * Reprogramación con crédito (Fase C, 29-jul-2026). Devuelve null si
+   * el boleto no existe o no le pertenece al usuario.
+   */
+  obtenerDetalleBoletoParaReprogramar(
+    boletoId: string,
+    usuarioId: string,
+  ): Promise<{
+    estado: string;
+    viajeAsientoId: string;
+    horaSalidaProgramada: string | Date;
+    cooperativaId: string;
+    precioPagado: number;
+    tasaTerminal: number;
+    pasajeroCompraId: string;
+    nombreCompleto: string;
+    documento: string;
+    tipoTarifa: TipoTarifa;
+    fechaNacimiento: string | null;
+  } | null>;
+
+  obtenerHorasLimiteReprogramacion(cooperativaId: string): Promise<number>;
+
+  cancelarBoletoPorReprogramacion(
+    boletoId: string,
+    viajeAsientoId: string,
+  ): Promise<void>;
+
+  crearCreditoPasajero(
+    usuarioId: string,
+    cooperativaId: string,
+    monto: number,
+    boletoOrigenId: string,
+  ): Promise<void>;
+
   /** 27-jul-2026 -- controla como se muestra el IVA al pasajero en el checkout. */
   obtenerModoIvaBoleto(): Promise<'calculado' | 'cero' | 'oculto'>;
 

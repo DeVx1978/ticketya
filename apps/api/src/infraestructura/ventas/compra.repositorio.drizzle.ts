@@ -18,6 +18,7 @@ import {
   autorizacionesMenor,
   configuracionPlataforma,
   notificaciones,
+  creditosPasajero,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -406,6 +407,96 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .where(eq(viajeAsientos.id, fila.viajeAsientoId));
 
     return { ok: true };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Reprogramación con crédito (Fase C, 29-jul-2026)
+  // ─────────────────────────────────────────────────────────────
+
+  async obtenerDetalleBoletoParaReprogramar(
+    boletoId: string,
+    usuarioId: string,
+  ) {
+    const [fila] = await this.dbPublico
+      .select({
+        estado: boletos.estado,
+        viajeAsientoId: boletos.viajeAsientoId,
+        compradorUsuarioId: compras.compradorUsuarioId,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+        cooperativaId: viajes.cooperativaId,
+        precioPagado: boletos.precioPagado,
+        pasajeroCompraId: boletos.pasajeroCompraId,
+        nombreCompleto: pasajerosCompra.nombreCompleto,
+        documento: pasajerosCompra.documento,
+        tipoTarifa: pasajerosCompra.tipoTarifa,
+        fechaNacimiento: pasajerosCompra.fechaNacimiento,
+      })
+      .from(boletos)
+      .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .innerJoin(
+        pasajerosCompra,
+        eq(boletos.pasajeroCompraId, pasajerosCompra.id),
+      )
+      .where(eq(boletos.id, boletoId));
+
+    if (!fila || fila.compradorUsuarioId !== usuarioId) return null;
+
+    const [tasaFila] = await this.dbPublico
+      .select({ monto: comprobantesTasaTerminal.monto })
+      .from(comprobantesTasaTerminal)
+      .where(eq(comprobantesTasaTerminal.boletoId, boletoId));
+
+    return {
+      ...fila,
+      precioPagado: Number(fila.precioPagado),
+      tasaTerminal: Number(tasaFila?.monto ?? 0),
+    };
+  }
+
+  async obtenerHorasLimiteReprogramacion(
+    cooperativaId: string,
+  ): Promise<number> {
+    const [coop] = await this.dbPublico
+      .select({ horas: cooperativas.horasLimiteReprogramacion })
+      .from(cooperativas)
+      .where(eq(cooperativas.id, cooperativaId));
+    // Valor de reserva conservador si la cooperativa no lo configuró
+    // todavía — mismo patrón que cancelacionHorasMinimasAntes.
+    return coop?.horas ?? 2;
+  }
+
+  async cancelarBoletoPorReprogramacion(
+    boletoId: string,
+    viajeAsientoId: string,
+  ): Promise<void> {
+    // Deliberadamente sin volver a chequear el límite de horas — ya se
+    // validó específicamente para reprogramación antes de llegar aquí,
+    // con la ventana propia de cada cooperativa, no la de cancelación
+    // general.
+    await this.dbPublico
+      .update(boletos)
+      .set({ estado: 'cancelado' })
+      .where(eq(boletos.id, boletoId));
+    await this.dbPublico
+      .update(viajeAsientos)
+      .set({ estado: 'disponible', holdUsuarioId: null, holdExpiraEn: null })
+      .where(eq(viajeAsientos.id, viajeAsientoId));
+  }
+
+  async crearCreditoPasajero(
+    usuarioId: string,
+    cooperativaId: string,
+    monto: number,
+    boletoOrigenId: string,
+  ): Promise<void> {
+    await this.dbPublico.insert(creditosPasajero).values({
+      usuarioId,
+      cooperativaId,
+      monto: monto.toFixed(2),
+      boletoOrigenId,
+    });
   }
 
   async obtenerReciboCompra(

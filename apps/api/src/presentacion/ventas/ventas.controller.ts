@@ -11,6 +11,7 @@
 } from '@nestjs/common';
 import { CheckoutService } from '../../aplicacion/ventas/checkout.service';
 import { CrearCompraDto } from './dto/crear-compra.dto';
+import { ReprogramarBoletoDto } from './dto/reprogramar-boleto.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -69,5 +70,25 @@ export class VentasController {
       throw new HttpException('Compra no encontrada.', HttpStatus.NOT_FOUND);
     }
     return recibo;
+  }
+
+  /**
+   * Reprogramación con crédito (Fase C, 29-jul-2026). El asiento nuevo
+   * debe estar bloqueado a nombre de este usuario antes de llamar esto
+   * (mismo flujo de checkout normal: bloquear-asiento primero).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('boletos/:boletoId/reprogramar')
+  async reprogramarBoleto(
+    @Param('boletoId') boletoId: string,
+    @Body() dto: ReprogramarBoletoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.reprogramarBoleto(
+      boletoId,
+      dto.nuevoViajeId,
+      dto.nuevoNumeroAsiento,
+      req.user.sub,
+    );
   }
 }
