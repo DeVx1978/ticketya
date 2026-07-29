@@ -162,3 +162,19 @@ export const estadoReservaApiEnum = pgEnum('estado_reserva_api', [
   'confirmada',
   'revertida',
 ]);
+
+/**
+ * Categoría de vehículo (29-jul-2026, hallazgo real del usuario): antes
+ * "tipo de vehículo" era solo texto libre (ej. "Van 15 puestos"), sin
+ * ninguna categoría estructurada detrás — el sistema no podía filtrar
+ * búsquedas por tipo ni distinguirlos automáticamente. El nombre libre
+ * sigue existiendo (para "Doble piso VIP" vs. "Estándar 2+2" dentro de
+ * la misma categoría "bus"), esta categoría es la clasificación de más
+ * alto nivel.
+ */
+export const categoriaVehiculoEnum = pgEnum('categoria_vehiculo', [
+  'bus',
+  'buseta',
+  'van',
+  'auto',
+]);

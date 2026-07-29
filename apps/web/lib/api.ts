@@ -189,6 +189,7 @@ export async function crearRutaCoop(
 export interface TipoVehiculoResumen {
   id: string;
   nombre: string;
+  categoria: "bus" | "buseta" | "van" | "auto" | null;
   capacidadTotal: number;
 }
 
@@ -204,7 +205,7 @@ export async function listarTiposVehiculoCoop(token: string): Promise<TipoVehicu
 
 export async function crearTipoVehiculoCoop(
   token: string,
-  datos: { nombre: string; capacidadTotal: number },
+  datos: { nombre: string; categoria?: "bus" | "buseta" | "van" | "auto"; capacidadTotal: number },
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_URL}/coop/tipos-vehiculo`, {
     method: "POST",
