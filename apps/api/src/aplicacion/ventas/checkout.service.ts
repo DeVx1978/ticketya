@@ -320,4 +320,9 @@ export class CheckoutService {
   async obtenerReciboCompra(compraId: string, usuarioId: string) {
     return this.compras.obtenerReciboCompra(compraId, usuarioId);
   }
+
+  /** Vacío real de diseño encontrado el 29-jul-2026: sin esto, el pasajero no tenía dónde ver su saldo de crédito. */
+  async listarMisCreditos(usuarioId: string) {
+    return this.compras.listarCreditosUsuario(usuarioId);
+  }
 }

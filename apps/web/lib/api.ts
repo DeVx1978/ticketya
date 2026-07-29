@@ -1029,5 +1029,29 @@ export async function listarMisBoletos(token: string): Promise<MiBoleto[]> {
   return cuerpo as MiBoleto[];
 }
 
+/**
+ * Vacío real de diseño encontrado el 29-jul-2026: el crédito de
+ * reprogramación existía en el backend desde el 28-jul, pero el
+ * pasajero no tenía ningún lugar donde consultar su saldo.
+ */
+export interface MiCredito {
+  id: string;
+  cooperativaId: string;
+  cooperativaNombre: string;
+  monto: number;
+  usadoEn: string | null;
+  creadoEn: string;
+}
+
+export async function listarMisCreditos(token: string): Promise<MiCredito[]> {
+  const res = await fetch(`${API_URL}/compras/mis-creditos`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar tus créditos.");
+  return cuerpo as MiCredito[];
+}
+
 
 

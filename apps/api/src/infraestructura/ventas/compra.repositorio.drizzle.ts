@@ -499,6 +499,35 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     });
   }
 
+  async listarCreditosUsuario(usuarioId: string) {
+    // dbPublico (BYPASSRLS) a propósito, mismo motivo que la búsqueda
+    // pública: un pasajero puede tener créditos de varias cooperativas
+    // distintas a la vez, no tiene sentido filtrar por una sola (ver
+    // nota de diseño en la migración 0010_creditos_reprogramacion.sql).
+    const filas = await this.dbPublico
+      .select({
+        id: creditosPasajero.id,
+        cooperativaId: creditosPasajero.cooperativaId,
+        cooperativaNombre: cooperativas.nombreComercial,
+        monto: creditosPasajero.monto,
+        usadoEn: creditosPasajero.usadoEn,
+        creadoEn: creditosPasajero.creadoEn,
+      })
+      .from(creditosPasajero)
+      .innerJoin(cooperativas, eq(creditosPasajero.cooperativaId, cooperativas.id))
+      .where(eq(creditosPasajero.usuarioId, usuarioId))
+      .orderBy(sql`${creditosPasajero.creadoEn} DESC`);
+
+    return filas.map((f) => ({
+      id: f.id,
+      cooperativaId: f.cooperativaId,
+      cooperativaNombre: f.cooperativaNombre,
+      monto: Number(f.monto),
+      usadoEn: f.usadoEn ? f.usadoEn.toISOString() : null,
+      creadoEn: f.creadoEn.toISOString(),
+    }));
+  }
+
   async obtenerReciboCompra(
     compraId: string,
     usuarioId: string,
