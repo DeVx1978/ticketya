@@ -70,7 +70,7 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-brand-light/20">
-      <header className="border-b border-black/5 bg-white">
+      <header className="sticky top-0 z-50 border-b border-black/5 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-8">
             <span className="font-display text-lg font-extrabold text-brand">
