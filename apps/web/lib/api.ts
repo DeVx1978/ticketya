@@ -51,10 +51,27 @@ export async function buscarViajes(
   return res.json();
 }
 
+/**
+ * Vacío real de diseño encontrado el 29-jul-2026: el backend ya
+ * enviaba esto, sin tipo definido y sin que el frontend lo usara.
+ * Un "piso" con filas; cada celda es un número de asiento o `null`
+ * (pasillo). `categoria` es opcional, solo para mostrar una etiqueta
+ * distinta (ej. "VIP") en el frontend.
+ */
+export interface PisoDistribucionAsientos {
+  nombre: string;
+  categoria?: string;
+  filas: Array<{ celdas: Array<string | null> }>;
+}
+
+export interface DistribucionAsientos {
+  pisos: PisoDistribucionAsientos[];
+}
+
 export interface MapaAsientos {
   viajeId: string;
   capacidadTotal: number;
-  distribucionAsientos: unknown;
+  distribucionAsientos: DistribucionAsientos | null;
   asientosNoDisponibles: { numeroAsiento: string; estado: string; holdExpiraEn: string | null }[];
 }
 

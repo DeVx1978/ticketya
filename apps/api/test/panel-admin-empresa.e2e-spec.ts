@@ -294,6 +294,72 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     const tipo = res.body.find((t: { id: string }) => t.id === tipoVehiculoId);
     expect(tipo).toBeDefined();
     expect(tipo.capacidadTotal).toBe(40);
+
+  });
+
+  it('crea un tipo de vehículo con una distribución real de dos pisos (vacío de diseño encontrado 29-jul-2026)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Bus doble piso VIP ${sufijo}`,
+        capacidadTotal: 6,
+        distribucionAsientos: {
+          pisos: [
+            {
+              nombre: 'Piso 1',
+              categoria: 'estandar',
+              filas: [{ celdas: ['1A', '1B', null, '1C', '1D'] }],
+            },
+            {
+              nombre: 'Piso 2',
+              categoria: 'VIP',
+              filas: [{ celdas: ['2A', null, '2B'] }],
+            },
+          ],
+        },
+      })
+      .expect(201);
+    expect(res.body.id).toBeDefined();
+  });
+
+  it('RECHAZA una distribución cuya cantidad de asientos no coincide con la capacidad declarada', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Bus mal declarado ${sufijo}`,
+        capacidadTotal: 10, // dice 10, pero la distribución solo tiene 2
+        distribucionAsientos: {
+          pisos: [{ nombre: 'Piso 1', filas: [{ celdas: ['1A', '1B'] }] }],
+        },
+      })
+      .expect(400);
+    expect(res.body.message).toContain('deben coincidir exactamente');
+  });
+
+  it('RECHAZA una distribución con números de asiento repetidos', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Bus con asientos duplicados ${sufijo}`,
+        capacidadTotal: 2,
+        distribucionAsientos: {
+          pisos: [{ nombre: 'Piso 1', filas: [{ celdas: ['1A', '1A'] }] }],
+        },
+      })
+      .expect(400);
+    expect(res.body.message).toContain('repetido');
+  });
+
+  it('crear un tipo de vehículo SIN distribución sigue funcionando igual que siempre (compatibilidad hacia atrás)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ nombre: `Bus sin distribución configurada ${sufijo}`, capacidadTotal: 15 })
+      .expect(201);
+    expect(res.body.id).toBeDefined();
   });
 
   it('crea una unidad con placa e identificador operativo, y persiste exactamente esos valores (RF-FLOTA-002)', async () => {

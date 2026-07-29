@@ -1,31 +1,49 @@
 "use client";
 
-import { useEffect, useState, Fragment, use as usePromise } from "react";
+import { useEffect, useState, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { obtenerMapaAsientos, bloquearAsiento, type MapaAsientos } from "@/lib/api";
+import { obtenerMapaAsientos, bloquearAsiento, type MapaAsientos, type PisoDistribucionAsientos } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 
 /**
- * Genera un mapa de asientos simple 2+2 (4 por fila, pasillo al medio) a
- * partir de la capacidad total del vehículo. No usa el contenido real de
- * `distribucionAsientos` todavía (hoy es JSON libre sin una forma fija
- * acordada — ver nota en packages/db/schema/flota.ts); esto es una
- * simplificación consciente para tener una primera pantalla funcional,
- * no la versión final de cómo se va a ver el mapa de cada cooperativa.
+ * Vacío real de diseño encontrado el 29-jul-2026: hasta ahora esta
+ * pantalla ignoraba `distribucionAsientos` (el backend ya la enviaba)
+ * y siempre dibujaba una simplificación de 2+2 — un bus real de dos
+ * pisos o con sección VIP se veía como una fila plana, sin importar
+ * su configuración real.
+ *
+ * Ahora: si el tipo de vehículo tiene una distribución real
+ * configurada (uno o más pisos, cada uno con sus filas), se usa tal
+ * cual. Si no la tiene (tipos de vehículo antiguos, o cooperativas que
+ * todavía no configuraron la suya), se cae de forma segura al mismo
+ * generador simple 2+2 de siempre — nadie se queda sin mapa de
+ * asientos mientras se termina de adoptar el nuevo formato.
  */
-function generarNumerosAsiento(capacidadTotal: number): string[][] {
+function generarPisosDeRespaldo(capacidadTotal: number): PisoDistribucionAsientos[] {
   const letras = ["A", "B", "C", "D"];
-  const filas: string[][] = [];
+  const filas: Array<{ celdas: Array<string | null> }> = [];
   let restante = capacidadTotal;
   let numeroFila = 1;
   while (restante > 0) {
     const enEstaFila = Math.min(4, restante);
-    filas.push(letras.slice(0, enEstaFila).map((l) => `${numeroFila}${l}`));
+    const celdas: Array<string | null> = letras
+      .slice(0, enEstaFila)
+      .map((l) => `${numeroFila}${l}`);
+    celdas.splice(2, 0, null); // pasillo entre la 2da y 3ra columna
+    filas.push({ celdas });
     restante -= enEstaFila;
     numeroFila++;
   }
-  return filas;
+  return [{ nombre: "Piso único", filas }];
+}
+
+function obtenerPisos(mapa: MapaAsientos): PisoDistribucionAsientos[] {
+  const distribucion = mapa.distribucionAsientos;
+  if (distribucion && Array.isArray(distribucion.pisos) && distribucion.pisos.length > 0) {
+    return distribucion.pisos;
+  }
+  return generarPisosDeRespaldo(mapa.capacidadTotal);
 }
 
 export default function SeleccionAsientosPage({ params }: { params: Promise<{ id: string }> }) {
@@ -72,7 +90,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
   }
 
   const estadoPorNumero = new Map(mapa.asientosNoDisponibles.map((a) => [a.numeroAsiento, a.estado]));
-  const filas = generarNumerosAsiento(mapa.capacidadTotal);
+  const pisos = obtenerPisos(mapa);
 
   async function continuar() {
     if (!seleccionado) return;
@@ -105,37 +123,52 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
           {mapa.capacidadTotal} puestos en total. Los grises ya no están disponibles.
         </p>
 
-        <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-          <div className="space-y-2">
-            {filas.map((fila, i) => (
-              <div key={i} className="flex items-center justify-center gap-2">
-                {fila.map((numero, j) => {
-                  const estado = estadoPorNumero.get(numero);
-                  const noDisponible = estado === "ocupado" || estado === "bloqueado_temporal";
-                  const esSeleccionado = seleccionado === numero;
-                  return (
-                    <Fragment key={numero}>
-                      {j === 2 && <span className="w-4" />}
-                      <button
-                        type="button"
-                        disabled={noDisponible}
-                        onClick={() => setSeleccionado(numero)}
-                        className={`h-10 w-10 rounded-lg text-xs font-semibold transition ${
-                          noDisponible
-                            ? "cursor-not-allowed bg-gray-200 text-gray-400"
-                            : esSeleccionado
-                              ? "bg-brand-amber text-brand-dark ring-2 ring-brand-dark"
-                              : "bg-brand-light text-brand-dark hover:bg-brand-medium hover:text-white"
-                        }`}
-                      >
-                        {numero}
-                      </button>
-                    </Fragment>
-                  );
-                })}
+        <div className="mt-6 space-y-4">
+          {pisos.map((piso, pisoIdx) => (
+            <div key={pisoIdx} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+              {pisos.length > 1 && (
+                <div className="mb-4 flex items-center justify-center gap-2">
+                  <h2 className="font-display text-sm font-bold text-brand-dark">{piso.nombre}</h2>
+                  {piso.categoria && (
+                    <span className="rounded-full bg-brand-amber/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-dark">
+                      {piso.categoria}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="space-y-2">
+                {piso.filas.map((fila, i) => (
+                  <div key={i} className="flex items-center justify-center gap-2">
+                    {fila.celdas.map((numero, j) => {
+                      if (numero === null) {
+                        return <span key={j} className="w-4" />;
+                      }
+                      const estado = estadoPorNumero.get(numero);
+                      const noDisponible = estado === "ocupado" || estado === "bloqueado_temporal";
+                      const esSeleccionado = seleccionado === numero;
+                      return (
+                        <button
+                          key={numero}
+                          type="button"
+                          disabled={noDisponible}
+                          onClick={() => setSeleccionado(numero)}
+                          className={`h-10 w-10 rounded-lg text-xs font-semibold transition ${
+                            noDisponible
+                              ? "cursor-not-allowed bg-gray-200 text-gray-400"
+                              : esSeleccionado
+                                ? "bg-brand-amber text-brand-dark ring-2 ring-brand-dark"
+                                : "bg-brand-light text-brand-dark hover:bg-brand-medium hover:text-white"
+                          }`}
+                        >
+                          {numero}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
         {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}
