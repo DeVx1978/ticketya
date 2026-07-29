@@ -28,6 +28,7 @@ import {
   ActualizarEstadoUnidadDto,
   VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
+  ActualizarHorasLimiteReprogramacionDto,
   ActualizarPerfilDto,
   EditarTipoVehiculoDto,
   EditarRutaDto,
@@ -283,7 +284,7 @@ export class PanelEmpresaController {
     @Body() dto: ImportarDatosDto,
     @Request() req: { user: PayloadToken },
   ) {
-    return this.panel.importarDatos(cooperativaDelToken(req.user), dto as any);
+    return this.panel.importarDatos(cooperativaDelToken(req.user), dto);
   }
 
   /** RF-COOP-004 */
@@ -353,6 +354,29 @@ export class PanelEmpresaController {
     await this.panel.actualizarConfiguracionFiscal(
       cooperativaDelToken(req.user),
       dto,
+    );
+    return { ok: true };
+  }
+
+  /** Reprogramación con crédito (Fase C, 28-jul-2026) — horas mínimas antes de la salida, configurable por cooperativa. */
+  @Roles('admin_cooperativa')
+  @Get('horas-limite-reprogramacion')
+  async obtenerHorasLimiteReprogramacion(@Request() req: { user: PayloadToken }) {
+    const horas = await this.panel.obtenerHorasLimiteReprogramacion(
+      cooperativaDelToken(req.user),
+    );
+    return { horas };
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('horas-limite-reprogramacion')
+  async actualizarHorasLimiteReprogramacion(
+    @Body() dto: ActualizarHorasLimiteReprogramacionDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarHorasLimiteReprogramacion(
+      cooperativaDelToken(req.user),
+      dto.horas,
     );
     return { ok: true };
   }

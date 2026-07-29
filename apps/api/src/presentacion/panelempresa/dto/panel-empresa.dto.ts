@@ -11,7 +11,9 @@ import {
   Max,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CrearTipoVehiculoDto {
   @IsString()
@@ -112,12 +114,86 @@ export class CrearConductorDto {
  * `ref` mal formado o inexistente al momento de insertar (ver
  * panel-empresa.repositorio.drizzle.ts).
  */
+/**
+ * Clases de item para la carga masiva (RF-COOP-IMPORT). Antes estas
+ * llegaban como `unknown[]` sin validar la forma de cada fila, lo que
+ * obligaba a un `dto as any` en el controlador para poder pasarlas al
+ * servicio — TypeScript no detectaba si una fila venía incompleta o mal
+ * tipada, y class-validator tampoco la rechazaba. Hallazgo real de
+ * auditoría (28-jul-2026), corregido con @ValidateNested + DTOs propios
+ * por cada tipo de fila, coincidiendo exactamente con los Item Import*
+ * de dominio/panelempresa/panel-empresa.ports.ts.
+ */
+export class ItemImportTipoVehiculoDto {
+  @IsOptional() @IsString() ref?: string;
+  @IsString() nombre!: string;
+  @IsInt() capacidadTotal!: number;
+  @IsOptional() distribucionAsientos?: unknown;
+}
+
+export class ItemImportConductorDto {
+  @IsOptional() @IsString() ref?: string;
+  @IsString() nombreCompleto!: string;
+  @IsString() cedula!: string;
+  @IsOptional() @IsString() licenciaNumero?: string;
+  @IsOptional() @IsString() licenciaCategoria?: string;
+  @IsOptional() @IsString() telefono?: string;
+}
+
+export class ItemImportUnidadDto {
+  @IsOptional() @IsString() ref?: string;
+  @IsString() tipoVehiculoRef!: string;
+  @IsString() placa!: string;
+  @IsString() identificadorOperativo!: string;
+}
+
+export class ItemImportRutaDto {
+  @IsOptional() @IsString() ref?: string;
+  @IsString() origenPuntoOperacionId!: string;
+  @IsString() destinoPuntoOperacionId!: string;
+  @IsNumber() precioBaseReferencia!: number;
+  @IsOptional() @IsString() nombre?: string;
+}
+
+export class ItemImportHorarioDto {
+  @IsString() rutaRef!: string;
+  @IsString() unidadRef!: string;
+  @IsOptional() @IsString() conductorRef?: string;
+  @IsString() horaSalida!: string;
+  @IsArray() @IsInt({ each: true }) diasSemana!: number[];
+}
+
 export class ImportarDatosDto {
-  @IsOptional() @IsArray() tiposVehiculo?: unknown[];
-  @IsOptional() @IsArray() conductores?: unknown[];
-  @IsOptional() @IsArray() unidades?: unknown[];
-  @IsOptional() @IsArray() rutas?: unknown[];
-  @IsOptional() @IsArray() horarios?: unknown[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemImportTipoVehiculoDto)
+  tiposVehiculo?: ItemImportTipoVehiculoDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemImportConductorDto)
+  conductores?: ItemImportConductorDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemImportUnidadDto)
+  unidades?: ItemImportUnidadDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemImportRutaDto)
+  rutas?: ItemImportRutaDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ItemImportHorarioDto)
+  horarios?: ItemImportHorarioDto[];
+
   @IsOptional() @IsISO8601() generarViajesDesde?: string;
   @IsOptional() @IsISO8601() generarViajesHasta?: string;
 }
@@ -172,6 +248,14 @@ export class VerificarMenorDto {
 
   @IsBoolean()
   documentoAutorizacionVerificado!: boolean;
+}
+
+/** Reprogramación con crédito (Fase C, 28-jul-2026) — horas mínimas antes de la salida. */
+export class ActualizarHorasLimiteReprogramacionDto {
+  @IsInt()
+  @Min(0)
+  @Max(720) // 30 días como tope razonable, evita valores absurdos por error de tipeo
+  horas!: number;
 }
 
 /** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable, ver 21-jul-2026. */

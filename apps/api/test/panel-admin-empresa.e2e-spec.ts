@@ -376,6 +376,41 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       .expect(200);
   });
 
+  it('la cooperativa configura sus propias horas límite para reprogramar (Fase C, 28-jul-2026)', async () => {
+    const res1 = await request(app.getHttpServer())
+      .get('/coop/horas-limite-reprogramacion')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    // Nadie lo ha configurado todavía en esta cooperativa de prueba.
+    expect(res1.body.horas).toBeNull();
+
+    await request(app.getHttpServer())
+      .patch('/coop/horas-limite-reprogramacion')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ horas: 12 })
+      .expect(200);
+
+    const res2 = await request(app.getHttpServer())
+      .get('/coop/horas-limite-reprogramacion')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    expect(res2.body.horas).toBe(12);
+  });
+
+  it('rechaza un valor de horas límite fuera de rango (negativo o absurdamente alto)', async () => {
+    await request(app.getHttpServer())
+      .patch('/coop/horas-limite-reprogramacion')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ horas: -1 })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .patch('/coop/horas-limite-reprogramacion')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ horas: 99999 })
+      .expect(400);
+  });
+
   it('el admin de plataforma cambia el IVA nacional y se propaga solo a cooperativas en modo automático, respetando excepciones manuales (21-jul-2026)', async () => {
     // Una cooperativa se queda en modo manual con su propio valor (ej. exenta).
     await request(app.getHttpServer())
