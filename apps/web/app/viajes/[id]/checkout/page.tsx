@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useState, use as usePromise } from "react";
+import { Suspense, useState, useEffect, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { crearCompra, type ResultadoCompra } from "@/lib/api";
+import { crearCompra, listarMisCreditos, type ResultadoCompra, type MiCredito } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
@@ -29,6 +29,18 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoCompra | null>(null);
+  const [creditos, setCreditos] = useState<MiCredito[]>([]);
+  const [creditoElegidoId, setCreditoElegidoId] = useState("");
+
+  useEffect(() => {
+    const token = tokenValido();
+    if (!token) return;
+    listarMisCreditos(token)
+      .then((lista) => setCreditos(lista.filter((c) => !c.usadoEn)))
+      .catch(() => {
+        /* silencioso a propósito: si falla, simplemente no se ofrece la opción de usar crédito */
+      });
+  }, []);
 
   async function pagar(e: React.FormEvent) {
     e.preventDefault();
@@ -67,6 +79,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
         ],
         token,
         idempotencyKey,
+        creditoElegidoId || undefined,
       );
       setResultado(resp);
       if (resp.estado === "rechazado") {
@@ -111,9 +124,15 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 <span>${boleto.ivaMonto.toFixed(2)}</span>
               </div>
             )}
+            {!!resultado.creditoAplicado && resultado.creditoAplicado > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Crédito aplicado</span>
+                <span>-${resultado.creditoAplicado.toFixed(2)}</span>
+              </div>
+            )}
             <div className="mt-1 flex justify-between border-t border-brand-dark/10 pt-1 font-semibold text-brand-dark">
-              <span>Total</span>
-              <span>${resultado.montoTotal?.toFixed(2)}</span>
+              <span>{resultado.creditoAplicado ? "Pagaste" : "Total"}</span>
+              <span>${(resultado.montoPagado ?? resultado.montoTotal)?.toFixed(2)}</span>
             </div>
           </div>
 
@@ -255,6 +274,29 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {creditos.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                Usar un crédito disponible (opcional)
+              </label>
+              <select
+                value={creditoElegidoId}
+                onChange={(e) => setCreditoElegidoId(e.target.value)}
+                className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              >
+                <option value="">No usar crédito</option>
+                {creditos.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    ${c.monto.toFixed(2)} — {c.cooperativaNombre}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-brand-dark/50">
+                Solo se aplica si el crédito es de la misma cooperativa que este viaje.
+              </p>
             </div>
           )}
 

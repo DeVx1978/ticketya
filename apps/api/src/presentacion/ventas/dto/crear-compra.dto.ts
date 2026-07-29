@@ -85,4 +85,9 @@ export class CrearCompraDto {
   @IsOptional()
   @IsString()
   idempotencyKey?: string;
+
+  /** Vacío real de diseño encontrado el 29-jul-2026: hasta ahora el crédito de reprogramación solo se generaba, nunca se podía gastar. */
+  @IsOptional()
+  @IsUUID()
+  creditoIdAUsar?: string;
 }

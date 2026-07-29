@@ -1,5 +1,5 @@
 ﻿import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { NotificadorEmail } from '../../dominio/auth/auth.ports';
 import { NOTIFICADOR_EMAIL } from '../../aplicacion/auth/auth.service';
@@ -526,6 +526,43 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       usadoEn: f.usadoEn ? f.usadoEn.toISOString() : null,
       creadoEn: f.creadoEn.toISOString(),
     }));
+  }
+
+  async obtenerCreditoParaUsar(
+    creditoId: string,
+    usuarioId: string,
+    cooperativaId: string,
+  ): Promise<{ monto: number } | null> {
+    const [fila] = await this.dbPublico
+      .select({ monto: creditosPasajero.monto })
+      .from(creditosPasajero)
+      .where(
+        and(
+          eq(creditosPasajero.id, creditoId),
+          eq(creditosPasajero.usuarioId, usuarioId),
+          eq(creditosPasajero.cooperativaId, cooperativaId),
+          isNull(creditosPasajero.usadoEn),
+        ),
+      );
+    if (!fila) return null;
+    return { monto: Number(fila.monto) };
+  }
+
+  async marcarCreditoUsado(
+    creditoId: string,
+    boletoUsadoId: string,
+  ): Promise<boolean> {
+    // Atómico -- mismo patrón que los tokens de un solo uso (fix de
+    // condición de carrera real, 28-jul-2026): solo puede marcarlo
+    // usado UNA vez, aunque dos peticiones lo intenten a la vez.
+    const resultado = await this.dbPublico
+      .update(creditosPasajero)
+      .set({ usadoEn: new Date(), boletoUsadoId })
+      .where(
+        and(eq(creditosPasajero.id, creditoId), isNull(creditosPasajero.usadoEn)),
+      )
+      .returning({ id: creditosPasajero.id });
+    return resultado.length > 0;
   }
 
   async obtenerReciboCompra(

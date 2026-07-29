@@ -226,6 +226,22 @@ export interface CompraRepositorio {
    */
   listarCreditosUsuario(usuarioId: string): Promise<CreditoPasajero[]>;
 
+  /**
+   * Consumir un crédito en una compra nueva (29-jul-2026) — cierra el
+   * ciclo: hasta ahora el crédito solo se generaba, nunca se podía
+   * gastar. En dos pasos porque el monto a descontar hay que conocerlo
+   * ANTES de cobrar, pero el boleto (para vincular el crédito) recién
+   * existe DESPUÉS de que el pago se aprueba.
+   */
+  obtenerCreditoParaUsar(
+    creditoId: string,
+    usuarioId: string,
+    cooperativaId: string,
+  ): Promise<{ monto: number } | null>;
+
+  /** Atómico (mismo patrón que los tokens de un solo uso) — evita que se use dos veces por una carrera. */
+  marcarCreditoUsado(creditoId: string, boletoUsadoId: string): Promise<boolean>;
+
   /** 27-jul-2026 -- controla como se muestra el IVA al pasajero en el checkout. */
   obtenerModoIvaBoleto(): Promise<'calculado' | 'cero' | 'oculto'>;
 
