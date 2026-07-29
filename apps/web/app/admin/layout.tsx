@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-brand-dark/[0.03]">
-      <header className="border-b border-black/10 bg-brand-dark">
+      <header className="sticky top-0 z-50 border-b border-black/10 bg-brand-dark">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-8">
             <span className="font-display text-lg font-extrabold text-white">
