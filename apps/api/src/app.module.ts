@@ -15,6 +15,7 @@ import { AdminModule } from './presentacion/admin/admin.module';
 import { PanelEmpresaModule } from './presentacion/panelempresa/panel-empresa.module';
 import { CalificacionesModule } from './presentacion/calificaciones/calificaciones.module';
 import { ComercialModule } from './presentacion/comercial/comercial.module';
+import { LiquidacionesModule } from './presentacion/liquidaciones/liquidaciones.module';
 
 /**
  * 27-jul-2026 -- rate limiting global (RNF-SEG, Fase B). Limite por
@@ -50,6 +51,7 @@ import { ComercialModule } from './presentacion/comercial/comercial.module';
     PanelEmpresaModule,
     CalificacionesModule,
     ComercialModule,
+    LiquidacionesModule,
   ],
   controllers: [AppController, SaludController],
   providers: [
