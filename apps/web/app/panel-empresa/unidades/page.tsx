@@ -62,6 +62,7 @@ export default function UnidadesPage() {
 
   // Formulario: tipo de vehículo
   const [nombreTipo, setNombreTipo] = useState("");
+  const [categoriaTipo, setCategoriaTipo] = useState<"" | "bus" | "buseta" | "van" | "auto">("");
   const [capacidad, setCapacidad] = useState("");
   const [guardandoTipo, setGuardandoTipo] = useState(false);
   const [errorTipo, setErrorTipo] = useState<string | null>(null);
@@ -96,9 +97,14 @@ export default function UnidadesPage() {
     }
     setGuardandoTipo(true);
     try {
-      await crearTipoVehiculoCoop(token, { nombre: nombreTipo.trim(), capacidadTotal: Number(capacidad) });
+      await crearTipoVehiculoCoop(token, {
+        nombre: nombreTipo.trim(),
+        categoria: categoriaTipo || undefined,
+        capacidadTotal: Number(capacidad),
+      });
       setMensajeExito(`Tipo de vehículo "${nombreTipo.trim()}" creado correctamente.`);
       setNombreTipo("");
+      setCategoriaTipo("");
       setCapacidad("");
       cargarTodo();
     } catch (err) {
@@ -162,7 +168,7 @@ export default function UnidadesPage() {
 
         <form
           onSubmit={crearTipo}
-          className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-3 sm:items-end"
+          className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
         >
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
@@ -175,6 +181,22 @@ export default function UnidadesPage() {
               placeholder="Ej. Bus estándar 2+2"
               className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              Categoría
+            </label>
+            <select
+              value={categoriaTipo}
+              onChange={(e) => setCategoriaTipo(e.target.value as typeof categoriaTipo)}
+              className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+            >
+              <option value="">Sin categoría</option>
+              <option value="bus">Bus</option>
+              <option value="buseta">Buseta</option>
+              <option value="van">Van</option>
+              <option value="auto">Auto</option>
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
@@ -210,6 +232,7 @@ export default function UnidadesPage() {
               <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
                 <tr>
                   <th className="px-6 py-3">Nombre</th>
+                  <th className="px-6 py-3">Categoría</th>
                   <th className="px-6 py-3 text-right">Capacidad</th>
                 </tr>
               </thead>
@@ -217,6 +240,15 @@ export default function UnidadesPage() {
                 {tipos.map((t) => (
                   <tr key={t.id}>
                     <td className="px-6 py-3 font-medium text-brand-dark">{t.nombre}</td>
+                    <td className="px-6 py-3 text-brand-dark/70">
+                      {t.categoria ? (
+                        <span className="rounded-full bg-brand-light px-2 py-0.5 text-xs font-semibold capitalize text-brand-dark">
+                          {t.categoria}
+                        </span>
+                      ) : (
+                        <span className="text-brand-dark/30">Sin categoría</span>
+                      )}
+                    </td>
                     <td className="px-6 py-3 text-right text-brand-dark/70">{t.capacidadTotal} asientos</td>
                   </tr>
                 ))}

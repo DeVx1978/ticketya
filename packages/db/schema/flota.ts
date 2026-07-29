@@ -15,6 +15,7 @@ import {
 import { relations } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
 import { appRole, filtroCooperativaActual } from './rls';
+import { categoriaVehiculoEnum } from './enums';
 
 /**
  * RF-FLOTA-001 — catálogo extensible de tipos de vehículo por cooperativa
@@ -41,6 +42,13 @@ export const tiposVehiculo = pgTable(
       .notNull(),
 
     nombre: varchar('nombre', { length: 100 }).notNull(), // ej. "Doble piso VIP", "Van 15 puestos"
+
+    // Categoría estructurada (29-jul-2026) — separada del nombre libre.
+    // Nullable a propósito: los tipos de vehículo creados antes de hoy
+    // no tienen categoría, y no se debe asumir "bus" en silencio para
+    // ellos — el frontend debe tratar null como "sin categorizar".
+    categoria: categoriaVehiculoEnum('categoria'),
+
     capacidadTotal: integer('capacidad_total').notNull(),
     distribucionAsientos: jsonb('distribucion_asientos').notNull(),
 

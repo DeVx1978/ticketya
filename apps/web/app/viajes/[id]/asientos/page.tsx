@@ -115,12 +115,23 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
     }
   }
 
+  const ocupados = mapa.asientosNoDisponibles.length;
+  const disponibles = mapa.capacidadTotal - ocupados;
+
   return (
     <main className="flex-1 bg-brand-light/40 px-4 py-10">
       <div className="mx-auto max-w-md">
         <h1 className="font-display text-xl font-bold text-brand-dark">Elige tu asiento</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
-          {mapa.capacidadTotal} puestos en total. Los grises ya no están disponibles.
+        <p className="mt-1 flex items-center gap-3 text-sm text-brand-dark/60">
+          <span>
+            <span className="font-semibold text-brand-dark">{disponibles}</span> disponibles
+          </span>
+          <span className="text-brand-dark/30">·</span>
+          <span>
+            <span className="font-semibold text-brand-dark">{ocupados}</span> ocupados
+          </span>
+          <span className="text-brand-dark/30">·</span>
+          <span>{mapa.capacidadTotal} en total</span>
         </p>
 
         <div className="mt-6 space-y-4">

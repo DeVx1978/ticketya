@@ -362,6 +362,53 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(res.body.id).toBeDefined();
   });
 
+  it('crea un tipo de vehículo con categoría real (vacío de diseño encontrado 29-jul-2026)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Van ejecutiva ${sufijo}`,
+        categoria: 'van',
+        capacidadTotal: 15,
+      })
+      .expect(201);
+    const id = res.body.id;
+
+    const lista = await request(app.getHttpServer())
+      .get('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    const tipo = lista.body.find((t: { id: string }) => t.id === id);
+    expect(tipo.categoria).toBe('van');
+  });
+
+  it('RECHAZA una categoría que no está en la lista permitida', async () => {
+    await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Categoría inventada ${sufijo}`,
+        categoria: 'helicoptero',
+        capacidadTotal: 4,
+      })
+      .expect(400);
+  });
+
+  it('un tipo de vehículo creado sin categoría queda en null, no se asume "bus" en silencio', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({ nombre: `Sin categoría ${sufijo}`, capacidadTotal: 20 })
+      .expect(201);
+
+    const lista = await request(app.getHttpServer())
+      .get('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .expect(200);
+    const tipo = lista.body.find((t: { id: string }) => t.id === res.body.id);
+    expect(tipo.categoria).toBeNull();
+  });
+
   it('crea una unidad con placa e identificador operativo, y persiste exactamente esos valores (RF-FLOTA-002)', async () => {
     const res = await request(app.getHttpServer())
       .post('/coop/unidades')

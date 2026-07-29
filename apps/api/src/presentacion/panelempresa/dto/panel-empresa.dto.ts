@@ -20,6 +20,11 @@ export class CrearTipoVehiculoDto {
   @MinLength(2)
   nombre!: string;
 
+  /** 29-jul-2026 -- categoría estructurada, separada del nombre libre. */
+  @IsOptional()
+  @IsIn(['bus', 'buseta', 'van', 'auto'])
+  categoria?: 'bus' | 'buseta' | 'van' | 'auto';
+
   @IsInt()
   @Min(1)
   capacidadTotal!: number;
@@ -278,6 +283,7 @@ export class ActualizarConfiguracionFiscalDto {
 /** Editar o desactivar un tipo de vehiculo. */
 export class EditarTipoVehiculoDto {
   @IsOptional() @IsString() @MinLength(2) nombre?: string;
+  @IsOptional() @IsIn(['bus', 'buseta', 'van', 'auto']) categoria?: 'bus' | 'buseta' | 'van' | 'auto';
   @IsOptional() @IsInt() @Min(1) capacidadTotal?: number;
   @IsOptional() distribucionAsientos?: unknown;
   @IsOptional() @IsBoolean() activo?: boolean;

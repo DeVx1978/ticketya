@@ -95,12 +95,14 @@ export function validarDistribucionAsientos(
 
 export interface DatosNuevoTipoVehiculo {
   nombre: string;
+  categoria?: 'bus' | 'buseta' | 'van' | 'auto';
   capacidadTotal: number;
   distribucionAsientos?: unknown;
 }
 
 export interface DatosEditarTipoVehiculo {
   nombre?: string;
+  categoria?: 'bus' | 'buseta' | 'van' | 'auto';
   capacidadTotal?: number;
   distribucionAsientos?: unknown;
   activo?: boolean;
@@ -256,6 +258,7 @@ export interface RutaResumen {
 export interface TipoVehiculoResumen {
   id: string;
   nombre: string;
+  categoria: string | null;
   capacidadTotal: number;
 }
 

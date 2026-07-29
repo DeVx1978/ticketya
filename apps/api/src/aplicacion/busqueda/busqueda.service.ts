@@ -122,6 +122,7 @@ export class BusquedaService {
         horaLlegadaEstimada: viajes.horaLlegadaEstimada,
         precioBase: viajes.precioBase,
         tipoVehiculoNombre: tiposVehiculo.nombre,
+        tipoVehiculoCategoria: tiposVehiculo.categoria,
         asientosDisponibles: asientosDisponibles.as('asientos_disponibles'),
         origenLatitud: origen.latitud,
         origenLongitud: origen.longitud,

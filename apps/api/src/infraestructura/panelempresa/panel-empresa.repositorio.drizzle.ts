@@ -43,8 +43,8 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
-        INSERT INTO tipos_vehiculo (cooperativa_id, nombre, capacidad_total, distribucion_asientos)
-        VALUES (${cooperativaId}, ${datos.nombre}, ${datos.capacidadTotal}, ${JSON.stringify(datos.distribucionAsientos)})
+        INSERT INTO tipos_vehiculo (cooperativa_id, nombre, categoria, capacidad_total, distribucion_asientos)
+        VALUES (${cooperativaId}, ${datos.nombre}, ${datos.categoria ?? null}, ${datos.capacidadTotal}, ${JSON.stringify(datos.distribucionAsientos)})
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
@@ -56,7 +56,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<TipoVehiculoResumen[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
-        SELECT id, nombre, capacidad_total
+        SELECT id, nombre, categoria, capacidad_total
         FROM tipos_vehiculo
         WHERE cooperativa_id = ${cooperativaId}
         ORDER BY creado_en DESC
@@ -65,11 +65,13 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         const f = fila as {
           id: string;
           nombre: string;
+          categoria: string | null;
           capacidad_total: number;
         };
         return {
           id: f.id,
           nombre: f.nombre,
+          categoria: f.categoria,
           capacidadTotal: f.capacidad_total,
         };
       });
@@ -126,6 +128,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
 
       if (datos.nombre !== undefined) {
         await tx.execute(sql`UPDATE tipos_vehiculo SET nombre = ${datos.nombre} WHERE id = ${tipoVehiculoId}`);
+      }
+      if (datos.categoria !== undefined) {
+        await tx.execute(sql`UPDATE tipos_vehiculo SET categoria = ${datos.categoria} WHERE id = ${tipoVehiculoId}`);
       }
       if (datos.capacidadTotal !== undefined) {
         await tx.execute(sql`UPDATE tipos_vehiculo SET capacidad_total = ${datos.capacidadTotal} WHERE id = ${tipoVehiculoId}`);
