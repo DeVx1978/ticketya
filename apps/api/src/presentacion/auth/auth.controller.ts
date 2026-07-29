@@ -17,6 +17,7 @@ import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import { SolicitarCambioCorreoDto, ConfirmarCambioCorreoDto } from './dto/cambiar-correo.dto';
 import { SolicitarResetDto } from './dto/solicitar-reset.dto';
 import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
 import { VerificarCorreoDto } from './dto/verificar-correo.dto';
@@ -83,6 +84,31 @@ export class AuthController {
       dto.passwordNueva,
     );
     return { ok: true };
+  }
+
+  /**
+   * Cambio de correo (29-jul-2026, hallazgo real del usuario) — sin
+   * esto, quien pierde acceso a su correo queda fuera de su cuenta
+   * para siempre. Requiere sesión + contraseña actual; el correo no
+   * cambia hasta que se confirme el nuevo (ver confirmar-cambio-correo).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('solicitar-cambio-correo')
+  async solicitarCambioCorreo(
+    @Body() dto: SolicitarCambioCorreoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.authService.solicitarCambioCorreo(
+      req.user.sub,
+      dto.correoNuevo,
+      dto.passwordActual,
+    );
+  }
+
+  /** Público, sin login -- el usuario llega aquí desde el enlace del correo nuevo. */
+  @Post('confirmar-cambio-correo')
+  async confirmarCambioCorreo(@Body() dto: ConfirmarCambioCorreoDto) {
+    return this.authService.confirmarCambioCorreo(dto.token);
   }
 
   @Post('solicitar-reset')

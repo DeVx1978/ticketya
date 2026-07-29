@@ -102,10 +102,17 @@ export const tokensUsuario = pgTable(
     usuarioId: uuid('usuario_id')
       .references(() => usuarios.id)
       .notNull(),
-    proposito: varchar('proposito', { length: 30 }).notNull(), // 'reset_password' | 'refresh_session'
+    proposito: varchar('proposito', { length: 30 }).notNull(), // 'reset_password' | 'refresh_session' | 'verificar_correo' | 'cambiar_correo'
     tokenHash: varchar('token_hash', { length: 255 }).notNull(),
     expiraEn: timestamp('expira_en', { withTimezone: true }).notNull(),
     usadoEn: timestamp('usado_en', { withTimezone: true }),
+    // Cambio de correo (29-jul-2026, hallazgo real del usuario): si
+    // pierde acceso a su correo, hoy no tenía ningún camino de
+    // autoservicio para recuperarlo — quedaba fuera de su cuenta para
+    // siempre. Solo se usa con proposito='cambiar_correo': guarda el
+    // correo nuevo hasta que se confirme, para no reemplazar el viejo
+    // hasta estar seguros de que el usuario tiene acceso real al nuevo.
+    correoNuevo: varchar('correo_nuevo', { length: 200 }),
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

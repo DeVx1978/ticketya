@@ -206,6 +206,65 @@ export class AuthService {
     await this.usuarios.actualizarPasswordHash(usuarioId, nuevoHash);
   }
 
+  /**
+   * Cambio de correo (29-jul-2026, hallazgo real del usuario): sin
+   * esto, un pasajero que pierde acceso a su correo queda fuera de su
+   * cuenta para siempre — el reset de contraseña también depende de
+   * ese mismo correo, así que no hay ningún camino de autoservicio.
+   *
+   * Requiere la contraseña actual (evita que una sesión robada pueda
+   * secuestrar la cuenta cambiando el correo de recuperación), y el
+   * correo nuevo no se reemplaza hasta confirmarlo — mismo mecanismo
+   * de verificación que ya existe para el registro.
+   */
+  async solicitarCambioCorreo(
+    usuarioId: string,
+    correoNuevo: string,
+    passwordActual: string,
+  ) {
+    const usuario = await this.usuarios.buscarPorId(usuarioId);
+    if (!usuario || !usuario.passwordHash) {
+      throw new NotFoundException('Usuario no encontrado.');
+    }
+    const valido = await this.hasher.comparar(passwordActual, usuario.passwordHash);
+    if (!valido) {
+      throw new BadRequestException('La contraseña actual no es correcta.');
+    }
+
+    const yaExiste = await this.usuarios.buscarPorCorreo(correoNuevo);
+    if (yaExiste) {
+      throw new ConflictException('Ya existe una cuenta con ese correo.');
+    }
+
+    const tokenPlano = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const expiraEn = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await this.usuarios.guardarTokenCambioCorreo(
+      usuarioId,
+      correoNuevo,
+      tokenHash,
+      expiraEn,
+    );
+    await this.email.enviarVerificacionCorreo(correoNuevo, tokenPlano);
+
+    return { ok: true };
+  }
+
+  async confirmarCambioCorreo(tokenPlano: string) {
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const token = await this.usuarios.consumirTokenCambioCorreoVigente(tokenHash);
+
+    if (!token) {
+      throw new BadRequestException(
+        'Este enlace de cambio de correo no es válido o ya expiró. Solicita uno nuevo.',
+      );
+    }
+
+    await this.usuarios.actualizarCorreo(token.usuarioId, token.correoNuevo);
+
+    return { ok: true };
+  }
+
   async solicitarResetPassword(correo: string) {
     const usuario = await this.usuarios.buscarPorCorreo(correo);
 

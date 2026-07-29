@@ -201,6 +201,46 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     `);
   }
 
+  async guardarTokenCambioCorreo(
+    usuarioId: string,
+    correoNuevo: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO tokens_usuario (usuario_id, proposito, token_hash, expira_en, correo_nuevo)
+      VALUES (${usuarioId}, 'cambiar_correo', ${tokenHash}, ${expiraEn.toISOString()}, ${correoNuevo})
+    `);
+  }
+
+  async consumirTokenCambioCorreoVigente(
+    tokenHash: string,
+  ): Promise<{ id: string; usuarioId: string; correoNuevo: string } | null> {
+    // Mismo patrón atómico que refresh_session/reset_password/verificar_correo
+    // (fix de condición de carrera real, 28-jul-2026) — una sola sentencia
+    // UPDATE...WHERE usado_en IS NULL...RETURNING.
+    const resultado = await this.db.execute(sql`
+      UPDATE tokens_usuario
+      SET usado_en = now()
+      WHERE token_hash = ${tokenHash}
+        AND proposito = 'cambiar_correo'
+        AND usado_en IS NULL
+        AND expira_en > now()
+      RETURNING id, usuario_id, correo_nuevo
+    `);
+    const fila = resultado.rows[0] as
+      | { id: string; usuario_id: string; correo_nuevo: string }
+      | undefined;
+    if (!fila) return null;
+    return { id: fila.id, usuarioId: fila.usuario_id, correoNuevo: fila.correo_nuevo };
+  }
+
+  async actualizarCorreo(usuarioId: string, correoNuevo: string): Promise<void> {
+    await this.db.execute(sql`
+      UPDATE usuarios SET correo = ${correoNuevo} WHERE id = ${usuarioId}
+    `);
+  }
+
   async guardarTokenRefresh(
     usuarioId: string,
     tokenHash: string,

@@ -3,6 +3,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { Client } from 'pg';
+import { randomBytes, createHash } from 'node:crypto';
 
 /**
  * Paso 1 del plan de blindaje del núcleo (ver conversación del 20 de
@@ -298,6 +300,114 @@ describe('Autenticación (e2e)', () => {
           passwordNueva: 'OtraClave12345',
         })
         .expect(400);
+    });
+  });
+
+  describe('Cambio de correo (29-jul-2026, hallazgo real del usuario) — sin esto, quien pierde acceso a su correo queda fuera de su cuenta para siempre', () => {
+    const correo = `cambiocorreo.e2e.${sufijo}@ticketya.ec`;
+    let token: string;
+
+    beforeAll(async () => {
+      const reg = await request(app.getHttpServer())
+        .post('/auth/registro')
+        .send({
+          correo,
+          password: 'ClaveSegura123',
+          nombres: 'Cambio',
+          apellidos: 'Correo E2E',
+        });
+      token = reg.body.accessToken;
+    });
+
+    it('RECHAZA solicitar el cambio con la contraseña actual incorrecta', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/solicitar-cambio-correo')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          correoNuevo: `nuevo1.${sufijo}@ticketya.ec`,
+          passwordActual: 'esta-no-es-la-clave',
+        })
+        .expect(400);
+      expect(res.body.message).toContain('contraseña actual no es correcta');
+    });
+
+    it('RECHAZA solicitar el cambio a un correo que ya está en uso por otra cuenta', async () => {
+      // el correo del propio bloque "Perfil" de arriba ya existe en esta suite
+      const res = await request(app.getHttpServer())
+        .post('/auth/solicitar-cambio-correo')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          correoNuevo: `perfil.e2e.${sufijo}@ticketya.ec`,
+          passwordActual: 'ClaveSegura123',
+        })
+        .expect(409);
+    });
+
+    it('acepta la solicitud con la contraseña correcta y un correo nuevo disponible', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/solicitar-cambio-correo')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          correoNuevo: `nuevo2.${sufijo}@ticketya.ec`,
+          passwordActual: 'ClaveSegura123',
+        })
+        .expect(201);
+    });
+
+    it('confirma el cambio con un token válido, y el correo viejo deja de servir para iniciar sesión', async () => {
+      const correoNuevo = `nuevo3.${sufijo}@ticketya.ec`;
+      await request(app.getHttpServer())
+        .post('/auth/solicitar-cambio-correo')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ correoNuevo, passwordActual: 'ClaveSegura123' })
+        .expect(201);
+
+      // El token plano solo se conoce en el momento de generarlo (se
+      // manda por correo simulado, nunca queda en texto plano en la
+      // base). Se genera uno propio aquí, con el mismo hash que usa el
+      // sistema, y se inserta directo — así se prueba el paso de
+      // "confirmar" de verdad, no solo el de "solicitar".
+      const tokenPlano = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+
+      const pg = new Client({
+        connectionString:
+          process.env.DATABASE_URL_ADMIN_DIRECTO ?? process.env.DATABASE_URL_PUBLICO,
+      });
+      await pg.connect();
+      await pg.query(
+        `UPDATE tokens_usuario SET token_hash = $1
+         WHERE usuario_id = (SELECT id FROM usuarios WHERE correo = $2)
+           AND proposito = 'cambiar_correo' AND usado_en IS NULL
+           AND correo_nuevo = $3`,
+        [tokenHash, correo, correoNuevo],
+      );
+      await pg.end();
+
+      await request(app.getHttpServer())
+        .post('/auth/confirmar-cambio-correo')
+        .send({ token: tokenPlano })
+        .expect(201);
+
+      // El correo viejo ya no debe servir para iniciar sesión...
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo, password: 'ClaveSegura123' })
+        .expect(401);
+
+      // ...el nuevo sí.
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo: correoNuevo, password: 'ClaveSegura123' })
+        .expect(201);
+    });
+
+    it('RECHAZA confirmar con un token inválido/inventado', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/confirmar-cambio-correo')
+        .send({ token: 'un-token-que-no-existe' })
+        .expect(400);
+      expect(res.body.message).toContain('no es válido');
     });
   });
 });
