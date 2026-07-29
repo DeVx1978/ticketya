@@ -145,7 +145,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
           <div className="mt-6 flex flex-col gap-2">
             <Link
-              href="/mis-boletos"
+              href="/perfil?tab=boletos"
               className="rounded-lg border border-brand-light px-4 py-2 text-sm font-semibold text-brand-dark/70 transition hover:bg-brand-light/40"
             >
               Ver mis boletos
