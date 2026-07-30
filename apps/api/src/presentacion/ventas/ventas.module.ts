@@ -17,5 +17,6 @@ import { AuthModule } from '../auth/auth.module';
     { provide: COMPRA_REPOSITORIO, useClass: CompraRepositorioDrizzle },
     { provide: PASARELA_PAGO, useClass: SimuladorPasarelaPago },
   ],
+  exports: [CheckoutService],
 })
 export class VentasModule {}

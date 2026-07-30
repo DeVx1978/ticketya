@@ -47,7 +47,7 @@ class AutorizacionMenorDto {
   documentoAutorizacionUrl?: string;
 }
 
-class PasajeroCheckoutDto {
+export class PasajeroCheckoutDto {
   @IsUUID()
   viajeId!: string;
 

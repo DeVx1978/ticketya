@@ -109,6 +109,17 @@ export interface CreditoPasajero {
   creadoEn: string;
 }
 
+/** Métodos de pago manuales (29-jul-2026) -- lo que la cooperativa ve para confirmar/rechazar un pago. */
+export interface PagoManualPendiente {
+  pagoId: string;
+  compraId: string;
+  proveedor: string;
+  monto: number;
+  comprobanteUrl: string | null;
+  compradorNombre: string;
+  creadoEn: string;
+}
+
 export interface PagoExistente {
   compraId: string;
   estado: 'pendiente' | 'aprobado' | 'rechazado' | 'revertido';
@@ -148,7 +159,53 @@ export interface CompraRepositorio {
     pasajeros: PasajeroCheckout[],
     desglose: DesgloseAsiento[],
     idempotencyKey: string,
+    /** Métodos de pago manuales (29-jul-2026) -- default 'simulado' para no romper el checkout con tarjeta ya existente. */
+    proveedor?: string,
   ): Promise<{ compraId: string; mapeo: MapeoAsientoPasajero[] }>;
+
+  /**
+   * Métodos de pago manuales (29-jul-2026) -- mientras no hay pasarela
+   * real conectada, el pasajero paga por fuera (transferencia,
+   * efectivo, DeUna, PayPhone) y sube un comprobante; la cooperativa
+   * confirma o rechaza desde su panel. Mismo patrón que
+   * Tiendanube/Billowshop, investigado antes de construir.
+   */
+  verificarMetodoPagoActivo(cooperativaId: string, tipo: string): Promise<boolean>;
+
+  /**
+   * Convierte el bloqueo temporal corto (minutos, pensado para pago
+   * con tarjeta) en una reserva de largo plazo que NO expira sola --
+   * necesario porque revisar un comprobante puede tardar horas, no
+   * minutos. El asiento queda tomado hasta que la cooperativa
+   * confirme o rechace.
+   */
+  marcarAsientosPendientesConfirmacionPago(
+    mapeo: MapeoAsientoPasajero[],
+  ): Promise<void>;
+
+  adjuntarComprobante(
+    compraId: string,
+    usuarioId: string,
+    comprobanteUrl: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  listarPagosPendientesConfirmacion(
+    cooperativaId: string,
+  ): Promise<PagoManualPendiente[]>;
+
+  /** Atómico -- mismo patrón que los demás flujos de dinero de este proyecto. */
+  confirmarPagoManual(
+    pagoId: string,
+    cooperativaId: string,
+    confirmadoPorUsuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  rechazarPagoManual(
+    pagoId: string,
+    cooperativaId: string,
+    motivo: string | undefined,
+    confirmadoPorUsuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 
   /**
    * Confirma el pago: marca los asientos como ocupados, crea los
@@ -233,6 +290,16 @@ export interface CompraRepositorio {
    * pasajero no tenía ningún lugar donde consultar su saldo.
    */
   listarCreditosUsuario(usuarioId: string): Promise<CreditoPasajero[]>;
+
+  /**
+   * Métodos de pago manuales (29-jul-2026) -- lo que el pasajero ve al
+   * pagar, sin necesitar acceso al panel de esa cooperativa (a
+   * diferencia de listarMetodosPago en panel-empresa, que es solo para
+   * la propia cooperativa administrarlos).
+   */
+  listarMetodosPagoActivosPorViaje(
+    viajeId: string,
+  ): Promise<Array<{ tipo: string; datosCuenta: Record<string, string> }>>;
 
   /**
    * Consumir un crédito en una compra nueva (29-jul-2026) — cierra el

@@ -34,6 +34,7 @@ import {
   date,
   timestamp,
   jsonb,
+  text,
   index,
   uniqueIndex,
   pgPolicy,
@@ -107,6 +108,28 @@ export const pasajerosCompra = pgTable(
     // recalcular edad histórica más adelante (la fecha del viaje ya pasó,
     // "menor al momento de viajar" debe quedar fijo).
     esMenorEdad: boolean('es_menor_edad').default(false).notNull(),
+
+    // Métodos de pago manuales (29-jul-2026, hallazgo real de diseño):
+    // antes, qué asiento le correspondía a cada pasajero solo vivía en
+    // memoria durante la petición de checkout (la variable `mapeo`) --
+    // funcionaba para tarjeta porque todo pasa en la misma llamada,
+    // pero para un pago manual pueden pasar horas entre crear la
+    // compra y que la cooperativa confirme, y esa memoria ya no
+    // existe. Se persiste aquí para poder reconstruir la relación
+    // después. Nullable: registros creados antes de esta fecha no lo
+    // tienen, y no se puede reconstruir retroactivamente sin riesgo.
+    viajeAsientoId: uuid('viaje_asiento_id').references(() => viajeAsientos.id),
+
+    // Mismo motivo que viajeAsientoId: el desglose de precio de este
+    // pasajero (necesario para crear su boleto) solo vivía en memoria.
+    // Se persiste aquí para que confirmarPagoManual pueda crear el
+    // boleto real horas después, con el mismo desglose exacto que se
+    // calculó al momento de la compra -- no un valor recalculado ni
+    // repartido a ojo entre los pasajeros de la misma compra.
+    precioPagado: numeric('precio_pagado', { precision: 10, scale: 2 }),
+    tasaTerminal: numeric('tasa_terminal', { precision: 10, scale: 2 }),
+    cargoPlataforma: numeric('cargo_plataforma', { precision: 10, scale: 2 }),
+    ivaMonto: numeric('iva_monto', { precision: 10, scale: 2 }),
   },
   (t) => [index('idx_pasajeros_compra_compra').on(t.compraId)],
 );
@@ -209,6 +232,15 @@ export const pagos = pgTable(
     // propias, siguiendo el principio de "aburrido es bueno" pero sin
     // perder el detalle crudo si hace falta investigar un caso puntual.
     respuestaProveedor: jsonb('respuesta_proveedor'),
+
+    // Métodos de pago manuales (29-jul-2026) -- cuando `proveedor` es
+    // uno de los tipos manuales (transferencia_bancaria, efectivo,
+    // deuna, payphone), el pasajero sube aquí la foto/captura de su
+    // comprobante, y la cooperativa lo confirma o rechaza desde su
+    // panel -- mismo patrón que Tiendanube/Billowshop. Nullable:
+    // el pago simulado con tarjeta nunca usa este campo.
+    comprobanteUrl: text('comprobante_url'),
+    confirmadoPorUsuarioId: uuid('confirmado_por_usuario_id').references(() => usuarios.id),
 
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),

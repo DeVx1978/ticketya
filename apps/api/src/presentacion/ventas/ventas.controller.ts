@@ -6,12 +6,17 @@
   Param,
   Request,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CheckoutService } from '../../aplicacion/ventas/checkout.service';
 import { CrearCompraDto } from './dto/crear-compra.dto';
 import { ReprogramarBoletoDto } from './dto/reprogramar-boleto.dto';
+import { IniciarPagoManualDto } from './dto/pago-manual.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -66,6 +71,57 @@ export class VentasController {
   @Get('mis-creditos')
   async listarMisCreditos(@Request() req: { user: PayloadToken }) {
     return this.checkout.listarMisCreditos(req.user.sub);
+  }
+
+  /** Lo que el pasajero ve para elegir cómo pagar -- no requiere pertenecer a esa cooperativa. */
+  @UseGuards(JwtAuthGuard)
+  @Get('metodos-pago/:viajeId')
+  async listarMetodosPagoPorViaje(@Param('viajeId') viajeId: string) {
+    return this.checkout.listarMetodosPagoActivosPorViaje(viajeId);
+  }
+
+  /**
+   * Métodos de pago manuales (29-jul-2026) -- mientras no hay pasarela
+   * real conectada, el pasajero paga por fuera (transferencia,
+   * efectivo, DeUna, PayPhone) y sube su comprobante. DEBE ir antes de
+   * GET ':compraId' -- mismo motivo que mis-creditos arriba.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('pago-manual')
+  async iniciarPagoManual(
+    @Body() dto: IniciarPagoManualDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.iniciarPagoManual(
+      dto.pasajeros,
+      req.user.sub,
+      dto.tipoMetodoPago,
+      dto.idempotencyKey,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':compraId/comprobante')
+  @UseInterceptors(
+    FileInterceptor('comprobante', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  async subirComprobante(
+    @Param('compraId') compraId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: PayloadToken },
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se recibió ningún archivo.');
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.mimetype)) {
+      throw new BadRequestException('Solo se permiten imágenes JPG, PNG, WEBP, o un PDF.');
+    }
+    return this.checkout.subirComprobantePago(
+      compraId,
+      req.user.sub,
+      file.buffer,
+      file.originalname,
+    );
   }
 
   /** Recibo completo de una compra propia -- detalle de viaje, pasajeros y pago. */

@@ -22,6 +22,7 @@ import type {
   TipoVehiculoResumen,
   UnidadResumen,
   ViajeResumen,
+  MetodoPagoCooperativa,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 /**
@@ -943,6 +944,62 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       if (datos.horasLimiteReprogramacion !== undefined) {
         await tx.execute(sql`UPDATE cooperativas SET horas_limite_reprogramacion = ${datos.horasLimiteReprogramacion} WHERE id = ${cooperativaId}`);
       }
+    });
+  }
+
+  async listarMetodosPago(cooperativaId: string): Promise<MetodoPagoCooperativa[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT id, tipo, activo, datos_cuenta
+        FROM metodos_pago_cooperativa
+        WHERE cooperativa_id = ${cooperativaId}
+        ORDER BY creado_en ASC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          tipo: string;
+          activo: boolean;
+          datos_cuenta: Record<string, string>;
+        };
+        return {
+          id: f.id,
+          tipo: f.tipo as MetodoPagoCooperativa['tipo'],
+          activo: f.activo,
+          datosCuenta: f.datos_cuenta,
+        };
+      });
+    });
+  }
+
+  async guardarMetodoPago(
+    cooperativaId: string,
+    tipo: string,
+    datosCuenta: Record<string, string>,
+    activo: boolean,
+  ): Promise<{ id: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      // "Upsert" manual sobre la restricción única (cooperativa_id, tipo)
+      // -- si ya existe ese tipo configurado, se actualiza en vez de
+      // duplicar (evita el error de la restricción única y confusión de
+      // "¿cuál cuenta uso?").
+      const resultado = await tx.execute(sql`
+        INSERT INTO metodos_pago_cooperativa (cooperativa_id, tipo, datos_cuenta, activo)
+        VALUES (${cooperativaId}, ${tipo}, ${JSON.stringify(datosCuenta)}, ${activo})
+        ON CONFLICT (cooperativa_id, tipo)
+        DO UPDATE SET datos_cuenta = ${JSON.stringify(datosCuenta)}, activo = ${activo}, actualizado_en = now()
+        RETURNING id
+      `);
+      return { id: (resultado.rows[0] as { id: string }).id };
+    });
+  }
+
+  async eliminarMetodoPago(cooperativaId: string, metodoPagoId: string): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        DELETE FROM metodos_pago_cooperativa
+        WHERE id = ${metodoPagoId} AND cooperativa_id = ${cooperativaId}
+      `);
     });
   }
 

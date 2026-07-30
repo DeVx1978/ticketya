@@ -31,6 +31,7 @@ import type {
   PagoExistente,
   BoletoEmitido,
   ReciboCompra,
+  PagoManualPendiente,
 } from '../../dominio/ventas/ventas.ports';
 import {
   factorDescuento,
@@ -179,6 +180,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     pasajeros: PasajeroCheckout[],
     desglose: DesgloseAsiento[],
     idempotencyKey: string,
+    proveedor: string = 'simulado',
   ): Promise<{ compraId: string; mapeo: MapeoAsientoPasajero[] }> {
     const montoTarifasCooperativa = desglose.reduce(
       (a, d) => a + d.precioPagado,
@@ -216,6 +218,16 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     for (let i = 0; i < pasajeros.length; i++) {
       const p = pasajeros[i];
       const d = desglose[i];
+
+      // Métodos de pago manuales (29-jul-2026) -- se persiste qué
+      // asiento le corresponde a este pasajero, para poder
+      // reconstruir la relación horas después (ver comentario en el
+      // esquema, columna viajeAsientoId de pasajerosCompra).
+      const [asientoFila] = await this.dbPublico.execute(sql`
+        SELECT id FROM viaje_asientos WHERE viaje_id = ${p.viajeId} AND numero_asiento = ${p.numeroAsiento}
+      `).then((r) => r.rows as { id: string }[]);
+      const viajeAsientoId = asientoFila?.id ?? null;
+
       const [pasajeroCompra] = await this.dbPublico
         .insert(pasajerosCompra)
         .values({
@@ -225,6 +237,11 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           tipoTarifa: p.tipoTarifa,
           fechaNacimiento: p.fechaNacimiento,
           esMenorEdad: esMenorDeEdad(p.tipoTarifa, p.fechaNacimiento),
+          viajeAsientoId,
+          precioPagado: d.precioPagado.toFixed(2),
+          tasaTerminal: d.tasaTerminal.toFixed(2),
+          cargoPlataforma: d.cargoPlataforma.toFixed(2),
+          ivaMonto: d.ivaMonto.toFixed(2),
         })
         .returning();
       pasajeroCompraIds.push(pasajeroCompra.id);
@@ -263,13 +280,264 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
 
     await this.dbPublico.insert(pagos).values({
       compraId: compra.id,
-      proveedor: 'simulado',
+      proveedor,
       idempotencyKey,
       monto: montoTotal.toFixed(2),
       estado: 'pendiente',
     });
 
     return { compraId: compra.id, mapeo };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Métodos de pago manuales (29-jul-2026) — sin pasarela real
+  // conectada, cada cooperativa opera con lo que ya usa hoy en
+  // Ecuador (transferencia, efectivo, DeUna, PayPhone). El pasajero
+  // sube comprobante, la cooperativa confirma o rechaza -- mismo
+  // patrón que Tiendanube/Billowshop, investigado antes de construir.
+  // ─────────────────────────────────────────────────────────────
+
+  async verificarMetodoPagoActivo(
+    cooperativaId: string,
+    tipo: string,
+  ): Promise<boolean> {
+    const resultado = await this.dbPublico.execute(sql`
+      SELECT id FROM metodos_pago_cooperativa
+      WHERE cooperativa_id = ${cooperativaId} AND tipo = ${tipo} AND activo = true
+    `);
+    return resultado.rows.length > 0;
+  }
+
+  async marcarAsientosPendientesConfirmacionPago(
+    mapeo: MapeoAsientoPasajero[],
+  ): Promise<void> {
+    for (const item of mapeo) {
+      await this.dbPublico.execute(sql`
+        UPDATE viaje_asientos
+        SET estado = 'pendiente_confirmacion_pago', hold_expira_en = NULL
+        WHERE viaje_id = ${item.viajeId} AND numero_asiento = ${item.numeroAsiento}
+      `);
+    }
+  }
+
+  async adjuntarComprobante(
+    compraId: string,
+    usuarioId: string,
+    comprobanteUrl: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const [compra] = await this.dbPublico
+      .select({ compradorUsuarioId: compras.compradorUsuarioId })
+      .from(compras)
+      .where(eq(compras.id, compraId));
+    if (!compra || compra.compradorUsuarioId !== usuarioId) {
+      return { ok: false, motivo: 'Esta compra no existe o no te pertenece.' };
+    }
+
+    const [pago] = await this.dbPublico
+      .select({ estado: pagos.estado, proveedor: pagos.proveedor })
+      .from(pagos)
+      .where(eq(pagos.compraId, compraId));
+    if (!pago || pago.estado !== 'pendiente' || pago.proveedor === 'simulado') {
+      return {
+        ok: false,
+        motivo: 'Este pago no admite subir un comprobante en este momento.',
+      };
+    }
+
+    await this.dbPublico
+      .update(pagos)
+      .set({ comprobanteUrl })
+      .where(eq(pagos.compraId, compraId));
+    return { ok: true };
+  }
+
+  async listarPagosPendientesConfirmacion(
+    cooperativaId: string,
+  ): Promise<PagoManualPendiente[]> {
+    // Se consulta por dbPublico (no ejecutarComoCooperativa) porque
+    // `pagos`/`compras` no llevan RLS ni cooperativa_id propio (ver
+    // nota de diseño al inicio de ventas.ts) -- el filtro por
+    // cooperativa se hace aquí explícitamente, vía el asiento
+    // reservado de cada pasajero de la compra.
+    const resultado = await this.dbPublico.execute(sql`
+      SELECT DISTINCT ON (pg.id)
+        pg.id AS pago_id, pg.compra_id, pg.proveedor, pg.monto,
+        pg.comprobante_url, pg.creado_en,
+        u.nombre_completo AS comprador_nombre
+      FROM pagos pg
+      INNER JOIN compras c ON c.id = pg.compra_id
+      INNER JOIN usuarios u ON u.id = c.comprador_usuario_id
+      INNER JOIN pasajeros_compra pc ON pc.compra_id = c.id
+      INNER JOIN viaje_asientos va ON va.id = pc.viaje_asiento_id
+      INNER JOIN viajes v ON v.id = va.viaje_id
+      WHERE v.cooperativa_id = ${cooperativaId}
+        AND pg.estado = 'pendiente'
+        AND pg.proveedor != 'simulado'
+        AND pg.comprobante_url IS NOT NULL
+      ORDER BY pg.id, pg.creado_en ASC
+    `);
+    return resultado.rows.map((fila) => {
+      const f = fila as {
+        pago_id: string;
+        compra_id: string;
+        proveedor: string;
+        monto: string;
+        comprobante_url: string;
+        creado_en: Date | string;
+        comprador_nombre: string;
+      };
+      return {
+        pagoId: f.pago_id,
+        compraId: f.compra_id,
+        proveedor: f.proveedor,
+        monto: Number(f.monto),
+        comprobanteUrl: f.comprobante_url,
+        compradorNombre: f.comprador_nombre,
+        creadoEn: f.creado_en instanceof Date ? f.creado_en.toISOString() : new Date(f.creado_en).toISOString(),
+      };
+    });
+  }
+
+  async confirmarPagoManual(
+    pagoId: string,
+    cooperativaId: string,
+    confirmadoPorUsuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const [pago] = await this.dbPublico
+      .select({ compraId: pagos.compraId, estado: pagos.estado })
+      .from(pagos)
+      .where(eq(pagos.id, pagoId));
+    if (!pago || pago.estado !== 'pendiente') {
+      return { ok: false, motivo: 'Este pago no existe o ya fue procesado.' };
+    }
+
+    // Reconstruir el mapeo pasajero <-> asiento <-> desglose de precio
+    // desde la base de datos -- ya no vive en memoria (pudieron pasar
+    // horas desde que se creó la compra). Verifica de paso que TODOS
+    // los asientos sean de esta cooperativa, no solo alguno.
+    const filas = await this.dbPublico.execute(sql`
+      SELECT pc.id AS pasajero_compra_id, va.id AS viaje_asiento_id,
+             va.numero_asiento, va.viaje_id, v.cooperativa_id,
+             pc.precio_pagado, pc.tasa_terminal, pc.cargo_plataforma, pc.iva_monto
+      FROM pasajeros_compra pc
+      INNER JOIN viaje_asientos va ON va.id = pc.viaje_asiento_id
+      INNER JOIN viajes v ON v.id = va.viaje_id
+      WHERE pc.compra_id = ${pago.compraId}
+    `);
+    if (filas.rows.length === 0) {
+      return {
+        ok: false,
+        motivo: 'No se encontró la información de asientos de esta compra.',
+      };
+    }
+    type FilaPasajero = {
+      pasajero_compra_id: string;
+      viaje_asiento_id: string;
+      numero_asiento: string;
+      viaje_id: string;
+      cooperativa_id: string;
+      precio_pagado: string | null;
+      tasa_terminal: string | null;
+      cargo_plataforma: string | null;
+      iva_monto: string | null;
+    };
+    const filasTipadas = filas.rows as unknown as FilaPasajero[];
+
+    const cooperativasEnCompra = new Set(filasTipadas.map((f) => f.cooperativa_id));
+    if (cooperativasEnCompra.size !== 1 || !cooperativasEnCompra.has(cooperativaId)) {
+      return { ok: false, motivo: 'Esta compra no corresponde a tu cooperativa.' };
+    }
+    if (filasTipadas.some((f) => f.precio_pagado === null)) {
+      return {
+        ok: false,
+        motivo:
+          'Esta compra es anterior a que se empezara a guardar el desglose de precio -- no se puede confirmar automáticamente.',
+      };
+    }
+
+    await ejecutarComoCooperativa(this.dbApp, cooperativaId, async (tx) => {
+      for (const f of filasTipadas) {
+        await tx.execute(
+          sql`UPDATE viaje_asientos SET estado = 'ocupado' WHERE id = ${f.viaje_asiento_id}`,
+        );
+
+        const codigoQr = randomUUID();
+        const boletoRows = await tx.execute(
+          sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, cargo_plataforma, iva_monto, estado)
+              VALUES (${cooperativaId}, ${pago.compraId}, ${f.pasajero_compra_id}, ${f.viaje_asiento_id}, ${codigoQr}, ${f.precio_pagado}, ${f.cargo_plataforma}, ${f.iva_monto}, 'vigente')
+              RETURNING id`,
+        );
+        const boletoId = (boletoRows.rows[0] as { id: string }).id;
+
+        const rutaOrigen = await tx.execute(
+          sql`SELECT r.origen_punto_operacion_id AS id FROM viajes v
+              JOIN rutas r ON r.id = v.ruta_id
+              WHERE v.id = ${f.viaje_id}`,
+        );
+        const puntoOperacionId = (rutaOrigen.rows[0] as { id: string }).id;
+
+        await tx.execute(
+          sql`INSERT INTO comprobantes_tasa_terminal (boleto_id, punto_operacion_id, monto, codigo_verificacion)
+              VALUES (${boletoId}, ${puntoOperacionId}, ${f.tasa_terminal}, ${randomUUID()})`,
+        );
+      }
+    });
+
+    await this.dbPublico
+      .update(pagos)
+      .set({ estado: 'aprobado', confirmadoPorUsuarioId })
+      .where(eq(pagos.id, pagoId));
+
+    return { ok: true };
+  }
+
+  async rechazarPagoManual(
+    pagoId: string,
+    cooperativaId: string,
+    motivo: string | undefined,
+    confirmadoPorUsuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const [pago] = await this.dbPublico
+      .select({ compraId: pagos.compraId, estado: pagos.estado })
+      .from(pagos)
+      .where(eq(pagos.id, pagoId));
+    if (!pago || pago.estado !== 'pendiente') {
+      return { ok: false, motivo: 'Este pago no existe o ya fue procesado.' };
+    }
+
+    const filas = await this.dbPublico.execute(sql`
+      SELECT va.id AS viaje_asiento_id, v.cooperativa_id
+      FROM pasajeros_compra pc
+      INNER JOIN viaje_asientos va ON va.id = pc.viaje_asiento_id
+      INNER JOIN viajes v ON v.id = va.viaje_id
+      WHERE pc.compra_id = ${pago.compraId}
+    `);
+    const cooperativasEnCompra = new Set(
+      filas.rows.map((f) => (f as { cooperativa_id: string }).cooperativa_id),
+    );
+    if (cooperativasEnCompra.size !== 1 || !cooperativasEnCompra.has(cooperativaId)) {
+      return { ok: false, motivo: 'Esta compra no corresponde a tu cooperativa.' };
+    }
+
+    for (const fila of filas.rows) {
+      const f = fila as { viaje_asiento_id: string };
+      await this.dbPublico.execute(sql`
+        UPDATE viaje_asientos
+        SET estado = 'disponible', hold_usuario_id = NULL, hold_expira_en = NULL
+        WHERE id = ${f.viaje_asiento_id}
+      `);
+    }
+
+    await this.dbPublico
+      .update(pagos)
+      .set({
+        estado: 'rechazado',
+        confirmadoPorUsuarioId,
+        respuestaProveedor: { motivo: motivo ?? 'Rechazado por la cooperativa.' },
+      })
+      .where(eq(pagos.id, pagoId));
+
+    return { ok: true };
   }
 
   async confirmarPago(
@@ -551,6 +819,22 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       usadoEn: f.usadoEn ? f.usadoEn.toISOString() : null,
       creadoEn: f.creadoEn.toISOString(),
     }));
+  }
+
+  async listarMetodosPagoActivosPorViaje(
+    viajeId: string,
+  ): Promise<Array<{ tipo: string; datosCuenta: Record<string, string> }>> {
+    const resultado = await this.dbPublico.execute(sql`
+      SELECT mp.tipo, mp.datos_cuenta
+      FROM metodos_pago_cooperativa mp
+      INNER JOIN viajes v ON v.cooperativa_id = mp.cooperativa_id
+      WHERE v.id = ${viajeId} AND mp.activo = true
+      ORDER BY mp.creado_en ASC
+    `);
+    return resultado.rows.map((fila) => {
+      const f = fila as { tipo: string; datos_cuenta: Record<string, string> };
+      return { tipo: f.tipo, datosCuenta: f.datos_cuenta };
+    });
   }
 
   async obtenerCreditoParaUsar(

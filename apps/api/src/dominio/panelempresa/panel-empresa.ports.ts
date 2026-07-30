@@ -3,6 +3,24 @@
  */
 
 /**
+ * Métodos de pago manuales (29-jul-2026) — ver metodos-pago.ts en el
+ * paquete de base de datos para el contexto completo de negocio.
+ */
+export type TipoMetodoPago =
+  | 'transferencia_bancaria'
+  | 'efectivo'
+  | 'deuna'
+  | 'payphone'
+  | 'tarjeta_pasarela';
+
+export interface MetodoPagoCooperativa {
+  id: string;
+  tipo: TipoMetodoPago;
+  activo: boolean;
+  datosCuenta: Record<string, string>;
+}
+
+/**
  * Vacío real de diseño encontrado el 29-jul-2026: `distribucionAsientos`
  * ya se guardaba (tipo `unknown`), pero nunca tuvo una forma definida
  * ni el frontend la usaba — el mapa de asientos siempre dibujaba una
@@ -495,6 +513,21 @@ export interface PanelEmpresaRepositorio {
       horasLimiteReprogramacion?: number;
     },
   ): Promise<void>;
+
+  /**
+   * Métodos de pago manuales (29-jul-2026) -- mientras no hay pasarela
+   * real conectada, cada cooperativa configura los que ya usa hoy en
+   * Ecuador (transferencia, efectivo, DeUna, PayPhone) con sus propios
+   * datos para recibir el pago.
+   */
+  listarMetodosPago(cooperativaId: string): Promise<MetodoPagoCooperativa[]>;
+  guardarMetodoPago(
+    cooperativaId: string,
+    tipo: TipoMetodoPago,
+    datosCuenta: Record<string, string>,
+    activo: boolean,
+  ): Promise<{ id: string }>;
+  eliminarMetodoPago(cooperativaId: string, metodoPagoId: string): Promise<void>;
 
   /** RF-COOP-006 — validación de boleto por QR en abordaje. */
   validarBoletoPorQr(

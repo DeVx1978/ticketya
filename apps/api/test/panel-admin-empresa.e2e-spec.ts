@@ -845,4 +845,89 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
       false,
     );
   });
+
+  describe('Métodos de pago manuales (29-jul-2026) — hallazgo real: no hay pasarela conectada, cada cooperativa usa transferencia/efectivo/DeUna/PayPhone', () => {
+    it('la cooperativa guarda un método de pago con sus propios datos de cuenta', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({
+          tipo: 'transferencia_bancaria',
+          datosCuenta: {
+            banco: 'Banco Pichincha',
+            tipoCuenta: 'ahorros',
+            numeroCuenta: '2201234567',
+            titular: 'Coop Reprog E2E S.A.',
+            cedulaTitular: '0791234567001',
+          },
+        })
+        .expect(201);
+      expect(res.body.id).toBeDefined();
+
+      const lista = await request(app.getHttpServer())
+        .get('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      const metodo = lista.body.find((m: { tipo: string }) => m.tipo === 'transferencia_bancaria');
+      expect(metodo.datosCuenta.numeroCuenta).toBe('2201234567');
+      expect(metodo.activo).toBe(true);
+    });
+
+    it('guardar el mismo tipo dos veces ACTUALIZA en vez de duplicar', async () => {
+      await request(app.getHttpServer())
+        .post('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({
+          tipo: 'deuna',
+          datosCuenta: { numeroCelular: '0991111111', titular: 'Coop Reprog E2E' },
+        })
+        .expect(201);
+      await request(app.getHttpServer())
+        .post('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({
+          tipo: 'deuna',
+          datosCuenta: { numeroCelular: '0992222222', titular: 'Coop Reprog E2E' },
+        })
+        .expect(201);
+
+      const lista = await request(app.getHttpServer())
+        .get('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      const metodosDeuna = lista.body.filter((m: { tipo: string }) => m.tipo === 'deuna');
+      expect(metodosDeuna.length).toBe(1); // no se duplicó
+      expect(metodosDeuna[0].datosCuenta.numeroCelular).toBe('0992222222'); // quedó el más reciente
+    });
+
+    it('elimina un método de pago', async () => {
+      const creado = await request(app.getHttpServer())
+        .post('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({
+          tipo: 'efectivo',
+          datosCuenta: { instrucciones: 'Pagar en nuestra oficina de Machala' },
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .delete(`/coop/metodos-pago/${creado.body.id}`)
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+
+      const lista = await request(app.getHttpServer())
+        .get('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      expect(lista.body.some((m: { id: string }) => m.id === creado.body.id)).toBe(false);
+    });
+
+    it('RECHAZA un tipo de método de pago que no está en el catálogo', async () => {
+      await request(app.getHttpServer())
+        .post('/coop/metodos-pago')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ tipo: 'bitcoin', datosCuenta: { direccion: 'xyz' } })
+        .expect(400);
+    });
+  });
 });

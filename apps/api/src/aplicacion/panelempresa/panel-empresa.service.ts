@@ -13,7 +13,7 @@ import type {
   DatosNuevoConductor,
   DatosImportacion,
 } from '../../dominio/panelempresa/panel-empresa.ports';
-import { validarDistribucionAsientos } from '../../dominio/panelempresa/panel-empresa.ports';
+import { validarDistribucionAsientos, type TipoMetodoPago } from '../../dominio/panelempresa/panel-empresa.ports';
 
 export const PANEL_EMPRESA_REPOSITORIO = 'PANEL_EMPRESA_REPOSITORIO';
 
@@ -216,6 +216,23 @@ export class PanelEmpresaService {
     },
   ) {
     return this.panel.actualizarPoliticaCancelacionReprogramacion(cooperativaId, datos);
+  }
+
+  listarMetodosPago(cooperativaId: string) {
+    return this.panel.listarMetodosPago(cooperativaId);
+  }
+
+  guardarMetodoPago(
+    cooperativaId: string,
+    tipo: TipoMetodoPago,
+    datosCuenta: Record<string, string>,
+    activo: boolean,
+  ) {
+    return this.panel.guardarMetodoPago(cooperativaId, tipo, datosCuenta, activo);
+  }
+
+  eliminarMetodoPago(cooperativaId: string, metodoPagoId: string) {
+    return this.panel.eliminarMetodoPago(cooperativaId, metodoPagoId);
   }
 
   validarBoletoPorQr(
