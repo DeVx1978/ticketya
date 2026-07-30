@@ -202,3 +202,9 @@ export const tipoMetodoPagoEnum = pgEnum('tipo_metodo_pago', [
   'payphone',
   'tarjeta_pasarela',
 ]);
+
+/** Solicitud de factura del pasaje (29-jul-2026) -- ver solicitudes-factura.ts para el contexto completo. */
+export const estadoSolicitudFacturaEnum = pgEnum('estado_solicitud_factura', [
+  'pendiente',
+  'emitida',
+]);

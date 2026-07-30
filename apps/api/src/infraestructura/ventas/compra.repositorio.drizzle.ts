@@ -32,6 +32,7 @@ import type {
   BoletoEmitido,
   ReciboCompra,
   PagoManualPendiente,
+  SolicitudFactura,
 } from '../../dominio/ventas/ventas.ports';
 import {
   factorDescuento,
@@ -402,7 +403,10 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     pagoId: string,
     cooperativaId: string,
     confirmadoPorUsuarioId: string,
-  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+  ): Promise<
+    | { ok: true; compraId: string; montoCargoPlataforma: number }
+    | { ok: false; motivo: string }
+  > {
     const [pago] = await this.dbPublico
       .select({ compraId: pagos.compraId, estado: pagos.estado })
       .from(pagos)
@@ -488,7 +492,11 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .set({ estado: 'aprobado', confirmadoPorUsuarioId })
       .where(eq(pagos.id, pagoId));
 
-    return { ok: true };
+    const montoCargoPlataforma = filasTipadas.reduce(
+      (acc, f) => acc + Number(f.cargo_plataforma ?? 0),
+      0,
+    );
+    return { ok: true, compraId: pago.compraId, montoCargoPlataforma };
   }
 
   async rechazarPagoManual(
@@ -835,6 +843,127 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       const f = fila as { tipo: string; datos_cuenta: Record<string, string> };
       return { tipo: f.tipo, datosCuenta: f.datos_cuenta };
     });
+  }
+
+  /**
+   * Facturación electrónica del servicio de Colombus (29-jul-2026) --
+   * ver dominio/facturacion/facturacion.ports.ts para el contexto
+   * completo. Distinto de la factura del pasaje (la emite la
+   * cooperativa, nosotros solo avisamos -- ver solicitudes-factura).
+   */
+  async obtenerDatosFiscalesPlataforma(): Promise<{ ruc: string; razonSocial: string }> {
+    const [fila] = await this.dbPublico
+      .select({
+        ruc: configuracionPlataforma.rucPlataforma,
+        razonSocial: configuracionPlataforma.razonSocialPlataforma,
+      })
+      .from(configuracionPlataforma)
+      .limit(1);
+    return { ruc: fila?.ruc ?? '', razonSocial: fila?.razonSocial ?? '' };
+  }
+
+  async crearComprobantePlataforma(
+    compraId: string,
+    montoComprobante: number,
+    rucEmisor: string,
+    resultado: { claveAcceso?: string; numeroAutorizacion?: string; xmlUrl?: string; pdfUrl?: string; exitoso: boolean; error?: string },
+  ): Promise<void> {
+    await this.dbPublico.execute(sql`
+      INSERT INTO comprobantes_electronicos
+        (compra_id, sujeto_tributario, ruc_emisor, monto_comprobante, clave_acceso, numero_autorizacion, estado, ultimo_error_proveedor)
+      VALUES
+        (${compraId}, 'plataforma', ${rucEmisor}, ${montoComprobante},
+         ${resultado.claveAcceso ?? null}, ${resultado.numeroAutorizacion ?? null},
+         ${resultado.exitoso ? 'autorizado' : 'rechazado'}, ${resultado.error ?? null})
+    `);
+  }
+
+  async solicitarFacturaCooperativa(
+    boletoId: string,
+    usuarioId: string,
+    datosTributarios: Record<string, string>,
+  ): Promise<{ ok: true; id: string } | { ok: false; motivo: string }> {
+    // Verifica que el boleto exista y le pertenezca a este usuario --
+    // mismo criterio que el resto de acciones sobre un boleto propio
+    // (cancelar, reprogramar).
+    const fila = await this.dbPublico.execute(sql`
+      SELECT b.id FROM boletos b
+      INNER JOIN compras c ON c.id = b.compra_id
+      WHERE b.id = ${boletoId} AND c.comprador_usuario_id = ${usuarioId}
+    `);
+    if (fila.rows.length === 0) {
+      return { ok: false, motivo: 'Este boleto no existe o no te pertenece.' };
+    }
+
+    const yaExiste = await this.dbPublico.execute(sql`
+      SELECT id FROM solicitudes_factura_cooperativa WHERE boleto_id = ${boletoId}
+    `);
+    if (yaExiste.rows.length > 0) {
+      return { ok: false, motivo: 'Ya solicitaste la factura de este boleto.' };
+    }
+
+    const resultado = await this.dbPublico.execute(sql`
+      INSERT INTO solicitudes_factura_cooperativa (boleto_id, datos_tributarios)
+      VALUES (${boletoId}, ${JSON.stringify(datosTributarios)})
+      RETURNING id
+    `);
+    return { ok: true, id: (resultado.rows[0] as { id: string }).id };
+  }
+
+  async listarSolicitudesFactura(cooperativaId: string): Promise<SolicitudFactura[]> {
+    const resultado = await this.dbPublico.execute(sql`
+      SELECT sf.id, sf.boleto_id, sf.estado, sf.datos_tributarios, sf.url_factura,
+             sf.creado_en, pc.nombre_completo AS pasajero_nombre
+      FROM solicitudes_factura_cooperativa sf
+      INNER JOIN boletos b ON b.id = sf.boleto_id
+      INNER JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
+      WHERE b.cooperativa_id = ${cooperativaId}
+      ORDER BY sf.creado_en ASC
+    `);
+    return resultado.rows.map((fila) => {
+      const f = fila as {
+        id: string;
+        boleto_id: string;
+        estado: 'pendiente' | 'emitida';
+        datos_tributarios: Record<string, string>;
+        url_factura: string | null;
+        creado_en: Date | string;
+        pasajero_nombre: string;
+      };
+      return {
+        id: f.id,
+        boletoId: f.boleto_id,
+        estado: f.estado,
+        datosTributarios: f.datos_tributarios,
+        urlFactura: f.url_factura,
+        pasajeroNombre: f.pasajero_nombre,
+        creadoEn: f.creado_en instanceof Date ? f.creado_en.toISOString() : new Date(f.creado_en).toISOString(),
+      };
+    });
+  }
+
+  async marcarFacturaEmitida(
+    solicitudId: string,
+    cooperativaId: string,
+    urlFactura: string | undefined,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const fila = await this.dbPublico.execute(sql`
+      SELECT sf.id FROM solicitudes_factura_cooperativa sf
+      INNER JOIN boletos b ON b.id = sf.boleto_id
+      WHERE sf.id = ${solicitudId} AND b.cooperativa_id = ${cooperativaId} AND sf.estado = 'pendiente'
+    `);
+    if (fila.rows.length === 0) {
+      return {
+        ok: false,
+        motivo: 'Esta solicitud no existe, no corresponde a tu cooperativa, o ya fue emitida.',
+      };
+    }
+    await this.dbPublico.execute(sql`
+      UPDATE solicitudes_factura_cooperativa
+      SET estado = 'emitida', url_factura = ${urlFactura ?? null}, emitido_en = now()
+      WHERE id = ${solicitudId}
+    `);
+    return { ok: true };
   }
 
   async obtenerCreditoParaUsar(

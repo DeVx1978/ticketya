@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { listarMisBoletos, calificarViaje, cancelarBoleto, type MiBoleto } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
+import { SolicitarFactura } from "./SolicitarFactura";
 
 function formatearFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-EC", {
@@ -230,6 +231,8 @@ export function TabMisBoletos({ onExito }: { onExito: (mensaje: string) => void 
               </span>
 
               {b.estado === "vigente" && <BotonMostrarQr codigoQr={b.codigoQr} />}
+
+              {b.estado !== "cancelado" && <SolicitarFactura boletoId={b.boletoId} />}
 
               {b.estado === "vigente" && new Date() < new Date(b.horaSalidaProgramada) && (
                 <BotonCancelar

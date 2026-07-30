@@ -65,6 +65,11 @@ export async function limpiarCooperativasDePrueba(
     await pg.query(
       `DELETE FROM creditos_pasajero WHERE boleto_origen_id IN (SELECT id FROM _boletos_test) OR boleto_usado_id IN (SELECT id FROM _boletos_test)`,
     );
+    // 29-jul-2026 -- mismo patrón recurrente: solicitudes_factura_cooperativa
+    // referencia boletos, hay que borrarla antes.
+    await pg.query(
+      `DELETE FROM solicitudes_factura_cooperativa WHERE boleto_id IN (SELECT id FROM _boletos_test)`,
+    );
     await pg.query(
       `DELETE FROM boletos WHERE id IN (SELECT id FROM _boletos_test)`,
     );

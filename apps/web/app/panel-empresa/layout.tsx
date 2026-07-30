@@ -13,6 +13,7 @@ const ENLACES = [
   { href: "/panel-empresa/viajes", etiqueta: "Viajes" },
   { href: "/panel-empresa/validar-qr", etiqueta: "Validar boleto" },
   { href: "/panel-empresa/pagos-pendientes", etiqueta: "Pagos pendientes" },
+  { href: "/panel-empresa/solicitudes-factura", etiqueta: "Facturas" },
   { href: "/panel-empresa/configuracion", etiqueta: "Configuración" },
 ];
 

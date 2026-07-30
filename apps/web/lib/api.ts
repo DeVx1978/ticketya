@@ -1255,5 +1255,61 @@ export async function listarMisCreditos(token: string): Promise<MiCredito[]> {
   return cuerpo as MiCredito[];
 }
 
+/**
+ * Solicitud de factura del pasaje (29-jul-2026) -- confirmado con el
+ * usuario: la cooperativa emite en su propio sistema, esto solo avisa.
+ */
+export async function solicitarFacturaCooperativa(
+  token: string,
+  boletoId: string,
+  datosTributarios: Record<string, string>,
+): Promise<{ ok: true; id: string }> {
+  const res = await fetch(`${API_URL}/compras/boletos/${boletoId}/solicitar-factura`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ datosTributarios }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo solicitar la factura.");
+  }
+  return cuerpo;
+}
+
+export interface SolicitudFactura {
+  id: string;
+  boletoId: string;
+  estado: "pendiente" | "emitida";
+  datosTributarios: Record<string, string>;
+  urlFactura: string | null;
+  pasajeroNombre: string;
+  creadoEn: string;
+}
+
+export async function listarSolicitudesFactura(token: string): Promise<SolicitudFactura[]> {
+  const res = await fetch(`${API_URL}/coop/solicitudes-factura`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las solicitudes de factura.");
+  return cuerpo as SolicitudFactura[];
+}
+
+export async function marcarFacturaEmitida(
+  token: string,
+  solicitudId: string,
+  urlFactura?: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/solicitudes-factura/${solicitudId}/marcar-emitida`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ urlFactura }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo marcar la factura como emitida.");
+}
+
 
 
