@@ -120,6 +120,17 @@ export interface PagoManualPendiente {
   creadoEn: string;
 }
 
+/** Solicitud de factura del pasaje (29-jul-2026) -- ver solicitudes-factura.ts. */
+export interface SolicitudFactura {
+  id: string;
+  boletoId: string;
+  estado: 'pendiente' | 'emitida';
+  datosTributarios: Record<string, string>;
+  urlFactura: string | null;
+  pasajeroNombre: string;
+  creadoEn: string;
+}
+
 export interface PagoExistente {
   compraId: string;
   estado: 'pendiente' | 'aprobado' | 'rechazado' | 'revertido';
@@ -198,7 +209,10 @@ export interface CompraRepositorio {
     pagoId: string,
     cooperativaId: string,
     confirmadoPorUsuarioId: string,
-  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+  ): Promise<
+    | { ok: true; compraId: string; montoCargoPlataforma: number }
+    | { ok: false; motivo: string }
+  >;
 
   rechazarPagoManual(
     pagoId: string,
@@ -300,6 +314,40 @@ export interface CompraRepositorio {
   listarMetodosPagoActivosPorViaje(
     viajeId: string,
   ): Promise<Array<{ tipo: string; datosCuenta: Record<string, string> }>>;
+
+  /** Facturación electrónica del servicio de Colombus (29-jul-2026) -- ver dominio/facturacion/facturacion.ports.ts. */
+  obtenerDatosFiscalesPlataforma(): Promise<{ ruc: string; razonSocial: string }>;
+  crearComprobantePlataforma(
+    compraId: string,
+    montoComprobante: number,
+    rucEmisor: string,
+    resultado: {
+      claveAcceso?: string;
+      numeroAutorizacion?: string;
+      xmlUrl?: string;
+      pdfUrl?: string;
+      exitoso: boolean;
+      error?: string;
+    },
+  ): Promise<void>;
+
+  /**
+   * Solicitud de factura del pasaje (29-jul-2026) -- puente con la
+   * cooperativa (ella emite en su propio sistema, ver
+   * solicitudes-factura.ts para el contexto completo). Distinto de la
+   * factura del servicio de Colombus (arriba).
+   */
+  solicitarFacturaCooperativa(
+    boletoId: string,
+    usuarioId: string,
+    datosTributarios: Record<string, string>,
+  ): Promise<{ ok: true; id: string } | { ok: false; motivo: string }>;
+  listarSolicitudesFactura(cooperativaId: string): Promise<SolicitudFactura[]>;
+  marcarFacturaEmitida(
+    solicitudId: string,
+    cooperativaId: string,
+    urlFactura: string | undefined,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 
   /**
    * Consumir un crédito en una compra nueva (29-jul-2026) — cierra el

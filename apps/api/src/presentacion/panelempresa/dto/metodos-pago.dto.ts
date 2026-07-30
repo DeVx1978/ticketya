@@ -27,3 +27,10 @@ export class ConfirmarPagoManualDto {
   @IsString()
   motivo?: string;
 }
+
+/** Solicitud de factura del pasaje (29-jul-2026) -- la cooperativa la marca emitida, con link opcional. */
+export class MarcarFacturaEmitidaDto {
+  @IsOptional()
+  @IsString()
+  urlFactura?: string;
+}

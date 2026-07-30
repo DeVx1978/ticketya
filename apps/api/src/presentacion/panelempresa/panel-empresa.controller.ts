@@ -36,7 +36,7 @@ import {
   EditarTipoVehiculoDto,
   EditarRutaDto,
 } from './dto/panel-empresa.dto';
-import { GuardarMetodoPagoDto, ConfirmarPagoManualDto } from './dto/metodos-pago.dto';
+import { GuardarMetodoPagoDto, ConfirmarPagoManualDto, MarcarFacturaEmitidaDto } from './dto/metodos-pago.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
@@ -491,6 +491,27 @@ export class PanelEmpresaController {
       dto.motivo,
       req.user.sub,
     );
+  }
+
+  /**
+   * Solicitudes de factura del pasaje (29-jul-2026) -- confirmado con
+   * el usuario: la cooperativa emite en su propio sistema (fuera de
+   * esta plataforma), esto solo avisa y deja registro de la solicitud.
+   */
+  @Roles('admin_cooperativa')
+  @Get('solicitudes-factura')
+  async listarSolicitudesFactura(@Request() req: { user: PayloadToken }) {
+    return this.checkout.listarSolicitudesFactura(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('solicitudes-factura/:id/marcar-emitida')
+  async marcarFacturaEmitida(
+    @Param('id') id: string,
+    @Body() dto: MarcarFacturaEmitidaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.marcarFacturaEmitida(id, cooperativaDelToken(req.user), dto.urlFactura);
   }
 
   /** RF-COOP-006 — tanto el vendedor como el admin pueden validar boletos en el andén. */

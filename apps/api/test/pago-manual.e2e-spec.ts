@@ -60,6 +60,12 @@ describe('Métodos de pago manuales (e2e)', () => {
     await pg.query("UPDATE usuarios SET rol='admin_plataforma' WHERE correo=$1", [
       correoDirector,
     ]);
+    // Factura del servicio de Colombus (29-jul-2026): se salta a
+    // propósito si el cargo de plataforma es $0 -- se configura un
+    // valor real para que esta suite pueda probar que se genera.
+    await pg.query(
+      'UPDATE configuracion_plataforma SET cargo_plataforma_por_pasajero_default = 0.50',
+    );
     await pg.end();
     const loginDirectorOtraVez = await request(app.getHttpServer())
       .post('/auth/login')
@@ -138,6 +144,12 @@ describe('Métodos de pago manuales (e2e)', () => {
 
   afterAll(async () => {
     await limpiarCooperativasDePrueba([`Coop Pago Manual ${sufijo}`]);
+    // se revierte a $0 para no afectar otros archivos de prueba que
+    // asumen ese valor por defecto (ya vivimos este problema antes)
+    const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
+    await pg.connect();
+    await pg.query('UPDATE configuracion_plataforma SET cargo_plataforma_por_pasajero_default = 0');
+    await pg.end();
     await app.close();
   });
 
@@ -253,6 +265,21 @@ describe('Métodos de pago manuales (e2e)', () => {
     expect(
       pendientesDespues.body.some((p: { compraId: string }) => p.compraId === compraId),
     ).toBe(false);
+
+    // Factura del servicio de Colombus (29-jul-2026) -- se genera sola,
+    // sin que nadie la pida, apenas se confirma la compra.
+    const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
+    await pg.connect();
+    const facturaColombus = await pg.query(
+      `SELECT sujeto_tributario, estado, monto_comprobante, clave_acceso
+       FROM comprobantes_electronicos WHERE compra_id = $1`,
+      [compraId],
+    );
+    await pg.end();
+    expect(facturaColombus.rows.length).toBe(1);
+    expect(facturaColombus.rows[0].sujeto_tributario).toBe('plataforma');
+    expect(facturaColombus.rows[0].estado).toBe('autorizado');
+    expect(facturaColombus.rows[0].clave_acceso).toHaveLength(49);
   });
 
   it('flujo de rechazo: la cooperativa rechaza, y el asiento vuelve a estar disponible para otro pasajero', async () => {
@@ -345,5 +372,105 @@ describe('Métodos de pago manuales (e2e)', () => {
         contentType: 'image/jpeg',
       })
       .expect(400);
+  });
+
+  describe('Solicitud de factura del pasaje (29-jul-2026) -- puente con la cooperativa, ella emite en su propio sistema', () => {
+    let boletoId: string;
+
+    beforeAll(async () => {
+      await bloquear(viajeId, '5A', tokenPasajero);
+      const inicio = await request(app.getHttpServer())
+        .post('/compras/pago-manual')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({
+          pasajeros: [
+            {
+              viajeId,
+              numeroAsiento: '5A',
+              nombreCompleto: 'Pasajero Factura E2E',
+              documento: '0104123456',
+              tipoTarifa: 'adulto',
+            },
+          ],
+          tipoMetodoPago: 'transferencia_bancaria',
+        })
+        .expect(201);
+      await request(app.getHttpServer())
+        .post(`/compras/${inicio.body.compraId}/comprobante`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .attach('comprobante', Buffer.from('comprobante para factura'), {
+          filename: 'comprobante.jpg',
+          contentType: 'image/jpeg',
+        })
+        .expect(201);
+      const pendientes = await request(app.getHttpServer())
+        .get('/coop/pagos-pendientes')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      const pendiente = pendientes.body.find(
+        (p: { compraId: string }) => p.compraId === inicio.body.compraId,
+      );
+      await request(app.getHttpServer())
+        .patch(`/coop/pagos-pendientes/${pendiente.pagoId}/confirmar`)
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+
+      const recibo = await request(app.getHttpServer())
+        .get(`/compras/${inicio.body.compraId}`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(200);
+      boletoId = recibo.body.boletos[0].boletoId;
+    });
+
+    it('el pasajero solicita la factura de su boleto', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/solicitar-factura`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({
+          datosTributarios: {
+            tipo: 'cedula',
+            numero: '0104123456',
+            razonSocial: 'Pasajero Factura E2E',
+            direccion: 'Machala, El Oro',
+          },
+        })
+        .expect(201);
+      expect(res.body.id).toBeDefined();
+    });
+
+    it('RECHAZA solicitar la factura dos veces del mismo boleto', async () => {
+      const res = await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/solicitar-factura`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({ datosTributarios: { tipo: 'cedula', numero: '0104123456' } })
+        .expect(400);
+      expect(res.body.message).toContain('Ya solicitaste');
+    });
+
+    it('la cooperativa ve la solicitud pendiente y la marca como emitida', async () => {
+      const pendientes = await request(app.getHttpServer())
+        .get('/coop/solicitudes-factura')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      const solicitud = pendientes.body.find((s: { boletoId: string }) => s.boletoId === boletoId);
+      expect(solicitud).toBeDefined();
+      expect(solicitud.estado).toBe('pendiente');
+      expect(solicitud.pasajeroNombre).toBe('Pasajero Factura E2E');
+      expect(solicitud.datosTributarios.numero).toBe('0104123456');
+
+      await request(app.getHttpServer())
+        .patch(`/coop/solicitudes-factura/${solicitud.id}/marcar-emitida`)
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ urlFactura: 'https://ejemplo.com/factura.pdf' })
+        .expect(200);
+
+      const despues = await request(app.getHttpServer())
+        .get('/coop/solicitudes-factura')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      const actualizada = despues.body.find((s: { id: string }) => s.id === solicitud.id);
+      expect(actualizada.estado).toBe('emitida');
+      expect(actualizada.urlFactura).toBe('https://ejemplo.com/factura.pdf');
+    });
   });
 });

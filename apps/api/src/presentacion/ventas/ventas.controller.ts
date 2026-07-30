@@ -17,6 +17,7 @@ import { CheckoutService } from '../../aplicacion/ventas/checkout.service';
 import { CrearCompraDto } from './dto/crear-compra.dto';
 import { ReprogramarBoletoDto } from './dto/reprogramar-boleto.dto';
 import { IniciarPagoManualDto } from './dto/pago-manual.dto';
+import { SolicitarFacturaDto } from './dto/solicitar-factura.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
@@ -78,6 +79,26 @@ export class VentasController {
   @Get('metodos-pago/:viajeId')
   async listarMetodosPagoPorViaje(@Param('viajeId') viajeId: string) {
     return this.checkout.listarMetodosPagoActivosPorViaje(viajeId);
+  }
+
+  /**
+   * Solicitud de factura del pasaje (29-jul-2026) -- confirmado con el
+   * usuario: la cooperativa emite en su propio sistema, esto solo
+   * avisa. DEBE ir antes de GET ':compraId' -- mismo motivo que
+   * mis-creditos.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('boletos/:boletoId/solicitar-factura')
+  async solicitarFacturaCooperativa(
+    @Param('boletoId') boletoId: string,
+    @Body() dto: SolicitarFacturaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.solicitarFacturaCooperativa(
+      boletoId,
+      req.user.sub,
+      dto.datosTributarios,
+    );
   }
 
   /**

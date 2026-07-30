@@ -8,9 +8,11 @@ import type {
 import { esMenorDeEdad } from '../../dominio/ventas/ventas.ports';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
+import type { ProveedorFacturacionElectronica } from '../../dominio/facturacion/facturacion.ports';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
+export const PROVEEDOR_FACTURACION = 'PROVEEDOR_FACTURACION';
 
 @Injectable()
 export class CheckoutService {
@@ -18,6 +20,7 @@ export class CheckoutService {
     @Inject(COMPRA_REPOSITORIO) private readonly compras: CompraRepositorio,
     @Inject(PASARELA_PAGO) private readonly pasarela: PasarelaPago,
     @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
+    @Inject(PROVEEDOR_FACTURACION) private readonly facturacion: ProveedorFacturacionElectronica,
   ) {}
 
   /**
@@ -157,6 +160,9 @@ export class CheckoutService {
       resultadoPago.referenciaExterna,
       mapeo,
     );
+
+    const cargoPlataformaTotal = desglose.reduce((acc, d) => acc + d.cargoPlataforma, 0);
+    await this.generarFacturaPlataforma(compraId, cargoPlataformaTotal);
 
     // El crédito se marca usado DESPUÉS de que el pago se aprueba y el
     // boleto ya existe -- si el pago hubiera fallado, el crédito sigue
@@ -467,7 +473,33 @@ export class CheckoutService {
     if (!resultado.ok) {
       throw new BadRequestException(resultado.motivo);
     }
+    // Factura del servicio de Colombus (29-jul-2026) -- no falla la
+    // confirmación del pago si esto tiene algún problema, el boleto ya
+    // es real y válido de todas formas; se registra el error para
+    // revisión (ver comprobante_electronico.estado='rechazado').
+    await this.generarFacturaPlataforma(resultado.compraId, resultado.montoCargoPlataforma);
     return { ok: true };
+  }
+
+  /** Factura del servicio de Colombus (29-jul-2026) -- ver dominio/facturacion/facturacion.ports.ts. */
+  private async generarFacturaPlataforma(compraId: string, montoCargoPlataforma: number) {
+    if (montoCargoPlataforma <= 0) return;
+    try {
+      const { ruc } = await this.compras.obtenerDatosFiscalesPlataforma();
+      const resultadoFactura = await this.facturacion.emitirComprobante({
+        montoTotal: montoCargoPlataforma,
+        descripcion: 'Cargo por servicio de plataforma TicketYa',
+      });
+      await this.compras.crearComprobantePlataforma(
+        compraId,
+        montoCargoPlataforma,
+        ruc,
+        resultadoFactura,
+      );
+    } catch {
+      // Silencioso a propósito: la factura del servicio de Colombus no
+      // debe bloquear ni revertir una venta ya confirmada.
+    }
   }
 
   async rechazarPagoManual(
@@ -481,6 +513,43 @@ export class CheckoutService {
       cooperativaId,
       motivo,
       confirmadoPorUsuarioId,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return { ok: true };
+  }
+
+  /**
+   * Solicitud de factura del pasaje (29-jul-2026) -- confirmado con el
+   * usuario: la cooperativa emite en su propio sistema, Colombus solo
+   * avisa.
+   */
+  async solicitarFacturaCooperativa(
+    boletoId: string,
+    usuarioId: string,
+    datosTributarios: Record<string, string>,
+  ) {
+    const resultado = await this.compras.solicitarFacturaCooperativa(
+      boletoId,
+      usuarioId,
+      datosTributarios,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return { ok: true, id: resultado.id };
+  }
+
+  async listarSolicitudesFactura(cooperativaId: string) {
+    return this.compras.listarSolicitudesFactura(cooperativaId);
+  }
+
+  async marcarFacturaEmitida(solicitudId: string, cooperativaId: string, urlFactura?: string) {
+    const resultado = await this.compras.marcarFacturaEmitida(
+      solicitudId,
+      cooperativaId,
+      urlFactura,
     );
     if (!resultado.ok) {
       throw new BadRequestException(resultado.motivo);
