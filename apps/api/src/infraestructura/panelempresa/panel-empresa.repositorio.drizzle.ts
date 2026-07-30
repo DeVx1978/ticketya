@@ -899,6 +899,53 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  async obtenerPoliticaCancelacionReprogramacion(cooperativaId: string) {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT permite_cancelacion, horas_limite_cancelacion,
+               permite_reprogramacion, horas_limite_reprogramacion
+        FROM cooperativas WHERE id = ${cooperativaId}
+      `);
+      const f = resultado.rows[0] as {
+        permite_cancelacion: boolean;
+        horas_limite_cancelacion: number | null;
+        permite_reprogramacion: boolean;
+        horas_limite_reprogramacion: number | null;
+      };
+      return {
+        permiteCancelacion: f.permite_cancelacion,
+        horasLimiteCancelacion: f.horas_limite_cancelacion,
+        permiteReprogramacion: f.permite_reprogramacion,
+        horasLimiteReprogramacion: f.horas_limite_reprogramacion,
+      };
+    });
+  }
+
+  async actualizarPoliticaCancelacionReprogramacion(
+    cooperativaId: string,
+    datos: {
+      permiteCancelacion?: boolean;
+      horasLimiteCancelacion?: number;
+      permiteReprogramacion?: boolean;
+      horasLimiteReprogramacion?: number;
+    },
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      if (datos.permiteCancelacion !== undefined) {
+        await tx.execute(sql`UPDATE cooperativas SET permite_cancelacion = ${datos.permiteCancelacion} WHERE id = ${cooperativaId}`);
+      }
+      if (datos.horasLimiteCancelacion !== undefined) {
+        await tx.execute(sql`UPDATE cooperativas SET horas_limite_cancelacion = ${datos.horasLimiteCancelacion} WHERE id = ${cooperativaId}`);
+      }
+      if (datos.permiteReprogramacion !== undefined) {
+        await tx.execute(sql`UPDATE cooperativas SET permite_reprogramacion = ${datos.permiteReprogramacion} WHERE id = ${cooperativaId}`);
+      }
+      if (datos.horasLimiteReprogramacion !== undefined) {
+        await tx.execute(sql`UPDATE cooperativas SET horas_limite_reprogramacion = ${datos.horasLimiteReprogramacion} WHERE id = ${cooperativaId}`);
+      }
+    });
+  }
+
   async validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,

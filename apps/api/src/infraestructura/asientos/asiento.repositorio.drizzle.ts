@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, and, sql, ne } from 'drizzle-orm';
-import { viajes, viajeAsientos, unidades, tiposVehiculo } from '@ticketya/db';
+import { viajes, viajeAsientos, unidades, tiposVehiculo, cooperativas } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { ejecutarComoCooperativa } from '../database/tenant-transaction';
@@ -33,10 +33,17 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
       .select({
         capacidadTotal: tiposVehiculo.capacidadTotal,
         distribucionAsientos: tiposVehiculo.distribucionAsientos,
+        // Política de cancelación/reprogramación (29-jul-2026, hallazgo
+        // real de negocio): el pasajero debe saber ANTES de comprar si
+        // esta cooperativa permite cambios o devoluciones -- no
+        // descubrirlo después de haber pagado.
+        permiteCancelacion: cooperativas.permiteCancelacion,
+        permiteReprogramacion: cooperativas.permiteReprogramacion,
       })
       .from(viajes)
       .innerJoin(unidades, eq(viajes.unidadId, unidades.id))
       .innerJoin(tiposVehiculo, eq(unidades.tipoVehiculoId, tiposVehiculo.id))
+      .innerJoin(cooperativas, eq(viajes.cooperativaId, cooperativas.id))
       .where(eq(viajes.id, viajeId))
       .limit(1);
 
@@ -61,6 +68,8 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
       capacidadTotal: viaje[0].capacidadTotal,
       distribucionAsientos: viaje[0].distribucionAsientos,
       asientosNoDisponibles: noDisponibles,
+      permiteCancelacion: viaje[0].permiteCancelacion,
+      permiteReprogramacion: viaje[0].permiteReprogramacion,
     };
   }
 

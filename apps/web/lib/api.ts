@@ -73,6 +73,9 @@ export interface MapaAsientos {
   capacidadTotal: number;
   distribucionAsientos: DistribucionAsientos | null;
   asientosNoDisponibles: { numeroAsiento: string; estado: string; holdExpiraEn: string | null }[];
+  /** Política de cancelación/reprogramación (29-jul-2026) — el pasajero debe saberlo ANTES de comprar. */
+  permiteCancelacion: boolean;
+  permiteReprogramacion: boolean;
 }
 
 export async function obtenerMapaAsientos(viajeId: string): Promise<MapaAsientos> {
@@ -146,6 +149,46 @@ export async function actualizarConfiguracionFiscal(
   if (!res.ok) {
     const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
     throw new Error(mensaje ?? "No se pudo guardar la configuración fiscal.");
+  }
+}
+
+/**
+ * Política de cancelación/reprogramación (29-jul-2026, hallazgo real
+ * de negocio) — Transportes Occidental (Machala) no permite cambios ni
+ * devoluciones. Cada cooperativa configura por separado.
+ */
+export interface PoliticaCancelacionReprogramacion {
+  permiteCancelacion: boolean;
+  horasLimiteCancelacion: number | null;
+  permiteReprogramacion: boolean;
+  horasLimiteReprogramacion: number | null;
+}
+
+export async function obtenerPoliticaCancelacionReprogramacion(
+  token: string,
+): Promise<PoliticaCancelacionReprogramacion> {
+  const res = await fetch(`${API_URL}/coop/politica-cancelacion-reprogramacion`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar la política.");
+  return cuerpo as PoliticaCancelacionReprogramacion;
+}
+
+export async function actualizarPoliticaCancelacionReprogramacion(
+  token: string,
+  datos: Partial<PoliticaCancelacionReprogramacion>,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/politica-cancelacion-reprogramacion`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar la política.");
   }
 }
 

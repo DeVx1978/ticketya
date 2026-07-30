@@ -29,6 +29,7 @@ import {
   VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
   ActualizarHorasLimiteReprogramacionDto,
+  ActualizarPoliticaCancelacionReprogramacionDto,
   ActualizarPerfilDto,
   EditarTipoVehiculoDto,
   EditarRutaDto,
@@ -377,6 +378,34 @@ export class PanelEmpresaController {
     await this.panel.actualizarHorasLimiteReprogramacion(
       cooperativaDelToken(req.user),
       dto.horas,
+    );
+    return { ok: true };
+  }
+
+  /**
+   * Política de cancelación/reprogramación (29-jul-2026, hallazgo real
+   * de negocio): algunas cooperativas (ej. Transportes Occidental, no
+   * permite cambios ni devoluciones) no admiten estas opciones en
+   * absoluto. Se configuran por separado a propósito -- cancelar es
+   * una venta perdida para la cooperativa, reprogramar no.
+   */
+  @Roles('admin_cooperativa')
+  @Get('politica-cancelacion-reprogramacion')
+  async obtenerPoliticaCancelacionReprogramacion(@Request() req: { user: PayloadToken }) {
+    return this.panel.obtenerPoliticaCancelacionReprogramacion(
+      cooperativaDelToken(req.user),
+    );
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('politica-cancelacion-reprogramacion')
+  async actualizarPoliticaCancelacionReprogramacion(
+    @Body() dto: ActualizarPoliticaCancelacionReprogramacionDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarPoliticaCancelacionReprogramacion(
+      cooperativaDelToken(req.user),
+      dto,
     );
     return { ok: true };
   }

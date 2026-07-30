@@ -474,6 +474,28 @@ export interface PanelEmpresaRepositorio {
     horas: number,
   ): Promise<void>;
 
+  /**
+   * Política de cancelación/reprogramación por cooperativa (29-jul-2026,
+   * hallazgo real de negocio): Transportes Occidental (Machala) no
+   * permite cambios ni devoluciones. Se configuran por separado --
+   * cancelar es una venta perdida para la cooperativa, reprogramar no.
+   */
+  obtenerPoliticaCancelacionReprogramacion(cooperativaId: string): Promise<{
+    permiteCancelacion: boolean;
+    horasLimiteCancelacion: number | null;
+    permiteReprogramacion: boolean;
+    horasLimiteReprogramacion: number | null;
+  }>;
+  actualizarPoliticaCancelacionReprogramacion(
+    cooperativaId: string,
+    datos: {
+      permiteCancelacion?: boolean;
+      horasLimiteCancelacion?: number;
+      permiteReprogramacion?: boolean;
+      horasLimiteReprogramacion?: number;
+    },
+  ): Promise<void>;
+
   /** RF-COOP-006 — validación de boleto por QR en abordaje. */
   validarBoletoPorQr(
     cooperativaId: string,

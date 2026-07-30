@@ -134,6 +134,23 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
           <span>{mapa.capacidadTotal} en total</span>
         </p>
 
+        {(!mapa.permiteCancelacion || !mapa.permiteReprogramacion) && (
+          <div className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+            <p className="font-semibold">Antes de comprar, lee esto:</p>
+            {!mapa.permiteCancelacion && !mapa.permiteReprogramacion ? (
+              <p className="mt-1">
+                Esta cooperativa no permite cambios ni devoluciones — si no viajas, pierdes el
+                boleto completo.
+              </p>
+            ) : (
+              <ul className="mt-1 list-inside list-disc space-y-0.5">
+                {!mapa.permiteCancelacion && <li>No se puede cancelar este boleto.</li>}
+                {!mapa.permiteReprogramacion && <li>No se puede reprogramar este boleto.</li>}
+              </ul>
+            )}
+          </div>
+        )}
+
         <div className="mt-6 space-y-4">
           {pisos.map((piso, pisoIdx) => (
             <div key={pisoIdx} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">

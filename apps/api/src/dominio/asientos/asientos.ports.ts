@@ -15,6 +15,9 @@ export interface MapaAsientosViaje {
   capacidadTotal: number;
   distribucionAsientos: unknown;
   asientosNoDisponibles: AsientoNoDisponible[];
+  /** Política de cancelación/reprogramación (29-jul-2026) — el pasajero debe saberlo ANTES de comprar. */
+  permiteCancelacion: boolean;
+  permiteReprogramacion: boolean;
 }
 
 export type ResultadoBloqueo =

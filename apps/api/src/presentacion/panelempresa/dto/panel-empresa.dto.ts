@@ -263,6 +263,32 @@ export class ActualizarHorasLimiteReprogramacionDto {
   horas!: number;
 }
 
+/**
+ * Política de cancelación/reprogramación (29-jul-2026, hallazgo real):
+ * todos los campos opcionales -- solo se actualiza lo que se envía.
+ */
+export class ActualizarPoliticaCancelacionReprogramacionDto {
+  @IsOptional()
+  @IsBoolean()
+  permiteCancelacion?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(720)
+  horasLimiteCancelacion?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  permiteReprogramacion?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(720)
+  horasLimiteReprogramacion?: number;
+}
+
 /** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable, ver 21-jul-2026. */
 export class ActualizarConfiguracionFiscalDto {
   @IsNumber()
