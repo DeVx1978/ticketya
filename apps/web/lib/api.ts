@@ -1311,5 +1311,81 @@ export async function marcarFacturaEmitida(
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo marcar la factura como emitida.");
 }
 
+/**
+ * Liquidaciones a cooperativas (30-jul-2026) -- el admin de plataforma
+ * genera, lista todas, y marca como pagada. La cooperativa consulta
+ * su propio historial, solo lectura (ver listarMisLiquidaciones abajo).
+ */
+export interface LiquidacionCooperativa {
+  id: string;
+  cooperativaId: string;
+  periodoInicio: string;
+  periodoFin: string;
+  montoVentasBruto: number;
+  montoComisionPlataforma: number;
+  montoAjustes: number;
+  montoLiquidado: number;
+  estado: "pendiente" | "pagada";
+  pagadoEn: string | null;
+  creadoEn: string;
+}
 
+export async function generarLiquidacion(
+  token: string,
+  cooperativaId: string,
+  periodoInicio: string,
+  periodoFin: string,
+): Promise<LiquidacionCooperativa> {
+  const res = await fetch(`${API_URL}/admin/liquidaciones`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ cooperativaId, periodoInicio, periodoFin }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo generar la liquidación.");
+  }
+  return cuerpo as LiquidacionCooperativa;
+}
 
+export async function listarLiquidacionesAdmin(
+  token: string,
+  cooperativaId?: string,
+): Promise<LiquidacionCooperativa[]> {
+  const url = cooperativaId
+    ? `${API_URL}/admin/liquidaciones?cooperativaId=${cooperativaId}`
+    : `${API_URL}/admin/liquidaciones`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las liquidaciones.");
+  return cuerpo as LiquidacionCooperativa[];
+}
+
+export async function marcarLiquidacionPagada(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/liquidaciones/${id}/pagar`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo marcar como pagada.");
+}
+
+/**
+ * Vacío real de diseño encontrado en la auditoría (30-jul-2026): la
+ * cooperativa no tenía ninguna forma de ver su propio historial de
+ * liquidaciones -- solo lectura, generar/marcar pagada sigue siendo
+ * exclusivo del admin de plataforma.
+ */
+export async function listarMisLiquidaciones(token: string): Promise<LiquidacionCooperativa[]> {
+  const res = await fetch(`${API_URL}/coop/liquidaciones`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar tus liquidaciones.");
+  return cuerpo as LiquidacionCooperativa[];
+}

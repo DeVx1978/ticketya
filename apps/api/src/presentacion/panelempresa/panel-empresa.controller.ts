@@ -16,6 +16,7 @@
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PanelEmpresaService } from '../../aplicacion/panelempresa/panel-empresa.service';
 import { CheckoutService } from '../../aplicacion/ventas/checkout.service';
+import { LiquidacionesService } from '../../aplicacion/liquidaciones/liquidaciones.service';
 import {
   CrearTipoVehiculoDto,
   CrearUnidadDto,
@@ -62,6 +63,7 @@ export class PanelEmpresaController {
   constructor(
     private readonly panel: PanelEmpresaService,
     private readonly checkout: CheckoutService,
+    private readonly liquidaciones: LiquidacionesService,
   ) {}
 
   @Roles('admin_cooperativa')
@@ -543,5 +545,20 @@ export class PanelEmpresaController {
       dto.documentoAutorizacionVerificado,
     );
     return { ok: true };
+  }
+
+  /**
+   * Historial de liquidaciones propio de la cooperativa (30-jul-2026,
+   * hallazgo real de la auditoría): antes, el único acceso a
+   * liquidaciones era admin_plataforma -- la cooperativa no tenía
+   * ninguna forma de consultar cuánto se le debe o cuándo se le pagó
+   * sin pedírselo al admin de plataforma cada vez. Solo lectura --
+   * generar y marcar pagada siguen siendo exclusivos del admin de
+   * plataforma, en /admin/liquidaciones.
+   */
+  @Roles('admin_cooperativa')
+  @Get('liquidaciones')
+  async listarMisLiquidaciones(@Request() req: { user: PayloadToken }) {
+    return this.liquidaciones.listar(cooperativaDelToken(req.user));
   }
 }
