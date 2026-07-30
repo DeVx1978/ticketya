@@ -12,6 +12,7 @@ const ENLACES = [
   { href: "/panel-empresa/personal", etiqueta: "Personal" },
   { href: "/panel-empresa/viajes", etiqueta: "Viajes" },
   { href: "/panel-empresa/validar-qr", etiqueta: "Validar boleto" },
+  { href: "/panel-empresa/configuracion", etiqueta: "Configuración" },
 ];
 
 /**

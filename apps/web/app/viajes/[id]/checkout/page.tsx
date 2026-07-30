@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { crearCompra, listarMisCreditos, type ResultadoCompra, type MiCredito } from "@/lib/api";
+import { crearCompra, listarMisCreditos, obtenerMapaAsientos, type ResultadoCompra, type MiCredito, type MapaAsientos } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
@@ -31,6 +31,15 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const [resultado, setResultado] = useState<ResultadoCompra | null>(null);
   const [creditos, setCreditos] = useState<MiCredito[]>([]);
   const [creditoElegidoId, setCreditoElegidoId] = useState("");
+  const [mapa, setMapa] = useState<MapaAsientos | null>(null);
+
+  useEffect(() => {
+    obtenerMapaAsientos(viajeId)
+      .then(setMapa)
+      .catch(() => {
+        /* silencioso a propósito: si falla, simplemente no se muestra la alerta de política */
+      });
+  }, [viajeId]);
 
   useEffect(() => {
     const token = tokenValido();
@@ -274,6 +283,23 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {mapa && (!mapa.permiteCancelacion || !mapa.permiteReprogramacion) && (
+            <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+              <p className="font-semibold">Antes de confirmar el pago, lee esto:</p>
+              {!mapa.permiteCancelacion && !mapa.permiteReprogramacion ? (
+                <p className="mt-1">
+                  Esta cooperativa no permite cambios ni devoluciones — si no viajas, pierdes el
+                  boleto completo.
+                </p>
+              ) : (
+                <ul className="mt-1 list-inside list-disc space-y-0.5">
+                  {!mapa.permiteCancelacion && <li>No podrás cancelar este boleto.</li>}
+                  {!mapa.permiteReprogramacion && <li>No podrás reprogramar este boleto.</li>}
+                </ul>
+              )}
             </div>
           )}
 

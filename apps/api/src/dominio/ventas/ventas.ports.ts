@@ -205,7 +205,15 @@ export interface CompraRepositorio {
     fechaNacimiento: string | null;
   } | null>;
 
-  obtenerHorasLimiteReprogramacion(cooperativaId: string): Promise<number>;
+  /**
+   * Política de reprogramación por cooperativa (29-jul-2026, hallazgo
+   * real): algunas cooperativas no permiten reprogramar en absoluto,
+   * separado de si permiten cancelar (son decisiones de negocio
+   * distintas -- cancelar es una venta perdida, reprogramar no).
+   */
+  obtenerHorasLimiteReprogramacion(
+    cooperativaId: string,
+  ): Promise<{ permitido: boolean; horas: number }>;
 
   cancelarBoletoPorReprogramacion(
     boletoId: string,

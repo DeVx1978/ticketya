@@ -361,6 +361,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         viajeAsientoId: boletos.viajeAsientoId,
         compradorUsuarioId: compras.compradorUsuarioId,
         horaSalidaProgramada: viajes.horaSalidaProgramada,
+        cooperativaId: viajes.cooperativaId,
       })
       .from(boletos)
       .innerJoin(compras, eq(boletos.compraId, compras.id))
@@ -381,13 +382,34 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       };
     }
 
-    const [config] = await this.dbPublico
-      .select({ horas: configuracionPlataforma.cancelacionHorasMinimasAntes })
-      .from(configuracionPlataforma)
-      .limit(1);
-    // Valor de reserva conservador si nadie lo ha configurado todavía —
-    // ver comentario completo en packages/db/schema/configuracion.ts.
-    const horasMinimas = config?.horas ?? 2;
+    // Política de cancelación por cooperativa (29-jul-2026, hallazgo
+    // real): algunas cooperativas (ej. Transportes Occidental) no
+    // permiten cancelar en absoluto -- se rechaza ANTES de revisar
+    // horas límite, no tendría sentido calcular una ventana de tiempo
+    // que de todas formas nunca se puede usar.
+    const [coop] = await this.dbPublico
+      .select({
+        permiteCancelacion: cooperativas.permiteCancelacion,
+        horasLimiteCancelacion: cooperativas.horasLimiteCancelacion,
+      })
+      .from(cooperativas)
+      .where(eq(cooperativas.id, fila.cooperativaId));
+    if (!coop?.permiteCancelacion) {
+      return {
+        ok: false,
+        motivo: 'Esta cooperativa no permite cancelaciones -- si no viajas, pierdes el boleto.',
+      };
+    }
+
+    const horasMinimas =
+      coop.horasLimiteCancelacion ??
+      (
+        await this.dbPublico
+          .select({ horas: configuracionPlataforma.cancelacionHorasMinimasAntes })
+          .from(configuracionPlataforma)
+          .limit(1)
+      )[0]?.horas ??
+      2;
     const limite = new Date(fila.horaSalidaProgramada);
     limite.setHours(limite.getHours() - horasMinimas);
     if (new Date() > limite) {
@@ -457,14 +479,17 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
 
   async obtenerHorasLimiteReprogramacion(
     cooperativaId: string,
-  ): Promise<number> {
+  ): Promise<{ permitido: boolean; horas: number }> {
     const [coop] = await this.dbPublico
-      .select({ horas: cooperativas.horasLimiteReprogramacion })
+      .select({
+        horas: cooperativas.horasLimiteReprogramacion,
+        permitido: cooperativas.permiteReprogramacion,
+      })
       .from(cooperativas)
       .where(eq(cooperativas.id, cooperativaId));
     // Valor de reserva conservador si la cooperativa no lo configuró
     // todavía — mismo patrón que cancelacionHorasMinimasAntes.
-    return coop?.horas ?? 2;
+    return { permitido: coop?.permitido ?? true, horas: coop?.horas ?? 2 };
   }
 
   async cancelarBoletoPorReprogramacion(

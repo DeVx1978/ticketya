@@ -253,9 +253,15 @@ export class CheckoutService {
       );
     }
 
-    const horasLimite = await this.compras.obtenerHorasLimiteReprogramacion(
+    const politicaReprogramacion = await this.compras.obtenerHorasLimiteReprogramacion(
       viejo.cooperativaId,
     );
+    if (!politicaReprogramacion.permitido) {
+      throw new BadRequestException(
+        'Esta cooperativa no permite reprogramaciones.',
+      );
+    }
+    const horasLimite = politicaReprogramacion.horas;
     const limite = new Date(viejo.horaSalidaProgramada);
     limite.setHours(limite.getHours() - horasLimite);
     if (new Date() > limite) {

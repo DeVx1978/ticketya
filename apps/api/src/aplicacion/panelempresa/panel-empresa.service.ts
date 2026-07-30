@@ -202,6 +202,22 @@ export class PanelEmpresaService {
     return this.panel.actualizarHorasLimiteReprogramacion(cooperativaId, horas);
   }
 
+  obtenerPoliticaCancelacionReprogramacion(cooperativaId: string) {
+    return this.panel.obtenerPoliticaCancelacionReprogramacion(cooperativaId);
+  }
+
+  actualizarPoliticaCancelacionReprogramacion(
+    cooperativaId: string,
+    datos: {
+      permiteCancelacion?: boolean;
+      horasLimiteCancelacion?: number;
+      permiteReprogramacion?: boolean;
+      horasLimiteReprogramacion?: number;
+    },
+  ) {
+    return this.panel.actualizarPoliticaCancelacionReprogramacion(cooperativaId, datos);
+  }
+
   validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,

@@ -464,4 +464,93 @@ describe('Reprogramación con crédito (e2e)', () => {
       expect(res.body.message).toContain('no corresponde a la cooperativa');
     });
   });
+
+  describe('Política de cancelación/reprogramación por cooperativa (29-jul-2026) — hallazgo real: Transportes Occidental no permite cambios ni devoluciones', () => {
+    afterEach(async () => {
+      // se revierte al comportamiento por defecto para no afectar otras pruebas de esta misma suite
+      await request(app.getHttpServer())
+        .patch('/coop/politica-cancelacion-reprogramacion')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ permiteCancelacion: true, permiteReprogramacion: true })
+        .expect(200);
+    });
+
+    it('por defecto, una cooperativa que no ha configurado nada permite ambas (compatibilidad hacia atrás)', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/coop/politica-cancelacion-reprogramacion')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .expect(200);
+      expect(res.body.permiteCancelacion).toBe(true);
+      expect(res.body.permiteReprogramacion).toBe(true);
+    });
+
+    it('el mapa de asientos expone la política al pasajero ANTES de comprar', async () => {
+      await request(app.getHttpServer())
+        .patch('/coop/politica-cancelacion-reprogramacion')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ permiteCancelacion: false })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/viajes/${viajeOriginalId}/asientos`)
+        .expect(200);
+      expect(res.body.permiteCancelacion).toBe(false);
+      expect(res.body.permiteReprogramacion).toBe(true);
+    });
+
+    it('RECHAZA cancelar un boleto si la cooperativa configuró que no lo permite', async () => {
+      const boletoId = await comprar(viajeOriginalId, '3A');
+      await request(app.getHttpServer())
+        .patch('/coop/politica-cancelacion-reprogramacion')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ permiteCancelacion: false })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/cancelar`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(400);
+      expect(res.body.motivo ?? res.body.message).toContain('no permite cancelaciones');
+    });
+
+    it('RECHAZA reprogramar un boleto si la cooperativa configuró que no lo permite', async () => {
+      const boletoId = await comprar(viajeOriginalId, '3B');
+      await request(app.getHttpServer())
+        .patch('/coop/politica-cancelacion-reprogramacion')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ permiteReprogramacion: false })
+        .expect(200);
+      await bloquear(viajeMasBaratoId, '5A', tokenPasajero);
+
+      const res = await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/reprogramar`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({ nuevoViajeId: viajeMasBaratoId, nuevoNumeroAsiento: '5A' })
+        .expect(400);
+      expect(res.body.message).toContain('no permite reprogramaciones');
+    });
+
+    it('cancelar y reprogramar se configuran POR SEPARADO -- una cooperativa puede permitir una sin la otra', async () => {
+      const boletoId = await comprar(viajeOriginalId, '3C');
+      await request(app.getHttpServer())
+        .patch('/coop/politica-cancelacion-reprogramacion')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({ permiteCancelacion: false, permiteReprogramacion: true })
+        .expect(200);
+
+      // Cancelar sigue bloqueado...
+      await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/cancelar`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(400);
+
+      // ...pero reprogramar SÍ funciona, porque se configuró aparte.
+      await bloquear(viajeMasBaratoId, '3C', tokenPasajero);
+      await request(app.getHttpServer())
+        .post(`/compras/boletos/${boletoId}/reprogramar`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({ nuevoViajeId: viajeMasBaratoId, nuevoNumeroAsiento: '3C' })
+        .expect(201);
+    });
+  });
 });

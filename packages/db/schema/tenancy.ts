@@ -89,6 +89,25 @@ export const cooperativas = pgTable(
     // configuracionPlataforma.cancelacionHorasMinimasAntes.
     horasLimiteReprogramacion: integer('horas_limite_reprogramacion'),
 
+    // Política de cancelación/reprogramación por cooperativa
+    // (29-jul-2026) — hallazgo real: Transportes Occidental (Machala)
+    // no permite cambios NI devoluciones, si el pasajero no viaja
+    // pierde el boleto completo. No todas las cooperativas operan
+    // igual, así que cada una decide por separado (una empresa puede
+    // permitir reprogramar sin permitir cancelar — son cosas distintas
+    // de negocio: cancelar es una venta perdida, reprogramar no).
+    // Default `true` a propósito: es el comportamiento que ya existía
+    // y estaba probado antes de esta pieza — una cooperativa que no
+    // configura nada explícitamente sigue funcionando exactamente
+    // igual que hoy, no se le restringe nada en silencio.
+    permiteCancelacion: boolean('permite_cancelacion').default(true).notNull(),
+    permiteReprogramacion: boolean('permite_reprogramacion').default(true).notNull(),
+
+    // Mismo patrón que horasLimiteReprogramacion, pero para
+    // cancelación -- antes solo existía un valor único de toda la
+    // plataforma (configuracionPlataforma.cancelacionHorasMinimasAntes).
+    horasLimiteCancelacion: integer('horas_limite_cancelacion'),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },
