@@ -2,6 +2,7 @@
   BadRequestException,
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -14,6 +15,7 @@
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PanelEmpresaService } from '../../aplicacion/panelempresa/panel-empresa.service';
+import { CheckoutService } from '../../aplicacion/ventas/checkout.service';
 import {
   CrearTipoVehiculoDto,
   CrearUnidadDto,
@@ -34,6 +36,7 @@ import {
   EditarTipoVehiculoDto,
   EditarRutaDto,
 } from './dto/panel-empresa.dto';
+import { GuardarMetodoPagoDto, ConfirmarPagoManualDto } from './dto/metodos-pago.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
@@ -56,7 +59,10 @@ function cooperativaDelToken(user: PayloadToken): string {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('coop')
 export class PanelEmpresaController {
-  constructor(private readonly panel: PanelEmpresaService) {}
+  constructor(
+    private readonly panel: PanelEmpresaService,
+    private readonly checkout: CheckoutService,
+  ) {}
 
   @Roles('admin_cooperativa')
   @Post('tipos-vehiculo')
@@ -408,6 +414,83 @@ export class PanelEmpresaController {
       dto,
     );
     return { ok: true };
+  }
+
+  /**
+   * Métodos de pago manuales (29-jul-2026) — mientras no hay pasarela
+   * real conectada, cada cooperativa configura los que ya usa hoy en
+   * Ecuador (transferencia, efectivo, DeUna, PayPhone) con sus propios
+   * datos para recibir el pago.
+   */
+  @Roles('admin_cooperativa')
+  @Get('metodos-pago')
+  async listarMetodosPago(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarMetodosPago(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Post('metodos-pago')
+  async guardarMetodoPago(
+    @Body() dto: GuardarMetodoPagoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.guardarMetodoPago(
+      cooperativaDelToken(req.user),
+      dto.tipo,
+      dto.datosCuenta,
+      dto.activo ?? true,
+    );
+    return resultado;
+  }
+
+  @Roles('admin_cooperativa')
+  @Delete('metodos-pago/:id')
+  async eliminarMetodoPago(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.eliminarMetodoPago(cooperativaDelToken(req.user), id);
+    return { ok: true };
+  }
+
+  /**
+   * Confirmar/rechazar pagos manuales (29-jul-2026) -- el lado
+   * cooperativa del flujo de transferencia/efectivo/DeUna/PayPhone.
+   * Solo el admin (no el vendedor) confirma dinero real, mismo
+   * criterio que el resto de operaciones financieras de este panel.
+   */
+  @Roles('admin_cooperativa')
+  @Get('pagos-pendientes')
+  async listarPagosPendientes(@Request() req: { user: PayloadToken }) {
+    return this.checkout.listarPagosPendientesConfirmacion(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('pagos-pendientes/:pagoId/confirmar')
+  async confirmarPagoManual(
+    @Param('pagoId') pagoId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.confirmarPagoManual(
+      pagoId,
+      cooperativaDelToken(req.user),
+      req.user.sub,
+    );
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('pagos-pendientes/:pagoId/rechazar')
+  async rechazarPagoManual(
+    @Param('pagoId') pagoId: string,
+    @Body() dto: ConfirmarPagoManualDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.checkout.rechazarPagoManual(
+      pagoId,
+      cooperativaDelToken(req.user),
+      dto.motivo,
+      req.user.sub,
+    );
   }
 
   /** RF-COOP-006 — tanto el vendedor como el admin pueden validar boletos en el andén. */

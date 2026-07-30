@@ -86,6 +86,20 @@ export async function limpiarCooperativasDePrueba(
       `DELETE FROM compras WHERE id IN (SELECT compra_id FROM _boletos_test)`,
     );
 
+    // 29-jul-2026 -- métodos de pago manuales: pasajeros_compra ahora
+    // referencia viaje_asientos directamente (para reconstruir la
+    // relación horas después de crear la compra). El DELETE de arriba
+    // solo cubre compras que llegaron a tener boleto -- un pago manual
+    // rechazado o aún pendiente deja un pasajero_compra sin boleto,
+    // pero con viaje_asiento_id apuntando a un asiento real.
+    await pg.query(
+      `DELETE FROM pasajeros_compra WHERE viaje_asiento_id IN (
+         SELECT id FROM viaje_asientos WHERE viaje_id IN (
+           SELECT id FROM viajes WHERE cooperativa_id IN (SELECT id FROM _coop_test)
+         )
+       )`,
+    );
+
     await pg.query(
       `DELETE FROM viaje_asientos WHERE viaje_id IN (
          SELECT id FROM viajes WHERE cooperativa_id IN (SELECT id FROM _coop_test)
@@ -139,8 +153,24 @@ export async function limpiarCooperativasDePrueba(
          SELECT id FROM usuarios WHERE cooperativa_id IN (SELECT id FROM _coop_test)
        )`,
     );
+    // 29-jul-2026 -- métodos de pago manuales: pagos.confirmado_por_usuario_id
+    // referencia al admin de cooperativa que confirmó/rechazó -- el
+    // DELETE de pagos más arriba solo cubre compras con boleto, un
+    // pago rechazado (nunca llega a tener boleto) queda huérfano y
+    // bloquea borrar ese usuario.
+    await pg.query(
+      `UPDATE pagos SET confirmado_por_usuario_id = NULL WHERE confirmado_por_usuario_id IN (
+         SELECT id FROM usuarios WHERE cooperativa_id IN (SELECT id FROM _coop_test)
+       )`,
+    );
     await pg.query(
       `DELETE FROM usuarios WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
+    );
+    // 29-jul-2026 -- mismo tipo de omisión que ya se corrigió antes con
+    // liquidaciones/créditos: los métodos de pago manuales apuntan a
+    // cooperativa_id, hay que borrarlos antes que las cooperativas.
+    await pg.query(
+      `DELETE FROM metodos_pago_cooperativa WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
     );
     await pg.query(
       `DELETE FROM cooperativas WHERE id IN (SELECT id FROM _coop_test)`,

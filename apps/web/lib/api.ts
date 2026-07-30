@@ -192,6 +192,162 @@ export async function actualizarPoliticaCancelacionReprogramacion(
   }
 }
 
+/**
+ * Métodos de pago manuales (29-jul-2026) — mientras no hay pasarela
+ * real conectada, cada cooperativa configura los que ya usa hoy en
+ * Ecuador (transferencia, efectivo, DeUna, PayPhone) con sus propios
+ * datos para recibir el pago.
+ */
+export type TipoMetodoPago = "transferencia_bancaria" | "efectivo" | "deuna" | "payphone" | "tarjeta_pasarela";
+
+export interface MetodoPagoCooperativa {
+  id: string;
+  tipo: TipoMetodoPago;
+  activo: boolean;
+  datosCuenta: Record<string, string>;
+}
+
+export async function listarMetodosPago(token: string): Promise<MetodoPagoCooperativa[]> {
+  const res = await fetch(`${API_URL}/coop/metodos-pago`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los métodos de pago.");
+  return cuerpo as MetodoPagoCooperativa[];
+}
+
+export async function guardarMetodoPago(
+  token: string,
+  tipo: TipoMetodoPago,
+  datosCuenta: Record<string, string>,
+  activo: boolean,
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/metodos-pago`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ tipo, datosCuenta, activo }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar el método de pago.");
+  }
+  return cuerpo;
+}
+
+export async function eliminarMetodoPago(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/metodos-pago/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo eliminar el método de pago.");
+}
+
+/** Lado cooperativa: revisar y confirmar/rechazar pagos manuales pendientes. */
+export interface PagoManualPendiente {
+  pagoId: string;
+  compraId: string;
+  proveedor: string;
+  monto: number;
+  comprobanteUrl: string | null;
+  compradorNombre: string;
+  creadoEn: string;
+}
+
+export async function listarPagosPendientes(token: string): Promise<PagoManualPendiente[]> {
+  const res = await fetch(`${API_URL}/coop/pagos-pendientes`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los pagos pendientes.");
+  return cuerpo as PagoManualPendiente[];
+}
+
+export async function confirmarPagoManual(token: string, pagoId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/pagos-pendientes/${pagoId}/confirmar`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo confirmar el pago.");
+}
+
+export async function rechazarPagoManual(token: string, pagoId: string, motivo?: string): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/pagos-pendientes/${pagoId}/rechazar`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ motivo }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo rechazar el pago.");
+}
+
+/** Lado pasajero: iniciar un pago manual y subir el comprobante. */
+export interface ResultadoPagoManual {
+  compraId: string;
+  estado: "pendiente_confirmacion";
+}
+
+export async function iniciarPagoManual(
+  token: string,
+  pasajeros: PasajeroCompraInput[],
+  tipoMetodoPago: TipoMetodoPago,
+  idempotencyKey: string,
+): Promise<ResultadoPagoManual> {
+  const res = await fetch(`${API_URL}/compras/pago-manual`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ pasajeros, tipoMetodoPago, idempotencyKey }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo iniciar el pago manual.");
+  }
+  return cuerpo;
+}
+
+export async function subirComprobantePago(
+  token: string,
+  compraId: string,
+  archivo: File,
+): Promise<{ comprobanteUrl: string }> {
+  const formData = new FormData();
+  formData.append("comprobante", archivo);
+  const res = await fetch(`${API_URL}/compras/${compraId}/comprobante`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo subir el comprobante.");
+  }
+  return cuerpo;
+}
+
+export interface MetodoPagoDisponible {
+  tipo: TipoMetodoPago;
+  datosCuenta: Record<string, string>;
+}
+
+export async function listarMetodosPagoPorViaje(
+  token: string,
+  viajeId: string,
+): Promise<MetodoPagoDisponible[]> {
+  const res = await fetch(`${API_URL}/compras/metodos-pago/${viajeId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los métodos de pago.");
+  return cuerpo as MetodoPagoDisponible[];
+}
+
 export interface RutaResumen {
   id: string;
   nombre: string | null;

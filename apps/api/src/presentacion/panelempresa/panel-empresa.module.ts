@@ -7,9 +7,10 @@ import {
 import { PanelEmpresaRepositorioDrizzle } from '../../infraestructura/panelempresa/panel-empresa.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 import { AuthModule } from '../auth/auth.module';
+import { VentasModule } from '../ventas/ventas.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, VentasModule],
   controllers: [PanelEmpresaController],
   providers: [
     PanelEmpresaService,

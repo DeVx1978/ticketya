@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { crearCompra, listarMisCreditos, obtenerMapaAsientos, type ResultadoCompra, type MiCredito, type MapaAsientos } from "@/lib/api";
+import { crearCompra, listarMisCreditos, obtenerMapaAsientos, iniciarPagoManual, subirComprobantePago, listarMetodosPagoPorViaje, type ResultadoCompra, type MiCredito, type MapaAsientos, type MetodoPagoDisponible, type TipoMetodoPago } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
@@ -32,6 +32,22 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const [creditos, setCreditos] = useState<MiCredito[]>([]);
   const [creditoElegidoId, setCreditoElegidoId] = useState("");
   const [mapa, setMapa] = useState<MapaAsientos | null>(null);
+  const [metodosDisponibles, setMetodosDisponibles] = useState<MetodoPagoDisponible[]>([]);
+  const [metodoElegido, setMetodoElegido] = useState<TipoMetodoPago | "tarjeta">("tarjeta");
+  const [pagoManual, setPagoManual] = useState<{ compraId: string } | null>(null);
+  const [comprobanteArchivo, setComprobanteArchivo] = useState<File | null>(null);
+  const [subiendoComprobante, setSubiendoComprobante] = useState(false);
+  const [comprobanteSubido, setComprobanteSubido] = useState(false);
+
+  useEffect(() => {
+    const token = tokenValido();
+    if (!token) return;
+    listarMetodosPagoPorViaje(token, viajeId)
+      .then(setMetodosDisponibles)
+      .catch(() => {
+        /* silencioso a propósito: si falla, simplemente no se ofrecen métodos manuales, solo tarjeta */
+      });
+  }, [viajeId]);
 
   useEffect(() => {
     obtenerMapaAsientos(viajeId)
@@ -66,39 +82,121 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     setError(null);
     try {
       const idempotencyKey = crypto.randomUUID();
-      const resp = await crearCompra(
-        [
-          {
-            viajeId,
-            numeroAsiento,
-            nombreCompleto,
-            documento,
-            tipoTarifa,
-            fechaNacimiento: fechaNacimiento || undefined,
-            autorizacionMenor:
-              tipoTarifa === "nino"
-                ? {
-                    tipoAcompanamiento: "con_autorizacion",
-                    adultoResponsableNombre: adultoResponsableNombre.trim(),
-                    adultoResponsableDocumento: adultoResponsableDocumento.trim(),
-                    adultoResponsableTelefono: adultoResponsableTelefono.trim() || undefined,
-                  }
-                : undefined,
-          },
-        ],
-        token,
-        idempotencyKey,
-        creditoElegidoId || undefined,
-      );
-      setResultado(resp);
-      if (resp.estado === "rechazado") {
-        setError(resp.motivo ?? "El pago fue rechazado.");
+      const pasajero = {
+        viajeId,
+        numeroAsiento,
+        nombreCompleto,
+        documento,
+        tipoTarifa,
+        fechaNacimiento: fechaNacimiento || undefined,
+        autorizacionMenor:
+          tipoTarifa === "nino"
+            ? {
+                tipoAcompanamiento: "con_autorizacion" as const,
+                adultoResponsableNombre: adultoResponsableNombre.trim(),
+                adultoResponsableDocumento: adultoResponsableDocumento.trim(),
+                adultoResponsableTelefono: adultoResponsableTelefono.trim() || undefined,
+              }
+            : undefined,
+      };
+
+      if (metodoElegido === "tarjeta") {
+        const resp = await crearCompra([pasajero], token, idempotencyKey, creditoElegidoId || undefined);
+        setResultado(resp);
+        if (resp.estado === "rechazado") {
+          setError(resp.motivo ?? "El pago fue rechazado.");
+        }
+      } else {
+        // Métodos de pago manuales (29-jul-2026) -- el asiento queda
+        // reservado esperando el comprobante y la confirmación de la
+        // cooperativa, no se emite el boleto todavía.
+        const resp = await iniciarPagoManual(token, [pasajero], metodoElegido, idempotencyKey);
+        setPagoManual({ compraId: resp.compraId });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo completar la compra.");
     } finally {
       setProcesando(false);
     }
+  }
+
+  async function subirComprobante() {
+    const token = tokenValido();
+    if (!token || !pagoManual || !comprobanteArchivo) return;
+    setSubiendoComprobante(true);
+    setError(null);
+    try {
+      await subirComprobantePago(token, pagoManual.compraId, comprobanteArchivo);
+      setComprobanteSubido(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo subir el comprobante.");
+    } finally {
+      setSubiendoComprobante(false);
+    }
+  }
+
+  // Pago manual iniciado -- esperando que el pasajero suba su
+  // comprobante (transferencia, efectivo, DeUna, PayPhone).
+  if (pagoManual) {
+    const metodo = metodosDisponibles.find((m) => m.tipo === metodoElegido);
+    return (
+      <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-black/5">
+          {comprobanteSubido ? (
+            <div className="text-center">
+              <h1 className="font-display text-xl font-bold text-brand-dark">
+                ¡Comprobante recibido!
+              </h1>
+              <p className="mt-2 text-sm text-brand-dark/60">
+                Tu asiento queda reservado mientras la cooperativa confirma tu pago. Te avisaremos
+                cuando esté listo — revisa tu cuenta en "Mis boletos".
+              </p>
+              <Link
+                href="/perfil?tab=boletos"
+                className="mt-6 inline-block rounded-lg bg-brand px-6 py-2.5 font-semibold text-white transition hover:bg-brand-dark"
+              >
+                Ir a mis boletos
+              </Link>
+            </div>
+          ) : (
+            <>
+              <h1 className="font-display text-xl font-bold text-brand-dark">
+                Ahora, paga y sube tu comprobante
+              </h1>
+              {metodo && (
+                <div className="mt-3 rounded-xl bg-brand-light/30 p-4 text-sm text-brand-dark">
+                  {Object.entries(metodo.datosCuenta).map(([clave, valor]) => (
+                    <p key={clave}>
+                      <span className="text-brand-dark/50 capitalize">{clave}: </span>
+                      <span className="font-semibold">{valor}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                  Foto o captura del comprobante
+                </label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  onChange={(e) => setComprobanteArchivo(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-sm text-brand-dark file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
+                />
+              </div>
+              {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
+              <button
+                onClick={subirComprobante}
+                disabled={!comprobanteArchivo || subiendoComprobante}
+                className="mt-4 w-full rounded-lg bg-brand px-6 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+              >
+                {subiendoComprobante ? "Subiendo..." : "Subir comprobante"}
+              </button>
+            </>
+          )}
+        </div>
+      </main>
+    );
   }
 
   // Boleto emitido con éxito — pantalla de confirmación.
@@ -303,6 +401,40 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             </div>
           )}
 
+          {metodosDisponibles.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                Cómo quieres pagar
+              </label>
+              <select
+                value={metodoElegido}
+                onChange={(e) => setMetodoElegido(e.target.value as typeof metodoElegido)}
+                className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              >
+                <option value="tarjeta">Tarjeta</option>
+                {metodosDisponibles.map((m) => (
+                  <option key={m.tipo} value={m.tipo}>
+                    {
+                      {
+                        transferencia_bancaria: "Transferencia bancaria",
+                        efectivo: "Efectivo",
+                        deuna: "DeUna",
+                        payphone: "PayPhone (billetera)",
+                        tarjeta_pasarela: "Tarjeta",
+                      }[m.tipo]
+                    }
+                  </option>
+                ))}
+              </select>
+              {metodoElegido !== "tarjeta" && (
+                <p className="mt-1 text-xs text-brand-dark/50">
+                  Pagas por fuera de la plataforma y subes tu comprobante — la cooperativa confirma
+                  tu boleto después.
+                </p>
+              )}
+            </div>
+          )}
+
           {creditos.length > 0 && (
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
@@ -333,7 +465,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             disabled={procesando}
             className="w-full rounded-lg bg-brand-amber px-6 py-3 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
-            {procesando ? "Procesando pago..." : "Pagar y confirmar"}
+            {procesando
+              ? "Procesando..."
+              : metodoElegido === "tarjeta"
+                ? "Pagar y confirmar"
+                : "Continuar"}
           </button>
           <p className="text-center text-xs text-brand-dark/40">
             Pago de prueba — todavía no está conectada una pasarela real.

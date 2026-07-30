@@ -2,7 +2,11 @@
  * Interfaces (puertos) del dominio de asientos — RF-SEAT.
  */
 
-export type EstadoAsiento = 'disponible' | 'bloqueado_temporal' | 'ocupado';
+export type EstadoAsiento =
+  | 'disponible'
+  | 'bloqueado_temporal'
+  | 'pendiente_confirmacion_pago'
+  | 'ocupado';
 
 export interface AsientoNoDisponible {
   numeroAsiento: string;

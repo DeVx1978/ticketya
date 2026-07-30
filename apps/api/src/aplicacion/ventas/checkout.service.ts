@@ -6,6 +6,8 @@ import type {
   PasarelaPago,
 } from '../../dominio/ventas/ventas.ports';
 import { esMenorDeEdad } from '../../dominio/ventas/ventas.ports';
+import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
+import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
@@ -15,6 +17,7 @@ export class CheckoutService {
   constructor(
     @Inject(COMPRA_REPOSITORIO) private readonly compras: CompraRepositorio,
     @Inject(PASARELA_PAGO) private readonly pasarela: PasarelaPago,
+    @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
   ) {}
 
   /**
@@ -369,5 +372,119 @@ export class CheckoutService {
   /** Vacío real de diseño encontrado el 29-jul-2026: sin esto, el pasajero no tenía dónde ver su saldo de crédito. */
   async listarMisCreditos(usuarioId: string) {
     return this.compras.listarCreditosUsuario(usuarioId);
+  }
+
+  async listarMetodosPagoActivosPorViaje(viajeId: string) {
+    return this.compras.listarMetodosPagoActivosPorViaje(viajeId);
+  }
+
+  /**
+   * Iniciar un pago manual (29-jul-2026) — mientras no hay pasarela
+   * real conectada, el pasajero paga por fuera (transferencia,
+   * efectivo, DeUna, PayPhone) y sube su comprobante. El asiento queda
+   * reservado (no expira solo, a diferencia del bloqueo de tarjeta)
+   * hasta que la cooperativa confirme o rechace.
+   */
+  async iniciarPagoManual(
+    pasajeros: PasajeroCheckout[],
+    usuarioId: string,
+    tipoMetodoPago: string,
+    idempotencyKeyCliente?: string,
+  ) {
+    const desglose = await this.compras.validarYCalcularAsientos(pasajeros, usuarioId);
+
+    const cooperativasEnCompra = new Set(desglose.map((d) => d.cooperativaId));
+    if (cooperativasEnCompra.size !== 1) {
+      throw new BadRequestException(
+        'No se puede pagar de forma manual una compra que mezcla boletos de varias cooperativas.',
+      );
+    }
+    const [cooperativaId] = cooperativasEnCompra;
+
+    const metodoActivo = await this.compras.verificarMetodoPagoActivo(
+      cooperativaId,
+      tipoMetodoPago,
+    );
+    if (!metodoActivo) {
+      throw new BadRequestException(
+        'Esta cooperativa no tiene configurado ese método de pago.',
+      );
+    }
+
+    const idempotencyKey = idempotencyKeyCliente ?? randomUUID();
+    const { compraId, mapeo } = await this.compras.crearCompraPendiente(
+      usuarioId,
+      pasajeros,
+      desglose,
+      idempotencyKey,
+      tipoMetodoPago,
+    );
+
+    // El bloqueo temporal corto (minutos) no alcanza para revisar un
+    // comprobante -- se convierte en una reserva de largo plazo que no
+    // expira sola.
+    await this.compras.marcarAsientosPendientesConfirmacionPago(mapeo);
+
+    return { compraId, estado: 'pendiente_confirmacion' as const };
+  }
+
+  async subirComprobantePago(
+    compraId: string,
+    usuarioId: string,
+    buffer: Buffer,
+    nombreOriginal: string,
+  ) {
+    const { url } = await this.almacenamiento.guardarImagen(
+      buffer,
+      nombreOriginal,
+      'comprobantes-pago',
+    );
+    const resultado = await this.compras.adjuntarComprobante(compraId, usuarioId, url);
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return { ok: true, comprobanteUrl: url };
+  }
+
+  /**
+   * Lado cooperativa del pago manual (29-jul-2026): ve los pagos con
+   * comprobante subido, esperando confirmación.
+   */
+  async listarPagosPendientesConfirmacion(cooperativaId: string) {
+    return this.compras.listarPagosPendientesConfirmacion(cooperativaId);
+  }
+
+  async confirmarPagoManual(
+    pagoId: string,
+    cooperativaId: string,
+    confirmadoPorUsuarioId: string,
+  ) {
+    const resultado = await this.compras.confirmarPagoManual(
+      pagoId,
+      cooperativaId,
+      confirmadoPorUsuarioId,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return { ok: true };
+  }
+
+  async rechazarPagoManual(
+    pagoId: string,
+    cooperativaId: string,
+    motivo: string | undefined,
+    confirmadoPorUsuarioId: string,
+  ) {
+    const resultado = await this.compras.rechazarPagoManual(
+      pagoId,
+      cooperativaId,
+      motivo,
+      confirmadoPorUsuarioId,
+    );
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return { ok: true };
   }
 }

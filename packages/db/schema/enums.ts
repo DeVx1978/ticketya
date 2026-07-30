@@ -66,6 +66,13 @@ export const estadoViajeEnum = pgEnum('estado_viaje', [
 export const estadoAsientoEnum = pgEnum('estado_asiento', [
   'disponible',
   'bloqueado_temporal',
+  // Métodos de pago manuales (29-jul-2026) — a diferencia de
+  // 'bloqueado_temporal' (minutos, mientras se completa un pago con
+  // tarjeta), este NO expira solo: el asiento queda reservado hasta
+  // que la cooperativa confirme o rechace el comprobante subido. Sin
+  // esto, alguien más podría tomar el asiento mientras se revisa el
+  // pago de otro pasajero.
+  'pendiente_confirmacion_pago',
   'ocupado',
 ]);
 
@@ -177,4 +184,21 @@ export const categoriaVehiculoEnum = pgEnum('categoria_vehiculo', [
   'buseta',
   'van',
   'auto',
+]);
+
+/**
+ * Métodos de pago manuales (29-jul-2026) — mientras no hay una
+ * pasarela real conectada (decisión de negocio pendiente), cada
+ * cooperativa opera con lo que ya usa en Ecuador de todas formas:
+ * transferencia bancaria, efectivo, DeUna, PayPhone (billetera, no la
+ * pasarela con el mismo nombre). `tarjeta_pasarela` queda reservado
+ * para cuando se conecte una pasarela real — el catálogo ya está listo
+ * para esa fecha, no hay que rediseñar nada, solo agregar el proveedor.
+ */
+export const tipoMetodoPagoEnum = pgEnum('tipo_metodo_pago', [
+  'transferencia_bancaria',
+  'efectivo',
+  'deuna',
+  'payphone',
+  'tarjeta_pasarela',
 ]);

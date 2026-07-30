@@ -20,6 +20,7 @@ export * from './menores';
 export * from './notificaciones';
 export * from './liquidaciones';
 export * from './creditos';
+export * from './metodos-pago';
 export * from './admin';
 export * from './api_externa';
 export * from './comercial';
