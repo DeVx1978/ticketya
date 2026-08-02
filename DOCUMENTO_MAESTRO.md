@@ -1,7 +1,8 @@
 # Columbus (TicketYa) — Documento Maestro de Requerimientos y Estado Real
 
-**Última actualización:** 2 de agosto de 2026 — Fase 2 en construcción: Contador de usuarios registrados por rol (sección 3.13), cerrado hoy. El análisis original (secciones 3.1 a 3.13 + requerimientos no funcionales) sigue siendo la referencia completa; a partir de aquí, cada sección se actualiza a "cerrado" apenas se construye y verifica, no al final de la sesión.
-**Propósito de este documento:** ser la ÚNICA fuente de verdad del proyecto. Antes de escribir código, se consulta este documento. Al cerrar cada sesión de trabajo real, se actualiza. Ningún resumen de conversación reemplaza esto.
+**Última actualización:** 2 de agosto de 2026 — corrección de sincronización: se documenta el progreso real de Modelo B (esquema corregido, decisiones de diseño y de negocio cerradas) que se había discutido pero no se había escrito antes de avanzar a otra pieza. Se corrige también la numeración de la hoja de ruta, que se reiniciaba en cada fase en vez de continuar. El análisis original (secciones 3.1 a 3.13 + requerimientos no funcionales) sigue siendo la referencia completa; a partir de aquí, cada sección se actualiza a "cerrado" apenas se construye y verifica — antes de avanzar a la siguiente pieza, no después.
+
+**Propósito de este documento:** ser la ÚNICA fuente de verdad del proyecto. Antes de escribir código, se consulta este documento. **Regla reforzada (2-ago-2026): ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada — se escribe primero, se confirma, y recién ahí se construye.** Ningún resumen de conversación reemplaza esto.
 
 **Cómo está organizado:** cada sección funcional tiene tres partes — (1) qué DEBE hacer (el requerimiento completo, sin importar si ya existe), (2) el estado real verificado, (3) qué falta exactamente. Al final, la hoja de ruta por fases sale de comparar (1) contra (2).
 
@@ -77,7 +78,6 @@
 El QR de boleto ya funciona exactamente así: nace con el pago (se genera al confirmarse la compra) y muere con el abordaje (al escanearlo el vendedor, el boleto pasa a "usado" y ese QR ya no sirve). Confirmado como correcto, sin ambigüedad.
 
 Lo que se propone es distinto y adicional, no un reemplazo: un identificador **fijo, ligado a la cuenta desde el registro**, no a cada compra. Patrón real de plataformas serias (tarjetas de fidelidad de aerolíneas, carnets digitales):
-
 - Verificación rápida de identidad en terminal, incluso sin tener el boleto a mano
 - Base para un futuro programa de fidelidad/millas por viajes frecuentes
 - Reduce fraude de suplantación al validar en el andén (el vendedor ve nombre + foto + historial, no solo un código de boleto suelto)
@@ -206,9 +206,9 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **4. Actualización periódica obligatoria de información.** Requerimiento nuevo, no construido: mismo patrón que usan plataformas financieras con revalidación de KYC — la cooperativa debería confirmar/actualizar sus datos legales y de contacto cada cierto tiempo (ej. cada 6-12 meses).
 
-**5. "Nosotros les damos todas las herramientas".** Confirmado: para el Modelo A (panel directo), esto ya es cierto en lo cotidiano — rutas, flota, personal, viajes, precios, métodos de pago, política de cancelación. Para el Modelo B (cooperativas con sistema propio que se conectan por API), la promesa **todavía no se cumple** — ver sección 3.11, sigue siendo solo diseño.
+**5. "Nosotros les damos todas las herramientas".** Confirmado: para el Modelo A (panel directo), esto ya es cierto en lo cotidiano — rutas, flota, personal, viajes, precios, métodos de pago, política de cancelación. Para el Modelo B (cooperativas con sistema propio que se conectan por API), la promesa **está en construcción activa** — ver sección 3.11.
 
-**Falta:** horarios recurrentes (plantilla de horario); cancelación/suspensión masiva por ruta y fecha; verificar estado real de importación masiva de datos iniciales; actualización periódica obligatoria de datos; Modelo B completo (ver 3.11).
+**Falta:** horarios recurrentes (plantilla de horario); cancelación/suspensión masiva por ruta y fecha; verificar estado real de importación masiva de datos iniciales; actualización periódica obligatoria de datos; Modelo B (ver 3.11, en construcción).
 
 ---
 
@@ -245,7 +245,7 @@ Esto sigue exactamente el mismo patrón que ya usamos bien en el panel de cooper
 
 **Requerimiento completo:** catálogo de espacios publicitarios, planes comerciales, captación de leads de anunciantes con seguimiento de estado, campañas con flujo de aprobación obligatorio, servido dinámico en la landing (nunca dentro del flujo de compra), métricas de impresiones y clics, panel de administración visual.
 
-**Estado real:** ✅ Completo -- backend y panel de administración, cerrado 30-jul-2026 (4 pestañas: Espacios, Planes, Leads, Campañas; vista previa antes de aprobar, CTR calculado, exportar métricas a CSV).
+**Estado real:** ✅ Completo — backend y panel de administración, cerrado 30-jul-2026 (4 pestañas: Espacios, Planes, Leads, Campañas; vista previa antes de aprobar, CTR calculado, exportar métricas a CSV).
 - Backend: ✅ completo — espacios, planes, leads, campañas con aprobación/rechazo obligatorio, endpoint público de campañas activas por ubicación, registro de impresiones/clics, métricas por campaña
 - Probado en vivo de punta a punta (creación de espacio, plan, campaña, aprobación, aparición en el endpoint público)
 
@@ -268,7 +268,7 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 - **Reporte descargable/exportable** para el anunciante — hoy las métricas solo se ven vía API, ningún anunciante va a pedirle a su equipo que use Postman
 - **Nunca intrusivo**: ya decidido y correcto — ningún espacio publicitario vive dentro del flujo de compra, solo en la landing pública
 
-**Falta:** nada del lado admin -- las 4 pestañas, vista previa, CTR y exportar CSV ya están construidas y verificadas. Pendiente, aparte: que la etiqueta "Publicidad" se muestre también en la landing pública real (eso es responsabilidad del HTML/frontend de cara al pasajero, no de este panel administrativo).
+**Falta:** nada del lado admin — las 4 pestañas, vista previa, CTR y exportar CSV ya están construidas y verificadas. Pendiente, aparte: que la etiqueta "Publicidad" se muestre también en la landing pública real (eso es responsabilidad del HTML/frontend de cara al pasajero, no de este panel administrativo).
 
 ---
 
@@ -279,7 +279,7 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 **Estado real:** ✅ Completo, cerrado 30-jul-2026.
 - Backend: genera, valida fechas, lista con filtro, marca pagada — más el endpoint nuevo `GET /coop/liquidaciones`, de solo lectura, para que la cooperativa vea su propio historial sin depender del admin de plataforma
 - Frontend: `/admin/liquidaciones` (generar, ver todas, marcar pagada) y `/panel-empresa/liquidaciones` (solo lectura, agrupado en pendientes/pagadas)
-- Verificado con `tsc` y 137/137 pruebas en la máquina real del usuario (no en el sandbox, que no tenía el proyecto instalado ese día)
+- Verificado con `tsc` y 137/137 pruebas en la máquina real del usuario
 
 **Falta:** nada.
 
@@ -289,9 +289,9 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 
 **Requerimiento completo:** cooperativas con su propio sistema de venta puedan conectarse a Columbus por API (credenciales, sincronización de disponibilidad en tiempo real, webhooks de eventos de venta), sin usar el panel web.
 
-**Estado real:** 🔴 Solo diseño de base de datos, cero código funcional.
-- Existe el esquema (`api_externa.ts`): tablas para credenciales, cola de eventos, estados de reserva
-- No existe ningún controller, service, ni endpoint
+**Estado real:** 🟡 En construcción activa (2-ago-2026) — esquema en corrección, decisiones de diseño y de negocio ya cerradas, service/controller todavía no escritos.
+- Esquema (`api_externa.ts`): tablas para credenciales, cola de eventos, estados de reserva — con 2 correcciones en curso (ver hallazgos abajo)
+- Controller/service: aún no construidos
 
 **Especificación técnica del director (30-jul-2026), corregida tras discusión con el usuario:**
 
@@ -307,7 +307,18 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 - Ajustes de formato/nombres de campos según el sistema particular de esa cooperativa
 - Casos particulares de su operación que hoy no se pueden anticipar sin verlos
 
-**Falta:** construir la infraestructura genérica (llaves, webhooks, endpoints base, documentación) — **esto sí entra en la construcción activa, no se pospone**. Los ajustes específicos por cooperativa se resuelven caso por caso cuando aparezca la primera integración real.
+**Progreso real (2-ago-2026):**
+
+Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/controller encima, se encontraron **2 huecos reales de diseño** que había que resolver primero:
+
+1. **Faltaba `webhookUrl` en `credencialesApi`** — la tabla `webhooksLog` guardaba el evento y los reintentos, pero en ningún lado se guardaba la URL de destino (el endpoint del sistema propio de la cooperativa) a la que hay que enviar el aviso. Corregido: se agrega el campo.
+2. **El API key no se podía buscar de forma segura y eficiente** — solo se guardaba `apiKeyHash`, que sirve para verificar una llave una vez que ya sabes cuál es, pero no para encontrarla. Con eso, validar una petición entrante habría exigido probar el hash contra todas las credenciales activas del país, una por una — no escala, y es una práctica insegura conocida. **Decisión (director, 2-ago-2026):** seguir el patrón estándar de Stripe/GitHub — guardar también un prefijo público de la llave en texto plano (ej. `tkya_live_a1b2c3...`) para hacer el lookup rápido, y hashear el resto.
+
+**Decisión de negocio confirmada (director, 2-ago-2026): ¿quién administra las credenciales de la cooperativa (crear, revocar, rotar, configurar su URL de webhook)?**
+
+**La propia cooperativa, en autoservicio** (`admin_cooperativa`) — mismo patrón ya establecido en el proyecto para métodos de pago y política de cancelación. Se descartó exigir aprobación del `admin_plataforma` para esto: rompería la consistencia del resto del sistema sin una razón de negocio real que lo justifique, y contradice el principio ya fijado de que Columbus se construye para venderse como SaaS de autoservicio, no a la medida de que alguien apruebe cada paso.
+
+**Falta:** aplicar las 2 correcciones al esquema (`webhookUrl`, prefijo público de llave); luego construir la infraestructura genérica (llaves de acceso, webhooks, endpoints base, documentación). Los ajustes específicos por cooperativa se resuelven caso por caso cuando aparezca la primera integración real.
 
 ---
 
@@ -329,14 +340,14 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 
 **Requerimiento completo:** el administrador de plataforma puede ver cuántos usuarios están registrados en el sistema, con capacidad de desglosar por rol (pasajeros, staff de cooperativa, etc.).
 
-**Estado real:** ✅ Completo, cerrado 02-ago-2026.
-- Backend: endpoint GET /admin/usuarios/contador, cuenta usuarios con activo=true agrupados por rol; el service completa el desglose con cantidad=0 en roles sin usuarios todavia, y calcula el total
-- Frontend (provisional, ver nota de Fase 6): tarjeta en /admin con el total y desglose por rol
-- Verificado con tsc (backend y frontend) y 137/137 pruebas e2e locales; PR #22 fusionado a main con las 4 verificaciones de CI en verde
+**Estado real:** ✅ Completo, cerrado 2-ago-2026.
+- Backend: endpoint `GET /admin/usuarios/contador`, cuenta usuarios con `activo=true` agrupados por rol; el service completa el desglose con cantidad 0 en roles sin usuarios todavía, y calcula el total
+- Frontend (provisional, ver nota de Fase 6): tarjeta en `/admin` con el total y desglose por rol
+- Verificado con `tsc` (backend y frontend) y 137/137 pruebas e2e locales; PR fusionado a `main` con las 4 verificaciones de CI en verde
 
 **Falta:** nada.
 
-**Hallazgo abierto, no bloqueante (02-ago-2026):** el CI de GitHub Actions reportó "88 pruebas e2e reales" en este PR, mientras que la ejecución local de npm run test:e2e reportó 137/137. Ambos pasaron (verde), pero la diferencia en el conteo no está explicada -- puede ser un subconjunto de pruebas que se salta en el runner de GitHub por falta de variables de entorno o secrets, o una diferencia de configuración entre el CI y el entorno local. No bloqueó este merge, pero queda pendiente de investigar antes de confiar en el número de CI como fuente de verdad de cobertura real.
+**Hallazgo abierto, no bloqueante (2-ago-2026):** el CI de GitHub Actions reportó "88 pruebas e2e reales" en este PR, mientras que la ejecución local de `npm run test:e2e` reportó 137/137. Ambos pasaron (verde), pero la diferencia en el conteo no está explicada — puede ser un subconjunto de pruebas que se salta en el runner de GitHub por falta de variables de entorno o secrets, o una diferencia de configuración entre el CI y el entorno local. No bloqueó este merge, pero **queda pendiente de investigar antes de confiar en el número de CI como fuente de verdad de cobertura real** — subir esto de prioridad, no dejarlo perderse.
 
 ---
 
@@ -347,7 +358,7 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 | Rate limiting | ✅ Activo globalmente (100 peticiones/minuto por IP) |
 | Monitoreo de errores (Sentry) | ✅ Configurado |
 | Backups de base de datos | ✅ Automatizados, verificados con respaldos reales |
-| Pruebas automatizadas | ✅ 137 pruebas end-to-end, ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo) |
+| Pruebas automatizadas | ✅ 137 pruebas end-to-end locales, ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). **Ver hallazgo abierto en 3.13: el CI reporta 88, no 137 — sin explicar todavía.** |
 | Multi-tenancy (RLS) | ✅ Verificado en vivo — una cooperativa no puede ver datos de otra |
 | 2FA | 🔴 No construido |
 | Cumplimiento LOPD Ecuador | 🔴 No revisado formalmente |
@@ -363,11 +374,15 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 
 **Accesibilidad — hallazgo nuevo, no analizado hasta hoy.** Ninguna sesión de este proyecto la mencionó. Para una plataforma que aspira a ser "la mejor del mercado" y de uso masivo nacional, ignorarla no es neutral — deja fuera a personas con discapacidad visual o motriz de un servicio esencial (transporte). Se agrega como requerimiento nuevo.
 
+**Diferencia CI vs local (137 vs 88) — hallazgo nuevo (2-ago-2026), sube de prioridad.** No bloqueó el último merge, pero no está explicada. Antes de seguir confiando en el semáforo verde del CI como prueba de que "todo está probado", hay que entender por qué cuenta menos pruebas que la ejecución local.
+
 ---
 
 ## 5. Hoja de ruta por fases, derivada de este análisis
 
 **Regla acordada:** funcionalidad backend al 100% primero. Frontend/diseño visual final va al último, después de que todo lo demás esté cerrado.
+
+**Regla reforzada (2-ago-2026):** ninguna construcción nueva empieza sin que la decisión correspondiente ya esté escrita en este documento y confirmada — se escribe primero, se confirma, y recién ahí se construye. Esta regla nace de un descuido real: se discutieron y cerraron decisiones de Modelo B (los 2 hallazgos de esquema, la decisión de autoservicio) en una conversación, pero se avanzó a construir otra pieza (el contador de usuarios) antes de escribirlas aquí — se recuperaron a tiempo porque quedaron en el historial de chat, pero no debe depender de eso nunca más.
 
 **Decisiones pendientes de tu confirmación antes de construir (análisis ya hecho, sección 3):**
 - Código de pasajero fijo, ligado a la cuenta (distinto al QR de boleto, ya confirmado su funcionamiento actual), más límite de frecuencia para cambiar nombre/documento (3.1.1)
@@ -376,11 +391,11 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 
 ### Fase 1 — Paneles de administración faltantes (backend ya existe, salvo lo indicado)
 ~~1. Panel de Comercial/Publicidad~~ — **cerrado 30-jul-2026**
-2. ~~Panel de Liquidaciones (admin) + endpoint nuevo de solo lectura para la cooperativa~~ — **cerrado 30-jul-2026**
+~~2. Panel de Liquidaciones (admin) + endpoint nuevo de solo lectura para la cooperativa~~ — **cerrado 30-jul-2026**
 
 ### Fase 2 — Funciones nuevas, backend + frontend desde cero
-~~3. Contador de usuarios registrados~~ — **cerrado 02-ago-2026**
-4. Modelo B — **infraestructura genérica sí entra en construcción activa** (llaves de acceso, webhooks con reintentos, endpoints base, documentación); los ajustes específicos por cooperativa quedan para cuando exista una integración real
+~~3. Contador de usuarios registrados~~ — **cerrado 2-ago-2026**
+4. Modelo B — **en construcción activa** (2 correcciones de esquema en curso, decisiones cerradas — ver 3.11); luego llaves de acceso, webhooks con reintentos, endpoints base, documentación
 5. Notificaciones automáticas — **WhatsApp como canal principal** (98% apertura vs 20% correo, decisión con datos reales), correo como respaldo; recordatorio de viaje, aviso de cambio operativo
 6. Código de pasajero fijo + límite de frecuencia para cambiar nombre/documento (si se confirma)
 7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha
@@ -399,25 +414,26 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 - Que una cooperativa real se conecte al Modelo B con su propio sistema
 
 ### Fase 3 — Seguridad y cumplimiento de producción
-9. **Revisión de cumplimiento LOPD Ecuador — primero de esta fase**, maneja cédulas y datos de menores, riesgo legal real, no genérico
-10. 2FA para cuentas administrativas
-11. `npm audit` a fondo
-12. Accesibilidad (lectores de pantalla, contraste, navegación por teclado) — hallazgo nuevo, nunca analizado antes
+17. **Revisión de cumplimiento LOPD Ecuador — primero de esta fase**, maneja cédulas y datos de menores, riesgo legal real, no genérico
+18. Investigar la diferencia CI (88) vs local (137) en las pruebas automatizadas — hallazgo abierto de la sección 3.13, no bloqueante pero sin explicar
+19. 2FA para cuentas administrativas
+20. `npm audit` a fondo
+21. Accesibilidad (lectores de pantalla, contraste, navegación por teclado) — hallazgo nuevo, nunca analizado antes
 
 ### Fase 4 — Conexiones externas reales (bloqueadas por decisiones/gestiones externas al desarrollo)
-13. Pasarela de pago con tarjeta real (esperando decisión de proveedor)
-14. Proveedor certificado de facturación electrónica (esperando gestión externa)
+22. Pasarela de pago con tarjeta real (esperando decisión de proveedor)
+23. Proveedor certificado de facturación electrónica (esperando gestión externa)
 
 ### Fase 5 — Infraestructura
-15. Ejecutar despliegue real a Render + Vercel
-16. Prueba de carga real
+24. Ejecutar despliegue real a Render + Vercel
+25. Prueba de carga real
 
 ### Fase 6 — Frontend y marca (al final, ya acordado)
-17. Rebrand completo a "Columbus" en `apps/web`
-18. Diseño visual final de la landing
+26. Rebrand completo a "Columbus" en `apps/web`
+27. Diseño visual final de la landing
 
 ---
 
 ## 6. Regla de mantenimiento de este documento
 
-Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
+Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
