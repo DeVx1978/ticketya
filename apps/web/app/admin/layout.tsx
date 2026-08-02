@@ -10,6 +10,7 @@ const ENLACES = [
   { href: "/admin/cooperativas", etiqueta: "Cooperativas" },
   { href: "/admin/puntos-operacion", etiqueta: "Puntos de operación" },
   { href: "/admin/banners", etiqueta: "Banners" },
+  { href: "/admin/comercial", etiqueta: "Comercial" },
   { href: "/admin/liquidaciones", etiqueta: "Liquidaciones" },
 ];
 
