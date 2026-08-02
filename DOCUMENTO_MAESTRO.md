@@ -1,4 +1,4 @@
-﻿# Columbus (TicketYa) — Documento Maestro de Requerimientos y Estado Real
+# Columbus (TicketYa) — Documento Maestro de Requerimientos y Estado Real
 
 **Última actualización:** 2 de agosto de 2026 — Fase 2 en construcción: Contador de usuarios registrados por rol (sección 3.13), cerrado hoy. El análisis original (secciones 3.1 a 3.13 + requerimientos no funcionales) sigue siendo la referencia completa; a partir de aquí, cada sección se actualiza a "cerrado" apenas se construye y verifica, no al final de la sesión.
 **Propósito de este documento:** ser la ÚNICA fuente de verdad del proyecto. Antes de escribir código, se consulta este documento. Al cerrar cada sesión de trabajo real, se actualiza. Ningún resumen de conversación reemplaza esto.
