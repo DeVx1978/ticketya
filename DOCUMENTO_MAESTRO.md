@@ -1,6 +1,6 @@
-# Columbus (TicketYa) — Documento Maestro de Requerimientos y Estado Real
+﻿# Columbus (TicketYa) — Documento Maestro de Requerimientos y Estado Real
 
-**Última actualización:** 30 de julio de 2026 — Fase 1 en construcción: Panel de Liquidaciones y Panel de Comercial/Publicidad, ambos cerrados hoy. El análisis original (secciones 3.1 a 3.13 + requerimientos no funcionales) sigue siendo la referencia completa; a partir de aquí, cada sección se actualiza a "cerrado" apenas se construye y verifica, no al final de la sesión.
+**Última actualización:** 2 de agosto de 2026 — Fase 2 en construcción: Contador de usuarios registrados por rol (sección 3.13), cerrado hoy. El análisis original (secciones 3.1 a 3.13 + requerimientos no funcionales) sigue siendo la referencia completa; a partir de aquí, cada sección se actualiza a "cerrado" apenas se construye y verifica, no al final de la sesión.
 **Propósito de este documento:** ser la ÚNICA fuente de verdad del proyecto. Antes de escribir código, se consulta este documento. Al cerrar cada sesión de trabajo real, se actualiza. Ningún resumen de conversación reemplaza esto.
 
 **Cómo está organizado:** cada sección funcional tiene tres partes — (1) qué DEBE hacer (el requerimiento completo, sin importar si ya existe), (2) el estado real verificado, (3) qué falta exactamente. Al final, la hoja de ruta por fases sale de comparar (1) contra (2).
@@ -329,9 +329,14 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 
 **Requerimiento completo:** el administrador de plataforma puede ver cuántos usuarios están registrados en el sistema, con capacidad de desglosar por rol (pasajeros, staff de cooperativa, etc.).
 
-**Estado real:** 🔴 No construido.
+**Estado real:** ✅ Completo, cerrado 02-ago-2026.
+- Backend: endpoint GET /admin/usuarios/contador, cuenta usuarios con activo=true agrupados por rol; el service completa el desglose con cantidad=0 en roles sin usuarios todavia, y calcula el total
+- Frontend (provisional, ver nota de Fase 6): tarjeta en /admin con el total y desglose por rol
+- Verificado con tsc (backend y frontend) y 137/137 pruebas e2e locales; PR #22 fusionado a main con las 4 verificaciones de CI en verde
 
-**Falta:** todo — endpoint de conteo y visualización en el panel admin.
+**Falta:** nada.
+
+**Hallazgo abierto, no bloqueante (02-ago-2026):** el CI de GitHub Actions reportó "88 pruebas e2e reales" en este PR, mientras que la ejecución local de npm run test:e2e reportó 137/137. Ambos pasaron (verde), pero la diferencia en el conteo no está explicada -- puede ser un subconjunto de pruebas que se salta en el runner de GitHub por falta de variables de entorno o secrets, o una diferencia de configuración entre el CI y el entorno local. No bloqueó este merge, pero queda pendiente de investigar antes de confiar en el número de CI como fuente de verdad de cobertura real.
 
 ---
 
@@ -374,7 +379,7 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 2. ~~Panel de Liquidaciones (admin) + endpoint nuevo de solo lectura para la cooperativa~~ — **cerrado 30-jul-2026**
 
 ### Fase 2 — Funciones nuevas, backend + frontend desde cero
-3. Contador de usuarios registrados
+~~3. Contador de usuarios registrados~~ — **cerrado 02-ago-2026**
 4. Modelo B — **infraestructura genérica sí entra en construcción activa** (llaves de acceso, webhooks con reintentos, endpoints base, documentación); los ajustes específicos por cooperativa quedan para cuando exista una integración real
 5. Notificaciones automáticas — **WhatsApp como canal principal** (98% apertura vs 20% correo, decisión con datos reales), correo como respaldo; recordatorio de viaje, aviso de cambio operativo
 6. Código de pasajero fijo + límite de frecuencia para cambiar nombre/documento (si se confirma)
