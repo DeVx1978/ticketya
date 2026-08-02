@@ -1,4 +1,4 @@
-﻿import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { sql, eq } from 'drizzle-orm';
 import {
@@ -16,6 +16,7 @@ import type {
   DatosPrimerUsuarioCooperativa,
   DatosNuevoPuntoOperacion,
   FilaVentaNacional,
+  FilaConteoUsuariosPorRol,
   ModoIvaBoleto,
 } from '../../dominio/admin/admin.ports';
 
@@ -375,5 +376,24 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
         WHERE id = ${configuracionId}
       `);
     }
+  }
+
+  /**
+   * 02-ago-2026 -- RF-ADMIN sección 3.13. Solo cuenta usuarios con
+   * activo=true (decisión del director, confirmada 02-ago-2026): un
+   * usuario inactivo no debe pesar en "cuántos usuarios hay" desde el
+   * punto de vista operativo. Roles sin ningún usuario activo no
+   * aparecen en el resultado -- el service se encarga de completar el
+   * desglose con cantidad=0 para los roles que falten.
+   */
+  async contarUsuariosPorRol(): Promise<FilaConteoUsuariosPorRol[]> {
+    const resultado = await this.db.execute(sql`
+      SELECT rol, COUNT(*)::int AS cantidad
+      FROM usuarios
+      WHERE activo = true
+      GROUP BY rol
+      ORDER BY rol
+    `);
+    return resultado.rows as unknown as FilaConteoUsuariosPorRol[];
   }
 }

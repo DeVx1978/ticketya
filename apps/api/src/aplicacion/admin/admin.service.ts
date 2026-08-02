@@ -1,13 +1,29 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   AdminRepositorio,
   DatosNuevaCooperativa,
   DatosPrimerUsuarioCooperativa,
   DatosNuevoPuntoOperacion,
+  FilaConteoUsuariosPorRol,
   ModoIvaBoleto,
 } from '../../dominio/admin/admin.ports';
 
 export const ADMIN_REPOSITORIO = 'ADMIN_REPOSITORIO';
+
+/**
+ * 02-ago-2026 -- roles válidos del sistema (RF-AUTH-004), usados solo
+ * para completar el desglose del contador con cantidad=0 en los roles
+ * que no tengan ningún usuario activo todavía. No es la fuente de
+ * verdad del enum (esa vive en packages/db/schema/enums.ts) -- es una
+ * lista de presentación, para que el panel admin siempre muestre las 4
+ * categorías aunque alguna esté vacía.
+ */
+const ROLES_VALIDOS = [
+  'pasajero',
+  'vendedor',
+  'admin_cooperativa',
+  'admin_plataforma',
+] as const;
 
 @Injectable()
 export class AdminService {
@@ -100,5 +116,30 @@ export class AdminService {
 
   async actualizarModoIvaBoleto(modo: ModoIvaBoleto) {
     return this.admin.actualizarModoIvaBoleto(modo);
+  }
+
+  /**
+   * 02-ago-2026 -- RF-ADMIN sección 3.13. Completa el desglose del
+   * repositorio con cantidad=0 para cualquier rol válido que todavía
+   * no tenga ningún usuario activo, y calcula el total. Esta regla de
+   * presentación vive aquí (capa de aplicación), no en el repositorio,
+   * siguiendo el mismo criterio del resto del proyecto: la infraestructura
+   * solo devuelve datos crudos.
+   */
+  async contarUsuariosPorRol(): Promise<{
+    total: number;
+    porRol: FilaConteoUsuariosPorRol[];
+  }> {
+    const filas = await this.admin.contarUsuariosPorRol();
+    const mapa = new Map(filas.map((f) => [f.rol, f.cantidad]));
+
+    const porRol = ROLES_VALIDOS.map((rol) => ({
+      rol,
+      cantidad: mapa.get(rol) ?? 0,
+    }));
+
+    const total = porRol.reduce((acc, f) => acc + f.cantidad, 0);
+
+    return { total, porRol };
   }
 }

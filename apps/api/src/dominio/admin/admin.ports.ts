@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Dominio de administracion de plataforma -- RF-ADMIN.
  */
 
@@ -41,6 +41,17 @@ export interface FilaVentaNacional {
  * comentario completo en packages/db/schema/configuracion.ts.
  */
 export type ModoIvaBoleto = 'calculado' | 'cero' | 'oculto';
+
+/**
+ * 02-ago-2026 -- RF-ADMIN, sección 3.13 del documento maestro: conteo
+ * de usuarios registrados por rol, para el admin de plataforma. Solo
+ * cuenta usuarios con activo=true (decisión de diseño: un usuario
+ * inactivo no debe pesar en "cuántos usuarios hay" operativamente).
+ */
+export interface FilaConteoUsuariosPorRol {
+  rol: string;
+  cantidad: number;
+}
 
 export interface AdminRepositorio {
   crearCooperativaConPrimerUsuarioAtomico(
@@ -110,4 +121,7 @@ export interface AdminRepositorio {
   /** 27-jul-2026 -- editable desde el Panel Admin, sin tocar codigo. */
   obtenerModoIvaBoleto(): Promise<ModoIvaBoleto>;
   actualizarModoIvaBoleto(modo: ModoIvaBoleto): Promise<void>;
+
+  /** 02-ago-2026 -- RF-ADMIN sección 3.13, contador de usuarios por rol. */
+  contarUsuariosPorRol(): Promise<FilaConteoUsuariosPorRol[]>;
 }
