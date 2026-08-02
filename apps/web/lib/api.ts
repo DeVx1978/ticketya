@@ -1389,3 +1389,203 @@ export async function listarMisLiquidaciones(token: string): Promise<Liquidacion
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar tus liquidaciones.");
   return cuerpo as LiquidacionCooperativa[];
 }
+
+/**
+ * Comercial / Publicidad (30-jul-2026) -- el backend ya existía y
+ * estaba probado desde antes de esta sesión, esto es solo el cliente
+ * y las pantallas que faltaban (hallazgo real de la auditoría).
+ */
+export interface EspacioPublicitario {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  anchoPx: number | null;
+  altoPx: number | null;
+  ubicacion: string;
+  permiteRotacion: boolean;
+  activo: boolean;
+}
+
+export async function crearEspacioPublicitario(
+  token: string,
+  datos: { nombre: string; descripcion?: string; anchoPx: number; altoPx: number; ubicacion: string; permiteRotacion?: boolean },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/admin/espacios-publicitarios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el espacio publicitario.");
+  }
+  return cuerpo;
+}
+
+export async function listarEspaciosPublicitarios(token: string): Promise<EspacioPublicitario[]> {
+  const res = await fetch(`${API_URL}/admin/espacios-publicitarios`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los espacios.");
+  return cuerpo as EspacioPublicitario[];
+}
+
+export interface PlanComercial {
+  id: string;
+  nombre: "basico" | "destacado" | "premium";
+  precioMensual: number | null;
+  duracionDiasDefault: number | null;
+  formatosPermitidos: unknown;
+  activo: boolean;
+}
+
+export async function crearPlanComercial(
+  token: string,
+  datos: { nombre: "basico" | "destacado" | "premium"; precioMensual?: number; duracionDiasDefault?: number; formatosPermitidos: string[] },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/admin/planes-comerciales`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el plan comercial.");
+  }
+  return cuerpo;
+}
+
+export async function listarPlanesComerciales(token: string): Promise<PlanComercial[]> {
+  const res = await fetch(`${API_URL}/admin/planes-comerciales`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los planes.");
+  return cuerpo as PlanComercial[];
+}
+
+export interface LeadAnunciante {
+  id: string;
+  nombreEmpresa: string;
+  contactoNombre: string | null;
+  contactoCorreo: string;
+  contactoTelefono: string | null;
+  mensaje: string | null;
+  estado: "nuevo" | "contactado" | "cerrado";
+  notasSeguimiento: string | null;
+  creadoEn: string;
+}
+
+export async function listarLeads(token: string): Promise<LeadAnunciante[]> {
+  const res = await fetch(`${API_URL}/admin/leads`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los leads.");
+  return cuerpo as LeadAnunciante[];
+}
+
+export async function actualizarEstadoLead(
+  token: string,
+  id: string,
+  datos: { estado?: "nuevo" | "contactado" | "cerrado"; notasSeguimiento?: string },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/leads/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo actualizar el lead.");
+}
+
+export interface CampanaPublicitaria {
+  id: string;
+  espacioPublicitarioId: string;
+  espacioNombre: string;
+  planNombre: string;
+  nombreAnunciante: string;
+  formato: "imagen_texto" | "imagen_texto_video";
+  archivoUrl: string;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: "pendiente_revision" | "activa" | "rechazada";
+  aprobadoPorUsuarioId: string | null;
+  aprobadoEn: string | null;
+}
+
+export async function crearCampana(
+  token: string,
+  datos: {
+    espacioPublicitarioId: string;
+    planComercialId: string;
+    leadAnuncianteId?: string;
+    nombreAnunciante: string;
+    formato: "imagen_texto" | "imagen_texto_video";
+    archivoUrl: string;
+    fechaInicio: string;
+    fechaFin: string;
+  },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/admin/campanas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear la campaña.");
+  }
+  return cuerpo;
+}
+
+export async function listarCampanas(token: string): Promise<CampanaPublicitaria[]> {
+  const res = await fetch(`${API_URL}/admin/campanas`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las campañas.");
+  return cuerpo as CampanaPublicitaria[];
+}
+
+export async function aprobarCampana(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/campanas/${id}/aprobar`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo aprobar la campaña.");
+}
+
+export async function rechazarCampana(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/campanas/${id}/rechazar`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo rechazar la campaña.");
+}
+
+export interface MetricaDiaCampana {
+  fecha: string;
+  impresiones: number;
+  clics: number;
+}
+
+export async function obtenerMetricasCampana(token: string, id: string): Promise<MetricaDiaCampana[]> {
+  const res = await fetch(`${API_URL}/admin/campanas/${id}/metricas`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las métricas.");
+  return cuerpo as MetricaDiaCampana[];
+}

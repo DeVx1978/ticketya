@@ -1,6 +1,6 @@
 # Columbus (TicketYa) — Documento Maestro de Requerimientos y Estado Real
 
-**Última actualización:** 30 de julio de 2026 — tercera y última pasada de esta ronda de análisis. Las 13 secciones funcionales, más requerimientos no funcionales, quedan completamente analizadas y con decisiones cerradas (aprobadas, pausadas con razón explícita, o pendientes de gestión externa). A partir de aquí, el trabajo se construye directamente sobre este documento — no se vuelve a analizar desde cero.
+**Última actualización:** 30 de julio de 2026 — Fase 1 en construcción: Panel de Liquidaciones y Panel de Comercial/Publicidad, ambos cerrados hoy. El análisis original (secciones 3.1 a 3.13 + requerimientos no funcionales) sigue siendo la referencia completa; a partir de aquí, cada sección se actualiza a "cerrado" apenas se construye y verifica, no al final de la sesión.
 **Propósito de este documento:** ser la ÚNICA fuente de verdad del proyecto. Antes de escribir código, se consulta este documento. Al cerrar cada sesión de trabajo real, se actualiza. Ningún resumen de conversación reemplaza esto.
 
 **Cómo está organizado:** cada sección funcional tiene tres partes — (1) qué DEBE hacer (el requerimiento completo, sin importar si ya existe), (2) el estado real verificado, (3) qué falta exactamente. Al final, la hoja de ruta por fases sale de comparar (1) contra (2).
@@ -245,7 +245,7 @@ Esto sigue exactamente el mismo patrón que ya usamos bien en el panel de cooper
 
 **Requerimiento completo:** catálogo de espacios publicitarios, planes comerciales, captación de leads de anunciantes con seguimiento de estado, campañas con flujo de aprobación obligatorio, servido dinámico en la landing (nunca dentro del flujo de compra), métricas de impresiones y clics, panel de administración visual.
 
-**Estado real:** 🟡 Backend completo, sin interfaz de administración.
+**Estado real:** ✅ Completo -- backend y panel de administración, cerrado 30-jul-2026 (4 pestañas: Espacios, Planes, Leads, Campañas; vista previa antes de aprobar, CTR calculado, exportar métricas a CSV).
 - Backend: ✅ completo — espacios, planes, leads, campañas con aprobación/rechazo obligatorio, endpoint público de campañas activas por ubicación, registro de impresiones/clics, métricas por campaña
 - Probado en vivo de punta a punta (creación de espacio, plan, campaña, aprobación, aparición en el endpoint público)
 
@@ -268,19 +268,20 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 - **Reporte descargable/exportable** para el anunciante — hoy las métricas solo se ven vía API, ningún anunciante va a pedirle a su equipo que use Postman
 - **Nunca intrusivo**: ya decidido y correcto — ningún espacio publicitario vive dentro del flujo de compra, solo en la landing pública
 
-**Falta:** pantallas en `/admin` para gestionar espacios, planes, leads y campañas (con vista previa visual antes de aprobar); etiqueta obligatoria "Publicidad" en cada espacio; cálculo de CTR; exportar métricas.
+**Falta:** nada del lado admin -- las 4 pestañas, vista previa, CTR y exportar CSV ya están construidas y verificadas. Pendiente, aparte: que la etiqueta "Publicidad" se muestre también en la landing pública real (eso es responsabilidad del HTML/frontend de cara al pasajero, no de este panel administrativo).
 
 ---
 
 ### 3.10 Liquidaciones
 
-**Requerimiento completo:** generar liquidación por cooperativa y período, listar liquidaciones, marcar como pagada, panel visual — **tanto para el admin de plataforma como para que la cooperativa vea su propio historial**.
+**Requerimiento completo:** generar liquidación por cooperativa y período, listar liquidaciones, marcar como pagada, panel visual — tanto para el admin de plataforma como para que la cooperativa vea su propio historial.
 
-**Estado real:** 🟡 Backend completo solo del lado plataforma, sin interfaz, y con un hueco de acceso real.
-- Backend: ✅ completo — genera, valida fechas, lista con filtro, marca pagada
-- **Hallazgo (30-jul-2026):** el endpoint es exclusivo de `admin_plataforma` — la cooperativa **no tiene ninguna forma de consultar sus propias liquidaciones** desde su panel. Esto es un hueco real, no solo de diseño visual: cualquier cooperativa seria va a querer ver cuánto le deben y cuándo se le pagó, sin depender de pedírselo al admin de plataforma cada vez.
+**Estado real:** ✅ Completo, cerrado 30-jul-2026.
+- Backend: genera, valida fechas, lista con filtro, marca pagada — más el endpoint nuevo `GET /coop/liquidaciones`, de solo lectura, para que la cooperativa vea su propio historial sin depender del admin de plataforma
+- Frontend: `/admin/liquidaciones` (generar, ver todas, marcar pagada) y `/panel-empresa/liquidaciones` (solo lectura, agrupado en pendientes/pagadas)
+- Verificado con `tsc` y 137/137 pruebas en la máquina real del usuario (no en el sandbox, que no tenía el proyecto instalado ese día)
 
-**Falta:** pantalla en `/admin` para generar/gestionar (mismo hueco que Comercial); **endpoint nuevo, de solo lectura, para que la cooperativa vea su propio historial de liquidaciones desde `/panel-empresa`** — esto no existe hoy ni siquiera a nivel de backend.
+**Falta:** nada.
 
 ---
 
@@ -369,8 +370,8 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 - Dividir el admin de plataforma en `super_admin` + `admin_plataforma` con la matriz de permisos definida, más registro de auditoría (3.8)
 
 ### Fase 1 — Paneles de administración faltantes (backend ya existe, salvo lo indicado)
-1. Panel de Comercial/Publicidad (con vista previa, etiqueta "Publicidad" obligatoria, cálculo de CTR, exportar métricas)
-2. Panel de Liquidaciones (admin) + **endpoint nuevo de solo lectura para que la cooperativa vea su propio historial** (esto sí falta a nivel de backend, no solo pantalla)
+~~1. Panel de Comercial/Publicidad~~ — **cerrado 30-jul-2026**
+2. ~~Panel de Liquidaciones (admin) + endpoint nuevo de solo lectura para la cooperativa~~ — **cerrado 30-jul-2026**
 
 ### Fase 2 — Funciones nuevas, backend + frontend desde cero
 3. Contador de usuarios registrados
