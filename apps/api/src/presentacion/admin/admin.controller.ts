@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Get,
@@ -131,5 +131,11 @@ export class AdminController {
   async actualizarModoIvaBoleto(@Body() dto: ActualizarModoIvaBoletoDto) {
     await this.admin.actualizarModoIvaBoleto(dto.modo);
     return { ok: true };
+  }
+
+  /** 02-ago-2026 -- RF-ADMIN sección 3.13, contador de usuarios por rol. */
+  @Get('usuarios/contador')
+  async contarUsuariosPorRol() {
+    return this.admin.contarUsuariosPorRol();
   }
 }

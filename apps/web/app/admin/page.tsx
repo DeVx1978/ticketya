@@ -6,7 +6,9 @@ import {
   dashboardNacionalAdmin,
   obtenerCargoPlataforma,
   actualizarCargoPlataforma,
+  contarUsuariosPorRolAdmin,
   type FilaVentaNacional,
+  type ConteoUsuarios,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
@@ -14,6 +16,13 @@ import { Toast } from "@/components/Toast";
 function formatearDolares(monto: number) {
   return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
 }
+
+const ETIQUETA_ROL: Record<string, string> = {
+  pasajero: "Pasajeros",
+  vendedor: "Vendedores",
+  admin_cooperativa: "Admins de cooperativa",
+  admin_plataforma: "Admins de plataforma",
+};
 
 export default function AdminHome() {
   const [ivaPorcentaje, setIvaPorcentaje] = useState("");
@@ -24,6 +33,9 @@ export default function AdminHome() {
 
   const [ventas, setVentas] = useState<FilaVentaNacional[] | null>(null);
   const [errorVentas, setErrorVentas] = useState<string | null>(null);
+
+  const [usuarios, setUsuarios] = useState<ConteoUsuarios | null>(null);
+  const [errorUsuarios, setErrorUsuarios] = useState<string | null>(null);
 
   const [cargoPlataforma, setCargoPlataforma] = useState("");
   const [cargandoCargo, setCargandoCargo] = useState(true);
@@ -43,6 +55,10 @@ export default function AdminHome() {
     dashboardNacionalAdmin(token)
       .then(setVentas)
       .catch((err) => setErrorVentas(err instanceof Error ? err.message : "No se pudo cargar el dashboard nacional."));
+
+    contarUsuariosPorRolAdmin(token)
+      .then(setUsuarios)
+      .catch((err) => setErrorUsuarios(err instanceof Error ? err.message : "No se pudo cargar el contador de usuarios."));
 
     obtenerCargoPlataforma(token)
       .then((monto) => setCargoPlataforma(String(monto)))
@@ -174,6 +190,42 @@ export default function AdminHome() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+        <h2 className="font-display text-lg font-bold text-brand-dark">Usuarios registrados</h2>
+        <p className="mt-1 text-sm text-brand-dark/60">
+          Total de cuentas activas en la plataforma, desglosado por rol (RF-ADMIN, sección 3.13).
+        </p>
+
+        {errorUsuarios && (
+          <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
+            {errorUsuarios}
+          </div>
+        )}
+
+        {usuarios === null && !errorUsuarios && (
+          <p className="mt-4 text-sm text-brand-dark/50">Cargando...</p>
+        )}
+
+        {usuarios !== null && (
+          <>
+            <p className="mt-4 font-display text-3xl font-extrabold text-brand-dark">
+              {usuarios.total}
+              <span className="ml-2 text-sm font-normal text-brand-dark/50">usuarios activos en total</span>
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
+              {usuarios.porRol.map((fila) => (
+                <div key={fila.rol} className="rounded-xl bg-brand-light/40 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">
+                    {ETIQUETA_ROL[fila.rol] ?? fila.rol}
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-extrabold text-brand-dark">{fila.cantidad}</p>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

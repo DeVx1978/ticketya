@@ -1589,3 +1589,28 @@ export async function obtenerMetricasCampana(token: string, id: string): Promise
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las métricas.");
   return cuerpo as MetricaDiaCampana[];
 }
+
+/**
+ * Contador de usuarios registrados por rol (02-ago-2026) -- RF-ADMIN
+ * sección 3.13. Solo cuenta usuarios activos; el backend completa el
+ * desglose con cantidad=0 en los roles sin ningún usuario todavía.
+ */
+export interface FilaConteoUsuariosPorRol {
+  rol: "pasajero" | "vendedor" | "admin_cooperativa" | "admin_plataforma";
+  cantidad: number;
+}
+
+export interface ConteoUsuarios {
+  total: number;
+  porRol: FilaConteoUsuariosPorRol[];
+}
+
+export async function contarUsuariosPorRolAdmin(token: string): Promise<ConteoUsuarios> {
+  const res = await fetch(`${API_URL}/admin/usuarios/contador`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el contador de usuarios.");
+  return cuerpo as ConteoUsuarios;
+}
