@@ -350,7 +350,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **Falta:** nada.
 
-**Hallazgo abierto, no bloqueante (2-ago-2026):** el CI de GitHub Actions reportó "88 pruebas e2e reales" en este PR, mientras que la ejecución local de `npm run test:e2e` reportó 137/137. Ambos pasaron (verde), pero la diferencia en el conteo no está explicada — puede ser un subconjunto de pruebas que se salta en el runner de GitHub por falta de variables de entorno o secrets, o una diferencia de configuración entre el CI y el entorno local. No bloqueó este merge, pero **queda pendiente de investigar antes de confiar en el número de CI como fuente de verdad de cobertura real** — subir esto de prioridad, no dejarlo perderse.
+**Hallazgo resuelto (2-ago-2026):** el CI de GitHub Actions reportó "88 pruebas e2e reales" en un PR, mientras que la ejecución local de `npm run test:e2e` reportaba 137/137. Investigado: el número "88" era una etiqueta de texto vieja escrita a mano en `ci.yml` (nombre del job y del paso), desactualizada desde que el proyecto creció -- el comando real que corre siempre fue `npm run test:e2e` completo, sin filtro ni subconjunto. Nunca hubo un hueco real de cobertura en CI. Corregido en `ci.yml` (se quitó el número fijo del nombre para que no se vuelva a desactualizar).
 
 ---
 
@@ -361,7 +361,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 | Rate limiting | ✅ Activo globalmente (100 peticiones/minuto por IP) |
 | Monitoreo de errores (Sentry) | ✅ Configurado |
 | Backups de base de datos | ✅ Automatizados, verificados con respaldos reales |
-| Pruebas automatizadas | ✅ 137 pruebas end-to-end locales, ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). **Ver hallazgo abierto en 3.13: el CI reporta 88, no 137 — sin explicar todavía.** |
+| Pruebas automatizadas | ✅ 137 pruebas end-to-end locales, ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). CI verificado con el mismo número (ver 3.13 -- discrepancia anterior era solo una etiqueta de texto vieja, ya corregida). |
 | Multi-tenancy (RLS) | ✅ Verificado en vivo — una cooperativa no puede ver datos de otra |
 | 2FA | 🔴 No construido |
 | Cumplimiento LOPD Ecuador | 🔴 No revisado formalmente |
@@ -377,7 +377,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **Accesibilidad — hallazgo nuevo, no analizado hasta hoy.** Ninguna sesión de este proyecto la mencionó. Para una plataforma que aspira a ser "la mejor del mercado" y de uso masivo nacional, ignorarla no es neutral — deja fuera a personas con discapacidad visual o motriz de un servicio esencial (transporte). Se agrega como requerimiento nuevo.
 
-**Diferencia CI vs local (137 vs 88) — hallazgo nuevo (2-ago-2026), sube de prioridad.** No bloqueó el último merge, pero no está explicada. Antes de seguir confiando en el semáforo verde del CI como prueba de que "todo está probado", hay que entender por qué cuenta menos pruebas que la ejecución local.
+**Diferencia CI vs local (137 vs 88) — hallazgo cerrado (2-ago-2026).** Investigado y corregido: era una etiqueta de texto vieja en `ci.yml`, no una diferencia real de cobertura. El CI y el entorno local corren exactamente las mismas 137 pruebas.
 
 ---
 
@@ -398,7 +398,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 ### Fase 2 — Funciones nuevas, backend + frontend desde cero
 ~~3. Contador de usuarios registrados~~ — **cerrado 2-ago-2026**
-4. Modelo B — **en construcción activa** (2 correcciones de esquema en curso, decisiones cerradas — ver 3.11); luego llaves de acceso, webhooks con reintentos, endpoints base, documentación
+4. Modelo B — **en construcción activa** (ver 3.11): esquema corregido y migrado, CRUD de credenciales API completo, despachador de webhooks con reintentos completo -- todo verificado y fusionado a `main`. Falta solo endpoints base de recepción/envío y documentación técnica de conexión
 5. Notificaciones automáticas — **WhatsApp como canal principal** (98% apertura vs 20% correo, decisión con datos reales), correo como respaldo; recordatorio de viaje, aviso de cambio operativo
 6. Código de pasajero fijo + límite de frecuencia para cambiar nombre/documento (si se confirma)
 7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha
@@ -418,7 +418,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 ### Fase 3 — Seguridad y cumplimiento de producción
 17. **Revisión de cumplimiento LOPD Ecuador — primero de esta fase**, maneja cédulas y datos de menores, riesgo legal real, no genérico
-18. Investigar la diferencia CI (88) vs local (137) en las pruebas automatizadas — hallazgo abierto de la sección 3.13, no bloqueante pero sin explicar
+~~18. Investigar la diferencia CI (88) vs local (137) en las pruebas automatizadas~~ — **resuelto 2-ago-2026**, era una etiqueta de texto vieja en `ci.yml`, corregida
 19. 2FA para cuentas administrativas
 20. `npm audit` a fondo
 21. Accesibilidad (lectores de pantalla, contraste, navegación por teclado) — hallazgo nuevo, nunca analizado antes
