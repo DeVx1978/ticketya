@@ -9,6 +9,7 @@ import { esMenorDeEdad } from '../../dominio/ventas/ventas.ports';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import type { ProveedorFacturacionElectronica } from '../../dominio/facturacion/facturacion.ports';
+import { DespachadorWebhooksService } from '../webhooks/despachador-webhooks.service';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
@@ -21,6 +22,7 @@ export class CheckoutService {
     @Inject(PASARELA_PAGO) private readonly pasarela: PasarelaPago,
     @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
     @Inject(PROVEEDOR_FACTURACION) private readonly facturacion: ProveedorFacturacionElectronica,
+    private readonly webhooks: DespachadorWebhooksService,
   ) {}
 
   /**
@@ -180,6 +182,20 @@ export class CheckoutService {
       montoTotalNotif,
       boletos.length,
     );
+
+    // Modelo B (02-ago-2026) -- un webhook por cada cooperativa
+    // involucrada en esta compra (una compra puede mezclar boletos de
+    // varias). Nunca bloquea ni revierte la venta si falla -- mismo
+    // criterio que generarFacturaPlataforma, arriba.
+    const cooperativasEnVenta = new Set(desglose.map((d) => d.cooperativaId));
+    for (const coopId of cooperativasEnVenta) {
+      const boletosDeCoop = boletos.filter((_, i) => desglose[i]?.cooperativaId === coopId);
+      await this.webhooks.dispararEventoVenta(coopId, compraId, {
+        evento: 'venta_creada',
+        compraId,
+        boletos: boletosDeCoop,
+      });
+    }
 
     const ivaTotal = desglose.reduce((acc, d) => acc + d.ivaMonto, 0);
     // Si la compra mezcla boletos de cooperativas con distinta
@@ -478,6 +494,14 @@ export class CheckoutService {
     // es real y válido de todas formas; se registra el error para
     // revisión (ver comprobante_electronico.estado='rechazado').
     await this.generarFacturaPlataforma(resultado.compraId, resultado.montoCargoPlataforma);
+
+    // Modelo B (02-ago-2026) -- mismo disparo que en procesarCompra,
+    // pero acá ya sabemos que es una sola cooperativa (el parámetro).
+    await this.webhooks.dispararEventoVenta(cooperativaId, resultado.compraId, {
+      evento: 'venta_creada',
+      compraId: resultado.compraId,
+    });
+
     return { ok: true };
   }
 
