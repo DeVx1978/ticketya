@@ -245,6 +245,93 @@ export async function eliminarMetodoPago(token: string, id: string): Promise<voi
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo eliminar el método de pago.");
 }
 
+/**
+ * Credenciales API — Modelo B (02-ago-2026). Autoservicio de la propia
+ * cooperativa. apiKeyCompleta solo viene presente en la respuesta de
+ * crear/rotar -- después de eso nunca se vuelve a poder recuperar.
+ */
+export interface CredencialApiCooperativa {
+  id: string;
+  tipo: "api_key";
+  apiKeyPrefix: string;
+  webhookUrl: string | null;
+  activo: boolean;
+  creadoEn: string;
+  revocadoEn: string | null;
+}
+
+export interface CredencialApiRecienCreada {
+  id: string;
+  apiKeyPrefix: string;
+  apiKeyCompleta: string;
+}
+
+export async function listarCredencialesApi(token: string): Promise<CredencialApiCooperativa[]> {
+  const res = await fetch(`${API_URL}/coop/credenciales-api`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar las credenciales API.");
+  return cuerpo as CredencialApiCooperativa[];
+}
+
+export async function crearCredencialApi(
+  token: string,
+  webhookUrl?: string,
+): Promise<CredencialApiRecienCreada> {
+  const res = await fetch(`${API_URL}/coop/credenciales-api`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ webhookUrl: webhookUrl && webhookUrl.trim() !== "" ? webhookUrl : undefined }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear la credencial API.");
+  }
+  return cuerpo as CredencialApiRecienCreada;
+}
+
+export async function rotarCredencialApi(
+  token: string,
+  id: string,
+): Promise<CredencialApiRecienCreada> {
+  const res = await fetch(`${API_URL}/coop/credenciales-api/${id}/rotar`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo rotar la credencial.");
+  return cuerpo as CredencialApiRecienCreada;
+}
+
+export async function revocarCredencialApi(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/credenciales-api/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo revocar la credencial.");
+}
+
+export async function actualizarWebhookCredencialApi(
+  token: string,
+  id: string,
+  webhookUrl: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/credenciales-api/${id}/webhook`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ webhookUrl }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo actualizar el webhook.");
+  }
+}
+
 /** Lado cooperativa: revisar y confirmar/rechazar pagos manuales pendientes. */
 export interface PagoManualPendiente {
   pagoId: string;
