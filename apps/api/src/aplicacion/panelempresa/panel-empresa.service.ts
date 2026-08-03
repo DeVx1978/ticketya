@@ -235,6 +235,30 @@ export class PanelEmpresaService {
     return this.panel.eliminarMetodoPago(cooperativaId, metodoPagoId);
   }
 
+  listarCredencialesApi(cooperativaId: string) {
+    return this.panel.listarCredencialesApi(cooperativaId);
+  }
+
+  crearCredencialApi(cooperativaId: string, webhookUrl: string | null) {
+    return this.panel.crearCredencialApi(cooperativaId, webhookUrl);
+  }
+
+  rotarCredencialApi(cooperativaId: string, credencialId: string) {
+    return this.panel.rotarCredencialApi(cooperativaId, credencialId);
+  }
+
+  revocarCredencialApi(cooperativaId: string, credencialId: string) {
+    return this.panel.revocarCredencialApi(cooperativaId, credencialId);
+  }
+
+  actualizarWebhookCredencialApi(
+    cooperativaId: string,
+    credencialId: string,
+    webhookUrl: string | null,
+  ) {
+    return this.panel.actualizarWebhookCredencialApi(cooperativaId, credencialId, webhookUrl);
+  }
+
   validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,

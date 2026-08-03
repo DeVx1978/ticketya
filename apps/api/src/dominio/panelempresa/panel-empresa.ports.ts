@@ -21,6 +21,33 @@ export interface MetodoPagoCooperativa {
 }
 
 /**
+ * Credenciales API — Modelo B (02-ago-2026), RF-API-001/003. Autoservicio
+ * de la propia cooperativa (decisión de negocio confirmada, sección 3.11
+ * del documento maestro) — mismo criterio que métodos de pago arriba.
+ *
+ * `apiKeyPrefix` es el identificador público (patrón Stripe/GitHub) --
+ * la llave completa (con el secreto) solo se devuelve UNA vez, al crear
+ * o al rotar; después de eso, ni el backend puede volver a mostrarla
+ * completa (solo el hash queda guardado).
+ */
+export interface CredencialApiCooperativa {
+  id: string;
+  tipo: 'api_key';
+  apiKeyPrefix: string;
+  webhookUrl: string | null;
+  activo: boolean;
+  creadoEn: string;
+  revocadoEn: string | null;
+}
+
+export interface CredencialApiRecienCreada {
+  id: string;
+  apiKeyPrefix: string;
+  /** Llave completa en texto plano -- se muestra UNA sola vez, nunca se vuelve a guardar así. */
+  apiKeyCompleta: string;
+}
+
+/**
  * Vacío real de diseño encontrado el 29-jul-2026: `distribucionAsientos`
  * ya se guardaba (tipo `unknown`), pero nunca tuvo una forma definida
  * ni el frontend la usaba — el mapa de asientos siempre dibujaba una
@@ -528,6 +555,28 @@ export interface PanelEmpresaRepositorio {
     activo: boolean,
   ): Promise<{ id: string }>;
   eliminarMetodoPago(cooperativaId: string, metodoPagoId: string): Promise<void>;
+
+  /**
+   * Credenciales API — Modelo B (02-ago-2026). `rotarCredencialApi`
+   * revoca la credencial existente y crea una nueva conservando su
+   * webhookUrl -- la llave vieja deja de funcionar en el mismo momento
+   * en que se genera la nueva, no hay ventana donde ambas sirvan.
+   */
+  listarCredencialesApi(cooperativaId: string): Promise<CredencialApiCooperativa[]>;
+  crearCredencialApi(
+    cooperativaId: string,
+    webhookUrl: string | null,
+  ): Promise<CredencialApiRecienCreada>;
+  rotarCredencialApi(
+    cooperativaId: string,
+    credencialId: string,
+  ): Promise<CredencialApiRecienCreada>;
+  revocarCredencialApi(cooperativaId: string, credencialId: string): Promise<void>;
+  actualizarWebhookCredencialApi(
+    cooperativaId: string,
+    credencialId: string,
+    webhookUrl: string | null,
+  ): Promise<void>;
 
   /** RF-COOP-006 — validación de boleto por QR en abordaje. */
   validarBoletoPorQr(
