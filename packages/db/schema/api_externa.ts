@@ -11,6 +11,7 @@ import {
   timestamp,
   text,
   index,
+  uniqueIndex,
   pgPolicy,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
@@ -24,6 +25,17 @@ import { appRole, filtroCooperativaActual } from './rls';
  * sus propios datos. El secreto real (API key / client secret) nunca se
  * guarda en texto plano — solo su hash, siguiendo el mismo principio que
  * RNF-SEG-002 aplica a contraseñas de usuario.
+ *
+ * 02-ago-2026 -- 2 correcciones de esquema (hallazgo real, antes de
+ * construir el service/controller encima):
+ * 1) `webhookUrl` -- faltaba el destino al que avisar la venta. Sin esto,
+ *    el mecanismo de webhooks no tiene a dónde disparar.
+ * 2) `apiKeyPrefix` -- un hash por sí solo no se puede *buscar*, solo
+ *    *verificar* una vez que ya sabes cuál credencial es. Patrón real de
+ *    Stripe/GitHub: se guarda un prefijo público en texto plano (ej.
+ *    `tkya_live_a1b2c3`) para el lookup rápido; el resto de la llave
+ *    sigue hasheado en apiKeyHash. Único por llave -- por eso lleva su
+ *    propio índice unique, no basta con el índice por cooperativa.
  */
 export const credencialesApi = pgTable(
   'credenciales_api',
@@ -34,9 +46,14 @@ export const credencialesApi = pgTable(
       .notNull(),
 
     tipo: varchar('tipo', { length: 20 }).notNull(), // 'api_key' | 'oauth2_client'
+    apiKeyPrefix: varchar('api_key_prefix', { length: 20 }),
     apiKeyHash: varchar('api_key_hash', { length: 255 }),
     oauthClientId: varchar('oauth_client_id', { length: 100 }),
     oauthClientSecretHash: varchar('oauth_client_secret_hash', { length: 255 }),
+
+    // 02-ago-2026 -- destino del webhook (RF-API-003). Sin este campo no
+    // hay a dónde enviar el aviso de venta.
+    webhookUrl: text('webhook_url'),
 
     activo: boolean('activo').default(true).notNull(),
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
@@ -44,6 +61,7 @@ export const credencialesApi = pgTable(
   },
   (t) => [
     index('idx_credenciales_api_cooperativa').on(t.cooperativaId),
+    uniqueIndex('uq_credenciales_api_prefix').on(t.apiKeyPrefix),
     pgPolicy('aislamiento_cooperativa_credenciales_api', {
       for: 'all',
       to: appRole,

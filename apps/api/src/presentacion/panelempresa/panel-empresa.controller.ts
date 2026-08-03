@@ -38,6 +38,7 @@ import {
   EditarRutaDto,
 } from './dto/panel-empresa.dto';
 import { GuardarMetodoPagoDto, ConfirmarPagoManualDto, MarcarFacturaEmitidaDto } from './dto/metodos-pago.dto';
+import { CrearCredencialApiDto, ActualizarWebhookCredencialApiDto } from './dto/credenciales-api.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
@@ -452,6 +453,66 @@ export class PanelEmpresaController {
     @Request() req: { user: PayloadToken },
   ) {
     await this.panel.eliminarMetodoPago(cooperativaDelToken(req.user), id);
+    return { ok: true };
+  }
+
+  /**
+   * Credenciales API -- Modelo B (02-ago-2026), autoservicio de la
+   * propia cooperativa (RF-API-001, sección 3.11 del documento maestro).
+   * La llave completa (apiKeyCompleta) solo aparece en la respuesta de
+   * crear/rotar -- nunca más se puede recuperar después de eso, ni
+   * siquiera por este mismo endpoint.
+   */
+  @Roles('admin_cooperativa')
+  @Get('credenciales-api')
+  async listarCredencialesApi(@Request() req: { user: PayloadToken }) {
+    return this.panel.listarCredencialesApi(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Post('credenciales-api')
+  async crearCredencialApi(
+    @Body() dto: CrearCredencialApiDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.crearCredencialApi(
+      cooperativaDelToken(req.user),
+      dto.webhookUrl ?? null,
+    );
+  }
+
+  /** Revoca la credencial actual y genera una nueva de inmediato -- sin ventana donde ambas sirvan. */
+  @Roles('admin_cooperativa')
+  @Post('credenciales-api/:id/rotar')
+  async rotarCredencialApi(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.rotarCredencialApi(cooperativaDelToken(req.user), id);
+  }
+
+  @Roles('admin_cooperativa')
+  @Delete('credenciales-api/:id')
+  async revocarCredencialApi(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.revocarCredencialApi(cooperativaDelToken(req.user), id);
+    return { ok: true };
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('credenciales-api/:id/webhook')
+  async actualizarWebhookCredencialApi(
+    @Param('id') id: string,
+    @Body() dto: ActualizarWebhookCredencialApiDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarWebhookCredencialApi(
+      cooperativaDelToken(req.user),
+      id,
+      dto.webhookUrl && dto.webhookUrl.trim() !== '' ? dto.webhookUrl : null,
+    );
     return { ok: true };
   }
 

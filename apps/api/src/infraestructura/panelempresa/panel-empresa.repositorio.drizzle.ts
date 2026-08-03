@@ -1,4 +1,5 @@
 ﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { sql } from 'drizzle-orm';
 import { DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -23,6 +24,8 @@ import type {
   UnidadResumen,
   ViajeResumen,
   MetodoPagoCooperativa,
+  CredencialApiCooperativa,
+  CredencialApiRecienCreada,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 /**
@@ -999,6 +1002,139 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       await tx.execute(sql`
         DELETE FROM metodos_pago_cooperativa
         WHERE id = ${metodoPagoId} AND cooperativa_id = ${cooperativaId}
+      `);
+    });
+  }
+
+  /**
+   * Credenciales API -- Modelo B (02-ago-2026). Genera un identificador
+   * público (idPublico) y un secreto -- el prefijo (tkya_live_<idPublico>)
+   * se guarda en texto plano para poder BUSCAR la credencial rápido;
+   * el secreto nunca se guarda en texto plano, solo su hash (mismo
+   * principio que contraseñas de usuario). La llave completa que se le
+   * entrega al cliente es "prefijo.secreto" -- se arma aquí y se
+   * devuelve UNA sola vez; después de esto, ni el backend puede volver
+   * a reconstruirla (el hash no es reversible).
+   */
+  private async generarCredencialApi(): Promise<{
+    apiKeyPrefix: string;
+    apiKeyHash: string;
+    apiKeyCompleta: string;
+  }> {
+    const idPublico = randomBytes(6).toString('hex'); // 12 caracteres
+    const secreto = randomBytes(24).toString('hex'); // 48 caracteres
+    const apiKeyPrefix = `tkya_live_${idPublico}`;
+    const apiKeyCompleta = `${apiKeyPrefix}.${secreto}`;
+    const apiKeyHash = await this.hasher.hash(secreto);
+    return { apiKeyPrefix, apiKeyHash, apiKeyCompleta };
+  }
+
+  async listarCredencialesApi(cooperativaId: string): Promise<CredencialApiCooperativa[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT id, tipo, api_key_prefix, webhook_url, activo, creado_en, revocado_en
+        FROM credenciales_api
+        WHERE cooperativa_id = ${cooperativaId}
+        ORDER BY creado_en DESC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          tipo: string;
+          api_key_prefix: string | null;
+          webhook_url: string | null;
+          activo: boolean;
+          creado_en: string;
+          revocado_en: string | null;
+        };
+        return {
+          id: f.id,
+          tipo: f.tipo as 'api_key',
+          apiKeyPrefix: f.api_key_prefix ?? '',
+          webhookUrl: f.webhook_url,
+          activo: f.activo,
+          creadoEn: f.creado_en,
+          revocadoEn: f.revocado_en,
+        };
+      });
+    });
+  }
+
+  async crearCredencialApi(
+    cooperativaId: string,
+    webhookUrl: string | null,
+  ): Promise<CredencialApiRecienCreada> {
+    const { apiKeyPrefix, apiKeyHash, apiKeyCompleta } = await this.generarCredencialApi();
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        INSERT INTO credenciales_api (cooperativa_id, tipo, api_key_prefix, api_key_hash, webhook_url, activo)
+        VALUES (${cooperativaId}, 'api_key', ${apiKeyPrefix}, ${apiKeyHash}, ${webhookUrl}, true)
+        RETURNING id
+      `);
+      return {
+        id: (resultado.rows[0] as { id: string }).id,
+        apiKeyPrefix,
+        apiKeyCompleta,
+      };
+    });
+  }
+
+  async rotarCredencialApi(
+    cooperativaId: string,
+    credencialId: string,
+  ): Promise<CredencialApiRecienCreada> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const existente = await tx.execute(sql`
+        SELECT webhook_url FROM credenciales_api
+        WHERE id = ${credencialId} AND cooperativa_id = ${cooperativaId} AND activo = true
+      `);
+      if (existente.rows.length === 0) {
+        throw new BadRequestException(
+          'No existe una credencial activa con ese id para rotar.',
+        );
+      }
+      const webhookUrl = (existente.rows[0] as { webhook_url: string | null }).webhook_url;
+
+      // Se revoca ANTES de crear la nueva a propósito -- no debe existir
+      // ninguna ventana de tiempo donde la llave vieja y la nueva sirvan
+      // las dos a la vez.
+      await tx.execute(sql`
+        UPDATE credenciales_api SET activo = false, revocado_en = now()
+        WHERE id = ${credencialId} AND cooperativa_id = ${cooperativaId}
+      `);
+
+      const { apiKeyPrefix, apiKeyHash, apiKeyCompleta } = await this.generarCredencialApi();
+      const nueva = await tx.execute(sql`
+        INSERT INTO credenciales_api (cooperativa_id, tipo, api_key_prefix, api_key_hash, webhook_url, activo)
+        VALUES (${cooperativaId}, 'api_key', ${apiKeyPrefix}, ${apiKeyHash}, ${webhookUrl}, true)
+        RETURNING id
+      `);
+      return {
+        id: (nueva.rows[0] as { id: string }).id,
+        apiKeyPrefix,
+        apiKeyCompleta,
+      };
+    });
+  }
+
+  async revocarCredencialApi(cooperativaId: string, credencialId: string): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE credenciales_api SET activo = false, revocado_en = now()
+        WHERE id = ${credencialId} AND cooperativa_id = ${cooperativaId}
+      `);
+    });
+  }
+
+  async actualizarWebhookCredencialApi(
+    cooperativaId: string,
+    credencialId: string,
+    webhookUrl: string | null,
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE credenciales_api SET webhook_url = ${webhookUrl}
+        WHERE id = ${credencialId} AND cooperativa_id = ${cooperativaId}
       `);
     });
   }
