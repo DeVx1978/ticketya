@@ -289,11 +289,12 @@ Esto confirma que el diseño ya está a la altura de plataformas modernas — el
 
 **Requerimiento completo:** cooperativas con su propio sistema de venta puedan conectarse a Columbus por API (credenciales, sincronización de disponibilidad en tiempo real, webhooks de eventos de venta), sin usar el panel web.
 
-**Estado real:** 🟡 En construcción activa (2-ago-2026) — CRUD de credenciales API completo (backend + frontend), cerrado y verificado. Falta el resto de la infraestructura genérica (despachador de webhooks, endpoints base, documentación).
+**Estado real:** 🟡 En construcción activa (2-ago-2026) — CRUD de credenciales API y despachador de webhooks con reintentos, ambos completos y verificados. Falta solo endpoints base de recepción/envío y documentación técnica.
 - Esquema (`api_externa.ts`): las 2 correcciones (`webhookUrl`, `apiKeyPrefix`) aplicadas -- migración `0017` corrida en la base de datos real
-- Backend: CRUD completo de credenciales (`GET/POST /coop/credenciales-api`, `POST .../rotar`, `DELETE .../:id`, `PATCH .../:id/webhook`) -- llave con formato `tkya_live_<prefijo>.<secreto>`, prefijo público para lookup, secreto hasheado con bcrypt, solo se muestra completa una vez (al crear o rotar)
+- Backend credenciales: CRUD completo (`GET/POST /coop/credenciales-api`, `POST .../rotar`, `DELETE .../:id`, `PATCH .../:id/webhook`) -- llave con formato `tkya_live_<prefijo>.<secreto>`, prefijo público para lookup, secreto hasheado con bcrypt, solo se muestra completa una vez (al crear o rotar)
 - Frontend: pantalla `/panel-empresa/credenciales-api` -- crear, listar activas/revocadas, rotar, revocar con confirmación, editar webhook por credencial
-- Verificado: `tsc` backend y frontend limpios, 137/137 pruebas e2e, `next build` 27/27 páginas, PR #23 fusionado a `main` con CI en verde
+- Backend despachador de webhooks: módulo nuevo (ports, repositorio Drizzle, service, module) -- envío inmediato al confirmar una venta (tarjeta y pago manual), nunca bloquea ni revierte la venta si el webhook falla; reintentos automáticos cada 5 min vía `@Cron` (`@nestjs/schedule`), hasta 5 intentos, después se marca `fallido`; una compra que mezcla boletos de varias cooperativas dispara un webhook por cada una
+- Verificado: `tsc` backend y frontend limpios, 137/137 pruebas e2e, `next build` 27/27 páginas, PR #23 y PR #24 fusionados a `main` con CI en verde
 
 **Especificación técnica del director (30-jul-2026), corregida tras discusión con el usuario:**
 
@@ -320,7 +321,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **La propia cooperativa, en autoservicio** (`admin_cooperativa`) — mismo patrón ya establecido en el proyecto para métodos de pago y política de cancelación. Se descartó exigir aprobación del `admin_plataforma` para esto: rompería la consistencia del resto del sistema sin una razón de negocio real que lo justifique, y contradice el principio ya fijado de que Columbus se construye para venderse como SaaS de autoservicio, no a la medida de que alguien apruebe cada paso.
 
-**Falta:** despachador de webhooks con reintentos (lo que de verdad conecta `webhooks_log` con la `webhookUrl` ya guardada); endpoints base de recepción (disponibilidad/precios) y envío (aviso de venta); documentación técnica general de conexión. Los ajustes específicos por cooperativa se resuelven caso por caso cuando aparezca la primera integración real.
+**Falta:** endpoints base de recepción (disponibilidad/precios desde la cooperativa) y envío (aviso de venta hacia la cooperativa -- distinto del webhook, esto es API que la cooperativa consulta activamente); documentación técnica general de conexión (tipo guía de Stripe/Twilio). Los ajustes específicos por cooperativa se resuelven caso por caso cuando aparezca la primera integración real.
 
 ---
 
