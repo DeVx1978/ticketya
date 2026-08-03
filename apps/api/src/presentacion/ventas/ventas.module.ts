@@ -10,9 +10,10 @@ import { CompraRepositorioDrizzle } from '../../infraestructura/ventas/compra.re
 import { SimuladorPasarelaPago } from '../../infraestructura/pagos/simulador.pasarela';
 import { SimuladorFacturacionElectronica } from '../../infraestructura/facturacion/simulador.facturacion';
 import { AuthModule } from '../auth/auth.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, WebhooksModule],
   controllers: [VentasController],
   providers: [
     CheckoutService,

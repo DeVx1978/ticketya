@@ -2,6 +2,7 @@
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -31,6 +32,9 @@ import { LiquidacionesModule } from './presentacion/liquidaciones/liquidaciones.
     // la app, no solo de módulos que se registren después.
     SentryModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
+    // 02-ago-2026 -- necesario para el @Cron del despachador de webhooks
+    // (Modelo B, RF-API-003). Sin esto, @Cron() no hace nada.
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         name: 'default',
