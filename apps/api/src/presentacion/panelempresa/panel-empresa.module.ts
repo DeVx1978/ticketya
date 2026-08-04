@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PanelEmpresaController } from './panel-empresa.controller';
 import {
   PanelEmpresaService,
@@ -9,9 +9,10 @@ import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 import { AuthModule } from '../auth/auth.module';
 import { VentasModule } from '../ventas/ventas.module';
 import { LiquidacionesModule } from '../liquidaciones/liquidaciones.module';
+import { NotificacionesProgramadasModule } from '../notificaciones-programadas/notificaciones-programadas.module';
 
 @Module({
-  imports: [AuthModule, VentasModule, LiquidacionesModule],
+  imports: [AuthModule, VentasModule, LiquidacionesModule, NotificacionesProgramadasModule],
   controllers: [PanelEmpresaController],
   providers: [
     PanelEmpresaService,
