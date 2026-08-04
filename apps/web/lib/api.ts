@@ -489,6 +489,101 @@ export async function listarTiposVehiculoCoop(token: string): Promise<TipoVehicu
   return cuerpo as TipoVehiculoResumen[];
 }
 
+/**
+ * Horarios recurrentes (plantilla) — ítem 7, RF-COOP-002 (03-ago-2026).
+ * Un generador aparte (cron diario) crea los viajes reales desde estas
+ * plantillas; solo hace INSERT si no existe ya un viaje para esa
+ * combinación, nunca UPDATE.
+ */
+export interface HorarioRutaResumen {
+  id: string;
+  rutaId: string;
+  horaSalida: string;
+  diasSemana: number[]; // 0=domingo..6=sábado
+  tipoVehiculoPredeterminadoId: string;
+  tipoVehiculoNombre: string;
+  activo: boolean;
+}
+
+export async function listarHorariosRutaCoop(
+  token: string,
+  rutaId: string,
+): Promise<HorarioRutaResumen[]> {
+  const res = await fetch(`${API_URL}/coop/horarios-ruta?rutaId=${rutaId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los horarios.");
+  return cuerpo as HorarioRutaResumen[];
+}
+
+export async function crearHorarioRutaCoop(
+  token: string,
+  datos: {
+    rutaId: string;
+    horaSalida: string;
+    diasSemana: number[];
+    tipoVehiculoPredeterminadoId: string;
+  },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/horarios-ruta`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el horario.");
+  }
+  return cuerpo as { id: string };
+}
+
+export async function actualizarEstadoHorarioRutaCoop(
+  token: string,
+  id: string,
+  activo: boolean,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/horarios-ruta/${id}/estado`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ activo }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo actualizar el horario.");
+}
+
+/**
+ * Cancelación/suspensión masiva — ítem 7 (03-ago-2026). Los viajes con
+ * boletos vendidos SÍ se cancelan: se genera crédito automático y se
+ * notifica por WhatsApp a cada pasajero afectado.
+ */
+export interface ResultadoCancelacionMasiva {
+  viajesCancelados: number;
+  boletosCancelados: number;
+  viajesEncontrados: number;
+}
+
+export async function cancelarViajesMasivoCoop(
+  token: string,
+  rutaId: string,
+  fechaInicio: string,
+  fechaFin: string,
+): Promise<ResultadoCancelacionMasiva> {
+  const res = await fetch(`${API_URL}/coop/rutas/${rutaId}/cancelar-masivo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ fechaInicio, fechaFin }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo ejecutar la cancelación masiva.");
+  }
+  return cuerpo as ResultadoCancelacionMasiva;
+}
+
 export async function crearTipoVehiculoCoop(
   token: string,
   datos: { nombre: string; categoria?: "bus" | "buseta" | "van" | "auto"; capacidadTotal: number },

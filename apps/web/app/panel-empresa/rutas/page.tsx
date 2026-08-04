@@ -1,10 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { crearRutaCoop, listarRutasCoop, type PuntoOperacion, type RutaResumen } from "@/lib/api";
+import { Fragment, useEffect, useState } from "react";
+import {
+  crearRutaCoop,
+  listarRutasCoop,
+  listarTiposVehiculoCoop,
+  listarHorariosRutaCoop,
+  crearHorarioRutaCoop,
+  actualizarEstadoHorarioRutaCoop,
+  cancelarViajesMasivoCoop,
+  type PuntoOperacion,
+  type RutaResumen,
+  type TipoVehiculoResumen,
+  type HorarioRutaResumen,
+  type ResultadoCancelacionMasiva,
+} from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { SelectorCiudad } from "@/components/SelectorCiudad";
 import { Toast } from "@/components/Toast";
+
+/** 0=domingo..6=sábado (mismo orden que la base de datos), mostrados Lun-Dom por costumbre visual. */
+const DIAS_SEMANA = [
+  { valor: 1, etiqueta: "Lun" },
+  { valor: 2, etiqueta: "Mar" },
+  { valor: 3, etiqueta: "Mié" },
+  { valor: 4, etiqueta: "Jue" },
+  { valor: 5, etiqueta: "Vie" },
+  { valor: 6, etiqueta: "Sáb" },
+  { valor: 0, etiqueta: "Dom" },
+];
 
 export default function RutasPage() {
   const [rutas, setRutas] = useState<RutaResumen[] | null>(null);
@@ -19,6 +43,25 @@ export default function RutasPage() {
   const [errorForm, setErrorForm] = useState<string | null>(null);
   const [mensajeError, setMensajeError] = useState<string | null>(null);
 
+  // Ítem 7, Fase 2 (03-ago-2026) -- horarios recurrentes y cancelación
+  // masiva, ambos por ruta. Se gestionan en un panel expandible por fila.
+  const [rutaExpandida, setRutaExpandida] = useState<string | null>(null);
+  const [tiposVehiculo, setTiposVehiculo] = useState<TipoVehiculoResumen[] | null>(null);
+  const [horariosPorRuta, setHorariosPorRuta] = useState<Record<string, HorarioRutaResumen[]>>({});
+
+  const [horaSalida, setHoraSalida] = useState("08:00");
+  const [diasSeleccionados, setDiasSeleccionados] = useState<number[]>([]);
+  const [tipoVehiculoId, setTipoVehiculoId] = useState("");
+  const [guardandoHorario, setGuardandoHorario] = useState(false);
+  const [errorHorario, setErrorHorario] = useState<string | null>(null);
+
+  const [fechaInicioMasivo, setFechaInicioMasivo] = useState("");
+  const [fechaFinMasivo, setFechaFinMasivo] = useState("");
+  const [confirmandoMasivo, setConfirmandoMasivo] = useState(false);
+  const [ejecutandoMasivo, setEjecutandoMasivo] = useState(false);
+  const [resultadoMasivo, setResultadoMasivo] = useState<ResultadoCancelacionMasiva | null>(null);
+  const [errorMasivo, setErrorMasivo] = useState<string | null>(null);
+
   function cargarRutas() {
     const token = obtenerToken();
     if (!token) return;
@@ -28,6 +71,99 @@ export default function RutasPage() {
   }
 
   useEffect(cargarRutas, []);
+
+  useEffect(() => {
+    const token = obtenerToken();
+    if (!token) return;
+    listarTiposVehiculoCoop(token).then(setTiposVehiculo).catch(() => setTiposVehiculo([]));
+  }, []);
+
+  function toggleExpandir(rutaId: string) {
+    if (rutaExpandida === rutaId) {
+      setRutaExpandida(null);
+      return;
+    }
+    setRutaExpandida(rutaId);
+    setResultadoMasivo(null);
+    setConfirmandoMasivo(false);
+    if (!horariosPorRuta[rutaId]) {
+      const token = obtenerToken();
+      if (!token) return;
+      listarHorariosRutaCoop(token, rutaId)
+        .then((lista) => setHorariosPorRuta((h) => ({ ...h, [rutaId]: lista })))
+        .catch(() => setHorariosPorRuta((h) => ({ ...h, [rutaId]: [] })));
+    }
+  }
+
+  function alternarDia(dia: number) {
+    setDiasSeleccionados((dias) =>
+      dias.includes(dia) ? dias.filter((d) => d !== dia) : [...dias, dia],
+    );
+  }
+
+  async function crearHorario(rutaId: string, e: React.FormEvent) {
+    e.preventDefault();
+    setErrorHorario(null);
+    const token = obtenerToken();
+    if (!token || diasSeleccionados.length === 0 || !tipoVehiculoId) {
+      setErrorHorario("Elige al menos un día de la semana y un tipo de vehículo.");
+      return;
+    }
+    setGuardandoHorario(true);
+    try {
+      await crearHorarioRutaCoop(token, {
+        rutaId,
+        horaSalida,
+        diasSemana: diasSeleccionados,
+        tipoVehiculoPredeterminadoId: tipoVehiculoId,
+      });
+      const lista = await listarHorariosRutaCoop(token, rutaId);
+      setHorariosPorRuta((h) => ({ ...h, [rutaId]: lista }));
+      setDiasSeleccionados([]);
+      setMensajeExito("Horario recurrente creado. Los viajes se generan automáticamente cada noche.");
+    } catch (err) {
+      setErrorHorario(err instanceof Error ? err.message : "No se pudo crear el horario.");
+    } finally {
+      setGuardandoHorario(false);
+    }
+  }
+
+  async function alternarActivoHorario(rutaId: string, horario: HorarioRutaResumen) {
+    const token = obtenerToken();
+    if (!token) return;
+    try {
+      await actualizarEstadoHorarioRutaCoop(token, horario.id, !horario.activo);
+      const lista = await listarHorariosRutaCoop(token, rutaId);
+      setHorariosPorRuta((h) => ({ ...h, [rutaId]: lista }));
+    } catch (err) {
+      setMensajeError(err instanceof Error ? err.message : "No se pudo actualizar el horario.");
+    }
+  }
+
+  /**
+   * Cancelación/suspensión masiva -- ítem 7 (03-ago-2026). Los viajes
+   * con boletos vendidos SÍ se cancelan (crédito automático + aviso por
+   * WhatsApp) -- por eso pide confirmación explícita en dos pasos antes
+   * de ejecutar, no es una acción reversible.
+   */
+  async function ejecutarCancelacionMasiva(rutaId: string) {
+    setErrorMasivo(null);
+    const token = obtenerToken();
+    if (!token || !fechaInicioMasivo || !fechaFinMasivo) {
+      setErrorMasivo("Elige una fecha de inicio y una de fin.");
+      return;
+    }
+    setEjecutandoMasivo(true);
+    try {
+      const resultado = await cancelarViajesMasivoCoop(token, rutaId, fechaInicioMasivo, fechaFinMasivo);
+      setResultadoMasivo(resultado);
+      setConfirmandoMasivo(false);
+    } catch (err) {
+      setErrorMasivo(err instanceof Error ? err.message : "No se pudo ejecutar la cancelación masiva.");
+    } finally {
+      setEjecutandoMasivo(false);
+    }
+  }
 
   async function crear(e: React.FormEvent) {
     e.preventDefault();
@@ -142,23 +278,243 @@ export default function RutasPage() {
                 <th className="px-6 py-3">Ruta</th>
                 <th className="px-6 py-3">Trayecto</th>
                 <th className="px-6 py-3 text-right">Precio base</th>
+                <th className="px-6 py-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
               {rutas.map((r) => (
-                <tr key={r.id}>
-                  <td className="px-6 py-3 font-medium text-brand-dark">
-                    {r.nombre ?? `${r.origenCiudad} → ${r.destinoCiudad}`}
-                  </td>
-                  <td className="px-6 py-3 text-brand-dark/70">
-                    {r.origenCiudad} → {r.destinoCiudad}
-                  </td>
-                  <td className="px-6 py-3 text-right font-semibold text-brand-dark">
-                    {new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(
-                      r.precioBaseReferencia,
-                    )}
-                  </td>
-                </tr>
+                <Fragment key={r.id}>
+                  <tr>
+                    <td className="px-6 py-3 font-medium text-brand-dark">
+                      {r.nombre ?? `${r.origenCiudad} → ${r.destinoCiudad}`}
+                    </td>
+                    <td className="px-6 py-3 text-brand-dark/70">
+                      {r.origenCiudad} → {r.destinoCiudad}
+                    </td>
+                    <td className="px-6 py-3 text-right font-semibold text-brand-dark">
+                      {new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(
+                        r.precioBaseReferencia,
+                      )}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandir(r.id)}
+                        className="rounded-lg bg-brand-light px-3 py-1.5 text-xs font-semibold text-brand-dark transition hover:bg-brand-light/70"
+                      >
+                        {rutaExpandida === r.id ? "Ocultar" : "Gestionar"}
+                      </button>
+                    </td>
+                  </tr>
+
+                  {rutaExpandida === r.id && (
+                    <tr key={`${r.id}-panel`}>
+                      <td colSpan={4} className="bg-brand-light/20 px-6 py-6">
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                          {/* Horarios recurrentes (plantilla) -- ítem 7, RF-COOP-002 */}
+                          <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                            <h3 className="font-display text-sm font-bold text-brand-dark">
+                              Horarios recurrentes
+                            </h3>
+                            <p className="mt-1 text-xs text-brand-dark/50">
+                              Los viajes se generan solos cada noche para los próximos 21 días. Si editas
+                              un viaje ya generado a mano, esa edición nunca se sobrescribe.
+                            </p>
+
+                            <div className="mt-3 space-y-2">
+                              {(horariosPorRuta[r.id] ?? []).map((h) => (
+                                <div
+                                  key={h.id}
+                                  className="flex items-center justify-between rounded-lg bg-brand-light/30 px-3 py-2 text-xs"
+                                >
+                                  <div>
+                                    <span className="font-semibold text-brand-dark">{h.horaSalida}</span>{" "}
+                                    <span className="text-brand-dark/60">
+                                      ·{" "}
+                                      {DIAS_SEMANA.filter((d) => h.diasSemana.includes(d.valor))
+                                        .map((d) => d.etiqueta)
+                                        .join(", ")}
+                                    </span>{" "}
+                                    <span className="text-brand-dark/40">· {h.tipoVehiculoNombre}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => alternarActivoHorario(r.id, h)}
+                                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                      h.activo
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-gray-100 text-gray-500"
+                                    }`}
+                                  >
+                                    {h.activo ? "Activo" : "Inactivo"}
+                                  </button>
+                                </div>
+                              ))}
+                              {horariosPorRuta[r.id]?.length === 0 && (
+                                <p className="text-xs text-brand-dark/40">
+                                  Todavía no tienes ningún horario recurrente en esta ruta.
+                                </p>
+                              )}
+                            </div>
+
+                            <form
+                              onSubmit={(e) => crearHorario(r.id, e)}
+                              className="mt-4 space-y-3 border-t border-black/5 pt-4"
+                            >
+                              <div className="flex gap-3">
+                                <div>
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                    Hora
+                                  </label>
+                                  <input
+                                    type="time"
+                                    value={horaSalida}
+                                    onChange={(e) => setHoraSalida(e.target.value)}
+                                    className="rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                    Tipo de vehículo
+                                  </label>
+                                  <select
+                                    value={tipoVehiculoId}
+                                    onChange={(e) => setTipoVehiculoId(e.target.value)}
+                                    className="w-full rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                                  >
+                                    <option value="">Elige uno...</option>
+                                    {(tiposVehiculo ?? []).map((tv) => (
+                                      <option key={tv.id} value={tv.id}>
+                                        {tv.nombre}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                  Días de la semana
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {DIAS_SEMANA.map((d) => (
+                                    <button
+                                      key={d.valor}
+                                      type="button"
+                                      onClick={() => alternarDia(d.valor)}
+                                      className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                                        diasSeleccionados.includes(d.valor)
+                                          ? "bg-brand text-white"
+                                          : "bg-brand-light/40 text-brand-dark/60"
+                                      }`}
+                                    >
+                                      {d.etiqueta}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              {errorHorario && (
+                                <p className="text-xs font-medium text-red-600">{errorHorario}</p>
+                              )}
+                              <button
+                                type="submit"
+                                disabled={guardandoHorario}
+                                className="rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+                              >
+                                {guardandoHorario ? "Guardando..." : "Agregar horario"}
+                              </button>
+                            </form>
+                          </div>
+
+                          {/* Cancelación/suspensión masiva -- ítem 7 */}
+                          <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                            <h3 className="font-display text-sm font-bold text-brand-dark">
+                              Cancelación masiva
+                            </h3>
+                            <p className="mt-1 text-xs text-brand-dark/50">
+                              Para contratiempos (cierre de vía, feriado, paro). Cancela todos los viajes
+                              programados de esta ruta en el rango de fechas -- incluyendo los que ya
+                              tienen boletos vendidos, generando crédito automático y avisando por
+                              WhatsApp a cada pasajero afectado.
+                            </p>
+
+                            <div className="mt-4 flex gap-3">
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                  Desde
+                                </label>
+                                <input
+                                  type="date"
+                                  value={fechaInicioMasivo}
+                                  onChange={(e) => setFechaInicioMasivo(e.target.value)}
+                                  className="rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                                />
+                              </div>
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                  Hasta
+                                </label>
+                                <input
+                                  type="date"
+                                  value={fechaFinMasivo}
+                                  onChange={(e) => setFechaFinMasivo(e.target.value)}
+                                  className="rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                                />
+                              </div>
+                            </div>
+
+                            {errorMasivo && (
+                              <p className="mt-3 text-xs font-medium text-red-600">{errorMasivo}</p>
+                            )}
+
+                            {resultadoMasivo && (
+                              <div className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
+                                {resultadoMasivo.viajesCancelados} viaje(s) cancelado(s),{" "}
+                                {resultadoMasivo.boletosCancelados} boleto(s) compensado(s) con crédito y
+                                notificado(s) por WhatsApp.
+                              </div>
+                            )}
+
+                            <div className="mt-4">
+                              {!confirmandoMasivo ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmandoMasivo(true)}
+                                  disabled={!fechaInicioMasivo || !fechaFinMasivo}
+                                  className="rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-40"
+                                >
+                                  Cancelar viajes en este rango
+                                </button>
+                              ) : (
+                                <div className="rounded-lg bg-amber-50 p-3 ring-1 ring-amber-200">
+                                  <p className="text-xs font-semibold text-amber-900">
+                                    Esto no se puede deshacer. ¿Confirmas la cancelación masiva?
+                                  </p>
+                                  <div className="mt-2 flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => ejecutarCancelacionMasiva(r.id)}
+                                      disabled={ejecutandoMasivo}
+                                      className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                                    >
+                                      {ejecutandoMasivo ? "Cancelando..." : "Sí, cancelar todo"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmandoMasivo(false)}
+                                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/60"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
