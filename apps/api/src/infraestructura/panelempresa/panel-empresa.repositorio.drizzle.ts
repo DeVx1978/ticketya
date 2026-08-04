@@ -16,7 +16,7 @@ import type {
   DatosNuevoUsuarioStaff,
   DatosNuevoConductor,
   DatosImportacion,
-  ResultadoImportacion,
+  ResultadoImportacionRepo,
   FilaVentaDelDia,
   ResultadoValidacionQr,
   RutaResumen,
@@ -731,7 +731,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   async importarDatos(
     cooperativaId: string,
     datos: DatosImportacion,
-  ): Promise<ResultadoImportacion> {
+  ): Promise<ResultadoImportacionRepo> {
     try {
       return await ejecutarComoCooperativa(
         this.db,
@@ -797,75 +797,32 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           }
 
           let horariosCreados = 0;
-          const horariosParaGenerar: {
-            rutaId: string;
-            unidadId: string;
-            conductorId: string | null;
-            horaSalida: string;
-            diasSemana: number[];
-          }[] = [];
+          const horarioIds: string[] = [];
 
           for (const item of datos.horarios ?? []) {
             const rutaId = refsRuta.get(item.rutaRef) ?? item.rutaRef;
-            const unidadId = refsUnidad.get(item.unidadRef) ?? item.unidadRef;
-            const conductorId = item.conductorRef
-              ? (refsConductor.get(item.conductorRef) ?? item.conductorRef)
-              : null;
+            // 04-ago-2026 -- mismo patrón de resolución de ref que
+            // tipoVehiculoRef ya usa en unidades, arriba.
+            const tipoVehiculoId =
+              refsTipoVehiculo.get(item.tipoVehiculoRef) ??
+              item.tipoVehiculoRef;
 
-            await tx.execute(sql`
-            INSERT INTO horarios_ruta (ruta_id, hora_salida, dias_semana)
-            VALUES (${rutaId}, ${item.horaSalida}, ${JSON.stringify(item.diasSemana)})
+            const filas = await tx.execute(sql`
+            INSERT INTO horarios_ruta (ruta_id, hora_salida, dias_semana, tipo_vehiculo_predeterminado_id, activo)
+            VALUES (${rutaId}, ${item.horaSalida}, ${JSON.stringify(item.diasSemana)}::jsonb, ${tipoVehiculoId}, true)
+            RETURNING id
           `);
             horariosCreados++;
-            horariosParaGenerar.push({
-              rutaId,
-              unidadId,
-              conductorId,
-              horaSalida: item.horaSalida,
-              diasSemana: item.diasSemana,
-            });
+            horarioIds.push((filas.rows[0] as { id: string }).id);
           }
 
-          // Generación de viajes concretos a partir de los horarios
-          // recurrentes — esto es lo que evita tener que crear cada viaje
-          // uno por uno para cubrir semanas/meses de operación.
-          let viajesGenerados = 0;
-          if (
-            datos.generarViajesDesde &&
-            datos.generarViajesHasta &&
-            horariosParaGenerar.length > 0
-          ) {
-            const desde = new Date(`${datos.generarViajesDesde}T00:00:00`);
-            const hasta = new Date(`${datos.generarViajesHasta}T00:00:00`);
-
-            for (const h of horariosParaGenerar) {
-              const rutaRows = await tx.execute(
-                sql`SELECT precio_base_referencia FROM rutas WHERE id = ${h.rutaId}`,
-              );
-              const precioBase = (
-                rutaRows.rows[0] as { precio_base_referencia: string }
-              ).precio_base_referencia;
-
-              for (
-                let d = new Date(desde);
-                d <= hasta;
-                d.setDate(d.getDate() + 1)
-              ) {
-                const diaSemana = d.getDay(); // 0=domingo … 6=sábado
-                if (!h.diasSemana.includes(diaSemana)) continue;
-
-                const fechaStr = d.toISOString().slice(0, 10);
-                // Ecuador no tiene horario de verano — desfase fijo -05:00.
-                const horaSalidaCompleta = `${fechaStr}T${h.horaSalida}:00-05:00`;
-
-                await tx.execute(sql`
-                INSERT INTO viajes (cooperativa_id, ruta_id, unidad_id, conductor_id, fecha_salida, hora_salida_programada, precio_base, estado)
-                VALUES (${cooperativaId}, ${h.rutaId}, ${h.unidadId}, ${h.conductorId}, ${fechaStr}, ${horaSalidaCompleta}, ${precioBase}, 'programado')
-              `);
-                viajesGenerados++;
-              }
-            }
-          }
+          // 04-ago-2026 -- la generación de viajes concretos se movió a
+          // GeneradorViajesService (aplicación), mismo mecanismo que el
+          // cron del ítem 7 -- ya no hay un camino paralelo más débil
+          // aquí (no duplicaba correctamente, no enlazaba
+          // horario_ruta_origen_id). El service llama a
+          // generarViajesParaHorarios(horarioIds, desde, hasta) después
+          // de que esta transacción confirme.
 
           return {
             tiposVehiculoCreados: datos.tiposVehiculo?.length ?? 0,
@@ -873,7 +830,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             unidadesCreadas: datos.unidades?.length ?? 0,
             rutasCreadas: datos.rutas?.length ?? 0,
             horariosCreados,
-            viajesGenerados,
+            horarioIds,
           };
         },
       );

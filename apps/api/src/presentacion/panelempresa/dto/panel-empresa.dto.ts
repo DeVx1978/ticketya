@@ -162,8 +162,8 @@ export class ItemImportRutaDto {
 
 export class ItemImportHorarioDto {
   @IsString() rutaRef!: string;
-  @IsString() unidadRef!: string;
-  @IsOptional() @IsString() conductorRef?: string;
+  /** 04-ago-2026 -- reemplaza a unidadRef/conductorRef, ver comentario en panel-empresa.ports.ts. */
+  @IsString() tipoVehiculoRef!: string;
   @IsString() horaSalida!: string;
   @IsArray() @IsInt({ each: true }) diasSemana!: number[];
 }

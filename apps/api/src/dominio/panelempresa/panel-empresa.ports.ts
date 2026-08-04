@@ -285,8 +285,18 @@ export interface ItemImportRuta {
 /** diasSemana: 0=domingo … 6=sábado. horaSalida formato "HH:MM" (24h, hora local Ecuador). */
 export interface ItemImportHorario {
   rutaRef: string;
-  unidadRef: string;
-  conductorRef?: string;
+  /**
+   * 04-ago-2026 -- unificación del ítem 8 con el generador recurrente
+   * del ítem 7: antes este item traía `unidadRef` (una unidad
+   * específica, fija para siempre) y `conductorRef` -- ninguno de los
+   * dos existe en `horarios_ruta` (solo guarda un TIPO de vehículo,
+   * no una unidad puntual), así que nunca se persistían de verdad, se
+   * usaban solo para el generador de una sola vez que ahora se elimina.
+   * Sin `tipoVehiculoRef`, un horario creado por carga masiva nunca
+   * podría generar viajes automáticos después -- sería un callejón sin
+   * salida silencioso (decisión del director, 04-ago-2026).
+   */
+  tipoVehiculoRef: string;
   horaSalida: string;
   diasSemana: number[];
 }
@@ -309,6 +319,18 @@ export interface ResultadoImportacion {
   rutasCreadas: number;
   horariosCreados: number;
   viajesGenerados: number;
+}
+
+/**
+ * 04-ago-2026 -- lo que el repositorio devuelve de verdad. La
+ * generación de viajes ya NO ocurre aquí (se movió a
+ * GeneradorViajesService, mismo mecanismo que el cron del ítem 7) --
+ * el repositorio solo crea entidades y devuelve los ids de los
+ * horarios nuevos, para que el service dispare la generación después.
+ */
+export interface ResultadoImportacionRepo
+  extends Omit<ResultadoImportacion, 'viajesGenerados'> {
+  horarioIds: string[];
 }
 
 export interface FilaVentaDelDia {
@@ -558,7 +580,7 @@ export interface PanelEmpresaRepositorio {
   importarDatos(
     cooperativaId: string,
     datos: DatosImportacion,
-  ): Promise<ResultadoImportacion>;
+  ): Promise<ResultadoImportacionRepo>;
 
   /** RF-COOP-004 — dashboard de ventas del día, tenant-scoped de verdad. */
   dashboardVentasDelDia(cooperativaId: string): Promise<FilaVentaDelDia[]>;

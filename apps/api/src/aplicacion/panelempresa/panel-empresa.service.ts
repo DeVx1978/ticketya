@@ -2,6 +2,7 @@
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
+import { GeneradorViajesService } from '../generador-viajes/generador-viajes.service';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
@@ -27,6 +28,7 @@ export class PanelEmpresaService {
     @Inject(ALMACENAMIENTO_ARCHIVOS)
     private readonly almacenamiento: AlmacenamientoArchivos,
     private readonly notificaciones: NotificacionesProgramadasService,
+    private readonly generadorViajes: GeneradorViajesService,
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
@@ -223,8 +225,32 @@ export class PanelEmpresaService {
     return this.panel.listarConductores(cooperativaId);
   }
 
-  importarDatos(cooperativaId: string, datos: DatosImportacion) {
-    return this.panel.importarDatos(cooperativaId, datos);
+  /**
+   * 04-ago-2026 -- ítem 8: la generación de viajes ya no ocurre dentro
+   * del repositorio (ver comentario en panel-empresa.repositorio.drizzle.ts)
+   * -- se dispara aquí, después, con el mismo mecanismo que el cron del
+   * ítem 7 (GeneradorViajesService), en vez de un camino paralelo más
+   * débil que existía antes.
+   */
+  async importarDatos(cooperativaId: string, datos: DatosImportacion) {
+    const resultado = await this.panel.importarDatos(cooperativaId, datos);
+
+    let viajesGenerados = 0;
+    if (
+      datos.generarViajesDesde &&
+      datos.generarViajesHasta &&
+      resultado.horarioIds.length > 0
+    ) {
+      const generado = await this.generadorViajes.generarViajesParaHorarios(
+        resultado.horarioIds,
+        new Date(`${datos.generarViajesDesde}T00:00:00`),
+        new Date(`${datos.generarViajesHasta}T00:00:00`),
+      );
+      viajesGenerados = generado.generados;
+    }
+
+    const { horarioIds: _horarioIds, ...resto } = resultado;
+    return { ...resto, viajesGenerados };
   }
 
   dashboardVentasDelDia(cooperativaId: string) {

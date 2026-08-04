@@ -10,5 +10,8 @@ import { GeneradorViajesRepositorioDrizzle } from '../../infraestructura/generad
     GeneradorViajesService,
     { provide: GENERADOR_VIAJES_REPOSITORIO, useClass: GeneradorViajesRepositorioDrizzle },
   ],
+  // 04-ago-2026 -- ítem 8: PanelEmpresaModule lo necesita para que la
+  // carga masiva reutilice el mismo generador que el cron.
+  exports: [GeneradorViajesService],
 })
 export class GeneradorViajesModule {}

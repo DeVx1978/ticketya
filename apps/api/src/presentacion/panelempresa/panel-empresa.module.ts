@@ -10,9 +10,16 @@ import { AuthModule } from '../auth/auth.module';
 import { VentasModule } from '../ventas/ventas.module';
 import { LiquidacionesModule } from '../liquidaciones/liquidaciones.module';
 import { NotificacionesProgramadasModule } from '../notificaciones-programadas/notificaciones-programadas.module';
+import { GeneradorViajesModule } from '../generador-viajes/generador-viajes.module';
 
 @Module({
-  imports: [AuthModule, VentasModule, LiquidacionesModule, NotificacionesProgramadasModule],
+  imports: [
+    AuthModule,
+    VentasModule,
+    LiquidacionesModule,
+    NotificacionesProgramadasModule,
+    GeneradorViajesModule,
+  ],
   controllers: [PanelEmpresaController],
   providers: [
     PanelEmpresaService,
