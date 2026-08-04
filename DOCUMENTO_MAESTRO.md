@@ -84,13 +84,20 @@ Lo que se propone es distinto y adicional, no un reemplazo: un identificador **f
 
 **Propuesta concreta:** un "código de pasajero" único y permanente (formato corto, ej. `COL-4X9K2P`), mostrado como QR en el perfil, escaneable por el personal de cooperativa para ver identidad + boletos vigentes de esa persona — complementa el QR de boleto, no lo reemplaza.
 
-**Estado real:** perfil base ✅ completo (datos, foto, boletos, créditos). Límite de frecuencia de cambios y código de pasajero: 🟡 en construcción (03-ago-2026).
+**Estado real:** ✅ Completo, cerrado 03-ago-2026 -- perfil base + código de pasajero + límite de frecuencia, todo construido y verificado.
+- Código de pasajero: formato `COL-XXXXXX`, generado de forma perezosa (lazy) en `GET /auth/perfil` -- no en el registro, así los usuarios que ya existían antes de este cambio también terminan con uno, sin backfill manual. Permanente, ligado a la cuenta, distinto del QR de boleto
+- Mostrado como QR en el perfil (`/perfil`), en la tarjeta de identidad
+- Límite de 90 días: endpoint separado `PATCH /auth/perfil/identidad`, exclusivo para nombre completo y cédula/documento -- `PATCH /auth/perfil` (teléfono/foto) ya no acepta nombreCompleto, sin límite
+- Regla de negocio pura `puedeEditarIdentidad()`: rechaza con 400 y los días restantes exactos si el límite no se cumple todavía
+- Frontend: formulario de identidad deshabilitado y con mensaje claro durante el período de espera
 
-**Decisión de negocio confirmada (director, 03-ago-2026), alcance exacto para construir:**
+**Decisión de negocio confirmada (director, 03-ago-2026), alcance construido:**
 - Código de pasajero fijo y permanente, ligado a la cuenta desde el registro (no al boleto individual)
 - Formato corto tipo `COL-4X9K2P`, mostrado como QR en el perfil
 - Límite de frecuencia SOLO para nombre completo y cédula/documento: una vez cada 90 días
 - Foto, WhatsApp y contraseña: sin límite, se mantienen como están hoy
+
+**Falta:** nada. Verificado: `tsc` backend y frontend limpios, 137/137 pruebas e2e, `next build` 27/27 páginas, PR #27 fusionado a `main` con CI en verde.
 
 ---
 
@@ -414,7 +421,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~3. Contador de usuarios registrados~~ — **cerrado 2-ago-2026**
 ~~4. Modelo B~~ — **cerrado 03-ago-2026** (ver 3.11): infraestructura genérica completa (esquema, credenciales, despachador de webhooks, recepción, reconciliación, documentación técnica), todo verificado y fusionado a `main`. Lo específico por cooperativa espera a la primera integración real
 ~~5. Notificaciones automáticas~~ — **cerrado 03-ago-2026** (ver 3.12): WhatsApp como canal principal, recordatorio de viaje y aviso de cambio operativo (unidad) construidos y verificados. Cambio de hora queda pendiente de decisión de producto, no de construcción
-6. Código de pasajero fijo + límite de frecuencia para cambiar nombre/documento (si se confirma)
+~~6. Código de pasajero fijo + límite de frecuencia~~ — **cerrado 03-ago-2026** (ver 3.1.1): decisión confirmada, construido y verificado
 7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha
 8. Verificar y, si falta, construir importación masiva de flota inicial
 9. División super_admin / admin_plataforma + registro de auditoría (si se confirma)
