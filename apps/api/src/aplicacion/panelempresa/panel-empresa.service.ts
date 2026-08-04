@@ -13,6 +13,7 @@ import type {
   DatosNuevoUsuarioStaff,
   DatosNuevoConductor,
   DatosImportacion,
+  DatosNuevoHorarioRuta,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 import { validarDistribucionAsientos, type TipoMetodoPago } from '../../dominio/panelempresa/panel-empresa.ports';
 
@@ -111,8 +112,64 @@ export class PanelEmpresaService {
     return this.panel.listarViajes(cooperativaId);
   }
 
-  cancelarViaje(cooperativaId: string, viajeId: string) {
+  /**
+   * 03-ago-2026 -- notifica ANTES de cancelar a propósito: la
+   * notificación necesita ver los boletos todavía 'vigente' para saber
+   * a quién avisar; después de cancelar ya no los encontraría.
+   */
+  async cancelarViaje(cooperativaId: string, viajeId: string) {
+    await this.notificaciones.notificarCambioOperativo(
+      cooperativaId,
+      viajeId,
+      'Tu viaje fue cancelado. Se generó un crédito por el monto pagado, disponible en tu cuenta.',
+    );
     return this.panel.cancelarViaje(cooperativaId, viajeId);
+  }
+
+  /**
+   * Horarios recurrentes (plantilla) — ítem 7, RF-COOP-002.
+   */
+  crearHorarioRuta(cooperativaId: string, datos: DatosNuevoHorarioRuta) {
+    return this.panel.crearHorarioRuta(cooperativaId, datos);
+  }
+
+  listarHorariosRuta(cooperativaId: string, rutaId?: string) {
+    return this.panel.listarHorariosRuta(cooperativaId, rutaId);
+  }
+
+  actualizarEstadoHorarioRuta(cooperativaId: string, horarioId: string, activo: boolean) {
+    return this.panel.actualizarEstadoHorarioRuta(cooperativaId, horarioId, activo);
+  }
+
+  /**
+   * Cancelación/suspensión masiva — ítem 7. Reutiliza cancelarViaje()
+   * de arriba por cada viaje afectado (misma lógica de crédito +
+   * notificación + cascada de boletos, sin duplicarla).
+   */
+  async cancelarViajesMasivo(
+    cooperativaId: string,
+    rutaId: string,
+    fechaInicio: string,
+    fechaFin: string,
+  ) {
+    const viajeIds = await this.panel.listarViajesProgramadosEnRango(
+      cooperativaId,
+      rutaId,
+      fechaInicio,
+      fechaFin,
+    );
+
+    let viajesCancelados = 0;
+    let boletosCancelados = 0;
+    for (const viajeId of viajeIds) {
+      const resultado = await this.cancelarViaje(cooperativaId, viajeId);
+      if (resultado.ok) {
+        viajesCancelados++;
+        boletosCancelados += resultado.boletosCancelados;
+      }
+    }
+
+    return { viajesCancelados, boletosCancelados, viajesEncontrados: viajeIds.length };
   }
 
   async cambiarUnidadViaje(

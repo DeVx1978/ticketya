@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -8,6 +8,7 @@
   Param,
   Patch,
   Post,
+  Query,
   Request,
   UploadedFile,
   UseGuards,
@@ -36,6 +37,9 @@ import {
   ActualizarPerfilDto,
   EditarTipoVehiculoDto,
   EditarRutaDto,
+  CrearHorarioRutaDto,
+  ActualizarEstadoHorarioRutaDto,
+  CancelarViajesMasivoDto,
 } from './dto/panel-empresa.dto';
 import { GuardarMetodoPagoDto, ConfirmarPagoManualDto, MarcarFacturaEmitidaDto } from './dto/metodos-pago.dto';
 import { CrearCredencialApiDto, ActualizarWebhookCredencialApiDto } from './dto/credenciales-api.dto';
@@ -194,6 +198,66 @@ export class PanelEmpresaController {
       throw new BadRequestException(resultado.motivo);
     }
     return resultado;
+  }
+
+  /**
+   * Horarios recurrentes (plantilla) -- ítem 7, RF-COOP-002
+   * (03-ago-2026). Un generador aparte (cron diario) crea los viajes
+   * reales a partir de estas plantillas.
+   */
+  @Roles('admin_cooperativa')
+  @Post('horarios-ruta')
+  async crearHorarioRuta(
+    @Body() dto: CrearHorarioRutaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.crearHorarioRuta(cooperativaDelToken(req.user), dto);
+  }
+
+  @Roles('admin_cooperativa')
+  @Get('horarios-ruta')
+  async listarHorariosRuta(
+    @Query('rutaId') rutaId: string | undefined,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.listarHorariosRuta(cooperativaDelToken(req.user), rutaId);
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('horarios-ruta/:id/estado')
+  async actualizarEstadoHorarioRuta(
+    @Param('id') id: string,
+    @Body() dto: ActualizarEstadoHorarioRutaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarEstadoHorarioRuta(
+      cooperativaDelToken(req.user),
+      id,
+      dto.activo,
+    );
+    return { ok: true };
+  }
+
+  /**
+   * Cancelación/suspensión masiva por ruta y rango de fechas -- ítem 7
+   * (03-ago-2026), para contratiempos operativos (cierre de vía,
+   * feriado, paro). Los viajes con boletos vendidos SÍ se cancelan,
+   * generando crédito automático y notificación por WhatsApp -- decisión
+   * del director, no se bloquea la acción ni se saltan en silencio.
+   */
+  @Roles('admin_cooperativa')
+  @Post('rutas/:id/cancelar-masivo')
+  async cancelarViajesMasivo(
+    @Param('id') rutaId: string,
+    @Body() dto: CancelarViajesMasivoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.cancelarViajesMasivo(
+      cooperativaDelToken(req.user),
+      rutaId,
+      dto.fechaInicio,
+      dto.fechaFin,
+    );
   }
 
   /**
