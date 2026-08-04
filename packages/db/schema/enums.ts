@@ -13,6 +13,9 @@ export const rolUsuarioEnum = pgEnum('rol_usuario', [
   'vendedor',
   'admin_cooperativa',
   'admin_plataforma',
+  // 04-ago-2026, ítem 9 -- división de admin_plataforma en super_admin
+  // (matriz de permisos, sección 3.8 del documento maestro).
+  'super_admin',
 ]);
 
 /**
@@ -136,11 +139,15 @@ export const tipoNotificacionEnum = pgEnum('tipo_notificacion', [
 /** RF-ADMIN-005 — auditoría de acciones administrativas críticas. */
 export const accionAuditoriaEnum = pgEnum('accion_auditoria', [
   'aprobacion_cooperativa',
-  'baja_cooperativa',
-  'cambio_comision',
+  'baja_cooperativa', // 04-ago-2026, ítem 9: reutilizado para eliminarCooperativa (baja lógica, no destrucción física)
+  'cambio_comision', // 04-ago-2026, ítem 9: reutilizado para actualizarCargoPlataforma (cargo fijo = concepto de comisión)
   'aprobacion_campana',
   'ajuste_liquidacion',
   'actualizacion_iva_nacional',
+  // 04-ago-2026, ítem 9 -- nuevos, sin equivalente existente que reutilizar.
+  'creacion_administrador',
+  'eliminacion_administrador',
+  'cambio_modo_iva_boleto',
 ]);
 
 /** RF-COMM-002 — planes comerciales diferenciados. */

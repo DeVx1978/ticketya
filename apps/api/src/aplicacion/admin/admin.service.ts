@@ -6,6 +6,7 @@ import type {
   DatosNuevoPuntoOperacion,
   FilaConteoUsuariosPorRol,
   ModoIvaBoleto,
+  DatosNuevoAdministrador,
 } from '../../dominio/admin/admin.ports';
 
 export const ADMIN_REPOSITORIO = 'ADMIN_REPOSITORIO';
@@ -82,8 +83,8 @@ export class AdminService {
     return this.admin.obtenerCargoPlataforma();
   }
 
-  async actualizarCargoPlataforma(nuevoMonto: number) {
-    return this.admin.actualizarCargoPlataforma(nuevoMonto);
+  async actualizarCargoPlataforma(nuevoMonto: number, usuarioId: string) {
+    return this.admin.actualizarCargoPlataforma(nuevoMonto, usuarioId);
   }
 
   async listarBannersPropios() {
@@ -114,8 +115,8 @@ export class AdminService {
     return this.admin.obtenerModoIvaBoleto();
   }
 
-  async actualizarModoIvaBoleto(modo: ModoIvaBoleto) {
-    return this.admin.actualizarModoIvaBoleto(modo);
+  async actualizarModoIvaBoleto(modo: ModoIvaBoleto, usuarioId: string) {
+    return this.admin.actualizarModoIvaBoleto(modo, usuarioId);
   }
 
   /**
@@ -141,5 +142,28 @@ export class AdminService {
     const total = porRol.reduce((acc, f) => acc + f.cantidad, 0);
 
     return { total, porRol };
+  }
+
+  /**
+   * Ítem 9, Fase 2 (04-ago-2026) -- exclusivo de super_admin (ver
+   * matriz de permisos, sección 3.8 del documento maestro).
+   */
+  async crearAdministrador(
+    datos: DatosNuevoAdministrador,
+    creadoPorUsuarioId: string,
+  ) {
+    return this.admin.crearAdministrador(datos, creadoPorUsuarioId);
+  }
+
+  async listarAdministradores() {
+    return this.admin.listarAdministradores();
+  }
+
+  async eliminarAdministrador(id: string, eliminadoPorUsuarioId: string) {
+    return this.admin.eliminarAdministrador(id, eliminadoPorUsuarioId);
+  }
+
+  async eliminarCooperativa(id: string, eliminadoPorUsuarioId: string) {
+    return this.admin.eliminarCooperativa(id, eliminadoPorUsuarioId);
   }
 }

@@ -43,6 +43,27 @@ export interface FilaVentaNacional {
 export type ModoIvaBoleto = 'calculado' | 'cero' | 'oculto';
 
 /**
+ * Ítem 9, Fase 2 (04-ago-2026) -- división de admin_plataforma en
+ * super_admin + admin_plataforma, matriz de permisos en sección 3.8
+ * del documento maestro.
+ */
+export interface DatosNuevoAdministrador {
+  correo: string;
+  password: string;
+  nombreCompleto: string;
+  rol: 'admin_plataforma' | 'super_admin';
+}
+
+export interface AdministradorResumen {
+  id: string;
+  correo: string;
+  nombreCompleto: string;
+  rol: 'admin_plataforma' | 'super_admin';
+  activo: boolean;
+  creadoEn: string;
+}
+
+/**
  * 02-ago-2026 -- RF-ADMIN, sección 3.13 del documento maestro: conteo
  * de usuarios registrados por rol, para el admin de plataforma. Solo
  * cuenta usuarios con activo=true (decisión de diseño: un usuario
@@ -94,7 +115,8 @@ export interface AdminRepositorio {
   ): Promise<{ cooperativasActualizadas: number }>;
 
   obtenerCargoPlataforma(): Promise<number>;
-  actualizarCargoPlataforma(nuevoMonto: number): Promise<void>;
+  /** 04-ago-2026 -- usuarioId nuevo, para la auditoría (accion='cambio_comision', exclusivo de super_admin). */
+  actualizarCargoPlataforma(nuevoMonto: number, usuarioId: string): Promise<void>;
 
   listarBannersPropios(): Promise<
     {
@@ -120,8 +142,29 @@ export interface AdminRepositorio {
 
   /** 27-jul-2026 -- editable desde el Panel Admin, sin tocar codigo. */
   obtenerModoIvaBoleto(): Promise<ModoIvaBoleto>;
-  actualizarModoIvaBoleto(modo: ModoIvaBoleto): Promise<void>;
+  /** 04-ago-2026 -- usuarioId nuevo, para la auditoría (accion='cambio_modo_iva_boleto', exclusivo de super_admin). */
+  actualizarModoIvaBoleto(modo: ModoIvaBoleto, usuarioId: string): Promise<void>;
 
   /** 02-ago-2026 -- RF-ADMIN sección 3.13, contador de usuarios por rol. */
   contarUsuariosPorRol(): Promise<FilaConteoUsuariosPorRol[]>;
+
+  /**
+   * Ítem 9, Fase 2 (04-ago-2026) -- exclusivo de super_admin. Registra
+   * auditoría (accion='creacion_administrador'/'eliminacion_administrador').
+   */
+  crearAdministrador(
+    datos: DatosNuevoAdministrador,
+    creadoPorUsuarioId: string,
+  ): Promise<{ id: string }>;
+  /** Compartido -- ver un admin de menor rango no es tan sensible como crearlo o eliminarlo. */
+  listarAdministradores(): Promise<AdministradorResumen[]>;
+  eliminarAdministrador(id: string, eliminadoPorUsuarioId: string): Promise<void>;
+
+  /**
+   * Baja lógica (`estado = 'dada_de_baja'`), NO eliminación física --
+   * decisión del director tras el hallazgo de que un DELETE en cascada
+   * real tocaría boletos/pagos/liquidaciones, registros históricos que
+   * no se deben destruir. Exclusivo de super_admin.
+   */
+  eliminarCooperativa(id: string, eliminadoPorUsuarioId: string): Promise<void>;
 }

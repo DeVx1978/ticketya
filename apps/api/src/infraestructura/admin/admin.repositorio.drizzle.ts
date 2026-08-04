@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, inArray } from 'drizzle-orm';
 import {
   cooperativas,
   usuarios,
@@ -18,6 +18,8 @@ import type {
   FilaVentaNacional,
   FilaConteoUsuariosPorRol,
   ModoIvaBoleto,
+  DatosNuevoAdministrador,
+  AdministradorResumen,
 } from '../../dominio/admin/admin.ports';
 
 /**
@@ -274,23 +276,34 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
       : 0;
   }
 
-  async actualizarCargoPlataforma(nuevoMonto: number): Promise<void> {
+  async actualizarCargoPlataforma(nuevoMonto: number, usuarioId: string): Promise<void> {
     const filaExistente = await this.db.execute(
       sql`SELECT id FROM configuracion_plataforma LIMIT 1`,
     );
+    let configuracionId: string;
     if (filaExistente.rows.length === 0) {
-      await this.db.execute(sql`
+      const creada = await this.db.execute(sql`
         INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, cargo_plataforma_por_pasajero_default)
         VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${nuevoMonto})
+        RETURNING id
       `);
+      configuracionId = (creada.rows[0] as { id: string }).id;
     } else {
-      const configuracionId = (filaExistente.rows[0] as { id: string }).id;
+      configuracionId = (filaExistente.rows[0] as { id: string }).id;
       await this.db.execute(sql`
         UPDATE configuracion_plataforma
         SET cargo_plataforma_por_pasajero_default = ${nuevoMonto}, actualizado_en = now()
         WHERE id = ${configuracionId}
       `);
     }
+
+    // 04-ago-2026, ítem 9 -- reutiliza 'cambio_comision', que existía
+    // en el enum sin usar hasta ahora (el cargo fijo por pasajero es
+    // el concepto de comisión de esta plataforma).
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES ('cambio_comision', ${usuarioId}, 'configuracion_plataforma', ${configuracionId}, ${JSON.stringify({ nuevoMonto })})
+    `);
   }
 
   async listarBannersPropios() {
@@ -359,23 +372,32 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     return (fila?.modo_iva_boleto as ModoIvaBoleto) ?? 'calculado';
   }
 
-  async actualizarModoIvaBoleto(modo: ModoIvaBoleto): Promise<void> {
+  async actualizarModoIvaBoleto(modo: ModoIvaBoleto, usuarioId: string): Promise<void> {
     const filaExistente = await this.db.execute(
       sql`SELECT id FROM configuracion_plataforma LIMIT 1`,
     );
+    let configuracionId: string;
     if (filaExistente.rows.length === 0) {
-      await this.db.execute(sql`
+      const creada = await this.db.execute(sql`
         INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, modo_iva_boleto)
         VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${modo})
+        RETURNING id
       `);
+      configuracionId = (creada.rows[0] as { id: string }).id;
     } else {
-      const configuracionId = (filaExistente.rows[0] as { id: string }).id;
+      configuracionId = (filaExistente.rows[0] as { id: string }).id;
       await this.db.execute(sql`
         UPDATE configuracion_plataforma
         SET modo_iva_boleto = ${modo}, actualizado_en = now()
         WHERE id = ${configuracionId}
       `);
     }
+
+    // 04-ago-2026, ítem 9 -- valor nuevo del enum, sin equivalente existente.
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES ('cambio_modo_iva_boleto', ${usuarioId}, 'configuracion_plataforma', ${configuracionId}, ${JSON.stringify({ modo })})
+    `);
   }
 
   /**
@@ -395,5 +417,111 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
       ORDER BY rol
     `);
     return resultado.rows as unknown as FilaConteoUsuariosPorRol[];
+  }
+
+  /**
+   * Ítem 9, Fase 2 (04-ago-2026) -- mismo patrón que
+   * crearCooperativaConPrimerUsuarioAtomico: revisa el correo duplicado
+   * ANTES de intentar, hash de contraseña antes de la operación real.
+   */
+  async crearAdministrador(
+    datos: DatosNuevoAdministrador,
+    creadoPorUsuarioId: string,
+  ): Promise<{ id: string }> {
+    const [correoExistente] = await this.db
+      .select({ id: usuarios.id })
+      .from(usuarios)
+      .where(eq(usuarios.correo, datos.correo));
+    if (correoExistente) {
+      throw new ConflictException(
+        `Ya existe un usuario registrado con el correo ${datos.correo}.`,
+      );
+    }
+
+    const passwordHash = await this.hasher.hash(datos.password);
+    const [fila] = await this.db
+      .insert(usuarios)
+      .values({
+        rol: datos.rol,
+        correo: datos.correo,
+        passwordHash,
+        nombreCompleto: datos.nombreCompleto,
+      })
+      .returning();
+
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES ('creacion_administrador', ${creadoPorUsuarioId}, 'usuario', ${fila.id}, ${JSON.stringify({ correo: datos.correo, rol: datos.rol })})
+    `);
+
+    return { id: fila.id };
+  }
+
+  async listarAdministradores(): Promise<AdministradorResumen[]> {
+    const filas = await this.db
+      .select({
+        id: usuarios.id,
+        correo: usuarios.correo,
+        nombreCompleto: usuarios.nombreCompleto,
+        rol: usuarios.rol,
+        activo: usuarios.activo,
+        creadoEn: usuarios.creadoEn,
+      })
+      .from(usuarios)
+      .where(inArray(usuarios.rol, ['admin_plataforma', 'super_admin']));
+    return filas as unknown as AdministradorResumen[];
+  }
+
+  /**
+   * Baja lógica (`activo = false`), NO DELETE físico -- un DELETE real
+   * violaría la llave foránea de auditoria_admin.usuario_id (el propio
+   * registro de auditoría que se acaba de crear al eliminar a alguien
+   * referencia a ESE mismo usuario), además de perder la trazabilidad
+   * de qué hizo ese admin mientras estuvo activo.
+   */
+  async eliminarAdministrador(
+    id: string,
+    eliminadoPorUsuarioId: string,
+  ): Promise<void> {
+    const filas = await this.db
+      .update(usuarios)
+      .set({ activo: false })
+      .where(eq(usuarios.id, id))
+      .returning({ id: usuarios.id });
+
+    if (filas.length === 0) {
+      throw new NotFoundException(`No existe un administrador con id ${id}.`);
+    }
+
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES ('eliminacion_administrador', ${eliminadoPorUsuarioId}, 'usuario', ${id}, '{}')
+    `);
+  }
+
+  /**
+   * Baja lógica (`estado = 'dada_de_baja'`, valor que ya existía en el
+   * enum sin usar) -- NO elimina boletos/pagos/liquidaciones históricos.
+   * Decisión del director: destruir esos registros sería peligroso e
+   * irreversible.
+   */
+  async eliminarCooperativa(
+    id: string,
+    eliminadoPorUsuarioId: string,
+  ): Promise<void> {
+    const filas = await this.db
+      .update(cooperativas)
+      .set({ estado: 'dada_de_baja' })
+      .where(eq(cooperativas.id, id))
+      .returning({ id: cooperativas.id });
+
+    if (filas.length === 0) {
+      throw new NotFoundException(`No existe una cooperativa con id ${id}.`);
+    }
+
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES ('baja_cooperativa', ${eliminadoPorUsuarioId}, 'cooperativa', ${id}, '{}')
+    `);
   }
 }
