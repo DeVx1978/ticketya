@@ -144,6 +144,39 @@ export interface NotificadorEmail {
 }
 
 /**
+ * 03-ago-2026 -- Notificaciones automáticas (RF-NOTIF-002/003), ítem 5
+ * de la hoja de ruta Fase 2. WhatsApp como canal principal (98% de
+ * apertura vs 20% en correo, decisión del director con datos reales,
+ * sección 3.12 del documento maestro) -- correo queda como respaldo,
+ * sin construir todavía (mismo criterio: "simulador ahora, proveedor
+ * real después" ya usado en NotificadorEmail).
+ */
+export interface NotificadorWhatsApp {
+  enviarRecordatorioViaje(
+    telefono: string,
+    detalle: {
+      viajeId: string;
+      origenCiudad: string;
+      destinoCiudad: string;
+      fechaSalida: string;
+      horaSalidaProgramada: string;
+    },
+  ): Promise<void>;
+
+  /**
+   * Alcance real (03-ago-2026): editarViaje bloquea por completo cambiar
+   * hora/precio si el viaje ya tiene boletos vendidos -- solo
+   * cambiarUnidadViaje permite una modificación operativa post-venta hoy.
+   * Por eso este aviso solo se dispara desde ahí; "cambio de hora" no
+   * tiene ningún camino operativo real todavía en el sistema.
+   */
+  enviarAvisoCambioOperativo(
+    telefono: string,
+    detalle: { viajeId: string; motivo: string },
+  ): Promise<void>;
+}
+
+/**
  * 27-jul-2026 -- almacenamiento de archivos (fotos de perfil, logo de
  * cooperativa). Mismo criterio que NotificadorEmail/PasarelaPago: el
  * simulador guarda el archivo real en disco local; al final se

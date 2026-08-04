@@ -1,6 +1,7 @@
 ﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
+import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
@@ -24,6 +25,7 @@ export class PanelEmpresaService {
     private readonly panel: PanelEmpresaRepositorio,
     @Inject(ALMACENAMIENTO_ARCHIVOS)
     private readonly almacenamiento: AlmacenamientoArchivos,
+    private readonly notificaciones: NotificacionesProgramadasService,
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
@@ -113,12 +115,27 @@ export class PanelEmpresaService {
     return this.panel.cancelarViaje(cooperativaId, viajeId);
   }
 
-  cambiarUnidadViaje(
+  async cambiarUnidadViaje(
     cooperativaId: string,
     viajeId: string,
     nuevaUnidadId: string,
   ) {
-    return this.panel.cambiarUnidadViaje(cooperativaId, viajeId, nuevaUnidadId);
+    const resultado = await this.panel.cambiarUnidadViaje(
+      cooperativaId,
+      viajeId,
+      nuevaUnidadId,
+    );
+    // RF-NOTIF-003 (03-ago-2026) -- solo se avisa si el cambio se aplicó
+    // de verdad, nunca si fue rechazado por regla de negocio (capacidad
+    // insuficiente, viaje no programado, etc).
+    if (resultado.ok) {
+      await this.notificaciones.notificarCambioOperativo(
+        cooperativaId,
+        viajeId,
+        'Se cambió la unidad asignada a tu viaje.',
+      );
+    }
+    return resultado;
   }
 
   editarViaje(
