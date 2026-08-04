@@ -332,13 +332,18 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **Requerimiento completo:** confirmación de compra, recordatorio de viaje próximo, aviso de cambio operativo (cambio de unidad/hora), por el canal que mejor le llegue al pasajero.
 
-**Estado real:** 🟡 Parcial.
+**Estado real:** ✅ Completo, cerrado 03-ago-2026.
 - Confirmación de compra: ✅ funciona de punta a punta (correo simulado, mismo patrón que pagos)
-- Recordatorio de viaje y aviso de cambio operativo: 🔴 no construidos (requieren disparo automático programado, no solo reacción a una acción del usuario)
+- Recordatorio de viaje (RF-NOTIF-002): ✅ cron cada hora vía `@Cron` (`@nestjs/schedule`, mismo mecanismo que el despachador de webhooks), ventana de 24h antes de la salida, idempotente -- no reenvía si ya existe una fila de control para esa compra+viaje
+- Aviso de cambio operativo (RF-NOTIF-003): ✅ disparo síncrono, enganchado en `cambiarUnidadViaje` justo donde ocurre el cambio real
+- `NotificadorWhatsApp` + `SimuladorNotificadorWhatsApp`: ✅ mismo patrón que el simulador de correo existente
+- Sin migración de base de datos -- el esquema ya tenía todo listo (enums `whatsapp`/`recordatorio_viaje`/`cambio_operativo`, `telefonoDestino`, `viajeId` en `notificaciones`)
+- **Hallazgo reportado (03-ago-2026):** "aviso de cambio de hora" no tiene ningún camino operativo real en el sistema -- `editarViaje` bloquea por completo editar hora/precio si el viaje ya tiene boletos vendidos. Solo `cambiarUnidadViaje` permite una modificación post-venta hoy. El aviso solo se enganchó ahí; el cambio de hora queda pendiente de una decisión de producto (¿se habilita editarViaje con boletos vendidos, con su propio aviso? ¿se descarta del alcance?)
+- Verificado: `tsc` limpio, 137/137 pruebas e2e, PR #26 fusionado a `main` con CI en verde
 
 **Decisión del director, con datos reales (30-jul-2026):** investigado — las notificaciones de viaje por WhatsApp tienen 98% de apertura contra 20% en correo, y LATAM es una de las regiones de mayor adopción de WhatsApp Business (aerolíneas reales de la región, Aeroméxico y LATAM, ya lo usan exactamente para esto: confirmación, recordatorio, cambios). **Se establece WhatsApp como canal principal, correo como respaldo**, no al revés como estaba planteado originalmente. Esto no cambia el patrón técnico ya usado (simulador → proveedor real después) — solo cambia cuál proveedor se prioriza conectar primero cuando llegue esa fase (Twilio para WhatsApp, antes que Resend para correo).
 
-**Falta:** recordatorio automático de viaje, aviso de cambio operativo, simulador de envío por WhatsApp (mismo patrón que el simulador de correo ya existente), conectar Twilio real cuando se decida (prioridad sobre Resend).
+**Falta:** decisión de producto sobre aviso de cambio de HORA (ver hallazgo arriba); conectar Twilio real cuando se decida (prioridad sobre Resend, Fase 4 -- conexiones externas).
 
 ---
 
@@ -402,7 +407,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ### Fase 2 — Funciones nuevas, backend + frontend desde cero
 ~~3. Contador de usuarios registrados~~ — **cerrado 2-ago-2026**
 ~~4. Modelo B~~ — **cerrado 03-ago-2026** (ver 3.11): infraestructura genérica completa (esquema, credenciales, despachador de webhooks, recepción, reconciliación, documentación técnica), todo verificado y fusionado a `main`. Lo específico por cooperativa espera a la primera integración real
-5. Notificaciones automáticas — **WhatsApp como canal principal** (98% apertura vs 20% correo, decisión con datos reales), correo como respaldo; recordatorio de viaje, aviso de cambio operativo
+~~5. Notificaciones automáticas~~ — **cerrado 03-ago-2026** (ver 3.12): WhatsApp como canal principal, recordatorio de viaje y aviso de cambio operativo (unidad) construidos y verificados. Cambio de hora queda pendiente de decisión de producto, no de construcción
 6. Código de pasajero fijo + límite de frecuencia para cambiar nombre/documento (si se confirma)
 7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha
 8. Verificar y, si falta, construir importación masiva de flota inicial
