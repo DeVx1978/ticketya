@@ -386,7 +386,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 | Rate limiting | ✅ Activo globalmente (100 peticiones/minuto por IP) |
 | Monitoreo de errores (Sentry) | ✅ Configurado |
 | Backups de base de datos | ✅ Automatizados, verificados con respaldos reales |
-| Pruebas automatizadas | ✅ 137 pruebas end-to-end locales, ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). CI verificado con el mismo número (ver 3.13 -- discrepancia anterior era solo una etiqueta de texto vieja, ya corregida). |
+| Pruebas automatizadas | ✅ 143 pruebas end-to-end locales (137 + 6 nuevas del ítem 7, 04-ago-2026), ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). CI verificado con el mismo número (ver 3.13 -- discrepancia anterior era solo una etiqueta de texto vieja, ya corregida). |
 | Multi-tenancy (RLS) | ✅ Verificado en vivo — una cooperativa no puede ver datos de otra |
 | 2FA | 🔴 No construido |
 | Cumplimiento LOPD Ecuador | 🔴 No revisado formalmente |
