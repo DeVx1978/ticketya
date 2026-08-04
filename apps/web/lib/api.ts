@@ -1821,3 +1821,37 @@ export async function contarUsuariosPorRolAdmin(token: string): Promise<ConteoUs
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el contador de usuarios.");
   return cuerpo as ConteoUsuarios;
 }
+
+/**
+ * Carga masiva (RF-COOP-008), ítem 8 (04-ago-2026). El payload es el
+ * mismo JSON que ya acepta el backend -- se manda tal cual, sin
+ * construir un formulario estructurado (pantalla simple, según pidió
+ * el director). `horarios[].tipoVehiculoRef` es obligatorio desde la
+ * unificación del generador con el ítem 7 -- sin eso, un horario de
+ * carga masiva nunca podría generar viajes automáticos después.
+ */
+export interface ResultadoImportacion {
+  tiposVehiculoCreados: number;
+  conductoresCreados: number;
+  unidadesCreadas: number;
+  rutasCreadas: number;
+  horariosCreados: number;
+  viajesGenerados: number;
+}
+
+export async function importarDatosCoop(
+  token: string,
+  payload: unknown,
+): Promise<ResultadoImportacion> {
+  const res = await fetch(`${API_URL}/coop/importar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo procesar la carga masiva.");
+  }
+  return cuerpo as ResultadoImportacion;
+}
