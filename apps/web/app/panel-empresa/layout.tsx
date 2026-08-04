@@ -14,8 +14,8 @@ const ENLACES = [
   { href: "/panel-empresa/validar-qr", etiqueta: "Validar boleto" },
   { href: "/panel-empresa/pagos-pendientes", etiqueta: "Pagos pendientes" },
   { href: "/panel-empresa/solicitudes-factura", etiqueta: "Facturas" },
-  { href: "/panel-empresa/liquidaciones", etiqueta: "Liquidaciones" },
   { href: "/panel-empresa/configuracion", etiqueta: "Configuración" },
+  { href: "/panel-empresa/carga-masiva", etiqueta: "Carga masiva" },
 ];
 
 /**
