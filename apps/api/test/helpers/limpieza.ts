@@ -1,4 +1,4 @@
-﻿import { Client } from 'pg';
+import { Client } from 'pg';
 
 /**
  * Limpieza real de datos de prueba — 22-jul-2026.
@@ -129,6 +129,16 @@ export async function limpiarCooperativasDePrueba(
        ) t`,
     );
 
+    // 04-ago-2026 -- horarios_ruta (plantillas recurrentes, ítem 7) es
+    // hija de rutas -- hay que borrarla antes, mismo patrón recurrente
+    // que ya se corrigió antes con liquidaciones/créditos/métodos de pago.
+    // Hallazgo real: la primera prueba de horarios recurrentes rompió
+    // la limpieza por esta llave foránea faltante.
+    await pg.query(
+      `DELETE FROM horarios_ruta WHERE ruta_id IN (
+         SELECT id FROM rutas WHERE cooperativa_id IN (SELECT id FROM _coop_test)
+       )`,
+    );
     await pg.query(
       `DELETE FROM rutas WHERE cooperativa_id IN (SELECT id FROM _coop_test)`,
     );

@@ -52,7 +52,11 @@ export class GeneradorViajesService {
         if (yaExiste) continue; // ya generado antes, o editado/creado a mano -- nunca se toca
 
         // Ecuador no tiene horario de verano -- desfase fijo -05:00, mismo criterio que la carga masiva.
-        const horaSalidaCompleta = `${fechaStr}T${horario.horaSalida}:00-05:00`;
+        // 04-ago-2026 -- bug real encontrado por la propia prueba: Postgres devuelve
+        // horaSalida ya con segundos (HH:MM:SS), no HH:MM como asumí -- agregar ":00"
+        // extra producía un timestamp inválido (09:00:00:00). Se usa slice(0,5) para
+        // quedarnos solo con HH:MM, sin importar qué formato exacto devuelva el driver.
+        const horaSalidaCompleta = `${fechaStr}T${horario.horaSalida.slice(0, 5)}:00-05:00`;
 
         await this.repo.crearViajeDesdeHorario({
           cooperativaId: horario.cooperativaId,
