@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -16,6 +16,7 @@ import { AuthService } from '../../aplicacion/auth/auth.service';
 import { RegistroDto } from './dto/registro.dto';
 import { LoginDto } from './dto/login.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
+import { ActualizarIdentidadDto } from './dto/actualizar-identidad.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
 import { SolicitarCambioCorreoDto, ConfirmarCambioCorreoDto } from './dto/cambiar-correo.dto';
 import { SolicitarResetDto } from './dto/solicitar-reset.dto';
@@ -68,6 +69,21 @@ export class AuthController {
     @Request() req: { user: PayloadToken },
   ) {
     await this.authService.actualizarMiPerfil(req.user.sub, dto);
+    return { ok: true };
+  }
+
+  /**
+   * Ítem 6, Fase 2 (03-ago-2026) -- separado de PATCH /auth/perfil a
+   * propósito: nombre/cédula llevan el límite de 90 días, teléfono/foto
+   * no. Devuelve 400 con los días restantes si el límite no se cumple.
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('perfil/identidad')
+  async actualizarIdentidad(
+    @Body() dto: ActualizarIdentidadDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.authService.actualizarMiIdentidad(req.user.sub, dto);
     return { ok: true };
   }
 

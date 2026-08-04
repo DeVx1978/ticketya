@@ -60,6 +60,20 @@ export const usuarios = pgTable(
     // pipeline de subida propio todavía.
     fotoUrl: text('foto_url'),
 
+    // Ítem 6, Fase 2 (03-ago-2026) — código de pasajero fijo y
+    // permanente, ligado a la cuenta desde el registro (distinto del
+    // QR de boleto, que nace con el pago y muere con el abordaje). Se
+    // genera perezosamente (lazy) en el primer GET /auth/perfil si
+    // todavía no existe, no en el registro -- así los usuarios que ya
+    // existían antes de este cambio también terminan con uno, sin
+    // necesitar backfill manual.
+    codigoPasajero: varchar('codigo_pasajero', { length: 12 }),
+
+    // Límite de frecuencia SOLO para nombreCompleto/cedula (90 días) --
+    // decisión de negocio confirmada 03-ago-2026, sección 3.1.1. Foto,
+    // WhatsApp y contraseña quedan sin límite, no usan esta columna.
+    ultimoCambioIdentidadEn: timestamp('ultimo_cambio_identidad_en', { withTimezone: true }),
+
     // RF-AUTH-001 — null si el usuario se registró vía proveedor externo.
     passwordHash: varchar('password_hash', { length: 255 }),
     proveedorExterno: varchar('proveedor_externo', { length: 30 }), // ej. 'google'
@@ -77,6 +91,7 @@ export const usuarios = pgTable(
   },
   (t) => [
     uniqueIndex('uq_usuarios_correo').on(t.correo),
+    uniqueIndex('uq_usuarios_codigo_pasajero').on(t.codigoPasajero),
     index('idx_usuarios_cooperativa').on(t.cooperativaId),
     index('idx_usuarios_rol').on(t.rol),
     pgPolicy('aislamiento_cooperativa_usuarios', {

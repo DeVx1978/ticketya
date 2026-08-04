@@ -1,5 +1,6 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { eq, sql } from 'drizzle-orm';
+import { randomBytes } from 'node:crypto';
 import { usuarios } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -88,8 +89,11 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       cooperativaId: fila.cooperativaId,
       correo: fila.correo,
       nombreCompleto: fila.nombreCompleto,
+      cedula: fila.cedula,
       telefono: fila.telefono,
       fotoUrl: fila.fotoUrl,
+      codigoPasajero: fila.codigoPasajero,
+      ultimoCambioIdentidadEn: fila.ultimoCambioIdentidadEn,
       creadoEn: fila.creadoEn,
       passwordHash: fila.passwordHash,
       intentosFallidos: fila.intentosFallidos,
@@ -117,6 +121,58 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       .update(usuarios)
       .set(valores)
       .where(eq(usuarios.id, usuarioId));
+  }
+
+  async actualizarIdentidad(
+    usuarioId: string,
+    datos: { nombreCompleto?: string; cedula?: string },
+    ahora: Date,
+  ): Promise<void> {
+    const valores: Record<string, unknown> = { ultimoCambioIdentidadEn: ahora };
+    if (datos.nombreCompleto !== undefined) valores.nombreCompleto = datos.nombreCompleto;
+    if (datos.cedula !== undefined) valores.cedula = datos.cedula;
+    await this.db
+      .update(usuarios)
+      .set(valores)
+      .where(eq(usuarios.id, usuarioId));
+  }
+
+  /**
+   * Reintenta hasta 5 veces ante una colisión del índice único
+   * (extremadamente improbable con 6 caracteres alfanuméricos en
+   * mayúsculas -- ~2 mil millones de combinaciones -- pero un
+   * identificador único siempre necesita un plan real para la
+   * colisión, no asumir que "nunca va a pasar").
+   */
+  async asegurarCodigoPasajero(usuarioId: string): Promise<string> {
+    const existente = await this.db.query.usuarios.findFirst({
+      where: eq(usuarios.id, usuarioId),
+      columns: { codigoPasajero: true },
+    });
+    if (existente?.codigoPasajero) return existente.codigoPasajero;
+
+    const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O/1/I, se confunden visualmente
+    for (let intento = 0; intento < 5; intento++) {
+      const sufijo = Array.from({ length: 6 }, () => {
+        const i = randomBytes(1)[0] % ALFABETO.length;
+        return ALFABETO[i];
+      }).join('');
+      const codigo = `COL-${sufijo}`;
+      try {
+        await this.db
+          .update(usuarios)
+          .set({ codigoPasajero: codigo })
+          .where(eq(usuarios.id, usuarioId));
+        return codigo;
+      } catch (error) {
+        const errorTipado = error as { cause?: { constraint?: string } };
+        if (errorTipado?.cause?.constraint === 'uq_usuarios_codigo_pasajero') {
+          continue; // colisión real -- reintenta con un código nuevo
+        }
+        throw error;
+      }
+    }
+    throw new Error('No se pudo generar un código de pasajero único tras 5 intentos.');
   }
 
   async actualizarPasswordHash(
