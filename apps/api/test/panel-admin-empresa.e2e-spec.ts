@@ -739,6 +739,85 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(res.body.conductoresCreados).toBe(1);
   });
 
+  /**
+   * Ítem 8 (04-ago-2026) — cubre lo que la prueba anterior no cubría:
+   * unidades, rutas, horarios, y sobre todo que la generación de viajes
+   * use de verdad el generador unificado del ítem 7 (horarioRutaOrigenId
+   * enlazado), no el camino paralelo más débil que existía antes y que
+   * se eliminó en esta misma entrega.
+   */
+  it('carga masiva de unidades, rutas y horarios genera viajes reales con el generador unificado del ítem 7 (04-ago-2026)', async () => {
+    const refTipo = `tipo-importado-${sufijo}`;
+    const refRuta = `ruta-importada-${sufijo}`;
+    const nombreRuta = `Ruta Importada E2E ${sufijo}`;
+
+    const res = await request(app.getHttpServer())
+      .post('/coop/importar')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        tiposVehiculo: [
+          { ref: refTipo, nombre: `Bus Importado E2E ${sufijo}`, capacidadTotal: 30 },
+        ],
+        unidades: [
+          {
+            tipoVehiculoRef: refTipo,
+            placa: `IMP-${sufijo}`.slice(0, 10),
+            identificadorOperativo: `Disco Importado ${sufijo}`,
+          },
+        ],
+        rutas: [
+          {
+            ref: refRuta,
+            origenPuntoOperacionId: puntoOrigenId,
+            destinoPuntoOperacionId: puntoDestinoId,
+            precioBaseReferencia: 6.0,
+            nombre: nombreRuta,
+          },
+        ],
+        // Todos los días de la semana, para no depender de qué día
+        // real es hoy al correr la prueba -- 3 días pedidos, 3 viajes
+        // esperados, sin ambigüedad.
+        horarios: [
+          {
+            rutaRef: refRuta,
+            tipoVehiculoRef: refTipo,
+            horaSalida: '10:00',
+            diasSemana: [0, 1, 2, 3, 4, 5, 6],
+          },
+        ],
+        generarViajesDesde: '2026-11-01',
+        generarViajesHasta: '2026-11-03',
+      })
+      .expect(201);
+
+    expect(res.body.unidadesCreadas).toBe(1);
+    expect(res.body.rutasCreadas).toBe(1);
+    expect(res.body.horariosCreados).toBe(1);
+    expect(res.body.viajesGenerados).toBe(3);
+
+    // Confirma que los viajes quedaron enlazados al horario real -- el
+    // mecanismo unificado del ítem 7, no huérfanos como dejaba el
+    // camino viejo que se eliminó en esta misma entrega.
+    const pg = new Client({
+      connectionString:
+        process.env.DATABASE_URL_ADMIN_DIRECTO ??
+        process.env.DATABASE_URL_PUBLICO,
+    });
+    await pg.connect();
+    const filas = await pg.query(
+      `SELECT v.id, v.horario_ruta_origen_id FROM viajes v
+       JOIN rutas r ON r.id = v.ruta_id
+       WHERE r.nombre = $1`,
+      [nombreRuta],
+    );
+    await pg.end();
+
+    expect(filas.rows.length).toBe(3);
+    for (const fila of filas.rows as { horario_ruta_origen_id: string | null }[]) {
+      expect(fila.horario_ruta_origen_id).not.toBeNull();
+    }
+  });
+
   it('validar-qr responde con gracia (no con un error 500) ante un código inexistente', async () => {
     const res = await request(app.getHttpServer())
       .post('/coop/validar-qr')
