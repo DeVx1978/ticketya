@@ -321,3 +321,37 @@ export class EditarRutaDto {
   @IsOptional() @IsNumber() @Min(0) precioBaseReferencia?: number;
   @IsOptional() @IsBoolean() activa?: boolean;
 }
+
+/** Horario recurrente (plantilla) -- ítem 7, RF-COOP-002 (03-ago-2026). */
+export class CrearHorarioRutaDto {
+  @IsString()
+  rutaId!: string;
+
+  /** Formato "HH:MM" (24h, hora local Ecuador). */
+  @IsString()
+  horaSalida!: string;
+
+  /** 0=domingo..6=sábado. */
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  diasSemana!: number[];
+
+  @IsString()
+  tipoVehiculoPredeterminadoId!: string;
+}
+
+export class ActualizarEstadoHorarioRutaDto {
+  @IsBoolean()
+  activo!: boolean;
+}
+
+/** Cancelación/suspensión masiva por ruta y rango de fechas -- ítem 7 (03-ago-2026). */
+export class CancelarViajesMasivoDto {
+  @IsISO8601()
+  fechaInicio!: string;
+
+  @IsISO8601()
+  fechaFin!: string;
+}

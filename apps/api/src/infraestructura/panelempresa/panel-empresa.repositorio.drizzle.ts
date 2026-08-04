@@ -26,6 +26,8 @@ import type {
   MetodoPagoCooperativa,
   CredencialApiCooperativa,
   CredencialApiRecienCreada,
+  HorarioRutaResumen,
+  DatosNuevoHorarioRuta,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 /**
@@ -326,10 +328,124 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         RETURNING id
       `);
 
+      // 03-ago-2026 -- crédito automático por cada boleto cancelado,
+      // mismo mecanismo que reprogramación (creditos_pasajero), monto
+      // igual al precio pagado. Decisión del director: cancelar por
+      // causa operativa debe compensar al pasajero, no dejarlo sin nada.
+      const idsBoletos = boletosCancelados.rows.map((r) => (r as { id: string }).id);
+      if (idsBoletos.length > 0) {
+        await tx.execute(sql`
+          INSERT INTO creditos_pasajero (usuario_id, cooperativa_id, monto, boleto_origen_id)
+          SELECT c.comprador_usuario_id, ${cooperativaId}, b.precio_pagado, b.id
+          FROM boletos b
+          JOIN compras c ON c.id = b.compra_id
+          WHERE b.id IN (${sql.join(idsBoletos, sql`, `)})
+        `);
+      }
+
       return {
         ok: true as const,
         boletosCancelados: boletosCancelados.rows.length,
       };
+    });
+  }
+
+  /**
+   * Horarios recurrentes (plantilla) — ítem 7, RF-COOP-002.
+   */
+  async crearHorarioRuta(
+    cooperativaId: string,
+    datos: DatosNuevoHorarioRuta,
+  ): Promise<{ id: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        INSERT INTO horarios_ruta (ruta_id, hora_salida, dias_semana, tipo_vehiculo_predeterminado_id, activo)
+        VALUES (
+          ${datos.rutaId},
+          ${datos.horaSalida},
+          ${JSON.stringify(datos.diasSemana)}::jsonb,
+          ${datos.tipoVehiculoPredeterminadoId},
+          true
+        )
+        RETURNING id
+      `);
+      return { id: (resultado.rows[0] as { id: string }).id };
+    });
+  }
+
+  async listarHorariosRuta(
+    cooperativaId: string,
+    rutaId?: string,
+  ): Promise<HorarioRutaResumen[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const condicionRuta = rutaId ? sql`AND hr.ruta_id = ${rutaId}` : sql``;
+      const resultado = await tx.execute(sql`
+        SELECT hr.id, hr.ruta_id, hr.hora_salida, hr.dias_semana,
+               hr.tipo_vehiculo_predeterminado_id, tv.nombre AS tipo_vehiculo_nombre,
+               hr.activo
+        FROM horarios_ruta hr
+        JOIN rutas r ON r.id = hr.ruta_id
+        LEFT JOIN tipos_vehiculo tv ON tv.id = hr.tipo_vehiculo_predeterminado_id
+        WHERE r.cooperativa_id = ${cooperativaId} ${condicionRuta}
+        ORDER BY hr.hora_salida
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          ruta_id: string;
+          hora_salida: string;
+          dias_semana: number[];
+          tipo_vehiculo_predeterminado_id: string | null;
+          tipo_vehiculo_nombre: string | null;
+          activo: boolean;
+        };
+        return {
+          id: f.id,
+          rutaId: f.ruta_id,
+          horaSalida: f.hora_salida,
+          diasSemana: f.dias_semana,
+          tipoVehiculoPredeterminadoId: f.tipo_vehiculo_predeterminado_id ?? '',
+          tipoVehiculoNombre: f.tipo_vehiculo_nombre ?? '',
+          activo: f.activo,
+        };
+      });
+    });
+  }
+
+  async actualizarEstadoHorarioRuta(
+    cooperativaId: string,
+    horarioId: string,
+    activo: boolean,
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE horarios_ruta hr SET activo = ${activo}
+        FROM rutas r
+        WHERE hr.id = ${horarioId} AND hr.ruta_id = r.id AND r.cooperativa_id = ${cooperativaId}
+      `);
+    });
+  }
+
+  /**
+   * Cancelación/suspensión masiva — solo devuelve ids en estado
+   * 'programado'; el service orquesta llamando a cancelarViaje() por
+   * cada uno (reutiliza la misma lógica de crédito + cascada de
+   * boletos, sin duplicarla).
+   */
+  async listarViajesProgramadosEnRango(
+    cooperativaId: string,
+    rutaId: string,
+    fechaInicio: string,
+    fechaFin: string,
+  ): Promise<string[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT id FROM viajes
+        WHERE cooperativa_id = ${cooperativaId} AND ruta_id = ${rutaId}
+          AND fecha_salida BETWEEN ${fechaInicio} AND ${fechaFin}
+          AND estado = 'programado'
+      `);
+      return resultado.rows.map((f) => (f as { id: string }).id);
     });
   }
 

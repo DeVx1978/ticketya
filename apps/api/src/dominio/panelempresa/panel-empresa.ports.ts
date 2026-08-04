@@ -48,6 +48,49 @@ export interface CredencialApiRecienCreada {
 }
 
 /**
+ * Horarios recurrentes (plantilla) — ítem 7, Fase 2 (03-ago-2026),
+ * RF-COOP-002. El generador (módulo aparte, cron diario) crea filas de
+ * `viajes` a partir de estas plantillas -- SOLO con INSERT, nunca
+ * UPDATE: si ya existe un viaje para (horarioRutaId, fecha), la
+ * plantilla nunca vuelve a tocarlo, ni siquiera si alguien lo editó a
+ * mano. Mismo patrón que calendarios con eventos recurrentes +
+ * excepciones (decisión del director, 03-ago-2026).
+ */
+export interface HorarioRutaResumen {
+  id: string;
+  rutaId: string;
+  horaSalida: string;
+  diasSemana: number[]; // 0=domingo..6=sábado
+  tipoVehiculoPredeterminadoId: string;
+  tipoVehiculoNombre: string;
+  activo: boolean;
+}
+
+export interface DatosNuevoHorarioRuta {
+  rutaId: string;
+  horaSalida: string;
+  diasSemana: number[];
+  // Requerido en la práctica (aunque la columna de esquema es nullable):
+  // el generador necesita saber qué tipo de unidad buscar disponible
+  // para poder crear el viaje.
+  tipoVehiculoPredeterminadoId: string;
+}
+
+/**
+ * Cancelación/suspensión masiva — ítem 7, Fase 2 (03-ago-2026),
+ * RF-COOP contratiempos operativos. Decisión del director: los viajes
+ * con boletos vendidos SÍ se cancelan (no se bloquea la acción ni se
+ * saltan en silencio), generando crédito automático por el monto
+ * pagado y notificando por WhatsApp -- mismo criterio de compensación
+ * justa que ya usa reprogramación, reutilizado aquí.
+ */
+export interface ResultadoCancelacionMasiva {
+  viajesCancelados: number;
+  boletosCancelados: number;
+  viajesSinCambios: number; // ya estaban en otro estado (cancelado/completado/etc), no se tocaron
+}
+
+/**
  * Vacío real de diseño encontrado el 29-jul-2026: `distribucionAsientos`
  * ya se guardaba (tipo `unknown`), pero nunca tuvo una forma definida
  * ni el frontend la usaba — el mapa de asientos siempre dibujaba una
@@ -411,6 +454,12 @@ export interface PanelEmpresaRepositorio {
    * el viaje Y cascada automáticamente a cancelar todos los boletos ya
    * vendidos de ese viaje — un pasajero no debería tener que darse
    * cuenta solo de que su viaje ya no existe.
+   *
+   * 03-ago-2026 -- extendido para generar crédito automático (mismo
+   * mecanismo que reprogramación) por cada boleto cancelado, monto
+   * igual al precio pagado -- decisión del director: cancelar por
+   * causa operativa (no por el pasajero) debe compensar, no dejar al
+   * pasajero sin nada.
    */
   cancelarViaje(
     cooperativaId: string,
@@ -418,6 +467,35 @@ export interface PanelEmpresaRepositorio {
   ): Promise<
     { ok: true; boletosCancelados: number } | { ok: false; motivo: string }
   >;
+
+  /**
+   * Horarios recurrentes (plantilla) — ítem 7, RF-COOP-002.
+   */
+  crearHorarioRuta(
+    cooperativaId: string,
+    datos: DatosNuevoHorarioRuta,
+  ): Promise<{ id: string }>;
+  listarHorariosRuta(
+    cooperativaId: string,
+    rutaId?: string,
+  ): Promise<HorarioRutaResumen[]>;
+  actualizarEstadoHorarioRuta(
+    cooperativaId: string,
+    horarioId: string,
+    activo: boolean,
+  ): Promise<void>;
+
+  /**
+   * Cancelación/suspensión masiva por ruta y rango de fechas — ítem 7.
+   * Solo toca viajes en estado 'programado'; el resto (ya cancelados,
+   * completados, etc) se cuenta en viajesSinCambios sin tocarlos.
+   */
+  listarViajesProgramadosEnRango(
+    cooperativaId: string,
+    rutaId: string,
+    fechaInicio: string,
+    fechaFin: string,
+  ): Promise<string[]>;
 
   /**
    * Cambiar la unidad asignada a un viaje ya programado — investigado y
