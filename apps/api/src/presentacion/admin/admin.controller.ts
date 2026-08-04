@@ -19,15 +19,25 @@ import {
   ActualizarBannerPropioDto,
   ActualizarCargoPlataformaDto,
   ActualizarModoIvaBoletoDto,
+  CrearAdministradorDto,
 } from './dto/admin.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
-/** Todo este controller es exclusivo del admin_plataforma -- RF-ADMIN. */
+/**
+ * Todo este controller es exclusivo del admin_plataforma/super_admin --
+ * RF-ADMIN. Ítem 9, Fase 2 (04-ago-2026): el rol de clase es el nivel
+ * COMPARTIDO por defecto (matriz de permisos, sección 3.8 del documento
+ * maestro) -- los métodos exclusivos de super_admin lo sobreescriben
+ * individualmente con @Roles('super_admin'). RolesGuard hace
+ * coincidencia exacta, sin jerarquía -- super_admin no hereda
+ * automáticamente lo de admin_plataforma, hay que declarar ambos donde
+ * corresponda.
+ */
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin_plataforma')
+@Roles('admin_plataforma', 'super_admin')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
@@ -115,9 +125,14 @@ export class AdminController {
     return { monto: await this.admin.obtenerCargoPlataforma() };
   }
 
+  /** Ítem 9 (04-ago-2026) -- exclusivo de super_admin, matriz sección 3.8. */
+  @Roles('super_admin')
   @Patch('cargo-plataforma')
-  async actualizarCargoPlataforma(@Body() dto: ActualizarCargoPlataformaDto) {
-    await this.admin.actualizarCargoPlataforma(dto.monto);
+  async actualizarCargoPlataforma(
+    @Body() dto: ActualizarCargoPlataformaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.admin.actualizarCargoPlataforma(dto.monto, req.user.sub);
     return { ok: true };
   }
 
@@ -127,9 +142,14 @@ export class AdminController {
     return { modo: await this.admin.obtenerModoIvaBoleto() };
   }
 
+  /** Ítem 9 (04-ago-2026) -- exclusivo de super_admin, matriz sección 3.8. */
+  @Roles('super_admin')
   @Patch('modo-iva-boleto')
-  async actualizarModoIvaBoleto(@Body() dto: ActualizarModoIvaBoletoDto) {
-    await this.admin.actualizarModoIvaBoleto(dto.modo);
+  async actualizarModoIvaBoleto(
+    @Body() dto: ActualizarModoIvaBoletoDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.admin.actualizarModoIvaBoleto(dto.modo, req.user.sub);
     return { ok: true };
   }
 
@@ -137,5 +157,48 @@ export class AdminController {
   @Get('usuarios/contador')
   async contarUsuariosPorRol() {
     return this.admin.contarUsuariosPorRol();
+  }
+
+  /**
+   * Ítem 9, Fase 2 (04-ago-2026) -- exclusivo de super_admin, matriz de
+   * permisos sección 3.8 del documento maestro.
+   */
+  @Roles('super_admin')
+  @Post('administradores')
+  async crearAdministrador(
+    @Body() dto: CrearAdministradorDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.admin.crearAdministrador(dto, req.user.sub);
+  }
+
+  /** Compartido -- ver un admin de menor rango no es tan sensible como crearlo o eliminarlo. */
+  @Get('administradores')
+  async listarAdministradores() {
+    return this.admin.listarAdministradores();
+  }
+
+  @Roles('super_admin')
+  @Delete('administradores/:id')
+  async eliminarAdministrador(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.admin.eliminarAdministrador(id, req.user.sub);
+    return { ok: true };
+  }
+
+  /**
+   * Baja lógica, NO eliminación física -- ver comentario completo en
+   * admin.ports.ts. Exclusivo de super_admin.
+   */
+  @Roles('super_admin')
+  @Delete('cooperativas/:id')
+  async eliminarCooperativa(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.admin.eliminarCooperativa(id, req.user.sub);
+    return { ok: true };
   }
 }

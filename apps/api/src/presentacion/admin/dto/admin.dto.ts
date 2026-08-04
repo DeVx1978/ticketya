@@ -1,4 +1,4 @@
-﻿import {
+import {
   IsEmail,
   IsIn,
   IsNumber,
@@ -154,4 +154,24 @@ export class ActualizarCargoPlataformaDto {
 export class ActualizarModoIvaBoletoDto {
   @IsIn(['calculado', 'cero', 'oculto'])
   modo!: 'calculado' | 'cero' | 'oculto';
+}
+
+/**
+ * Ítem 9, Fase 2 (04-ago-2026) -- solo super_admin puede crear otros
+ * administradores (matriz de permisos, sección 3.8 del documento maestro).
+ */
+export class CrearAdministradorDto {
+  @IsEmail()
+  correo!: string;
+
+  @IsString()
+  @MinLength(8)
+  password!: string;
+
+  @IsString()
+  @MinLength(3)
+  nombreCompleto!: string;
+
+  @IsIn(['admin_plataforma', 'super_admin'])
+  rol!: 'admin_plataforma' | 'super_admin';
 }

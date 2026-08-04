@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types';
@@ -60,7 +60,13 @@ describe('Checkout y pago (e2e)', () => {
     });
     await pg.connect();
     await pg.query(
-      "UPDATE usuarios SET rol='admin_plataforma' WHERE correo=$1",
+      // 04-ago-2026, ítem 9 -- super_admin en vez de admin_plataforma:
+      // este mismo usuario prueba /admin/cargo-plataforma, que ahora es
+      // exclusivo de super_admin (matriz de permisos, sección 3.8).
+      // super_admin sigue pasando los endpoints compartidos también
+      // (RolesGuard: @Roles('admin_plataforma', 'super_admin') a nivel
+      // de clase), así que no rompe nada más que este archivo pruebe.
+      "UPDATE usuarios SET rol='super_admin' WHERE correo=$1",
       [correoDirector],
     );
     const modoIvaFila = await pg.query(

@@ -9,7 +9,7 @@
 /** Forma mínima de un usuario que el dominio necesita conocer. */
 export interface UsuarioDominio {
   id: string;
-  rol: 'pasajero' | 'vendedor' | 'admin_cooperativa' | 'admin_plataforma';
+  rol: 'pasajero' | 'vendedor' | 'admin_cooperativa' | 'admin_plataforma' | 'super_admin';
   cooperativaId: string | null;
   correo: string;
   nombreCompleto: string;
