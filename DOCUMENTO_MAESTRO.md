@@ -84,7 +84,13 @@ Lo que se propone es distinto y adicional, no un reemplazo: un identificador **f
 
 **Propuesta concreta:** un "código de pasajero" único y permanente (formato corto, ej. `COL-4X9K2P`), mostrado como QR en el perfil, escaneable por el personal de cooperativa para ver identidad + boletos vigentes de esa persona — complementa el QR de boleto, no lo reemplaza.
 
-**Estado real:** perfil base ✅ completo (datos, foto, boletos, créditos). Límite de frecuencia de cambios y código de pasajero: 🔴 no construidos, análisis recién definido, pendiente tu confirmación antes de construir.
+**Estado real:** perfil base ✅ completo (datos, foto, boletos, créditos). Límite de frecuencia de cambios y código de pasajero: 🟡 en construcción (03-ago-2026).
+
+**Decisión de negocio confirmada (director, 03-ago-2026), alcance exacto para construir:**
+- Código de pasajero fijo y permanente, ligado a la cuenta desde el registro (no al boleto individual)
+- Formato corto tipo `COL-4X9K2P`, mostrado como QR en el perfil
+- Límite de frecuencia SOLO para nombre completo y cédula/documento: una vez cada 90 días
+- Foto, WhatsApp y contraseña: sin límite, se mantienen como están hoy
 
 ---
 
@@ -206,9 +212,9 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **4. Actualización periódica obligatoria de información.** Requerimiento nuevo, no construido: mismo patrón que usan plataformas financieras con revalidación de KYC — la cooperativa debería confirmar/actualizar sus datos legales y de contacto cada cierto tiempo (ej. cada 6-12 meses).
 
-**5. "Nosotros les damos todas las herramientas".** Confirmado: para el Modelo A (panel directo), esto ya es cierto en lo cotidiano — rutas, flota, personal, viajes, precios, métodos de pago, política de cancelación. Para el Modelo B (cooperativas con sistema propio que se conectan por API), la promesa **está en construcción activa** — ver sección 3.11.
+**5. "Nosotros les damos todas las herramientas".** Confirmado: para el Modelo A (panel directo), esto ya es cierto en lo cotidiano — rutas, flota, personal, viajes, precios, métodos de pago, política de cancelación. Para el Modelo B (cooperativas con sistema propio que se conectan por API), la promesa **se cumple para la infraestructura genérica** — cerrado 03-ago-2026, ver sección 3.11.
 
-**Falta:** horarios recurrentes (plantilla de horario); cancelación/suspensión masiva por ruta y fecha; verificar estado real de importación masiva de datos iniciales; actualización periódica obligatoria de datos; Modelo B (ver 3.11, en construcción).
+**Falta:** horarios recurrentes (plantilla de horario); cancelación/suspensión masiva por ruta y fecha; verificar estado real de importación masiva de datos iniciales; actualización periódica obligatoria de datos. Modelo B: cerrado (ver 3.11) -- solo queda lo específico por cooperativa, que espera a la primera integración real.
 
 ---
 
@@ -396,7 +402,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 **Regla reforzada (2-ago-2026):** ninguna construcción nueva empieza sin que la decisión correspondiente ya esté escrita en este documento y confirmada — se escribe primero, se confirma, y recién ahí se construye. Esta regla nace de un descuido real: se discutieron y cerraron decisiones de Modelo B (los 2 hallazgos de esquema, la decisión de autoservicio) en una conversación, pero se avanzó a construir otra pieza (el contador de usuarios) antes de escribirlas aquí — se recuperaron a tiempo porque quedaron en el historial de chat, pero no debe depender de eso nunca más.
 
 **Decisiones pendientes de tu confirmación antes de construir (análisis ya hecho, sección 3):**
-- Código de pasajero fijo, ligado a la cuenta (distinto al QR de boleto, ya confirmado su funcionamiento actual), más límite de frecuencia para cambiar nombre/documento (3.1.1)
+- Aviso de cambio de HORA de un viaje ya vendido -- ¿se habilita `editarViaje` para viajes con boletos vendidos (con su propio aviso), o se descarta del alcance de notificaciones? (3.12, hallazgo del 03-ago-2026)
 - Horarios recurrentes (plantilla), cancelación/suspensión masiva por ruta y fecha, verificar estado real de importación masiva de flota (3.7)
 - Dividir el admin de plataforma en `super_admin` + `admin_plataforma` con la matriz de permisos definida, más registro de auditoría (3.8)
 
