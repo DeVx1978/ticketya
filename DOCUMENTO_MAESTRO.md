@@ -211,17 +211,21 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **1. Alta/onboarding de la cooperativa en la plataforma.** Confirmado con el usuario: la cooperativa se crea a mano por el admin de plataforma, con **todos los detalles** (nombre, logo, RUC, etc.) — esto se mantiene así, no se cambia a auto-registro.
 
-**2. Carga masiva de datos operativos — hueco real, confirmado contra la industria (30-jul-2026).** Investigado: la carga masiva de flota (redBus Plus, sistemas CMMS de transporte 2026) es un estándar esperado en plataformas serias de este tipo, no un lujo. Cada unidad ya es única (placa, identificador operativo, distribución de asientos propia por tipo de vehículo) — eso está resuelto. Lo que falta analizar y posiblemente construir:
-- **Horarios recurrentes**: hoy cada viaje (fecha + hora + unidad específica) se crea individualmente. Falta una "plantilla de horario" (ej. "todos los lunes 8am con este tipo de bus") que genere los viajes automáticamente día tras día, en vez de crear cada uno a mano — con cientos de salidas diarias a nivel nacional, esto no es viable de otra forma.
+**2. Carga masiva de datos operativos — hueco real, confirmado contra la industria (30-jul-2026).** Investigado: la carga masiva de flota (redBus Plus, sistemas CMMS de transporte 2026) es un estándar esperado en plataformas serias de este tipo, no un lujo. Cada unidad ya es única (placa, identificador operativo, distribución de asientos propia por tipo de vehículo) — eso está resuelto.
+- **Horarios recurrentes -- backend cerrado 03-ago-2026 (PR #28).** CRUD de plantillas (`horarios_ruta`) + generador nuevo (módulo `generador-viajes`, cron diario 2am): solo hace `INSERT` si no existe un viaje para (plantilla, fecha) -- nunca `UPDATE`, así una edición manual de un viaje generado queda intacta para siempre (decisión del director: mismo patrón que calendarios con eventos recurrentes + excepciones). Distinto del generador de una sola vez que ya existía dentro de `importarDatos` (carga masiva) -- ese no previene duplicados ni enlaza `horario_ruta_origen_id`; ambos coexisten sin chocar. **Falta: frontend** (pantalla en el panel de cooperativa para crear/listar/activar-desactivar plantillas).
 - **Verificar si existe importación masiva de datos iniciales** (flota completa, rutas completas) al momento de dar de alta una cooperativa nueva — pendiente de revisar el estado real del archivo correspondiente antes de asumir que existe o no.
 
-**3. Contratiempos operativos (cierre de vía, feriado, paro) — hueco real, no resuelto.** Hoy no existe una acción masiva tipo "cancelar/suspender todos los viajes de esta ruta en esta fecha" — habría que cancelar viaje por viaje a mano, lo cual no es realista en una operación real. Se necesita una herramienta de cancelación/suspensión masiva por ruta y rango de fechas.
+**3. Contratiempos operativos (cierre de vía, feriado, paro) — backend cerrado 03-ago-2026 (PR #28).** Cancelación/suspensión masiva por ruta y rango de fechas. Decisión del director: los viajes con boletos vendidos SÍ se cancelan (no se bloquea la acción, no se saltan en silencio) -- se genera crédito automático por el monto pagado (mismo mecanismo que reprogramación) y se notifica por WhatsApp a cada pasajero afectado. Esto también extendió `cancelarViaje` individual, que antes cancelaba sin compensar -- ahora ambos caminos son consistentes. **Falta: frontend** (pantalla de cancelación masiva).
+
+**Hallazgo técnico real, corregido por las propias pruebas e2e (03-ago-2026):** `WHERE b.id = ANY(array)` fallaba con "literal de array mal formado" -- Drizzle expande un array de JS como lista de parámetros (pensado para `IN (...)`), no como literal nativo de Postgres (que es lo que `ANY()` espera). Corregido con `sql.join()`. Ninguna prueba de tipos (`tsc`) lo hubiera detectado -- solo la ejecución real contra la base de datos lo hizo, confirmando por qué las 137 pruebas e2e no son opcionales.
+
+**Pendiente real, sin pruebas propias todavía:** el código nuevo (horarios, generador, cancelación masiva) no tiene pruebas e2e dedicadas -- las 137 existentes solo confirman que no se rompió nada previo.
 
 **4. Actualización periódica obligatoria de información.** Requerimiento nuevo, no construido: mismo patrón que usan plataformas financieras con revalidación de KYC — la cooperativa debería confirmar/actualizar sus datos legales y de contacto cada cierto tiempo (ej. cada 6-12 meses).
 
 **5. "Nosotros les damos todas las herramientas".** Confirmado: para el Modelo A (panel directo), esto ya es cierto en lo cotidiano — rutas, flota, personal, viajes, precios, métodos de pago, política de cancelación. Para el Modelo B (cooperativas con sistema propio que se conectan por API), la promesa **se cumple para la infraestructura genérica** — cerrado 03-ago-2026, ver sección 3.11.
 
-**Falta:** horarios recurrentes (plantilla de horario); cancelación/suspensión masiva por ruta y fecha; verificar estado real de importación masiva de datos iniciales; actualización periódica obligatoria de datos. Modelo B: cerrado (ver 3.11) -- solo queda lo específico por cooperativa, que espera a la primera integración real.
+**Falta:** frontend de horarios recurrentes y de cancelación masiva (backend de ambos cerrado, ver arriba); verificar estado real de importación masiva de datos iniciales; actualización periódica obligatoria de datos. Modelo B: cerrado (ver 3.11) -- solo queda lo específico por cooperativa, que espera a la primera integración real.
 
 ---
 
@@ -422,7 +426,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~4. Modelo B~~ — **cerrado 03-ago-2026** (ver 3.11): infraestructura genérica completa (esquema, credenciales, despachador de webhooks, recepción, reconciliación, documentación técnica), todo verificado y fusionado a `main`. Lo específico por cooperativa espera a la primera integración real
 ~~5. Notificaciones automáticas~~ — **cerrado 03-ago-2026** (ver 3.12): WhatsApp como canal principal, recordatorio de viaje y aviso de cambio operativo (unidad) construidos y verificados. Cambio de hora queda pendiente de decisión de producto, no de construcción
 ~~6. Código de pasajero fijo + límite de frecuencia~~ — **cerrado 03-ago-2026** (ver 3.1.1): decisión confirmada, construido y verificado
-7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha
+7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha — **backend cerrado 03-ago-2026** (PR #28), falta frontend
 8. Verificar y, si falta, construir importación masiva de flota inicial
 9. División super_admin / admin_plataforma + registro de auditoría (si se confirma)
 10. Actualización periódica obligatoria de datos de cooperativa (si se confirma)
