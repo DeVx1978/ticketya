@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import type { GeneradorViajesRepositorio } from '../../dominio/generador-viajes/generador-viajes.ports';
+import type {
+  GeneradorViajesRepositorio,
+  HorarioActivoParaGenerar,
+} from '../../dominio/generador-viajes/generador-viajes.ports';
 
 export const GENERADOR_VIAJES_REPOSITORIO = 'GENERADOR_VIAJES_REPOSITORIO';
 
@@ -25,6 +28,61 @@ export class GeneradorViajesService {
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async generarViajesPendientes(): Promise<void> {
     const horarios = await this.repo.listarHorariosActivos();
+    const hoy = new Date();
+    const hasta = new Date();
+    // -1 porque generarParaListaHorarios usa un rango INCLUSIVO del día
+    // final (correcto para la carga masiva, donde el usuario espera que
+    // "hasta el 15" incluya el 15) -- sin el -1 aquí, "21 días" se
+    // convertía en 22 días reales. Bug real encontrado por la propia
+    // prueba del ítem 7 al reutilizar este método para el ítem 8.
+    hasta.setDate(hoy.getDate() + DIAS_HACIA_ADELANTE - 1);
+
+    const { generados, saltadosSinUnidad } = await this.generarParaListaHorarios(
+      horarios,
+      hoy,
+      hasta,
+    );
+
+    if (generados > 0 || saltadosSinUnidad > 0) {
+      this.logger.log(
+        `Generación de viajes: ${generados} creados, ${saltadosSinUnidad} plantilla(s) sin unidad disponible.`,
+      );
+    }
+  }
+
+  /**
+   * Ítem 8 (04-ago-2026) -- reutilizado por la carga masiva
+   * (importarDatos) para generar viajes de los horarios que acaba de
+   * crear, en el rango de fechas que el usuario pidió. Mismo mecanismo
+   * y mismo criterio de no-duplicados que el cron diario -- sin esto,
+   * la carga masiva necesitaría su propio camino paralelo (el que
+   * existía antes, más débil, ya eliminado).
+   */
+  async generarViajesParaHorarios(
+    horarioIds: string[],
+    fechaDesde: Date,
+    fechaHasta: Date,
+  ): Promise<{ generados: number }> {
+    const horarios = await this.repo.listarHorariosPorId(horarioIds);
+    const { generados } = await this.generarParaListaHorarios(
+      horarios,
+      fechaDesde,
+      fechaHasta,
+    );
+    return { generados };
+  }
+
+  /**
+   * Lógica compartida real -- antes de esto, generarViajesPendientes y
+   * la carga masiva tenían cada uno su propia copia de este bucle
+   * (parcialmente distinta e inconsistente). Nunca hace UPDATE, solo
+   * INSERT si (horario, fecha) todavía no existe.
+   */
+  private async generarParaListaHorarios(
+    horarios: HorarioActivoParaGenerar[],
+    fechaDesde: Date,
+    fechaHasta: Date,
+  ): Promise<{ generados: number; saltadosSinUnidad: number }> {
     let generados = 0;
     let saltadosSinUnidad = 0;
 
@@ -36,26 +94,30 @@ export class GeneradorViajesService {
       if (!unidad) {
         saltadosSinUnidad++;
         this.logger.warn(
-          `Horario ${horario.id}: no hay ninguna unidad activa del tipo ${horario.tipoVehiculoPredeterminadoId} -- se salta hasta que la cooperativa active una.`,
+          `Horario ${horario.id}: no hay ninguna unidad activa del tipo ${horario.tipoVehiculoPredeterminadoId} -- se salta.`,
         );
         continue;
       }
 
-      for (let i = 0; i < DIAS_HACIA_ADELANTE; i++) {
-        const fecha = new Date();
-        fecha.setDate(fecha.getDate() + i);
+      for (
+        let fecha = new Date(fechaDesde);
+        fecha <= fechaHasta;
+        fecha.setDate(fecha.getDate() + 1)
+      ) {
         const diaSemana = fecha.getDay(); // 0=domingo..6=sábado
         if (!horario.diasSemana.includes(diaSemana)) continue;
 
         const fechaStr = fecha.toISOString().slice(0, 10);
-        const yaExiste = await this.repo.existeViajeParaHorarioYFecha(horario.id, fechaStr);
+        const yaExiste = await this.repo.existeViajeParaHorarioYFecha(
+          horario.id,
+          fechaStr,
+        );
         if (yaExiste) continue; // ya generado antes, o editado/creado a mano -- nunca se toca
 
-        // Ecuador no tiene horario de verano -- desfase fijo -05:00, mismo criterio que la carga masiva.
-        // 04-ago-2026 -- bug real encontrado por la propia prueba: Postgres devuelve
-        // horaSalida ya con segundos (HH:MM:SS), no HH:MM como asumí -- agregar ":00"
-        // extra producía un timestamp inválido (09:00:00:00). Se usa slice(0,5) para
-        // quedarnos solo con HH:MM, sin importar qué formato exacto devuelva el driver.
+        // Ecuador no tiene horario de verano -- desfase fijo -05:00.
+        // slice(0,5) porque Postgres devuelve hora_salida ya con
+        // segundos (HH:MM:SS), no HH:MM (bug real encontrado el
+        // 03-ago-2026 por las pruebas del ítem 7).
         const horaSalidaCompleta = `${fechaStr}T${horario.horaSalida.slice(0, 5)}:00-05:00`;
 
         await this.repo.crearViajeDesdeHorario({
@@ -71,10 +133,6 @@ export class GeneradorViajesService {
       }
     }
 
-    if (generados > 0 || saltadosSinUnidad > 0) {
-      this.logger.log(
-        `Generación de viajes: ${generados} creados, ${saltadosSinUnidad} plantilla(s) sin unidad disponible.`,
-      );
-    }
+    return { generados, saltadosSinUnidad };
   }
 }

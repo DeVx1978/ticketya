@@ -24,26 +24,48 @@ export class GeneradorViajesRepositorioDrizzle implements GeneradorViajesReposit
       JOIN rutas r ON r.id = hr.ruta_id
       WHERE hr.activo = true AND hr.tipo_vehiculo_predeterminado_id IS NOT NULL
     `);
-    return resultado.rows.map((fila) => {
-      const f = fila as {
-        id: string;
-        cooperativa_id: string;
-        ruta_id: string;
-        hora_salida: string;
-        dias_semana: number[];
-        tipo_vehiculo_predeterminado_id: string;
-        precio_base_referencia: string;
-      };
-      return {
-        id: f.id,
-        cooperativaId: f.cooperativa_id,
-        rutaId: f.ruta_id,
-        horaSalida: f.hora_salida,
-        diasSemana: f.dias_semana,
-        tipoVehiculoPredeterminadoId: f.tipo_vehiculo_predeterminado_id,
-        precioBaseReferencia: Number(f.precio_base_referencia),
-      };
-    });
+    return resultado.rows.map((fila) => this.mapearFilaHorario(fila));
+  }
+
+  /**
+   * 04-ago-2026 -- ítem 8, usado por la carga masiva para generar
+   * viajes de los horarios que acaba de crear, mismo mecanismo que el
+   * cron. `sql.join` (no `ANY`) a propósito -- ver el bug real que
+   * causó esto mismo, corregido ayer en cancelarViaje.
+   */
+  async listarHorariosPorId(
+    horarioIds: string[],
+  ): Promise<HorarioActivoParaGenerar[]> {
+    if (horarioIds.length === 0) return [];
+    const resultado = await this.db.execute(sql`
+      SELECT hr.id, r.cooperativa_id, hr.ruta_id, hr.hora_salida, hr.dias_semana,
+             hr.tipo_vehiculo_predeterminado_id, r.precio_base_referencia
+      FROM horarios_ruta hr
+      JOIN rutas r ON r.id = hr.ruta_id
+      WHERE hr.id IN (${sql.join(horarioIds, sql`, `)}) AND hr.activo = true
+    `);
+    return resultado.rows.map((fila) => this.mapearFilaHorario(fila));
+  }
+
+  private mapearFilaHorario(fila: unknown): HorarioActivoParaGenerar {
+    const f = fila as {
+      id: string;
+      cooperativa_id: string;
+      ruta_id: string;
+      hora_salida: string;
+      dias_semana: number[];
+      tipo_vehiculo_predeterminado_id: string;
+      precio_base_referencia: string;
+    };
+    return {
+      id: f.id,
+      cooperativaId: f.cooperativa_id,
+      rutaId: f.ruta_id,
+      horaSalida: f.hora_salida,
+      diasSemana: f.dias_semana,
+      tipoVehiculoPredeterminadoId: f.tipo_vehiculo_predeterminado_id,
+      precioBaseReferencia: Number(f.precio_base_referencia),
+    };
   }
 
   async existeViajeParaHorarioYFecha(horarioId: string, fecha: string): Promise<boolean> {

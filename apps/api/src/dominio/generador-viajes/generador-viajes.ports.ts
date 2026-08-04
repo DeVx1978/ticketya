@@ -27,6 +27,14 @@ export interface HorarioActivoParaGenerar {
 export interface GeneradorViajesRepositorio {
   listarHorariosActivos(): Promise<HorarioActivoParaGenerar[]>;
 
+  /**
+   * 04-ago-2026 -- ítem 8, usado por la carga masiva (importarDatos)
+   * para generar viajes de los horarios que acaba de crear, con el
+   * mismo mecanismo que el cron diario -- sin esto, la carga masiva
+   * necesitaría su propio camino paralelo (lo que ya se eliminó).
+   */
+  listarHorariosPorId(horarioIds: string[]): Promise<HorarioActivoParaGenerar[]>;
+
   existeViajeParaHorarioYFecha(horarioId: string, fecha: string): Promise<boolean>;
 
   /** null si no hay ninguna unidad activa de ese tipo para esa cooperativa -- el generador se salta ese día y lo reporta. */
