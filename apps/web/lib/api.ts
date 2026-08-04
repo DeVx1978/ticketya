@@ -1016,10 +1016,14 @@ export interface MiPerfil {
   rol: "pasajero" | "vendedor" | "admin_cooperativa" | "admin_plataforma";
   correo: string;
   nombreCompleto: string;
+  cedula: string | null;
   telefono: string | null;
   fotoUrl: string | null;
+  codigoPasajero: string;
   creadoEn: string;
   viajesCompletados?: number;
+  puedeEditarIdentidad: boolean;
+  diasRestantesParaEditarIdentidad: number | null;
 }
 
 export async function obtenerMiPerfil(token: string): Promise<MiPerfil> {
@@ -1034,7 +1038,7 @@ export async function obtenerMiPerfil(token: string): Promise<MiPerfil> {
 
 export async function actualizarMiPerfil(
   token: string,
-  datos: { nombreCompleto?: string; telefono?: string; fotoUrl?: string },
+  datos: { telefono?: string; fotoUrl?: string },
 ): Promise<void> {
   const res = await fetch(`${API_URL}/auth/perfil`, {
     method: "PATCH",
@@ -1043,8 +1047,29 @@ export async function actualizarMiPerfil(
   });
   const cuerpo = await res.json();
   if (!res.ok) {
-    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
-    throw new Error(mensaje ?? "No se pudo actualizar tu perfil.");
+    throw new Error(cuerpo?.message ?? "No se pudo actualizar tu perfil.");
+  }
+}
+
+/**
+ * Ítem 6, Fase 2 (03-ago-2026) -- separado de actualizarMiPerfil a
+ * propósito: nombre/cédula llevan el límite de 90 días, teléfono/foto
+ * no. El backend devuelve 400 con los días restantes si el límite
+ * todavía no se cumple -- ese mensaje llega tal cual en el error.
+ */
+export async function actualizarMiIdentidad(
+  token: string,
+  datos: { nombreCompleto?: string; cedula?: string },
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/perfil/identidad`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo actualizar tu nombre/cédula.");
   }
 }
 

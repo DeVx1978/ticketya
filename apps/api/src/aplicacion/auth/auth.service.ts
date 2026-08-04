@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   Inject,
   ConflictException,
@@ -19,6 +19,7 @@ import type {
 import {
   calcularBloqueoTrasIntentoFallido,
   cuentaEstaBloqueada,
+  puedeEditarIdentidad,
 } from '../../dominio/auth/auth.ports';
 
 export const USUARIO_REPOSITORIO = 'USUARIO_REPOSITORIO';
@@ -162,23 +163,66 @@ export class AuthService {
         ? await this.usuarios.contarViajesCompletados(usuarioId)
         : undefined;
 
+    // Ítem 6, Fase 2 (03-ago-2026) -- generación perezosa (lazy): el
+    // código se crea la primera vez que alguien pide su perfil, no en
+    // el registro. Así los usuarios que ya existían antes de este
+    // cambio también terminan con uno, sin backfill manual.
+    const codigoPasajero = await this.usuarios.asegurarCodigoPasajero(usuarioId);
+
+    const limiteIdentidad = puedeEditarIdentidad(usuario.ultimoCambioIdentidadEn);
+
     return {
       id: usuario.id,
       rol: usuario.rol,
       correo: usuario.correo,
       nombreCompleto: usuario.nombreCompleto,
+      cedula: usuario.cedula,
       telefono: usuario.telefono,
       fotoUrl: usuario.fotoUrl,
+      codigoPasajero,
       creadoEn: usuario.creadoEn,
       viajesCompletados,
+      puedeEditarIdentidad: limiteIdentidad.permitido,
+      diasRestantesParaEditarIdentidad: limiteIdentidad.permitido
+        ? null
+        : limiteIdentidad.diasRestantes,
     };
   }
 
+  /** Solo teléfono/foto -- sin límite. Nombre/cédula van por actualizarMiIdentidad (90 días). */
   async actualizarMiPerfil(
     usuarioId: string,
-    datos: { nombreCompleto?: string; telefono?: string; fotoUrl?: string },
+    datos: { telefono?: string; fotoUrl?: string },
   ) {
     await this.usuarios.actualizarPerfil(usuarioId, datos);
+  }
+
+  /**
+   * Ítem 6, Fase 2 (03-ago-2026) -- SEPARADO de actualizarMiPerfil a
+   * propósito: nombre y cédula llevan el límite de 90 días (sección
+   * 3.1.1), teléfono/foto no. Rechaza con el motivo exacto (días
+   * restantes) si el límite todavía no se cumple -- el frontend lo usa
+   * para mostrar un mensaje claro, no solo un error genérico.
+   */
+  async actualizarMiIdentidad(
+    usuarioId: string,
+    datos: { nombreCompleto?: string; cedula?: string },
+  ) {
+    if (datos.nombreCompleto === undefined && datos.cedula === undefined) {
+      return; // nada que hacer, no gasta el límite en una llamada vacía
+    }
+
+    const usuario = await this.usuarios.buscarPorId(usuarioId);
+    if (!usuario) throw new NotFoundException('Usuario no encontrado.');
+
+    const limite = puedeEditarIdentidad(usuario.ultimoCambioIdentidadEn);
+    if (!limite.permitido) {
+      throw new BadRequestException(
+        `Tu nombre y cédula solo se pueden cambiar cada 90 días, para proteger boletos ya comprados a tu nombre. Podrás editarlos de nuevo en ${limite.diasRestantes} día(s).`,
+      );
+    }
+
+    await this.usuarios.actualizarIdentidad(usuarioId, datos, new Date());
   }
 
   async cambiarPassword(

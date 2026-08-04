@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { actualizarMiPerfil, cambiarPassword, subirFotoPerfil, solicitarCambioCorreo, type MiPerfil } from "@/lib/api";
+import QRCode from "qrcode";
+import {
+  actualizarMiPerfil,
+  actualizarMiIdentidad,
+  cambiarPassword,
+  subirFotoPerfil,
+  solicitarCambioCorreo,
+  type MiPerfil,
+} from "@/lib/api";
 import { tokenValido, borrarToken } from "@/lib/auth";
 import { CampoPassword } from "@/components/CampoPassword";
 
@@ -31,12 +39,25 @@ export function TabDatosPersonales({
   onExito: (mensaje: string) => void;
 }) {
   const router = useRouter();
-  const [nombreCompleto, setNombreCompleto] = useState(perfil.nombreCompleto);
   const [telefono, setTelefono] = useState(perfil.telefono ?? "");
   const [fotoUrl, setFotoUrl] = useState(perfil.fotoUrl ?? "");
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null);
+
+  // Ítem 6, Fase 2 (03-ago-2026) -- separado del formulario libre de
+  // arriba a propósito: nombre/cédula llevan el límite de 90 días.
+  const [nombreIdentidad, setNombreIdentidad] = useState(perfil.nombreCompleto);
+  const [cedulaIdentidad, setCedulaIdentidad] = useState(perfil.cedula ?? "");
+  const [guardandoIdentidad, setGuardandoIdentidad] = useState(false);
+  const [errorIdentidad, setErrorIdentidad] = useState<string | null>(null);
+
+  const [qrCodigoPasajero, setQrCodigoPasajero] = useState<string | null>(null);
+  useEffect(() => {
+    QRCode.toDataURL(perfil.codigoPasajero, { margin: 1, width: 180 })
+      .then(setQrCodigoPasajero)
+      .catch(() => setQrCodigoPasajero(null));
+  }, [perfil.codigoPasajero]);
 
   const [passwordActual, setPasswordActual] = useState("");
   const [passwordNueva, setPasswordNueva] = useState("");
@@ -57,16 +78,45 @@ export function TabDatosPersonales({
     setGuardandoPerfil(true);
     try {
       await actualizarMiPerfil(token, {
-        nombreCompleto: nombreCompleto.trim(),
         telefono: telefono.trim(),
         fotoUrl: fotoUrl.trim(),
       });
-      onActualizado({ nombreCompleto, telefono, fotoUrl });
+      onActualizado({ telefono, fotoUrl });
       onExito("Perfil actualizado.");
     } catch (err) {
       setErrorPerfil(err instanceof Error ? err.message : "No se pudo guardar.");
     } finally {
       setGuardandoPerfil(false);
+    }
+  }
+
+  /**
+   * Ítem 6, Fase 2 (03-ago-2026) -- separado de guardarPerfil a
+   * propósito, mismo límite de 90 días que el backend. El mensaje de
+   * error del backend ya trae los días restantes, se muestra tal cual.
+   */
+  async function guardarIdentidad(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorIdentidad(null);
+    const token = tokenValido();
+    if (!token) return;
+    setGuardandoIdentidad(true);
+    try {
+      await actualizarMiIdentidad(token, {
+        nombreCompleto: nombreIdentidad.trim(),
+        cedula: cedulaIdentidad.trim(),
+      });
+      onActualizado({
+        nombreCompleto: nombreIdentidad,
+        cedula: cedulaIdentidad,
+        puedeEditarIdentidad: false,
+        diasRestantesParaEditarIdentidad: 90,
+      });
+      onExito("Nombre y cédula actualizados. Podrás volver a cambiarlos en 90 días.");
+    } catch (err) {
+      setErrorIdentidad(err instanceof Error ? err.message : "No se pudo guardar.");
+    } finally {
+      setGuardandoIdentidad(false);
     }
   }
 
@@ -153,7 +203,85 @@ export function TabDatosPersonales({
             </div>
           )}
         </div>
+        {/* Código de pasajero (ítem 6, Fase 2, 03-ago-2026) -- fijo,
+            distinto del QR de boleto: identifica a la persona, no una
+            compra. El personal de cooperativa lo escanea en terminal
+            para verificar identidad aunque no tengas el boleto a mano. */}
+        <div className="mt-4 flex items-center gap-4 border-t border-white/20 pt-4">
+          {qrCodigoPasajero && (
+            // eslint-disable-next-line @next/next/no-img-element -- data URL generada en el cliente
+            <img
+              src={qrCodigoPasajero}
+              alt={`Código de pasajero ${perfil.codigoPasajero}`}
+              className="h-20 w-20 rounded-lg bg-white p-1"
+            />
+          )}
+          <div>
+            <p className="text-xs text-white/60">Tu código de pasajero</p>
+            <p className="font-display text-lg font-extrabold tracking-wide">
+              {perfil.codigoPasajero}
+            </p>
+            <p className="mt-0.5 text-xs text-white/60">
+              Muéstralo en el terminal para verificar tu identidad, aunque no tengas tu boleto a
+              mano.
+            </p>
+          </div>
+        </div>
       </div>
+
+      {/* Identidad -- nombre y cédula, límite de 90 días (ítem 6, Fase
+          2, 03-ago-2026). Separado del formulario libre de abajo a
+          propósito: protege boletos ya comprados a tu nombre. */}
+      <form
+        onSubmit={guardarIdentidad}
+        className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      >
+        <div>
+          <h2 className="font-display text-base font-bold text-brand-dark">Identidad</h2>
+          <p className="mt-1 text-xs text-brand-dark/50">
+            Nombre y cédula solo se pueden cambiar cada 90 días, para proteger boletos ya
+            comprados a tu nombre.
+          </p>
+        </div>
+        {!perfil.puedeEditarIdentidad && (
+          <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+            Podrás editar tu nombre y cédula de nuevo en {perfil.diasRestantesParaEditarIdentidad}{" "}
+            día(s).
+          </p>
+        )}
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Nombre completo
+          </label>
+          <input
+            type="text"
+            value={nombreIdentidad}
+            onChange={(e) => setNombreIdentidad(e.target.value)}
+            disabled={!perfil.puedeEditarIdentidad}
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium disabled:bg-brand-light/30 disabled:text-brand-dark/50"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            Cédula / documento
+          </label>
+          <input
+            type="text"
+            value={cedulaIdentidad}
+            onChange={(e) => setCedulaIdentidad(e.target.value)}
+            disabled={!perfil.puedeEditarIdentidad}
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium disabled:bg-brand-light/30 disabled:text-brand-dark/50"
+          />
+        </div>
+        {errorIdentidad && <p className="text-sm font-medium text-red-600">{errorIdentidad}</p>}
+        <button
+          type="submit"
+          disabled={guardandoIdentidad || !perfil.puedeEditarIdentidad}
+          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+        >
+          {guardandoIdentidad ? "Guardando..." : "Guardar identidad"}
+        </button>
+      </form>
 
       {/* Datos editables */}
       <form
@@ -170,17 +298,6 @@ export function TabDatosPersonales({
             value={perfil.correo}
             disabled
             className="w-full rounded-lg border border-brand-light bg-brand-light/30 px-3 py-2.5 text-base text-brand-dark/50"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
-            Nombre completo
-          </label>
-          <input
-            type="text"
-            value={nombreCompleto}
-            onChange={(e) => setNombreCompleto(e.target.value)}
-            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
           />
         </div>
         <div>

@@ -13,8 +13,11 @@ export interface UsuarioDominio {
   cooperativaId: string | null;
   correo: string;
   nombreCompleto: string;
+  cedula: string | null;
   telefono: string | null;
   fotoUrl: string | null;
+  codigoPasajero: string | null;
+  ultimoCambioIdentidadEn: Date | null;
   creadoEn: Date;
   passwordHash: string | null;
   intentosFallidos: number;
@@ -56,6 +59,28 @@ export interface UsuarioRepositorio {
       fotoUrl?: string | null;
     },
   ): Promise<void>;
+
+  /**
+   * Ítem 6, Fase 2 (03-ago-2026) -- nombre completo y cédula, SEPARADO
+   * de actualizarPerfil a propósito: estos 2 campos llevan el límite de
+   * frecuencia de 90 días (sección 3.1.1), los demás no. Actualiza
+   * ultimoCambioIdentidadEn = ahora en la misma operación -- el service
+   * ya validó el límite antes de llamar esto, el repositorio no vuelve
+   * a validar.
+   */
+  actualizarIdentidad(
+    usuarioId: string,
+    datos: { nombreCompleto?: string; cedula?: string },
+    ahora: Date,
+  ): Promise<void>;
+
+  /**
+   * Genera el código de pasajero (`COL-XXXXXX`) la primera vez que se
+   * necesita (lazy, no en el registro) -- así los usuarios que ya
+   * existían antes de este cambio también terminan con uno. Idempotente:
+   * si ya existe, lo devuelve tal cual sin generar uno nuevo.
+   */
+  asegurarCodigoPasajero(usuarioId: string): Promise<string>;
 
   actualizarPasswordHash(usuarioId: string, nuevoHash: string): Promise<void>;
 
@@ -249,4 +274,25 @@ export function calcularBloqueoTrasIntentoFallido(intentosActuales: number): {
 export function cuentaEstaBloqueada(bloqueadoHasta: Date | null): boolean {
   if (!bloqueadoHasta) return false;
   return bloqueadoHasta.getTime() > Date.now();
+}
+
+/**
+ * Ítem 6, Fase 2 (03-ago-2026) — regla de negocio pura sobre el límite
+ * de frecuencia para editar nombre completo/cédula (sección 3.1.1).
+ * Protege boletos ya comprados a un nombre y reduce fraude de
+ * identidad; foto, WhatsApp y contraseña quedan fuera de esta regla.
+ */
+export const DIAS_LIMITE_CAMBIO_IDENTIDAD = 90;
+
+export function puedeEditarIdentidad(
+  ultimoCambioIdentidadEn: Date | null,
+): { permitido: true } | { permitido: false; diasRestantes: number } {
+  if (!ultimoCambioIdentidadEn) return { permitido: true };
+  const diasTranscurridos =
+    (Date.now() - ultimoCambioIdentidadEn.getTime()) / (1000 * 60 * 60 * 24);
+  if (diasTranscurridos >= DIAS_LIMITE_CAMBIO_IDENTIDAD) return { permitido: true };
+  return {
+    permitido: false,
+    diasRestantes: Math.ceil(DIAS_LIMITE_CAMBIO_IDENTIDAD - diasTranscurridos),
+  };
 }
