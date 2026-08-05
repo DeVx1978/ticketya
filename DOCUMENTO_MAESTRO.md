@@ -152,7 +152,9 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **Decisión del director (30-jul-2026):** asientos exclusivos para mujeres — **✅ aprobado para construir**, pero como etiqueta informativa a nivel de asiento individual (mismo lugar donde la cooperativa ya marca "VIP" en su distribución), no como control de acceso forzado en la compra. Cada cooperativa decide si usa esta opción. No se verifica género al comprar — se evita ese problema de privacidad, se empieza solo con transparencia visual.
 
-**Falta:** nada identificado en lo ya construido. Nuevo, aprobado: asientos/indicador exclusivo para mujeres.
+**Cerrado 05-ago-2026 (PR #44).** Hallazgo real encontrado antes de construir: "VIP" NO vivía a nivel de asiento individual como se asumía -- vivía a nivel de PISO completo, y confirmado con un caso real (Ecuador: buses de 2 pisos donde el piso 1 entero es VIP; Colombia: buses de un piso donde solo la sección delantera es VIP, imposible de representar con una etiqueta de piso completo). Se construyó un sistema único de etiquetas por asiento individual (VIP, mujeres, cualquier combinación), que unifica ambos casos reales -- no dos sistemas separados. Compatibilidad hacia atrás PERMANENTE con el formato viejo (decisión del director: sin script de migración destructiva, ya que se confirmó con datos reales que 0 tipos de vehículo tenían una distribución configurada). **Segundo bug real encontrado antes de construir:** el bloqueo de asientos ignoraba por completo `distribucionAsientos` y usaba su propia cuadrícula 2+2 hardcodeada, desincronizada del pasajero -- corregido para validar contra la distribución real. Configurable por cooperativa a nivel de tipo de vehículo (pantalla nueva en Unidades, editor JSON con vista previa en vivo, mismo patrón que la carga masiva del ítem 8).
+
+**Falta:** nada.
 
 ---
 
@@ -449,7 +451,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo~~ — **cerrado 05-ago-2026** (ver 3.2): construido y verificado (PRs #38, #39). Filtro por tipo de vehículo: backend listo, sin exponer en frontend (ver nota en 3.2)
 ~~12. Exponer calificación promedio en resultados de búsqueda~~ — **cerrado 05-ago-2026** (ver 3.2): ya existía, se le agregó el umbral mínimo de confianza que faltaba (PR #40)
 ~~13. Descarga de boleto en PDF~~ — **cerrado 05-ago-2026** (ver 3.2): investigado, construido y verificado con prueba visual real (PRs #41, #42, #43)
-14. Asientos/indicador exclusivo para mujeres — **aprobado**, informativo, sin verificación de género en la compra
+~~14. Asientos/indicador exclusivo para mujeres~~ — **cerrado 05-ago-2026** (ver 3.3): unificado con VIP en un solo sistema por asiento individual, construido y verificado (PR #44)
 15. Botón "ver trayecto" (ruta fija terminal origen → destino en un mapa) — **aprobado**, bajo costo, no depende de hardware de cooperativa
 16. Seguimiento GPS en vivo — **infraestructura genérica sí entra en construcción activa** (endpoint para recibir ubicación + mapa en vivo en frontend), igual criterio que Modelo B
 
