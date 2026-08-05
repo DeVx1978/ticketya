@@ -266,6 +266,8 @@ Esto sigue exactamente el mismo patrón que ya usamos bien en el panel de cooper
 
 **Adicional, no considerado antes:** registro de auditoría — cada acción de un `admin_plataforma` debería quedar registrada (quién, qué, cuándo), para que el `super_admin` pueda revisar el historial si algo sale mal. Estándar real en plataformas SaaS serias, no un capricho.
 
+**Pruebas de la frontera de seguridad, cerradas 04-ago-2026 (PR #35).** Orden explícita del director: un control de acceso no es una función más, no es opcional tener pruebas propias que confirmen que de verdad bloquea. `admin-permisos.e2e-spec.ts` -- 5 pruebas negativas (admin_plataforma recibe 403 en los 3 endpoints exclusivos) + 6 positivas (super_admin sí puede usarlos, confirmando que el bloqueo es específico del rol, no un error general). Bug real encontrado por la propia prueba (no en código de producción): mutaba `configuracion_plataforma` (tabla global compartida) sin restaurarla, contaminando 4 pruebas de `checkout.e2e-spec.ts` -- corregido con restauración explícita en `afterAll`.
+
 **Falta:** nada.
 
 ---
@@ -398,7 +400,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 | Rate limiting | ✅ Activo globalmente (100 peticiones/minuto por IP) |
 | Monitoreo de errores (Sentry) | ✅ Configurado |
 | Backups de base de datos | ✅ Automatizados, verificados con respaldos reales |
-| Pruebas automatizadas | ✅ 144 pruebas end-to-end locales (137 base + 6 del ítem 7 + 1 del ítem 8, 04-ago-2026), ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). CI verificado con el mismo número (ver 3.13 -- discrepancia anterior era solo una etiqueta de texto vieja, ya corregida). |
+| Pruebas automatizadas | ✅ 155 pruebas end-to-end locales (144 previas + 11 nuevas de la frontera de seguridad super_admin/admin_plataforma, ítem 9, 04-ago-2026), ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). CI verificado con el mismo número (ver 3.13 -- discrepancia anterior era solo una etiqueta de texto vieja, ya corregida). |
 | Multi-tenancy (RLS) | ✅ Verificado en vivo — una cooperativa no puede ver datos de otra |
 | 2FA | 🔴 No construido |
 | Cumplimiento LOPD Ecuador | 🔴 No revisado formalmente |
