@@ -238,7 +238,14 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **Requerimiento completo:** gestión de cooperativas (alta/aprobación), puntos de operación (terminales), configuración global (cargo de plataforma, modo de IVA en boletos), banners promocionales propios.
 
-**Estado real:** ✅ Completo — pero como un solo rol plano (`admin_plataforma`), sin niveles.
+**Estado real:** ✅ Completo, cerrado 04-ago-2026 (PRs #33 backend, #34 frontend) -- rol dividido en `super_admin` + `admin_plataforma`, con la matriz de permisos exacta y registro de auditoría.
+- Migración `0019`: rol `super_admin` nuevo, más 3 valores nuevos de `accion_auditoria` -- reutiliza 2 valores que ya existían sin usar en el enum (`baja_cooperativa`, `cambio_comision`), en vez de duplicar
+- `RolesGuard` hace coincidencia exacta, sin jerarquía -- `super_admin` no hereda automáticamente lo de `admin_plataforma`, se declaró explícito en cada endpoint
+- **Decisión de diseño real, no en la orden original:** "eliminar cooperativa" y "eliminar administrador" se implementaron como baja lógica (`estado = 'dada_de_baja'`, `activo = false`), no `DELETE` físico -- destruir boletos/pagos/liquidaciones históricos sería peligroso e irreversible; un `DELETE` real de un administrador además violaría la propia llave foránea de auditoría
+- Nuevos endpoints: `POST/GET/DELETE /admin/administradores`, `DELETE /admin/cooperativas/:id`
+- Frontend: pantalla `/admin/administradores` -- crear/eliminar exclusivo de `super_admin`, listar compartido
+- **Hallazgo real corregido en el camino:** el guardia de interfaz (`apps/web/app/admin/layout.tsx`) solo dejaba pasar `admin_plataforma`, bloqueando a `super_admin` del panel por completo -- corregido
+- Migración de datos: todos los `admin_plataforma` existentes se quedaron como `admin_plataforma` -- el primer `super_admin` se creó a mano, decisión confirmada por el director
 
 **Análisis a profundidad (30-jul-2026) — ¿un solo admin o super admin + admin?**
 
@@ -259,7 +266,7 @@ Esto sigue exactamente el mismo patrón que ya usamos bien en el panel de cooper
 
 **Adicional, no considerado antes:** registro de auditoría — cada acción de un `admin_plataforma` debería quedar registrada (quién, qué, cuándo), para que el `super_admin` pueda revisar el historial si algo sale mal. Estándar real en plataformas SaaS serias, no un capricho.
 
-**Falta:** dividir el rol plano actual en `super_admin` + `admin_plataforma` con la matriz de permisos de arriba; registro de auditoría de acciones administrativas (ninguna línea de código construida todavía, es una decisión de diseño a confirmar antes de tocar el esquema de roles).
+**Falta:** nada.
 
 ---
 
@@ -433,7 +440,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~6. Código de pasajero fijo + límite de frecuencia~~ — **cerrado 03-ago-2026** (ver 3.1.1): decisión confirmada, construido y verificado
 ~~7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha~~ — **cerrado 04-ago-2026** (PR #28 backend + PR #29 frontend y pruebas propias)
 ~~8. Verificar y, si falta, construir importación masiva de flota inicial~~ — **cerrado 04-ago-2026** (ver 3.7): existía backend parcial, se unificó su generador con el ítem 7, se completaron pruebas y se construyó el frontend (PRs #30, #31, #32)
-9. División super_admin / admin_plataforma + registro de auditoría (si se confirma)
+~~9. División super_admin / admin_plataforma + registro de auditoría~~ — **cerrado 04-ago-2026** (ver 3.8): decisión confirmada, construido y verificado (PRs #33, #34)
 10. Actualización periódica obligatoria de datos de cooperativa (si se confirma)
 11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo — **aprobado**
 12. Exponer calificación promedio en resultados de búsqueda — **aprobado**
