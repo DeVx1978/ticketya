@@ -40,6 +40,7 @@ import {
   CrearHorarioRutaDto,
   ActualizarEstadoHorarioRutaDto,
   CancelarViajesMasivoDto,
+  ConfirmarDatosCooperativaDto,
 } from './dto/panel-empresa.dto';
 import { GuardarMetodoPagoDto, ConfirmarPagoManualDto, MarcarFacturaEmitidaDto } from './dto/metodos-pago.dto';
 import { CrearCredencialApiDto, ActualizarWebhookCredencialApiDto } from './dto/credenciales-api.dto';
@@ -685,5 +686,27 @@ export class PanelEmpresaController {
   @Get('liquidaciones')
   async listarMisLiquidaciones(@Request() req: { user: PayloadToken }) {
     return this.liquidaciones.listar(cooperativaDelToken(req.user));
+  }
+
+  /**
+   * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
+   * obligatoria de datos de cooperativa (sección 3.7 del documento
+   * maestro). 6 meses sin confirmar = advertencia; 12 meses de
+   * silencio total = se bloquea SOLO horarios recurrentes y carga
+   * masiva -- nunca venta, validación de boletos, ni pagos.
+   */
+  @Roles('admin_cooperativa')
+  @Get('estado-datos')
+  async obtenerEstadoDatos(@Request() req: { user: PayloadToken }) {
+    return this.panel.obtenerEstadoDatosCooperativa(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Post('confirmar-datos')
+  async confirmarDatos(
+    @Body() dto: ConfirmarDatosCooperativaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.confirmarDatosCooperativa(cooperativaDelToken(req.user), dto);
   }
 }
