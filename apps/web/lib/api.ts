@@ -24,7 +24,10 @@ export interface ResultadoViaje {
   horaSalidaProgramada: string;
   horaLlegadaEstimada: string | null;
   precioBase: string;
+  tipoVehiculoId: string;
   tipoVehiculoNombre: string;
+  // Ítem 11 (04-ago-2026) -- visibles antes de elegir, no solo guardadas.
+  tipoVehiculoAmenidades: string[];
   asientosDisponibles: number;
 }
 
@@ -37,14 +40,34 @@ export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperaci
   return res.json();
 }
 
-export async function buscarViajes(
-  origenId: string,
-  destinoId: string,
-  fecha: string,
-  pasajeros: number,
-): Promise<ResultadoViaje[]> {
-  const params = new URLSearchParams({ origenId, destinoId, fecha, pasajeros: String(pasajeros) });
-  const res = await fetch(`${API_URL}/viajes/buscar?${params.toString()}`, { cache: "no-store" });
+/**
+ * Ítem 11 (04-ago-2026) -- filtros nuevos de hora, tipo de vehículo y
+ * amenidades. Objeto de parámetros en vez de seguir agregando
+ * argumentos posicionales (mismo criterio que el backend).
+ */
+export async function buscarViajes(params: {
+  origenId: string;
+  destinoId: string;
+  fecha: string;
+  pasajeros: number;
+  horaDesde?: string;
+  horaHasta?: string;
+  tipoVehiculoId?: string;
+  amenidades?: Amenidad[];
+}): Promise<ResultadoViaje[]> {
+  const query = new URLSearchParams({
+    origenId: params.origenId,
+    destinoId: params.destinoId,
+    fecha: params.fecha,
+    pasajeros: String(params.pasajeros),
+  });
+  if (params.horaDesde) query.set("horaDesde", params.horaDesde);
+  if (params.horaHasta) query.set("horaHasta", params.horaHasta);
+  if (params.tipoVehiculoId) query.set("tipoVehiculoId", params.tipoVehiculoId);
+  if (params.amenidades && params.amenidades.length > 0) {
+    query.set("amenidades", params.amenidades.join(","));
+  }
+  const res = await fetch(`${API_URL}/viajes/buscar?${query.toString()}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error("No se pudo completar la búsqueda. Intenta de nuevo en un momento.");
   }
@@ -472,11 +495,30 @@ export async function crearRutaCoop(
   return cuerpo as { id: string };
 }
 
+/** Ítem 11 (04-ago-2026) -- catálogo cerrado, sección 3.2 del documento maestro. */
+export type Amenidad =
+  | "wifi"
+  | "aire_acondicionado"
+  | "bano_a_bordo"
+  | "cargadores"
+  | "asientos_reclinables"
+  | "tv";
+
+export const AMENIDADES_CATALOGO: { valor: Amenidad; etiqueta: string }[] = [
+  { valor: "wifi", etiqueta: "WiFi" },
+  { valor: "aire_acondicionado", etiqueta: "Aire acondicionado" },
+  { valor: "bano_a_bordo", etiqueta: "Baño a bordo" },
+  { valor: "cargadores", etiqueta: "Cargadores" },
+  { valor: "asientos_reclinables", etiqueta: "Asientos reclinables" },
+  { valor: "tv", etiqueta: "TV" },
+];
+
 export interface TipoVehiculoResumen {
   id: string;
   nombre: string;
   categoria: "bus" | "buseta" | "van" | "auto" | null;
   capacidadTotal: number;
+  amenidades: Amenidad[];
 }
 
 export async function listarTiposVehiculoCoop(token: string): Promise<TipoVehiculoResumen[]> {
@@ -586,7 +628,12 @@ export async function cancelarViajesMasivoCoop(
 
 export async function crearTipoVehiculoCoop(
   token: string,
-  datos: { nombre: string; categoria?: "bus" | "buseta" | "van" | "auto"; capacidadTotal: number },
+  datos: {
+    nombre: string;
+    categoria?: "bus" | "buseta" | "van" | "auto";
+    capacidadTotal: number;
+    amenidades?: Amenidad[];
+  },
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_URL}/coop/tipos-vehiculo`, {
     method: "POST",

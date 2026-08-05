@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { buscarViajes } from "@/lib/api";
+import { buscarViajes, AMENIDADES_CATALOGO, type Amenidad } from "@/lib/api";
+import { FiltrosBusqueda } from "./FiltrosBusqueda";
 
 function formatearHora(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-EC", {
@@ -15,7 +16,7 @@ export default async function ResultadosBusquedaPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-  const { origenId, destinoId, origenCiudad, destinoCiudad, fecha, pasajeros } = sp;
+  const { origenId, destinoId, origenCiudad, destinoCiudad, fecha, pasajeros, horaDesde, horaHasta, amenidades } = sp;
 
   if (!origenId || !destinoId || !fecha) {
     return (
@@ -31,7 +32,15 @@ export default async function ResultadosBusquedaPage({
   let resultados: Awaited<ReturnType<typeof buscarViajes>> = [];
   let error: string | null = null;
   try {
-    resultados = await buscarViajes(origenId, destinoId, fecha, Number(pasajeros ?? 1));
+    resultados = await buscarViajes({
+      origenId,
+      destinoId,
+      fecha,
+      pasajeros: Number(pasajeros ?? 1),
+      horaDesde,
+      horaHasta,
+      amenidades: amenidades ? (amenidades.split(",") as Amenidad[]) : undefined,
+    });
   } catch {
     error = "No se pudo completar la búsqueda. Intenta de nuevo en un momento.";
   }
@@ -54,6 +63,10 @@ export default async function ResultadosBusquedaPage({
           })}{" "}
           · {pasajeros ?? 1} pasajero{Number(pasajeros ?? 1) > 1 ? "s" : ""}
         </p>
+
+        <div className="mt-4">
+          <FiltrosBusqueda />
+        </div>
 
         <div className="mt-6 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}
@@ -96,6 +109,18 @@ export default async function ResultadosBusquedaPage({
                   )}
                 </div>
                 <p className="text-sm text-brand-dark/60">{r.tipoVehiculoNombre}</p>
+                {r.tipoVehiculoAmenidades.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {r.tipoVehiculoAmenidades.map((a) => (
+                      <span
+                        key={a}
+                        className="rounded-full bg-brand-light/50 px-2 py-0.5 text-xs text-brand-dark/70"
+                      >
+                        {AMENIDADES_CATALOGO.find((cat) => cat.valor === a)?.etiqueta ?? a}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <p className="mt-1 text-sm text-brand-dark/70">
                   Sale {formatearHora(r.horaSalidaProgramada)}
                   {r.horaLlegadaEstimada && <> · Llega {formatearHora(r.horaLlegadaEstimada)}</>}

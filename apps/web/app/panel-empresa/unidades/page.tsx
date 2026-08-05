@@ -7,8 +7,10 @@ import {
   listarTiposVehiculoCoop,
   listarUnidadesCoop,
   actualizarEstadoUnidadCoop,
+  AMENIDADES_CATALOGO,
   type TipoVehiculoResumen,
   type UnidadResumen,
+  type Amenidad,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
@@ -64,6 +66,7 @@ export default function UnidadesPage() {
   const [nombreTipo, setNombreTipo] = useState("");
   const [categoriaTipo, setCategoriaTipo] = useState<"" | "bus" | "buseta" | "van" | "auto">("");
   const [capacidad, setCapacidad] = useState("");
+  const [amenidadesTipo, setAmenidadesTipo] = useState<Amenidad[]>([]);
   const [guardandoTipo, setGuardandoTipo] = useState(false);
   const [errorTipo, setErrorTipo] = useState<string | null>(null);
 
@@ -87,6 +90,12 @@ export default function UnidadesPage() {
 
   useEffect(cargarTodo, []);
 
+  function alternarAmenidadTipo(valor: Amenidad) {
+    setAmenidadesTipo((actuales) =>
+      actuales.includes(valor) ? actuales.filter((a) => a !== valor) : [...actuales, valor],
+    );
+  }
+
   async function crearTipo(e: React.FormEvent) {
     e.preventDefault();
     setErrorTipo(null);
@@ -101,11 +110,13 @@ export default function UnidadesPage() {
         nombre: nombreTipo.trim(),
         categoria: categoriaTipo || undefined,
         capacidadTotal: Number(capacidad),
+        amenidades: amenidadesTipo.length > 0 ? amenidadesTipo : undefined,
       });
       setMensajeExito(`Tipo de vehículo "${nombreTipo.trim()}" creado correctamente.`);
       setNombreTipo("");
       setCategoriaTipo("");
       setCapacidad("");
+      setAmenidadesTipo([]);
       cargarTodo();
     } catch (err) {
       const mensaje = err instanceof Error ? err.message : "No se pudo crear el tipo de vehículo.";
@@ -219,6 +230,27 @@ export default function UnidadesPage() {
             {guardandoTipo ? "Guardando..." : "Crear tipo de vehículo"}
           </button>
           {errorTipo && <p className="sm:col-span-3 text-sm font-medium text-red-600">{errorTipo}</p>}
+          <div className="sm:col-span-4">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              Amenidades
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {AMENIDADES_CATALOGO.map((a) => (
+                <button
+                  key={a.valor}
+                  type="button"
+                  onClick={() => alternarAmenidadTipo(a.valor)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    amenidadesTipo.includes(a.valor)
+                      ? "bg-brand text-white"
+                      : "bg-brand-light/40 text-brand-dark/60"
+                  }`}
+                >
+                  {a.etiqueta}
+                </button>
+              ))}
+            </div>
+          </div>
         </form>
 
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
@@ -233,6 +265,7 @@ export default function UnidadesPage() {
                 <tr>
                   <th className="px-6 py-3">Nombre</th>
                   <th className="px-6 py-3">Categoría</th>
+                  <th className="px-6 py-3">Amenidades</th>
                   <th className="px-6 py-3 text-right">Capacidad</th>
                 </tr>
               </thead>
@@ -247,6 +280,22 @@ export default function UnidadesPage() {
                         </span>
                       ) : (
                         <span className="text-brand-dark/30">Sin categoría</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-3">
+                      {t.amenidades.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {t.amenidades.map((a) => (
+                            <span
+                              key={a}
+                              className="rounded-full bg-brand-light/50 px-2 py-0.5 text-xs text-brand-dark/70"
+                            >
+                              {AMENIDADES_CATALOGO.find((cat) => cat.valor === a)?.etiqueta ?? a}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-brand-dark/30">Ninguna</span>
                       )}
                     </td>
                     <td className="px-6 py-3 text-right text-brand-dark/70">{t.capacidadTotal} asientos</td>
