@@ -52,4 +52,27 @@ export interface CalificacionesRepositorio {
       yaCalificado: boolean;
     }[]
   >;
+
+  /**
+   * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF. Mismo
+   * criterio de pertenencia real que obtenerCooperativaSiBoletoPerteneceA
+   * (a través de compras.compradorUsuarioId) -- null si el boleto no
+   * existe o no le pertenece a quien lo pide, el service lo traduce a
+   * un 403, no a un 404 (no revela si el boleto existe o no).
+   */
+  obtenerDatosBoletoParaPdf(
+    boletoId: string,
+    usuarioId: string,
+  ): Promise<{
+    codigoQr: string;
+    estado: string;
+    precioPagado: number;
+    pasajeroNombre: string;
+    numeroAsiento: string;
+    cooperativaNombre: string;
+    origenCiudad: string;
+    destinoCiudad: string;
+    fechaSalida: string;
+    horaSalidaProgramada: Date;
+  } | null>;
 }
