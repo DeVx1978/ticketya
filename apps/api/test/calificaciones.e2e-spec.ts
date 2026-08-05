@@ -271,8 +271,86 @@ describe('Calificaciones de viaje (e2e)', () => {
     expect(res.body.message).toContain('destino');
   });
 
-  it('el promedio de la cooperativa aparece en la búsqueda pública de viajes', async () => {
-    // Mismo viaje ya calificado con 5 arriba → promedio debe ser exactamente 5.
+  /**
+   * Ítem 12, Fase 2 (05-ago-2026) -- umbral mínimo de calificaciones
+   * antes de mostrar el promedio, decisión del director confirmada con
+   * datos reales (ninguna cooperativa de la base de desarrollo tenía
+   * más de 1 calificación al momento de decidir el umbral). En este
+   * punto del archivo solo existe 1 calificación (la de la prueba de
+   * arriba) -- por debajo del umbral de 5, así que ni promedio ni
+   * conteo deben aparecer, ni siquiera un aviso de "pocas reseñas".
+   */
+  it('con menos de 5 calificaciones, el promedio NO aparece en la búsqueda pública -- item 12 (05-ago-2026)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/viajes/buscar')
+      .query({
+        origenId: (
+          await request(app.getHttpServer())
+            .get('/puntos-operacion/buscar')
+            .query({ texto: `Origen Calif ${sufijo}` })
+        ).body[0].id,
+        destinoId: (
+          await request(app.getHttpServer())
+            .get('/puntos-operacion/buscar')
+            .query({ texto: `Destino Calif ${sufijo}` })
+        ).body[0].id,
+        fecha: '2026-01-15',
+      })
+      .expect(200);
+
+    expect(res.body[0].cooperativaCalificacionPromedio).toBeNull();
+  });
+
+  /**
+   * Sube la cooperativa a exactamente 5 calificaciones (el mínimo) --
+   * 4 viajes nuevos, cada uno con su propio boleto y su propia
+   * calificación de 5 estrellas, sumados a la que ya existe desde la
+   * prueba "el dueño real del boleto sí puede calificarlo" de arriba.
+   */
+  it('llega al umbral mínimo de 5 calificaciones (preparación para la siguiente prueba)', async () => {
+    for (let i = 0; i < 4; i++) {
+      const viajeExtra = await request(app.getHttpServer())
+        .post('/coop/viajes')
+        .set('Authorization', `Bearer ${tokenCoop}`)
+        .send({
+          rutaId,
+          unidadId,
+          fechaSalida: '2026-01-16',
+          horaSalidaProgramada: '2026-01-16T08:00:00-05:00',
+          precioBase: PRECIO_BASE,
+        });
+
+      await request(app.getHttpServer())
+        .post(`/viajes/${viajeExtra.body.id}/asientos/1A/bloquear`)
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .expect(201);
+      const compraExtra = await request(app.getHttpServer())
+        .post('/compras')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({
+          pasajeros: [
+            {
+              viajeId: viajeExtra.body.id,
+              numeroAsiento: '1A',
+              nombreCompleto: 'Pasajero Calificaciones E2E',
+              documento: `090000000${i}`,
+              tipoTarifa: 'adulto',
+            },
+          ],
+        })
+        .expect(201);
+      const boletoExtraId = compraExtra.body.boletos[0].id;
+
+      await request(app.getHttpServer())
+        .post('/calificaciones')
+        .set('Authorization', `Bearer ${tokenPasajero}`)
+        .send({ boletoId: boletoExtraId, puntuacion: 5 })
+        .expect(201);
+    }
+  });
+
+  it('el promedio de la cooperativa aparece en la búsqueda pública de viajes, con 5 calificaciones (umbral alcanzado) -- item 12 (05-ago-2026)', async () => {
+    // 5 calificaciones, todas de 5 estrellas → promedio debe ser exactamente 5.
     const res = await request(app.getHttpServer())
       .get('/viajes/buscar')
       .query({
@@ -291,7 +369,7 @@ describe('Calificaciones de viaje (e2e)', () => {
       .expect(200);
 
     expect(res.body[0].cooperativaCalificacionPromedio).toBe(5);
-    expect(res.body[0].cooperativaCalificacionCantidad).toBe(1);
+    expect(res.body[0].cooperativaCalificacionCantidad).toBe(5);
   });
 
   it('"mis boletos" refleja correctamente cuándo sí se puede calificar, y trae el código QR de cada boleto — hallazgo real cerrado 22-jul-2026 (antes no venía, sin forma de recuperar el QR si se cerraba la pantalla de compra)', async () => {

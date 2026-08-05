@@ -15,6 +15,15 @@ import { DRIZZLE_DB_PUBLICO } from '../../infraestructura/database/database.modu
 import type { DrizzleDb } from '../../infraestructura/database/database.provider';
 
 /**
+ * Ítem 12, Fase 2 (05-ago-2026) -- decisión del director, confirmada
+ * con datos reales de la base de desarrollo (ninguna cooperativa tenía
+ * más de 1 calificación al momento de decidir esto). Mismo criterio
+ * que usan Google/Amazon: un mínimo antes de mostrar el promedio como
+ * señal pública de confianza.
+ */
+const UMBRAL_MINIMO_CALIFICACIONES = 5;
+
+/**
  * RF-BUS — búsqueda y disponibilidad. Usa DRIZZLE_DB_PUBLICO (rol con
  * BYPASSRLS) a propósito: un pasajero buscando pasajes debe ver
  * resultados de TODAS las cooperativas a la vez (RF-BUS-003,
@@ -194,13 +203,24 @@ export class BusquedaService {
     // expresión completa en el WHERE — más simple y igual de correcto
     // filtrarlo aquí dado que el volumen de resultados por ruta/fecha es
     // pequeño (decenas, no miles).
+    //
+    // Ítem 12, Fase 2 (05-ago-2026) -- umbral mínimo de calificaciones
+    // antes de mostrar el promedio, decisión del director: una
+    // cooperativa con 1 sola calificación de 5 estrellas no debería
+    // verse igual de confiable que una con 200 reseñas y 4.8 promedio.
+    // Ni promedio ni conteo se muestran por debajo del umbral -- ni
+    // siquiera un aviso de "pocas reseñas", simplemente ausente. El
+    // frontend ya oculta toda la insignia cuando esto es null, así que
+    // no hace falta ningún cambio ahí.
     return resultados
       .filter((r) => r.asientosDisponibles >= pasajerosMinimos)
       .map((r) => ({
         ...r,
-        cooperativaCalificacionPromedio: r.cooperativaCalificacionPromedio
-          ? Number(r.cooperativaCalificacionPromedio)
-          : null,
+        cooperativaCalificacionPromedio:
+          r.cooperativaCalificacionPromedio &&
+          r.cooperativaCalificacionCantidad >= UMBRAL_MINIMO_CALIFICACIONES
+            ? Number(r.cooperativaCalificacionPromedio)
+            : null,
       }));
   }
 
