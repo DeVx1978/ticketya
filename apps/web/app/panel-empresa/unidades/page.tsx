@@ -8,9 +8,12 @@ import {
   listarUnidadesCoop,
   actualizarEstadoUnidadCoop,
   AMENIDADES_CATALOGO,
+  interpretarCelda,
+  obtenerPisosDeDistribucion,
   type TipoVehiculoResumen,
   type UnidadResumen,
   type Amenidad,
+  type DistribucionAsientos,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
@@ -68,6 +71,18 @@ export default function UnidadesPage() {
   const [capacidad, setCapacidad] = useState("");
   const [amenidadesTipo, setAmenidadesTipo] = useState<Amenidad[]>([]);
   const [guardandoTipo, setGuardandoTipo] = useState(false);
+
+  // Ítem 14, Fase 2 (05-ago-2026) -- configuración avanzada opcional de
+  // distribución de asientos con etiquetas (VIP, mujeres) por asiento
+  // individual. JSON editado a mano con vista previa en vivo -- mismo
+  // criterio que la carga masiva (ítem 8): frontend provisional, sin
+  // construir un editor visual de arrastrar-y-soltar en esta fase.
+  const [distribucionAbierta, setDistribucionAbierta] = useState(false);
+  const [distribucionJson, setDistribucionJson] = useState("");
+  const [distribucionParseada, setDistribucionParseada] = useState<DistribucionAsientos | null>(
+    null,
+  );
+  const [errorDistribucion, setErrorDistribucion] = useState<string | null>(null);
   const [errorTipo, setErrorTipo] = useState<string | null>(null);
 
   // Formulario: unidad
@@ -96,12 +111,40 @@ export default function UnidadesPage() {
     );
   }
 
+  /**
+   * Ítem 14 (05-ago-2026) -- parseo en vivo, cada vez que la cooperativa
+   * escribe. Si el JSON es inválido o está vacío, no bloquea el resto
+   * del formulario -- la distribución de asientos siempre fue opcional.
+   */
+  function actualizarDistribucionJson(texto: string) {
+    setDistribucionJson(texto);
+    setErrorDistribucion(null);
+    if (!texto.trim()) {
+      setDistribucionParseada(null);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(texto) as DistribucionAsientos;
+      if (!Array.isArray(parsed.pisos)) {
+        throw new Error('Debe tener un campo "pisos" con una lista.');
+      }
+      setDistribucionParseada(parsed);
+    } catch (err) {
+      setDistribucionParseada(null);
+      setErrorDistribucion(err instanceof Error ? err.message : "JSON inválido.");
+    }
+  }
+
   async function crearTipo(e: React.FormEvent) {
     e.preventDefault();
     setErrorTipo(null);
     const token = obtenerToken();
     if (!token || !nombreTipo.trim() || !capacidad) {
       setErrorTipo("Escribe un nombre y una capacidad.");
+      return;
+    }
+    if (distribucionJson.trim() && !distribucionParseada) {
+      setErrorTipo("La distribución de asientos tiene un error -- revisa el JSON o bórralo para omitirla.");
       return;
     }
     setGuardandoTipo(true);
@@ -111,12 +154,15 @@ export default function UnidadesPage() {
         categoria: categoriaTipo || undefined,
         capacidadTotal: Number(capacidad),
         amenidades: amenidadesTipo.length > 0 ? amenidadesTipo : undefined,
+        distribucionAsientos: distribucionParseada ?? undefined,
       });
       setMensajeExito(`Tipo de vehículo "${nombreTipo.trim()}" creado correctamente.`);
       setNombreTipo("");
       setCategoriaTipo("");
       setCapacidad("");
       setAmenidadesTipo([]);
+      setDistribucionJson("");
+      setDistribucionParseada(null);
       cargarTodo();
     } catch (err) {
       const mensaje = err instanceof Error ? err.message : "No se pudo crear el tipo de vehículo.";
@@ -250,6 +296,87 @@ export default function UnidadesPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Ítem 14, Fase 2 (05-ago-2026) -- distribución de asientos avanzada, opcional */}
+          <div className="sm:col-span-4">
+            <button
+              type="button"
+              onClick={() => setDistribucionAbierta((a) => !a)}
+              className="text-xs font-semibold text-brand underline decoration-dotted underline-offset-2"
+            >
+              {distribucionAbierta ? "Ocultar" : "Avanzado: distribución de asientos (VIP, exclusivo mujeres)"}
+            </button>
+
+            {distribucionAbierta && (
+              <div className="mt-3 space-y-3 rounded-lg bg-brand-light/20 p-4">
+                <p className="text-xs text-brand-dark/50">
+                  Opcional -- si lo dejas vacío, se usa una cuadrícula 2+2 automática, sin
+                  etiquetas. Cada celda es un número de asiento (texto simple) o un pasillo
+                  (<code>null</code>); para agregar etiquetas, usa{" "}
+                  <code>{'{ "numero": "1A", "etiquetas": ["vip"] }'}</code> en vez de solo el
+                  texto.
+                </p>
+                <textarea
+                  value={distribucionJson}
+                  onChange={(e) => actualizarDistribucionJson(e.target.value)}
+                  rows={10}
+                  spellCheck={false}
+                  placeholder={`{\n  "pisos": [\n    {\n      "nombre": "Piso único",\n      "filas": [\n        { "celdas": [{ "numero": "1A", "etiquetas": ["vip"] }, "1B", null, "1C", "1D"] }\n      ]\n    }\n  ]\n}`}
+                  className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 font-mono text-xs text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                />
+                {errorDistribucion && (
+                  <p className="text-xs font-medium text-red-600">{errorDistribucion}</p>
+                )}
+
+                {distribucionParseada && (
+                  <div>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                      Vista previa
+                    </p>
+                    <div className="space-y-3 rounded-lg bg-white p-4">
+                      {obtenerPisosDeDistribucion(distribucionParseada, Number(capacidad) || 0).map(
+                        (piso, pisoIdx) => (
+                          <div key={pisoIdx}>
+                            <p className="mb-1 text-xs font-bold text-brand-dark">{piso.nombre}</p>
+                            <div className="space-y-1">
+                              {piso.filas.map((fila, i) => (
+                                <div key={i} className="flex items-center gap-1.5">
+                                  {fila.celdas.map((celda, j) => {
+                                    const interpretada = interpretarCelda(celda, piso);
+                                    if (interpretada === null) {
+                                      return <span key={j} className="w-3" />;
+                                    }
+                                    const { numero, etiquetas } = interpretada;
+                                    return (
+                                      <div key={j} className="relative">
+                                        <span className="flex h-7 w-7 items-center justify-center rounded bg-brand-light text-[10px] font-semibold text-brand-dark">
+                                          {numero}
+                                        </span>
+                                        {etiquetas.length > 0 && (
+                                          <span className="absolute -top-0.5 -right-0.5 flex gap-0.5">
+                                            {etiquetas.includes("vip") && (
+                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                            )}
+                                            {etiquetas.includes("mujeres") && (
+                                              <span className="h-1.5 w-1.5 rounded-full bg-pink-500" />
+                                            )}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </form>
 
