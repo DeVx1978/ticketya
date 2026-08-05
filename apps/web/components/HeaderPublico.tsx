@@ -7,6 +7,7 @@ import { obtenerToken, decodificarToken, tokenExpirado, borrarToken, type Payloa
 
 const RUTA_POR_ROL: Record<PayloadToken["rol"], string> = {
   admin_plataforma: "/admin",
+  super_admin: "/admin",
   admin_cooperativa: "/panel-empresa",
   vendedor: "/panel-empresa",
   pasajero: "/",

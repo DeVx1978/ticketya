@@ -1855,3 +1855,54 @@ export async function importarDatosCoop(
   }
   return cuerpo as ResultadoImportacion;
 }
+
+/**
+ * Ítem 9, Fase 2 (04-ago-2026) -- división super_admin/admin_plataforma.
+ * Crear/eliminar son exclusivos de super_admin (el backend lo rechaza
+ * con 403 si no lo eres -- aquí solo se oculta la acción por UX, no es
+ * la barrera de seguridad real).
+ */
+export interface AdministradorResumen {
+  id: string;
+  correo: string;
+  nombreCompleto: string;
+  rol: "admin_plataforma" | "super_admin";
+  activo: boolean;
+  creadoEn: string;
+}
+
+export async function listarAdministradoresAdmin(token: string): Promise<AdministradorResumen[]> {
+  const res = await fetch(`${API_URL}/admin/administradores`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar los administradores.");
+  return cuerpo as AdministradorResumen[];
+}
+
+export async function crearAdministradorAdmin(
+  token: string,
+  datos: { correo: string; password: string; nombreCompleto: string; rol: "admin_plataforma" | "super_admin" },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/admin/administradores`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo crear el administrador.");
+  }
+  return cuerpo as { id: string };
+}
+
+export async function eliminarAdministradorAdmin(token: string, id: string): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/administradores/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo eliminar el administrador.");
+}
