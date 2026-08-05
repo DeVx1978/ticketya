@@ -81,14 +81,81 @@ export async function buscarViajes(params: {
  * (pasillo). `categoria` es opcional, solo para mostrar una etiqueta
  * distinta (ej. "VIP") en el frontend.
  */
+/**
+ * Ítem 14, Fase 2 (05-ago-2026) -- un solo sistema de etiquetas por
+ * asiento individual (VIP, mujeres, cualquier combinación), unifica el
+ * "VIP por piso completo" que existía antes. Compatibilidad hacia atrás
+ * PERMANENTE (decisión del director): si una celda sigue siendo solo un
+ * string (formato viejo), se interpreta igual que siempre, heredando la
+ * etiqueta del piso si piso.categoria === 'vip'.
+ *
+ * ⚠ Debe mantenerse en sync con la copia idéntica de este archivo en
+ * apps/api/src/dominio/asientos/distribucion-asientos.util.ts.
+ */
+export type Etiqueta = "vip" | "mujeres";
+
+export const ETIQUETAS_CATALOGO: { valor: Etiqueta; etiqueta: string }[] = [
+  { valor: "vip", etiqueta: "VIP" },
+  { valor: "mujeres", etiqueta: "Exclusivo mujeres" },
+];
+
+export type Celda = string | null | { numero: string; etiquetas?: Etiqueta[] };
+
 export interface PisoDistribucionAsientos {
   nombre: string;
+  /** Formato viejo -- ya no se escribe desde el sistema nuevo, se sigue leyendo para heredar VIP. */
   categoria?: string;
-  filas: Array<{ celdas: Array<string | null> }>;
+  filas: Array<{ celdas: Celda[] }>;
 }
 
 export interface DistribucionAsientos {
   pisos: PisoDistribucionAsientos[];
+}
+
+/** Interpreta una celda: null si es pasillo, o { numero, etiquetas } con las etiquetas efectivas (propias + heredada del piso). */
+export function interpretarCelda(
+  celda: Celda,
+  piso: PisoDistribucionAsientos,
+): { numero: string; etiquetas: Etiqueta[] } | null {
+  if (celda === null) return null;
+  const esFormatoNuevo = typeof celda === "object";
+  const numero = esFormatoNuevo ? celda.numero : celda;
+  const etiquetasPropias = esFormatoNuevo ? (celda.etiquetas ?? []) : [];
+  const heredaVipDePiso = piso.categoria?.toLowerCase() === "vip";
+  const etiquetas = Array.from(
+    new Set<Etiqueta>([...etiquetasPropias, ...(heredaVipDePiso ? (["vip"] as Etiqueta[]) : [])]),
+  );
+  return { numero, etiquetas };
+}
+
+/**
+ * Generador de respaldo 2+2 -- compartido de verdad con la pantalla de
+ * selección de asientos (antes vivía duplicado ahí, ítem 14, 05-ago-2026).
+ */
+export function generarPisosDeRespaldo(capacidadTotal: number): PisoDistribucionAsientos[] {
+  const letras = ["A", "B", "C", "D"];
+  const filas: Array<{ celdas: Celda[] }> = [];
+  let restante = capacidadTotal;
+  let numeroFila = 1;
+  while (restante > 0) {
+    const enEstaFila = Math.min(4, restante);
+    const celdas: Celda[] = letras.slice(0, enEstaFila).map((l) => `${numeroFila}${l}`);
+    celdas.splice(2, 0, null);
+    filas.push({ celdas });
+    restante -= enEstaFila;
+    numeroFila++;
+  }
+  return [{ nombre: "Piso único", filas }];
+}
+
+export function obtenerPisosDeDistribucion(
+  distribucion: DistribucionAsientos | null | undefined,
+  capacidadTotal: number,
+): PisoDistribucionAsientos[] {
+  if (distribucion && Array.isArray(distribucion.pisos) && distribucion.pisos.length > 0) {
+    return distribucion.pisos;
+  }
+  return generarPisosDeRespaldo(capacidadTotal);
 }
 
 export interface MapaAsientos {
@@ -633,6 +700,8 @@ export async function crearTipoVehiculoCoop(
     categoria?: "bus" | "buseta" | "van" | "auto";
     capacidadTotal: number;
     amenidades?: Amenidad[];
+    /** Ítem 14 (05-ago-2026) -- opcional, mapa de asientos con etiquetas (VIP, mujeres). */
+    distribucionAsientos?: DistribucionAsientos;
   },
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_URL}/coop/tipos-vehiculo`, {

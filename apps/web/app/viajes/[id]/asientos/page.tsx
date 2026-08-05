@@ -3,7 +3,13 @@
 import { useEffect, useState, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { obtenerMapaAsientos, bloquearAsiento, type MapaAsientos, type PisoDistribucionAsientos } from "@/lib/api";
+import {
+  obtenerMapaAsientos,
+  bloquearAsiento,
+  interpretarCelda,
+  obtenerPisosDeDistribucion,
+  type MapaAsientos,
+} from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 
 /**
@@ -19,32 +25,13 @@ import { tokenValido } from "@/lib/auth";
  * todavía no configuraron la suya), se cae de forma segura al mismo
  * generador simple 2+2 de siempre — nadie se queda sin mapa de
  * asientos mientras se termina de adoptar el nuevo formato.
+ *
+ * Ítem 14 (05-ago-2026) -- el generador de respaldo y obtenerPisos se
+ * movieron de verdad a lib/api.ts, compartidos con el backend (antes
+ * vivían duplicados aquí y en asientos.service.ts, dos copias que
+ * podían desincronizarse -- ver hallazgo real corregido en
+ * distribucion-asientos.util.ts).
  */
-function generarPisosDeRespaldo(capacidadTotal: number): PisoDistribucionAsientos[] {
-  const letras = ["A", "B", "C", "D"];
-  const filas: Array<{ celdas: Array<string | null> }> = [];
-  let restante = capacidadTotal;
-  let numeroFila = 1;
-  while (restante > 0) {
-    const enEstaFila = Math.min(4, restante);
-    const celdas: Array<string | null> = letras
-      .slice(0, enEstaFila)
-      .map((l) => `${numeroFila}${l}`);
-    celdas.splice(2, 0, null); // pasillo entre la 2da y 3ra columna
-    filas.push({ celdas });
-    restante -= enEstaFila;
-    numeroFila++;
-  }
-  return [{ nombre: "Piso único", filas }];
-}
-
-function obtenerPisos(mapa: MapaAsientos): PisoDistribucionAsientos[] {
-  const distribucion = mapa.distribucionAsientos;
-  if (distribucion && Array.isArray(distribucion.pisos) && distribucion.pisos.length > 0) {
-    return distribucion.pisos;
-  }
-  return generarPisosDeRespaldo(mapa.capacidadTotal);
-}
 
 export default function SeleccionAsientosPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: viajeId } = usePromise(params);
@@ -90,7 +77,19 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
   }
 
   const estadoPorNumero = new Map(mapa.asientosNoDisponibles.map((a) => [a.numeroAsiento, a.estado]));
-  const pisos = obtenerPisos(mapa);
+  const pisos = obtenerPisosDeDistribucion(mapa.distribucionAsientos, mapa.capacidadTotal);
+
+  // Ítem 14 (05-ago-2026) -- la leyenda de etiquetas solo se muestra si
+  // el vehículo tiene al menos un asiento con alguna, para no ensuciar
+  // la pantalla en la enorme mayoría de viajes que no usan esto todavía.
+  const hayEtiquetas = pisos.some((piso) =>
+    piso.filas.some((fila) =>
+      fila.celdas.some((celda) => {
+        const interpretada = interpretarCelda(celda, piso);
+        return interpretada !== null && interpretada.etiquetas.length > 0;
+      }),
+    ),
+  );
 
   async function continuar() {
     if (!seleccionado) return;
@@ -151,6 +150,17 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
           </div>
         )}
 
+        {hayEtiquetas && (
+          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-brand-dark/60">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> VIP
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-pink-500" /> Exclusivo mujeres
+            </span>
+          </div>
+        )}
+
         <div className="mt-6 space-y-4">
           {pisos.map((piso, pisoIdx) => (
             <div key={pisoIdx} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
@@ -167,29 +177,49 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
               <div className="space-y-2">
                 {piso.filas.map((fila, i) => (
                   <div key={i} className="flex items-center justify-center gap-2">
-                    {fila.celdas.map((numero, j) => {
-                      if (numero === null) {
+                    {fila.celdas.map((celda, j) => {
+                      const interpretada = interpretarCelda(celda, piso);
+                      if (interpretada === null) {
                         return <span key={j} className="w-4" />;
                       }
+                      const { numero, etiquetas } = interpretada;
                       const estado = estadoPorNumero.get(numero);
                       const noDisponible = estado === "ocupado" || estado === "bloqueado_temporal";
                       const esSeleccionado = seleccionado === numero;
                       return (
-                        <button
-                          key={numero}
-                          type="button"
-                          disabled={noDisponible}
-                          onClick={() => setSeleccionado(numero)}
-                          className={`h-10 w-10 rounded-lg text-xs font-semibold transition ${
-                            noDisponible
-                              ? "cursor-not-allowed bg-gray-200 text-gray-400"
-                              : esSeleccionado
-                                ? "bg-brand-amber text-brand-dark ring-2 ring-brand-dark"
-                                : "bg-brand-light text-brand-dark hover:bg-brand-medium hover:text-white"
-                          }`}
-                        >
-                          {numero}
-                        </button>
+                        <div key={numero} className="relative">
+                          <button
+                            type="button"
+                            disabled={noDisponible}
+                            onClick={() => setSeleccionado(numero)}
+                            className={`h-10 w-10 rounded-lg text-xs font-semibold transition ${
+                              noDisponible
+                                ? "cursor-not-allowed bg-gray-200 text-gray-400"
+                                : esSeleccionado
+                                  ? "bg-brand-amber text-brand-dark ring-2 ring-brand-dark"
+                                  : "bg-brand-light text-brand-dark hover:bg-brand-medium hover:text-white"
+                            }`}
+                          >
+                            {numero}
+                          </button>
+                          {/* Ítem 14 (05-ago-2026) -- indicadores de etiqueta, un asiento puede tener ambas a la vez. */}
+                          {!noDisponible && etiquetas.length > 0 && (
+                            <span className="absolute -top-1 -right-1 flex gap-0.5">
+                              {etiquetas.includes("vip") && (
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-1 ring-white"
+                                  title="VIP"
+                                />
+                              )}
+                              {etiquetas.includes("mujeres") && (
+                                <span
+                                  className="h-2.5 w-2.5 rounded-full bg-pink-500 ring-1 ring-white"
+                                  title="Exclusivo mujeres"
+                                />
+                              )}
+                            </span>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
