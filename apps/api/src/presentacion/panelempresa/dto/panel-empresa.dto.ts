@@ -31,6 +31,14 @@ export class CrearTipoVehiculoDto {
 
   @IsOptional()
   distribucionAsientos?: unknown = {};
+
+  /** Ítem 11 (04-ago-2026) -- catálogo cerrado, sección 3.2 del documento maestro. */
+  @IsOptional()
+  @IsArray()
+  @IsIn(['wifi', 'aire_acondicionado', 'bano_a_bordo', 'cargadores', 'asientos_reclinables', 'tv'], {
+    each: true,
+  })
+  amenidades?: ('wifi' | 'aire_acondicionado' | 'bano_a_bordo' | 'cargadores' | 'asientos_reclinables' | 'tv')[];
 }
 
 export class CrearUnidadDto {
@@ -313,6 +321,12 @@ export class EditarTipoVehiculoDto {
   @IsOptional() @IsInt() @Min(1) capacidadTotal?: number;
   @IsOptional() distribucionAsientos?: unknown;
   @IsOptional() @IsBoolean() activo?: boolean;
+  @IsOptional()
+  @IsArray()
+  @IsIn(['wifi', 'aire_acondicionado', 'bano_a_bordo', 'cargadores', 'asientos_reclinables', 'tv'], {
+    each: true,
+  })
+  amenidades?: ('wifi' | 'aire_acondicionado' | 'bano_a_bordo' | 'cargadores' | 'asientos_reclinables' | 'tv')[];
 }
 
 /** Editar o desactivar una ruta. */

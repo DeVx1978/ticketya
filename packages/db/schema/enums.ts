@@ -194,6 +194,23 @@ export const categoriaVehiculoEnum = pgEnum('categoria_vehiculo', [
 ]);
 
 /**
+ * Amenidades del vehículo -- ítem 11, Fase 2 (04-ago-2026), sección 3.2
+ * del documento maestro. Catálogo CERRADO, decisión del director
+ * (30-jul-2026): no texto libre -- "WiFi" y "WI-FI" escritos distinto
+ * por dos cooperativas no se agruparían bien en el filtro de búsqueda.
+ * Un tipo de vehículo puede tener varias a la vez (ver amenidades[] en
+ * tipos_vehiculo, flota.ts).
+ */
+export const amenidadEnum = pgEnum('amenidad', [
+  'wifi',
+  'aire_acondicionado',
+  'bano_a_bordo',
+  'cargadores',
+  'asientos_reclinables',
+  'tv',
+]);
+
+/**
  * Métodos de pago manuales (29-jul-2026) — mientras no hay una
  * pasarela real conectada (decisión de negocio pendiente), cada
  * cooperativa opera con lo que ya usa en Ecuador de todas formas:

@@ -181,11 +181,24 @@ export function validarDistribucionAsientos(
   return { ok: true };
 }
 
+/**
+ * Ítem 11, Fase 2 (04-ago-2026) -- catálogo cerrado de amenidades,
+ * decisión del director (30-jul-2026, sección 3.2 del documento maestro).
+ */
+export type Amenidad =
+  | 'wifi'
+  | 'aire_acondicionado'
+  | 'bano_a_bordo'
+  | 'cargadores'
+  | 'asientos_reclinables'
+  | 'tv';
+
 export interface DatosNuevoTipoVehiculo {
   nombre: string;
   categoria?: 'bus' | 'buseta' | 'van' | 'auto';
   capacidadTotal: number;
   distribucionAsientos?: unknown;
+  amenidades?: Amenidad[];
 }
 
 export interface DatosEditarTipoVehiculo {
@@ -194,6 +207,7 @@ export interface DatosEditarTipoVehiculo {
   capacidadTotal?: number;
   distribucionAsientos?: unknown;
   activo?: boolean;
+  amenidades?: Amenidad[];
 }
 
 export interface DatosEditarRuta {
@@ -370,6 +384,7 @@ export interface TipoVehiculoResumen {
   nombre: string;
   categoria: string | null;
   capacidadTotal: number;
+  amenidades: Amenidad[];
 }
 
 export interface UnidadResumen {
