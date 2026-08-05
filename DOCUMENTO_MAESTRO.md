@@ -427,7 +427,6 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 **Decisiones pendientes de tu confirmación antes de construir (análisis ya hecho, sección 3):**
 - Aviso de cambio de HORA de un viaje ya vendido -- ¿se habilita `editarViaje` para viajes con boletos vendidos (con su propio aviso), o se descarta del alcance de notificaciones? (3.12, hallazgo del 03-ago-2026)
 - Horarios recurrentes (plantilla), cancelación/suspensión masiva por ruta y fecha, verificar estado real de importación masiva de flota (3.7)
-- Dividir el admin de plataforma en `super_admin` + `admin_plataforma` con la matriz de permisos definida, más registro de auditoría (3.8)
 
 ### Fase 1 — Paneles de administración faltantes (backend ya existe, salvo lo indicado)
 ~~1. Panel de Comercial/Publicidad~~ — **cerrado 30-jul-2026**
