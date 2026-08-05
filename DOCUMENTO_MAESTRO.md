@@ -185,7 +185,9 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **Análisis a profundidad (30-jul-2026):** todas las fuentes de industria mencionan el boleto electrónico como algo que se puede guardar/acceder "en cualquier momento", incluyendo descarga en PDF para acceso sin conexión — hoy el boleto se ve en la app (QR + datos), pero no confirmé si existe descarga a PDF independiente de tener sesión activa/internet en el momento del abordaje. Punto real a verificar: qué pasa si el pasajero llega al terminal sin señal de datos — el código de pasajero fijo (sección 3.1.1) ayuda aquí también, como respaldo de identidad si el QR no carga.
 
-**Falta:** nada identificado en el flujo central. Verificar: descarga de boleto en PDF para acceso sin conexión.
+**Cerrado 05-ago-2026 (PRs #41 backend, #42 frontend, #43 fix).** Investigado primero: no existía ninguna librería de PDF en el proyecto, ni generación de QR del lado del servidor (el QR de hoy se genera 100% en el navegador con `qrcode`/`<canvas>`, sin nada que reutilizar para un documento generado en Node). `pdfkit` + `qrcode` (`QRCode.toBuffer()`) del lado del servidor, mismo `codigo_qr` que ya se escanea hoy. Diseño con logo/marca, datos organizados en secciones claras (fecha, hora, asiento, pasajero, cooperativa), QR grande (220pt) y legible -- requisitos explícitos del director. **Bug real encontrado con una prueba visual real, no solo automatizada:** la fuente estándar de `pdfkit` no tenía el glifo de la flecha Unicode (→) entre origen y destino, la sustituía por basura visual -- corregido con ASCII seguro (`->`). Recordatorio de alcance explícito: este PDF NO es el diseño final tipo aerolínea (terminal exacto, política de cancelación, etc.) -- ese nivel de detalle y pulido visual queda para la Fase 6 (rediseño completo del frontend), decisión ya confirmada con el director.
+
+**Falta:** nada.
 
 ---
 
@@ -446,7 +448,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~10. Actualización periódica obligatoria de datos de cooperativa~~ — **cerrado 04-ago-2026** (ver 3.7): decisión confirmada, construido y verificado (PRs #36, #37)
 ~~11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo~~ — **cerrado 05-ago-2026** (ver 3.2): construido y verificado (PRs #38, #39). Filtro por tipo de vehículo: backend listo, sin exponer en frontend (ver nota en 3.2)
 ~~12. Exponer calificación promedio en resultados de búsqueda~~ — **cerrado 05-ago-2026** (ver 3.2): ya existía, se le agregó el umbral mínimo de confianza que faltaba (PR #40)
-13. Descarga de boleto en PDF
+~~13. Descarga de boleto en PDF~~ — **cerrado 05-ago-2026** (ver 3.2): investigado, construido y verificado con prueba visual real (PRs #41, #42, #43)
 14. Asientos/indicador exclusivo para mujeres — **aprobado**, informativo, sin verificación de género en la compra
 15. Botón "ver trayecto" (ruta fija terminal origen → destino en un mapa) — **aprobado**, bajo costo, no depende de hardware de cooperativa
 16. Seguimiento GPS en vivo — **infraestructura genérica sí entra en construcción activa** (endpoint para recibir ubicación + mapa en vivo en frontend), igual criterio que Modelo B
