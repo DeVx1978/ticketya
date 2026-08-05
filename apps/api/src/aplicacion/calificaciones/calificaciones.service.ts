@@ -183,7 +183,11 @@ export class CalificacionesService {
         .fontSize(20)
         .fillColor('#1a1a1a')
         .font('Helvetica-Bold')
-        .text(`${datos.origenCiudad}  →  ${datos.destinoCiudad}`);
+        // 05-ago-2026 -- bug real encontrado con una prueba visual real:
+        // la fuente estándar Helvetica de pdfkit no tiene el glifo de
+        // flecha Unicode (→) -- lo sustituía por basura visual en vez
+        // de fallar limpio. "->" (ASCII) es seguro en cualquier fuente.
+        .text(`${datos.origenCiudad}  ->  ${datos.destinoCiudad}`);
       doc.moveDown(1.2);
 
       // Fecha/hora/asiento/pasajero -- cuadrícula de 2 columnas, cada
