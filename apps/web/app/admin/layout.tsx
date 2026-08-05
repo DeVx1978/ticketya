@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { obtenerToken, borrarToken, decodificarToken, tokenExpirado } from "@/lib/auth";
+import { obtenerToken, borrarToken, decodificarToken, tokenExpirado, type PayloadToken } from "@/lib/auth";
 
 const ENLACES = [
   { href: "/admin", etiqueta: "Panel" },
@@ -12,6 +12,7 @@ const ENLACES = [
   { href: "/admin/banners", etiqueta: "Banners" },
   { href: "/admin/comercial", etiqueta: "Comercial" },
   { href: "/admin/liquidaciones", etiqueta: "Liquidaciones" },
+  { href: "/admin/administradores", etiqueta: "Administradores" },
 ];
 
 /**
@@ -23,6 +24,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [verificando, setVerificando] = useState(true);
+  const [payload, setPayload] = useState<PayloadToken | null>(null);
 
   useEffect(() => {
     const token = obtenerToken();
@@ -36,12 +38,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace(`/ingresar?volverA=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (datos.rol !== "admin_plataforma") {
+    // 04-ago-2026, ítem 9 -- hallazgo real: este guardia solo dejaba
+    // pasar admin_plataforma, bloqueando a super_admin por completo
+    // (aunque el backend sí lo permite). Corregido.
+    if (datos.rol !== "admin_plataforma" && datos.rol !== "super_admin") {
       router.replace("/");
       return;
     }
     // Guardia de autenticación al montar — mismo patrón que
     // panel-empresa/layout.tsx, ver el comentario completo allá.
+    setPayload(datos);
     setVerificando(false);
   }, [router, pathname]);
 
@@ -85,12 +91,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ))}
             </nav>
           </div>
-          <button
-            onClick={salir}
-            className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-white/80 transition hover:bg-white/10"
-          >
-            Salir
-          </button>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-xs font-medium text-white/50 sm:inline">
+              {payload?.rol === "super_admin" ? "Super admin" : "Administrador"}
+            </span>
+            <button
+              onClick={salir}
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-white/80 transition hover:bg-white/10"
+            >
+              Salir
+            </button>
+          </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto border-t border-white/10 px-4 py-2 md:hidden">
           {ENLACES.map((enlace) => (

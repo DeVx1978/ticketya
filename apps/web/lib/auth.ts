@@ -25,7 +25,7 @@ export function borrarToken() {
 /** Forma del payload que emite el backend — ver dominio/auth/auth.ports.ts (PayloadToken). */
 export type PayloadToken = {
   sub: string;
-  rol: "pasajero" | "vendedor" | "admin_cooperativa" | "admin_plataforma";
+  rol: "pasajero" | "vendedor" | "admin_cooperativa" | "admin_plataforma" | "super_admin";
   cooperativaId: string | null;
   iat: number;
   exp: number;
