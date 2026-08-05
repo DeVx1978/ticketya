@@ -116,7 +116,7 @@ Lo que se propone es distinto y adicional, no un reemplazo: un identificador **f
 Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **no tenemos**:
 - **Filtros de búsqueda**: hoy los resultados se muestran, pero no hay forma de filtrar por rango de hora de salida, tipo de vehículo, o comodidades (WiFi, aire acondicionado, cargadores) — solo se ve la lista completa
 - **Comodidades del vehículo (amenidades) -- cerrado 05-ago-2026 (PRs #38 backend, #39 frontend).** Catálogo cerrado (decisión del director 30-jul-2026): WiFi, aire acondicionado, baño a bordo, cargadores, asientos reclinables, TV. Campo `amenidades[]` en `tipos_vehiculo`, visibles en resultados de búsqueda, no solo guardadas en la base de datos.
-- **Calificación visible antes de comprar**: ya construimos el sistema de calificaciones post-viaje, pero falta confirmar si esa calificación promedio se muestra al pasajero ANTES de elegir esa cooperativa en los resultados de búsqueda — si no se muestra, el sistema de calificaciones pierde gran parte de su valor real (ayudar a decidir, no solo acumular datos)
+- **Calificación visible antes de comprar -- cerrado 05-ago-2026 (PR #40).** Investigado primero: el promedio y el conteo YA se calculaban y YA se mostraban en los resultados de búsqueda (construido antes de esta sesión) -- el hueco real no era "no se muestra", era que se mostraba SIN ningún mínimo de confianza. Confirmado con datos reales de la base de desarrollo: ninguna cooperativa tenía más de 1 calificación al momento de decidir esto. Umbral mínimo de 5 calificaciones (mismo criterio que Google/Amazon) antes de mostrar promedio o conteo -- por debajo del umbral, ninguno de los dos aparece, ni siquiera un aviso de "pocas reseñas". Cambio quirúrgico de un solo archivo backend (`busqueda.service.ts`) -- el frontend ya ocultaba la insignia completa cuando el promedio es `null`, así que no necesitó ningún cambio.
 - **Seguimiento en vivo del bus (GPS)**: mencionado como diferenciador fuerte en redBus/Abhibus — no existe en nuestro sistema, ni el esquema lo contempla todavía
 
 **Decisiones del director (30-jul-2026):**
@@ -445,7 +445,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~9. División super_admin / admin_plataforma + registro de auditoría~~ — **cerrado 04-ago-2026** (ver 3.8): decisión confirmada, construido y verificado (PRs #33, #34)
 ~~10. Actualización periódica obligatoria de datos de cooperativa~~ — **cerrado 04-ago-2026** (ver 3.7): decisión confirmada, construido y verificado (PRs #36, #37)
 ~~11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo~~ — **cerrado 05-ago-2026** (ver 3.2): construido y verificado (PRs #38, #39). Filtro por tipo de vehículo: backend listo, sin exponer en frontend (ver nota en 3.2)
-12. Exponer calificación promedio en resultados de búsqueda — **aprobado**
+~~12. Exponer calificación promedio en resultados de búsqueda~~ — **cerrado 05-ago-2026** (ver 3.2): ya existía, se le agregó el umbral mínimo de confianza que faltaba (PR #40)
 13. Descarga de boleto en PDF
 14. Asientos/indicador exclusivo para mujeres — **aprobado**, informativo, sin verificación de género en la compra
 15. Botón "ver trayecto" (ruta fija terminal origen → destino en un mapa) — **aprobado**, bajo costo, no depende de hardware de cooperativa
