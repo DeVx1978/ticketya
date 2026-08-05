@@ -10,6 +10,7 @@ import {
   rutas,
   puntosOperacion,
   cooperativas,
+  pasajerosCompra,
 } from '@ticketya/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
@@ -155,5 +156,59 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
       horaLlegadaEstimada: f.horaLlegadaEstimada,
       yaCalificado: f.calificacionId !== null,
     }));
+  }
+
+  /**
+   * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF.
+   * Mismo criterio de pertenencia que obtenerCooperativaSiBoletoPerteneceA,
+   * más los datos que ese método no traía: nombre del pasajero (vive en
+   * pasajeros_compra, no en boletos) y número de asiento (viaje_asientos).
+   */
+  async obtenerDatosBoletoParaPdf(
+    boletoId: string,
+    usuarioId: string,
+  ): Promise<{
+    codigoQr: string;
+    estado: string;
+    precioPagado: number;
+    pasajeroNombre: string;
+    numeroAsiento: string;
+    cooperativaNombre: string;
+    origenCiudad: string;
+    destinoCiudad: string;
+    fechaSalida: string;
+    horaSalidaProgramada: Date;
+  } | null> {
+    const puntosOrigenPdf = alias(puntosOperacion, 'puntos_origen_pdf');
+    const puntosDestinoPdf = alias(puntosOperacion, 'puntos_destino_pdf');
+
+    const [fila] = await this.db
+      .select({
+        codigoQr: boletos.codigoQr,
+        estado: boletos.estado,
+        precioPagado: boletos.precioPagado,
+        pasajeroNombre: pasajerosCompra.nombreCompleto,
+        numeroAsiento: viajeAsientos.numeroAsiento,
+        cooperativaNombre: cooperativas.nombreComercial,
+        origenCiudad: puntosOrigenPdf.ciudad,
+        destinoCiudad: puntosDestinoPdf.ciudad,
+        fechaSalida: viajes.fechaSalida,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+      })
+      .from(boletos)
+      .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .innerJoin(pasajerosCompra, eq(boletos.pasajeroCompraId, pasajerosCompra.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
+      .innerJoin(puntosOrigenPdf, eq(rutas.origenPuntoOperacionId, puntosOrigenPdf.id))
+      .innerJoin(puntosDestinoPdf, eq(rutas.destinoPuntoOperacionId, puntosDestinoPdf.id))
+      .innerJoin(cooperativas, eq(boletos.cooperativaId, cooperativas.id))
+      .where(
+        sql`${boletos.id} = ${boletoId} AND ${compras.compradorUsuarioId} = ${usuarioId}`,
+      );
+
+    if (!fila) return null;
+    return { ...fila, precioPagado: Number(fila.precioPagado) };
   }
 }
