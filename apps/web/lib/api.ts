@@ -1486,6 +1486,32 @@ export async function listarMisBoletos(token: string): Promise<MiBoleto[]> {
 }
 
 /**
+ * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF. Endpoint
+ * autenticado (requiere Authorization), así que no puede ser un simple
+ * <a href> -- se pide como blob y se dispara la descarga con un enlace
+ * temporal invisible, mismo patrón estándar para descargas autenticadas
+ * en el navegador.
+ */
+export async function descargarBoletoPdf(token: string, boletoId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/calificaciones/mis-boletos/${boletoId}/pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const cuerpo = await res.json().catch(() => null);
+    throw new Error(cuerpo?.message ?? "No se pudo descargar el boleto.");
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = `boleto-${boletoId.slice(0, 8)}.pdf`;
+  document.body.appendChild(enlace);
+  enlace.click();
+  document.body.removeChild(enlace);
+  window.URL.revokeObjectURL(url);
+}
+
+/**
  * Vacío real de diseño encontrado el 29-jul-2026: el crédito de
  * reprogramación existía en el backend desde el 28-jul, pero el
  * pasajero no tenía ningún lugar donde consultar su saldo.
