@@ -1906,3 +1906,54 @@ export async function eliminarAdministradorAdmin(token: string, id: string): Pro
   const cuerpo = await res.json();
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo eliminar el administrador.");
 }
+
+/**
+ * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica obligatoria
+ * de datos legales de cooperativa. 6 meses sin confirmar = advertencia
+ * (banner, no bloqueante). 12 meses de silencio total = bloqueado
+ * (solo horarios recurrentes y carga masiva -- nunca venta, validación
+ * de boletos, ni pagos).
+ */
+export interface DatosLegalesCooperativa {
+  razonSocial: string;
+  ruc: string;
+  direccionLegal: string | null;
+  contactoNombre: string | null;
+  contactoCorreo: string | null;
+  contactoTelefono: string | null;
+}
+
+export type EstadoActualizacionDatos =
+  | { estado: "al_dia" }
+  | { estado: "advertencia"; mesesSinConfirmar: number }
+  | { estado: "bloqueado"; mesesSinConfirmar: number };
+
+export type EstadoDatosCooperativa = EstadoActualizacionDatos & {
+  datosActuales: DatosLegalesCooperativa;
+};
+
+export async function obtenerEstadoDatosCoop(token: string): Promise<EstadoDatosCooperativa> {
+  const res = await fetch(`${API_URL}/coop/estado-datos`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el estado de tus datos.");
+  return cuerpo as EstadoDatosCooperativa;
+}
+
+export async function confirmarDatosCoop(
+  token: string,
+  datos: Partial<DatosLegalesCooperativa>,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/confirmar-datos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudieron confirmar los datos.");
+  }
+}
