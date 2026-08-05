@@ -355,3 +355,17 @@ export class CancelarViajesMasivoDto {
   @IsISO8601()
   fechaFin!: string;
 }
+
+/**
+ * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica obligatoria
+ * de datos de cooperativa. Todos opcionales: revisar y dejar igual
+ * también es una confirmación válida.
+ */
+export class ConfirmarDatosCooperativaDto {
+  @IsOptional() @IsString() @MinLength(3) razonSocial?: string;
+  @IsOptional() @IsString() @MinLength(10) ruc?: string;
+  @IsOptional() @IsString() direccionLegal?: string;
+  @IsOptional() @IsString() contactoNombre?: string;
+  @IsOptional() @IsEmail() contactoCorreo?: string;
+  @IsOptional() @IsString() contactoTelefono?: string;
+}

@@ -1,6 +1,7 @@
-﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
+import { cooperativas } from '@ticketya/db';
 import { DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { ejecutarComoCooperativa } from '../database/tenant-transaction';
@@ -8,6 +9,7 @@ import { BcryptHasher } from '../auth/bcrypt.hasher';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
+  DatosLegalesCooperativa,
   DatosNuevaUnidad,
   DatosEditarTipoVehiculo,
   DatosEditarRuta,
@@ -1324,6 +1326,72 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         INSERT INTO verificaciones_menor (boleto_id, verificado_por_usuario_id, documento_identidad_verificado, documento_autorizacion_verificado)
         VALUES (${boletoId}, ${verificadoPorUsuarioId}, ${documentoIdentidadVerificado}, ${documentoAutorizacionVerificado})
       `);
+    });
+  }
+
+  /**
+   * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
+   * obligatoria de datos de cooperativa.
+   */
+  async obtenerEstadoActualizacionDatos(cooperativaId: string): Promise<{
+    ultimaConfirmacion: Date | null;
+    fechaAfiliacion: Date | null;
+    datosActuales: DatosLegalesCooperativa;
+  }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT razon_social, ruc, direccion_legal, contacto_nombre, contacto_correo,
+               contacto_telefono, fecha_afiliacion, datos_actualizados_en
+        FROM cooperativas
+        WHERE id = ${cooperativaId}
+      `);
+      const f = resultado.rows[0] as {
+        razon_social: string;
+        ruc: string;
+        direccion_legal: string | null;
+        contacto_nombre: string | null;
+        contacto_correo: string | null;
+        contacto_telefono: string | null;
+        fecha_afiliacion: Date | null;
+        datos_actualizados_en: Date | null;
+      };
+      return {
+        // Conversión explícita a Date real -- bug real encontrado por
+        // las propias pruebas: sql`` crudo devuelve las columnas
+        // timestamp como texto, no como Date, aunque el tipo de
+        // TypeScript diga Date | null. calcularEstadoActualizacionDatos
+        // llama .getTime() y fallaba en tiempo de ejecución.
+        ultimaConfirmacion: f.datos_actualizados_en ? new Date(f.datos_actualizados_en) : null,
+        fechaAfiliacion: f.fecha_afiliacion ? new Date(f.fecha_afiliacion) : null,
+        datosActuales: {
+          razonSocial: f.razon_social,
+          ruc: f.ruc,
+          direccionLegal: f.direccion_legal,
+          contactoNombre: f.contacto_nombre,
+          contactoCorreo: f.contacto_correo,
+          contactoTelefono: f.contacto_telefono,
+        },
+      };
+    });
+  }
+
+  async confirmarDatosCooperativa(
+    cooperativaId: string,
+    datos: Partial<DatosLegalesCooperativa>,
+  ): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const valores: Record<string, unknown> = { datosActualizadosEn: sql`now()` };
+      if (datos.razonSocial !== undefined) valores.razonSocial = datos.razonSocial;
+      if (datos.ruc !== undefined) valores.ruc = datos.ruc;
+      if (datos.direccionLegal !== undefined) valores.direccionLegal = datos.direccionLegal;
+      if (datos.contactoNombre !== undefined) valores.contactoNombre = datos.contactoNombre;
+      if (datos.contactoCorreo !== undefined) valores.contactoCorreo = datos.contactoCorreo;
+      if (datos.contactoTelefono !== undefined) valores.contactoTelefono = datos.contactoTelefono;
+
+      await tx
+        .update(cooperativas)
+        .set(valores)
+        .where(eq(cooperativas.id, cooperativaId));
     });
   }
 }

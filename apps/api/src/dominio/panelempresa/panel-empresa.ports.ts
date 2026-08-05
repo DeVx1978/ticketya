@@ -420,6 +420,58 @@ export interface PasajeroDeViaje {
   estadoBoleto: string;
 }
 
+/**
+ * Ítem 10, Fase 2 (04-ago-2026) — actualización periódica obligatoria
+ * de datos de cooperativa. Decisión confirmada por el director: 6 meses
+ * sin confirmar = advertencia (no bloqueante); 12 meses de silencio
+ * total = se bloquea SOLO creación de horarios recurrentes nuevos y
+ * carga masiva -- nunca venta, validación de boletos, ni confirmación
+ * de pagos, bajo ninguna circunstancia.
+ */
+export const MESES_ADVERTENCIA_DATOS_COOPERATIVA = 6;
+export const MESES_BLOQUEO_DATOS_COOPERATIVA = 12;
+
+export type EstadoActualizacionDatos =
+  | { estado: 'al_dia' }
+  | { estado: 'advertencia'; mesesSinConfirmar: number }
+  | { estado: 'bloqueado'; mesesSinConfirmar: number };
+
+/**
+ * Referencia = la confirmación más reciente, o la fecha de afiliación
+ * si nunca se ha confirmado nada. Sin ninguna de las dos (caso raro,
+ * cooperativa muy vieja sin fechaAfiliacion registrada), no se puede
+ * evaluar -- se trata como al_dia en vez de penalizar por un hueco de
+ * datos que no es culpa de la cooperativa.
+ */
+export function calcularEstadoActualizacionDatos(
+  ultimaConfirmacion: Date | null,
+  fechaAfiliacion: Date | null,
+  ahora: Date = new Date(),
+): EstadoActualizacionDatos {
+  const referencia = ultimaConfirmacion ?? fechaAfiliacion;
+  if (!referencia) return { estado: 'al_dia' };
+
+  const msPorMes = 1000 * 60 * 60 * 24 * 30.44; // promedio real de días por mes, no un mes fijo de 30
+  const mesesTranscurridos = (ahora.getTime() - referencia.getTime()) / msPorMes;
+
+  if (mesesTranscurridos >= MESES_BLOQUEO_DATOS_COOPERATIVA) {
+    return { estado: 'bloqueado', mesesSinConfirmar: Math.floor(mesesTranscurridos) };
+  }
+  if (mesesTranscurridos >= MESES_ADVERTENCIA_DATOS_COOPERATIVA) {
+    return { estado: 'advertencia', mesesSinConfirmar: Math.floor(mesesTranscurridos) };
+  }
+  return { estado: 'al_dia' };
+}
+
+export interface DatosLegalesCooperativa {
+  razonSocial: string;
+  ruc: string;
+  direccionLegal: string | null;
+  contactoNombre: string | null;
+  contactoCorreo: string | null;
+  contactoTelefono: string | null;
+}
+
 export interface PanelEmpresaRepositorio {
   crearTipoVehiculo(
     cooperativaId: string,
@@ -692,5 +744,25 @@ export interface PanelEmpresaRepositorio {
     verificadoPorUsuarioId: string,
     documentoIdentidadVerificado: boolean,
     documentoAutorizacionVerificado: boolean,
+  ): Promise<void>;
+
+  /**
+   * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
+   * obligatoria de datos de cooperativa.
+   */
+  obtenerEstadoActualizacionDatos(cooperativaId: string): Promise<{
+    ultimaConfirmacion: Date | null;
+    fechaAfiliacion: Date | null;
+    datosActuales: DatosLegalesCooperativa;
+  }>;
+
+  /**
+   * Actualiza solo los campos enviados (revisar y dejar igual también
+   * es válido) y SIEMPRE marca datosActualizadosEn = ahora,
+   * independientemente de si algo cambió de verdad.
+   */
+  confirmarDatosCooperativa(
+    cooperativaId: string,
+    datos: Partial<DatosLegalesCooperativa>,
   ): Promise<void>;
 }

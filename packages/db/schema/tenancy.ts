@@ -108,6 +108,15 @@ export const cooperativas = pgTable(
     // plataforma (configuracionPlataforma.cancelacionHorasMinimasAntes).
     horasLimiteCancelacion: integer('horas_limite_cancelacion'),
 
+    // Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
+    // obligatoria de datos. Hallazgo real: no existía ninguna columna
+    // de dirección legal, se agrega aquí junto con la marca de tiempo
+    // de confirmación. Nullable: null = nunca se ha confirmado, la
+    // capa de aplicación usa fechaAfiliacion como referencia en ese
+    // caso (ver panel-empresa.ports.ts, calcularEstadoActualizacionDatos).
+    direccionLegal: text('direccion_legal'),
+    datosActualizadosEn: timestamp('datos_actualizados_en', { withTimezone: true }),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },

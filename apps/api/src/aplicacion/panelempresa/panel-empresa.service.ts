@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
@@ -15,8 +15,13 @@ import type {
   DatosNuevoConductor,
   DatosImportacion,
   DatosNuevoHorarioRuta,
+  DatosLegalesCooperativa,
 } from '../../dominio/panelempresa/panel-empresa.ports';
-import { validarDistribucionAsientos, type TipoMetodoPago } from '../../dominio/panelempresa/panel-empresa.ports';
+import {
+  validarDistribucionAsientos,
+  calcularEstadoActualizacionDatos,
+  type TipoMetodoPago,
+} from '../../dominio/panelempresa/panel-empresa.ports';
 
 export const PANEL_EMPRESA_REPOSITORIO = 'PANEL_EMPRESA_REPOSITORIO';
 
@@ -131,7 +136,14 @@ export class PanelEmpresaService {
   /**
    * Horarios recurrentes (plantilla) — ítem 7, RF-COOP-002.
    */
-  crearHorarioRuta(cooperativaId: string, datos: DatosNuevoHorarioRuta) {
+  /**
+   * Ítem 10, Fase 2 (04-ago-2026) -- bloqueado si la cooperativa lleva
+   * 12 meses sin confirmar sus datos legales. Nunca bloquea venta,
+   * validación de boletos, ni pagos -- solo esta función y la carga
+   * masiva (decisión del director).
+   */
+  async crearHorarioRuta(cooperativaId: string, datos: DatosNuevoHorarioRuta) {
+    await this.verificarNoBloqueadoPorDatos(cooperativaId);
     return this.panel.crearHorarioRuta(cooperativaId, datos);
   }
 
@@ -233,6 +245,9 @@ export class PanelEmpresaService {
    * débil que existía antes.
    */
   async importarDatos(cooperativaId: string, datos: DatosImportacion) {
+    // Ítem 10, Fase 2 (04-ago-2026) -- mismo bloqueo que crearHorarioRuta.
+    await this.verificarNoBloqueadoPorDatos(cooperativaId);
+
     const resultado = await this.panel.importarDatos(cooperativaId, datos);
 
     let viajesGenerados = 0;
@@ -385,5 +400,43 @@ export class PanelEmpresaService {
       documentoIdentidadVerificado,
       documentoAutorizacionVerificado,
     );
+  }
+
+  /**
+   * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
+   * obligatoria de datos de cooperativa (sección 3.7 del documento
+   * maestro). 6 meses sin confirmar = advertencia (banner en el
+   * panel, no bloqueante). 12 meses de silencio total = se bloquea
+   * SOLO creación de horarios recurrentes y carga masiva.
+   */
+  async obtenerEstadoDatosCooperativa(cooperativaId: string) {
+    const { ultimaConfirmacion, fechaAfiliacion, datosActuales } =
+      await this.panel.obtenerEstadoActualizacionDatos(cooperativaId);
+    const estado = calcularEstadoActualizacionDatos(ultimaConfirmacion, fechaAfiliacion);
+    return { ...estado, datosActuales };
+  }
+
+  async confirmarDatosCooperativa(
+    cooperativaId: string,
+    datos: Partial<DatosLegalesCooperativa>,
+  ) {
+    await this.panel.confirmarDatosCooperativa(cooperativaId, datos);
+    return { ok: true };
+  }
+
+  /**
+   * No lanza si no hay suficiente información para evaluar (mismo
+   * criterio conservador que calcularEstadoActualizacionDatos): un
+   * hueco de datos no debe convertirse en un bloqueo injusto.
+   */
+  private async verificarNoBloqueadoPorDatos(cooperativaId: string): Promise<void> {
+    const { ultimaConfirmacion, fechaAfiliacion } =
+      await this.panel.obtenerEstadoActualizacionDatos(cooperativaId);
+    const estado = calcularEstadoActualizacionDatos(ultimaConfirmacion, fechaAfiliacion);
+    if (estado.estado === 'bloqueado') {
+      throw new BadRequestException(
+        `Tus datos de cooperativa llevan ${estado.mesesSinConfirmar} meses sin confirmarse. Confirma tus datos legales en la sección de configuración para poder crear horarios recurrentes o usar la carga masiva.`,
+      );
+    }
   }
 }
