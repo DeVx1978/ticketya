@@ -1,7 +1,17 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
 import { BusquedaService } from '../../aplicacion/busqueda/busqueda.service';
 import { BuscarViajesDto } from './dto/buscar-viajes.dto';
 import { BuscarPuntosOperacionDto } from './dto/buscar-puntos-operacion.dto';
+
+/** Ítem 11 (04-ago-2026) -- catálogo cerrado, mismo que enums.ts amenidadEnum. */
+const AMENIDADES_VALIDAS = [
+  'wifi',
+  'aire_acondicionado',
+  'bano_a_bordo',
+  'cargadores',
+  'asientos_reclinables',
+  'tv',
+];
 
 @Controller()
 export class BusquedaController {
@@ -13,15 +23,32 @@ export class BusquedaController {
     return this.busqueda.buscarPuntosOperacion(query.texto);
   }
 
-  /** RF-BUS-001, RF-BUS-003, RF-BUS-006 */
+  /** RF-BUS-001, RF-BUS-003, RF-BUS-006 -- ítem 11 agrega filtros de hora, tipo de vehículo y amenidades. */
   @Get('viajes/buscar')
   async buscarViajes(@Query() query: BuscarViajesDto) {
-    return this.busqueda.buscarViajes(
-      query.origenId,
-      query.destinoId,
-      query.fecha,
-      query.pasajeros ?? 1,
-    );
+    const amenidades = query.amenidades
+      ? query.amenidades.split(',').map((a) => a.trim())
+      : undefined;
+
+    if (amenidades) {
+      const invalida = amenidades.find((a) => !AMENIDADES_VALIDAS.includes(a));
+      if (invalida) {
+        throw new BadRequestException(
+          `"${invalida}" no es una amenidad válida. Valores permitidos: ${AMENIDADES_VALIDAS.join(', ')}.`,
+        );
+      }
+    }
+
+    return this.busqueda.buscarViajes({
+      origenId: query.origenId,
+      destinoId: query.destinoId,
+      fecha: query.fecha,
+      pasajerosMinimos: query.pasajeros ?? 1,
+      horaDesde: query.horaDesde,
+      horaHasta: query.horaHasta,
+      tipoVehiculoId: query.tipoVehiculoId,
+      amenidades,
+    });
   }
 
   /** Banners propios activos, para la portada — sin autenticación (22-jul-2026). */

@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { alias } from 'drizzle-orm/pg-core';
 import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import {
@@ -73,13 +73,24 @@ export class BusquedaService {
    * RF-BUS-006 — disponibilidad en tiempo real, considerando asientos
    * bloqueados temporalmente por otras compras en curso (no solo los ya
    * vendidos).
+   *
+   * Ítem 11, Fase 2 (04-ago-2026) -- filtros nuevos de hora, tipo de
+   * vehículo y amenidades. Se pasa un objeto de parámetros en vez de
+   * seguir agregando argumentos posicionales (ya eran 4, con estos 4
+   * nuevos hubiera sido ilegible).
    */
-  async buscarViajes(
-    origenId: string,
-    destinoId: string,
-    fecha: string,
-    pasajerosMinimos: number,
-  ) {
+  async buscarViajes(params: {
+    origenId: string;
+    destinoId: string;
+    fecha: string;
+    pasajerosMinimos: number;
+    horaDesde?: string;
+    horaHasta?: string;
+    tipoVehiculoId?: string;
+    amenidades?: string[];
+  }) {
+    const { origenId, destinoId, fecha, pasajerosMinimos, horaDesde, horaHasta, tipoVehiculoId, amenidades } = params;
+
     // Union doble de puntos_operacion: una vez como origen, otra como destino.
     const origen = alias(puntosOperacion, 'origen');
     const destino = alias(puntosOperacion, 'destino');
@@ -106,6 +117,39 @@ export class BusquedaService {
       SELECT COUNT(*)::int FROM calificaciones WHERE cooperativa_id = ${cooperativas.id}
     )`;
 
+    // Ítem 11 -- condiciones opcionales, agregadas solo si el pasajero
+    // las pidió. horaDesde/horaHasta convierte a hora local Ecuador
+    // antes de comparar (la columna es timestamptz en UTC).
+    const condiciones = [
+      eq(rutas.origenPuntoOperacionId, origenId),
+      eq(rutas.destinoPuntoOperacionId, destinoId),
+      eq(viajes.fechaSalida, fecha),
+      eq(viajes.estado, 'programado'),
+    ];
+
+    if (horaDesde && horaHasta) {
+      condiciones.push(
+        sql`(${viajes.horaSalidaProgramada} AT TIME ZONE 'America/Guayaquil')::time BETWEEN ${horaDesde}::time AND ${horaHasta}::time`,
+      );
+    }
+
+    if (tipoVehiculoId) {
+      condiciones.push(eq(tiposVehiculo.id, tipoVehiculoId));
+    }
+
+    // AND, no OR -- mismo criterio que sql.join ya probado y corregido
+    // en el ítem 7 (bug real ANY() vs IN()): el array de JS nunca se
+    // interpola directo en el template, cada valor va como su propio
+    // parámetro ligado dentro de un ARRAY[...] construido a mano.
+    if (amenidades && amenidades.length > 0) {
+      condiciones.push(
+        sql`${tiposVehiculo.amenidades} @> ARRAY[${sql.join(
+          amenidades.map((a) => sql`${a}::amenidad`),
+          sql`, `,
+        )}]::amenidad[]`,
+      );
+    }
+
     const resultados = await this.db
       .select({
         viajeId: viajes.id,
@@ -121,8 +165,11 @@ export class BusquedaService {
         horaSalidaProgramada: viajes.horaSalidaProgramada,
         horaLlegadaEstimada: viajes.horaLlegadaEstimada,
         precioBase: viajes.precioBase,
+        tipoVehiculoId: tiposVehiculo.id,
         tipoVehiculoNombre: tiposVehiculo.nombre,
         tipoVehiculoCategoria: tiposVehiculo.categoria,
+        // Ítem 11 -- visibles en resultados, no solo guardadas en la BD.
+        tipoVehiculoAmenidades: tiposVehiculo.amenidades,
         asientosDisponibles: asientosDisponibles.as('asientos_disponibles'),
         origenLatitud: origen.latitud,
         origenLongitud: origen.longitud,
@@ -136,14 +183,7 @@ export class BusquedaService {
       .innerJoin(tiposVehiculo, eq(unidades.tipoVehiculoId, tiposVehiculo.id))
       .innerJoin(origen, eq(rutas.origenPuntoOperacionId, origen.id))
       .innerJoin(destino, eq(rutas.destinoPuntoOperacionId, destino.id))
-      .where(
-        and(
-          eq(rutas.origenPuntoOperacionId, origenId),
-          eq(rutas.destinoPuntoOperacionId, destinoId),
-          eq(viajes.fechaSalida, fecha),
-          eq(viajes.estado, 'programado'),
-        ),
-      )
+      .where(and(...condiciones))
       // RF-BUS-001 — "ordenados por hora de salida".
       .orderBy(viajes.horaSalidaProgramada);
 

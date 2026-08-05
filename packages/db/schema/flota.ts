@@ -15,7 +15,7 @@ import {
 import { relations } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
 import { appRole, filtroCooperativaActual } from './rls';
-import { categoriaVehiculoEnum } from './enums';
+import { categoriaVehiculoEnum, amenidadEnum } from './enums';
 
 /**
  * RF-FLOTA-001 — catálogo extensible de tipos de vehículo por cooperativa
@@ -51,6 +51,12 @@ export const tiposVehiculo = pgTable(
 
     capacidadTotal: integer('capacidad_total').notNull(),
     distribucionAsientos: jsonb('distribucion_asientos').notNull(),
+
+    // Ítem 11, Fase 2 (04-ago-2026) -- amenidades del vehículo, visibles
+    // en los resultados de búsqueda antes de que el pasajero elija.
+    // Array del catálogo cerrado (no notNull-vacío por accidente:
+    // .default([]) cubre los tipos de vehículo creados antes de hoy).
+    amenidades: amenidadEnum('amenidades').array().default([]).notNull(),
 
     activo: boolean('activo').default(true).notNull(),
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),

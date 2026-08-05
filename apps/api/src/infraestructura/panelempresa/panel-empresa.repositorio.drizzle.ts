@@ -10,6 +10,7 @@ import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
   DatosLegalesCooperativa,
+  Amenidad,
   DatosNuevaUnidad,
   DatosEditarTipoVehiculo,
   DatosEditarRuta,
@@ -38,6 +39,23 @@ import type {
  * DRIZZLE_DB. Esto es lo que hace que RLS proteja de verdad estas
  * operaciones (Arquitectura Técnica 4.3), no solo la búsqueda pública.
  */
+
+/**
+ * Ítem 11 (04-ago-2026) -- construye un literal ARRAY[...]::amenidad[]
+ * con cada valor como su propio parámetro ligado, NUNCA interpolando el
+ * array de JS directo en el template sql`` -- mismo bug real que ya
+ * encontramos con ANY() vs IN() en el ítem 7: Drizzle expande un array
+ * de JS como lista de parámetros separados, no como un literal de
+ * array nativo de Postgres.
+ */
+function amenidadesArraySql(amenidades: Amenidad[] | undefined) {
+  if (!amenidades || amenidades.length === 0) return sql`ARRAY[]::amenidad[]`;
+  return sql`ARRAY[${sql.join(
+    amenidades.map((a) => sql`${a}::amenidad`),
+    sql`, `,
+  )}]`;
+}
+
 @Injectable()
 export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   constructor(
@@ -51,8 +69,8 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
-        INSERT INTO tipos_vehiculo (cooperativa_id, nombre, categoria, capacidad_total, distribucion_asientos)
-        VALUES (${cooperativaId}, ${datos.nombre}, ${datos.categoria ?? null}, ${datos.capacidadTotal}, ${JSON.stringify(datos.distribucionAsientos)})
+        INSERT INTO tipos_vehiculo (cooperativa_id, nombre, categoria, capacidad_total, distribucion_asientos, amenidades)
+        VALUES (${cooperativaId}, ${datos.nombre}, ${datos.categoria ?? null}, ${datos.capacidadTotal}, ${JSON.stringify(datos.distribucionAsientos)}, ${amenidadesArraySql(datos.amenidades)})
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
@@ -64,7 +82,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<TipoVehiculoResumen[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
-        SELECT id, nombre, categoria, capacidad_total
+        SELECT id, nombre, categoria, capacidad_total, amenidades
         FROM tipos_vehiculo
         WHERE cooperativa_id = ${cooperativaId}
         ORDER BY creado_en DESC
@@ -75,12 +93,14 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           nombre: string;
           categoria: string | null;
           capacidad_total: number;
+          amenidades: Amenidad[];
         };
         return {
           id: f.id,
           nombre: f.nombre,
           categoria: f.categoria,
           capacidadTotal: f.capacidad_total,
+          amenidades: f.amenidades ?? [],
         };
       });
     });
@@ -148,6 +168,12 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       }
       if (datos.activo !== undefined) {
         await tx.execute(sql`UPDATE tipos_vehiculo SET activo = ${datos.activo} WHERE id = ${tipoVehiculoId}`);
+      }
+      // Ítem 11 (04-ago-2026) -- cambiar amenidades no afecta boletos ya
+      // vendidos (no toca capacidad ni distribución de asientos), así
+      // que no pasa por el bloqueo de arriba.
+      if (datos.amenidades !== undefined) {
+        await tx.execute(sql`UPDATE tipos_vehiculo SET amenidades = ${amenidadesArraySql(datos.amenidades)} WHERE id = ${tipoVehiculoId}`);
       }
       return { ok: true as const };
     });
