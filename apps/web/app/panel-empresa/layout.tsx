@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { obtenerToken, borrarToken, decodificarToken, tokenExpirado, type PayloadToken } from "@/lib/auth";
+import { obtenerEstadoDatosCoop, type EstadoDatosCooperativa } from "@/lib/api";
 
 const ENLACES = [
   { href: "/panel-empresa", etiqueta: "Panel" },
@@ -30,6 +31,7 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
   const pathname = usePathname();
   const [payload, setPayload] = useState<PayloadToken | null>(null);
   const [verificando, setVerificando] = useState(true);
+  const [estadoDatos, setEstadoDatos] = useState<EstadoDatosCooperativa | null>(null);
 
   useEffect(() => {
     const token = obtenerToken();
@@ -57,6 +59,19 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
     // más simple que siga siendo correcta.
     setPayload(datos);
     setVerificando(false);
+
+    // Ítem 10 (04-ago-2026) -- el endpoint es exclusivo de
+    // admin_cooperativa (backend), así que solo se consulta para ese
+    // rol -- un vendedor recibiría 403 y no necesita ver este banner,
+    // no es su responsabilidad confirmar los datos legales.
+    if (datos.rol === "admin_cooperativa") {
+      obtenerEstadoDatosCoop(token)
+        .then(setEstadoDatos)
+        .catch(() => {
+          // silencioso a propósito -- un fallo al cargar el banner no
+          // debe impedir que el resto del panel funcione.
+        });
+    }
   }, [router, pathname]);
 
   function salir() {
@@ -126,6 +141,30 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
           ))}
         </nav>
       </header>
+      {estadoDatos && estadoDatos.estado !== "al_dia" && (
+        <div
+          className={`px-4 py-2.5 text-center text-sm font-medium ${
+            estadoDatos.estado === "bloqueado"
+              ? "bg-red-50 text-red-800"
+              : "bg-amber-50 text-amber-800"
+          }`}
+        >
+          {estadoDatos.estado === "bloqueado" ? (
+            <>
+              Tus datos legales llevan {estadoDatos.mesesSinConfirmar} meses sin confirmarse —
+              crear horarios recurrentes y la carga masiva están bloqueados hasta que los
+              confirmes.{" "}
+            </>
+          ) : (
+            <>
+              Tus datos legales llevan {estadoDatos.mesesSinConfirmar} meses sin confirmarse.{" "}
+            </>
+          )}
+          <Link href="/panel-empresa/configuracion" className="font-bold underline">
+            Confirmar mis datos
+          </Link>
+        </div>
+      )}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
     </div>
   );
