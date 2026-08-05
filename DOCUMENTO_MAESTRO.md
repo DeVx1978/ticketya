@@ -115,12 +115,12 @@ Lo que se propone es distinto y adicional, no un reemplazo: un identificador **f
 
 Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **no tenemos**:
 - **Filtros de búsqueda**: hoy los resultados se muestran, pero no hay forma de filtrar por rango de hora de salida, tipo de vehículo, o comodidades (WiFi, aire acondicionado, cargadores) — solo se ve la lista completa
-- **Comodidades del vehículo (amenidades)**: no existe ningún campo en el tipo de vehículo para declarar qué ofrece (WiFi, baño a bordo, cargadores, reclinables) — dato que las 6 fuentes marcan como decisivo para que el pasajero elija
+- **Comodidades del vehículo (amenidades) -- cerrado 05-ago-2026 (PRs #38 backend, #39 frontend).** Catálogo cerrado (decisión del director 30-jul-2026): WiFi, aire acondicionado, baño a bordo, cargadores, asientos reclinables, TV. Campo `amenidades[]` en `tipos_vehiculo`, visibles en resultados de búsqueda, no solo guardadas en la base de datos.
 - **Calificación visible antes de comprar**: ya construimos el sistema de calificaciones post-viaje, pero falta confirmar si esa calificación promedio se muestra al pasajero ANTES de elegir esa cooperativa en los resultados de búsqueda — si no se muestra, el sistema de calificaciones pierde gran parte de su valor real (ayudar a decidir, no solo acumular datos)
 - **Seguimiento en vivo del bus (GPS)**: mencionado como diferenciador fuerte en redBus/Abhibus — no existe en nuestro sistema, ni el esquema lo contempla todavía
 
 **Decisiones del director (30-jul-2026):**
-- Filtros de búsqueda (hora de salida, tipo de vehículo, amenidades, precio): **✅ aprobado para construir**, prioridad alta
+- Filtros de búsqueda -- **cerrado 05-ago-2026 (PRs #38, #39).** Hora de salida (rango) y amenidades (AND, no OR) construidos y expuestos en el frontend. Tipo de vehículo: el backend lo soporta (`tipoVehiculoId`), pero **no se expuso en esta pantalla** -- no existe un catálogo global de tipos entre cooperativas para poblar ese filtro antes de buscar (cada cooperativa nombra los suyos distinto), decisión de alcance reportada, no un olvido. Precio: no estaba en el alcance que ordenó el director para este ítem, queda fuera de esta entrega.
 - Amenidades del vehículo: **✅ aprobado**, catálogo cerrado (WiFi, aire acondicionado, baño a bordo, cargadores, asientos reclinables, TV) — no texto libre, mismo criterio que categoría de vehículo
 - Calificación promedio visible en resultados de búsqueda: **✅ aprobado**, mejor relación esfuerzo/impacto de toda esta lista — el dato ya existe, solo falta exponerlo
 - Seguimiento GPS en vivo: **corregido** — misma lógica del "cableado vs conector" que se corrigió en el Modelo B. Ver detalle abajo, no queda simplemente pausado.
@@ -444,7 +444,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~8. Verificar y, si falta, construir importación masiva de flota inicial~~ — **cerrado 04-ago-2026** (ver 3.7): existía backend parcial, se unificó su generador con el ítem 7, se completaron pruebas y se construyó el frontend (PRs #30, #31, #32)
 ~~9. División super_admin / admin_plataforma + registro de auditoría~~ — **cerrado 04-ago-2026** (ver 3.8): decisión confirmada, construido y verificado (PRs #33, #34)
 ~~10. Actualización periódica obligatoria de datos de cooperativa~~ — **cerrado 04-ago-2026** (ver 3.7): decisión confirmada, construido y verificado (PRs #36, #37)
-11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo — **aprobado**
+~~11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo~~ — **cerrado 05-ago-2026** (ver 3.2): construido y verificado (PRs #38, #39). Filtro por tipo de vehículo: backend listo, sin exponer en frontend (ver nota en 3.2)
 12. Exponer calificación promedio en resultados de búsqueda — **aprobado**
 13. Descarga de boleto en PDF
 14. Asientos/indicador exclusivo para mujeres — **aprobado**, informativo, sin verificación de género en la compra
