@@ -230,7 +230,9 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 
 **5. "Nosotros les damos todas las herramientas".** Confirmado: para el Modelo A (panel directo), esto ya es cierto en lo cotidiano — rutas, flota, personal, viajes, precios, métodos de pago, política de cancelación. Para el Modelo B (cooperativas con sistema propio que se conectan por API), la promesa **se cumple para la infraestructura genérica** — cerrado 03-ago-2026, ver sección 3.11.
 
-**Falta:** actualización periódica obligatoria de datos. Modelo B: cerrado (ver 3.11) -- solo queda lo específico por cooperativa, que espera a la primera integración real.
+**Actualización periódica obligatoria de datos -- cerrada 04-ago-2026 (PRs #36 backend, #37 frontend).** Alcance confirmado por el director: razón social, RUC, dirección legal (columna nueva, no existía), teléfono y correo de contacto -- NO datos operativos (rutas, flota, precios), esos tienen su propio ciclo. 6 meses sin confirmar = banner de advertencia (no bloqueante). 12 meses de silencio total = se bloquea SOLO la creación de horarios recurrentes nuevos y la carga masiva -- nunca venta, validación de boletos, ni confirmación de pagos, bajo ninguna circunstancia. Endpoints `GET /coop/estado-datos` y `POST /coop/confirmar-datos`, banner persistente en el panel + sección de confirmación en Configuración.
+
+**Falta:** nada. Modelo B: cerrado (ver 3.11) -- solo queda lo específico por cooperativa, que espera a la primera integración real.
 
 ---
 
@@ -441,7 +443,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~7. Horarios recurrentes (plantilla) y cancelación/suspensión masiva por ruta y fecha~~ — **cerrado 04-ago-2026** (PR #28 backend + PR #29 frontend y pruebas propias)
 ~~8. Verificar y, si falta, construir importación masiva de flota inicial~~ — **cerrado 04-ago-2026** (ver 3.7): existía backend parcial, se unificó su generador con el ítem 7, se completaron pruebas y se construyó el frontend (PRs #30, #31, #32)
 ~~9. División super_admin / admin_plataforma + registro de auditoría~~ — **cerrado 04-ago-2026** (ver 3.8): decisión confirmada, construido y verificado (PRs #33, #34)
-10. Actualización periódica obligatoria de datos de cooperativa (si se confirma)
+~~10. Actualización periódica obligatoria de datos de cooperativa~~ — **cerrado 04-ago-2026** (ver 3.7): decisión confirmada, construido y verificado (PRs #36, #37)
 11. Filtros de búsqueda (hora, tipo, amenidades) + campo de amenidades en tipo de vehículo — **aprobado**
 12. Exponer calificación promedio en resultados de búsqueda — **aprobado**
 13. Descarga de boleto en PDF
