@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { listarMisBoletos, calificarViaje, cancelarBoleto, type MiBoleto } from "@/lib/api";
+import { listarMisBoletos, calificarViaje, cancelarBoleto, descargarBoletoPdf, type MiBoleto } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 import { SolicitarFactura } from "./SolicitarFactura";
@@ -33,6 +33,40 @@ function BotonMostrarQr({ codigoQr }: { codigoQr: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF con logo, datos organizados y QR grande. */
+function BotonDescargarPdf({
+  boletoId,
+  onError,
+}: {
+  boletoId: string;
+  onError: (mensaje: string) => void;
+}) {
+  const [descargando, setDescargando] = useState(false);
+
+  async function descargar() {
+    const token = tokenValido();
+    if (!token) return;
+    setDescargando(true);
+    try {
+      await descargarBoletoPdf(token, boletoId);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "No se pudo descargar el boleto.");
+    } finally {
+      setDescargando(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={descargar}
+      disabled={descargando}
+      className="mt-2 block text-xs font-semibold text-brand underline decoration-dotted underline-offset-2 hover:text-brand-dark disabled:opacity-50"
+    >
+      {descargando ? "Generando PDF..." : "Descargar boleto en PDF"}
+    </button>
   );
 }
 
@@ -231,6 +265,9 @@ export function TabMisBoletos({ onExito }: { onExito: (mensaje: string) => void 
               </span>
 
               {b.estado === "vigente" && <BotonMostrarQr codigoQr={b.codigoQr} />}
+              {b.estado === "vigente" && (
+                <BotonDescargarPdf boletoId={b.boletoId} onError={setError} />
+              )}
 
               {b.estado !== "cancelado" && <SolicitarFactura boletoId={b.boletoId} />}
 
