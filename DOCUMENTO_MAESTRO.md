@@ -131,7 +131,9 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
   - **El cableado (✅ construir ya):** un endpoint que reciba una ubicación GPS y la guarde, y un mapa en el frontend que la muestre en vivo — esto es genérico, funciona igual sin importar qué cooperativa lo use algún día
   - **El conector (⏸️ sí espera):** que una cooperativa real instale el GPS físico en sus unidades y lo conecte a nuestro endpoint — eso no lo controlamos nosotros, es inversión de cada cooperativa
 
-**Falta:** construir los 3 puntos aprobados de esta sección; endpoint + mapa en vivo para GPS (infraestructura genérica, sin esperar a ninguna cooperativa); cargar coordenadas reales exactas de cada terminal (tarea del dueño del proyecto, vía Google Maps); construir el botón "ver trayecto en Maps" (aprobado, bajo costo); verificar nombres oficiales y provincias exactas de los 22 terminales cargados sin verificación individual.
+**"Ver trayecto en el mapa" -- cerrado 05-ago-2026 (PR #45).** Hallazgo real: las coordenadas ya llegaban en cada resultado de búsqueda desde el backend, pero el frontend las descartaba en silencio -- `ResultadoViaje` en `lib/api.ts` no las declaraba. Corregido con los 4 campos + un link estándar a Google Maps (`https://www.google.com/maps/dir/?api=1&origin=...&destination=...`), sin SDK ni API key, abierto en pestaña nueva desde cada tarjeta de resultado.
+
+**Falta:** endpoint + mapa en vivo para GPS (infraestructura genérica, sin esperar a ninguna cooperativa); cargar coordenadas reales exactas de cada terminal (tarea del dueño del proyecto, vía Google Maps); verificar nombres oficiales y provincias exactas de los 22 terminales cargados sin verificación individual.
 
 ---
 
@@ -452,7 +454,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~12. Exponer calificación promedio en resultados de búsqueda~~ — **cerrado 05-ago-2026** (ver 3.2): ya existía, se le agregó el umbral mínimo de confianza que faltaba (PR #40)
 ~~13. Descarga de boleto en PDF~~ — **cerrado 05-ago-2026** (ver 3.2): investigado, construido y verificado con prueba visual real (PRs #41, #42, #43)
 ~~14. Asientos/indicador exclusivo para mujeres~~ — **cerrado 05-ago-2026** (ver 3.3): unificado con VIP en un solo sistema por asiento individual, construido y verificado (PR #44)
-15. Botón "ver trayecto" (ruta fija terminal origen → destino en un mapa) — **aprobado**, bajo costo, no depende de hardware de cooperativa
+~~15. Botón "ver trayecto" (ruta fija terminal origen → destino en un mapa)~~ — **cerrado 05-ago-2026** (ver 3.2): construido y verificado (PR #45)
 16. Seguimiento GPS en vivo — **infraestructura genérica sí entra en construcción activa** (endpoint para recibir ubicación + mapa en vivo en frontend), igual criterio que Modelo B
 
 **Depende de terceros, no se construye con código (aplica a ambos, Modelo B y GPS):**
