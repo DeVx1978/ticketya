@@ -461,11 +461,13 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~13. Descarga de boleto en PDF~~ — **cerrado 05-ago-2026** (ver 3.2): investigado, construido y verificado con prueba visual real (PRs #41, #42, #43)
 ~~14. Asientos/indicador exclusivo para mujeres~~ — **cerrado 05-ago-2026** (ver 3.3): unificado con VIP en un solo sistema por asiento individual, construido y verificado (PR #44)
 ~~15. Botón "ver trayecto" (ruta fija terminal origen → destino en un mapa)~~ — **cerrado 05-ago-2026** (ver 3.2): construido y verificado (PR #45)
-16. Seguimiento GPS en vivo -- **backend cerrado 05-ago-2026** (ver 3.2, PR #46): esquema + los 2 endpoints construidos y verificados. **Frontend bloqueado por API key de Google Maps, no por desarrollo** -- mismo lenguaje que los otros 2 bloqueos externos (3.4, 3.6), se retoma cuando el dueño del proyecto consiga la API key
+16. Seguimiento GPS en vivo -- **backend cerrado 05-ago-2026** (ver 3.2, PR #46): esquema + los 2 endpoints construidos y verificados. **Frontend bloqueado por API key de Google Maps, no por desarrollo** -- mismo lenguaje que los otros 2 bloqueos externos (3.4, 3.6), se retoma cuando el dueño del proyecto consiga la API key. **Cerrado a nivel de fase (decisión del director, 05-ago-2026)**: no se mantiene la Fase 2 abierta esperando una gestión externa que no depende del desarrollo -- mismo criterio que aplicará a la Fase 4 (pasarela de pago, facturación electrónica) cuando existan esas gestiones resueltas.
 
 **Depende de terceros, no se construye con código (aplica a ambos, Modelo B y GPS):**
 - Que una cooperativa real instale hardware GPS y lo conecte a nuestro endpoint
 - Que una cooperativa real se conecte al Modelo B con su propio sistema
+
+**✅ Fase 2: completa (05-ago-2026), con 1 excepción externa documentada** — los 16 ítems tienen su trabajo de desarrollo cerrado; el único punto pendiente (frontend del mapa GPS en vivo, ítem 16) espera una gestión externa (API key de Google Maps), no código. Se avanza a la Fase 3 con esta excepción documentada, mismo criterio que se aplicará a la Fase 4.
 
 ### Fase 3 — Seguridad y cumplimiento de producción
 17. **Revisión de cumplimiento LOPD Ecuador — primero de esta fase**, maneja cédulas y datos de menores, riesgo legal real, no genérico
