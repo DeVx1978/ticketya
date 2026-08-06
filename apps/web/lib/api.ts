@@ -29,6 +29,12 @@ export interface ResultadoViaje {
   // Ítem 11 (04-ago-2026) -- visibles antes de elegir, no solo guardadas.
   tipoVehiculoAmenidades: string[];
   asientosDisponibles: number;
+  // Ítem 15 (05-ago-2026) -- ya llegaban del backend, pero se descartaban
+  // en silencio por no estar declaradas aquí. Para el link "ver trayecto".
+  origenLatitud: string;
+  origenLongitud: string;
+  destinoLatitud: string;
+  destinoLongitud: string;
 }
 
 export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperacion[]> {
