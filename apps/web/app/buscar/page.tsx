@@ -125,6 +125,15 @@ export default async function ResultadosBusquedaPage({
                   Sale {formatearHora(r.horaSalidaProgramada)}
                   {r.horaLlegadaEstimada && <> · Llega {formatearHora(r.horaLlegadaEstimada)}</>}
                 </p>
+                {/* Ítem 15 (05-ago-2026) -- link estándar de Google Maps, sin SDK ni API key. */}
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${r.origenLatitud},${r.origenLongitud}&destination=${r.destinoLatitud},${r.destinoLongitud}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 inline-block text-xs font-semibold text-brand underline decoration-dotted underline-offset-2 hover:text-brand-dark"
+                >
+                  Ver trayecto en el mapa
+                </a>
               </div>
 
               <div className="flex items-center justify-between gap-6 md:justify-end">
