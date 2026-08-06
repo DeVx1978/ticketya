@@ -17,6 +17,15 @@ export class ApiExternaService {
     return this.repo.actualizarPrecioViaje(cooperativaId, viajeId, precioBase);
   }
 
+  actualizarUbicacionViaje(
+    cooperativaId: string,
+    viajeId: string,
+    latitud: number,
+    longitud: number,
+  ) {
+    return this.repo.actualizarUbicacionViaje(cooperativaId, viajeId, latitud, longitud);
+  }
+
   listarEventosWebhook(cooperativaId: string, desde?: string, hasta?: string) {
     return this.repo.listarEventosWebhook(cooperativaId, desde, hasta);
   }

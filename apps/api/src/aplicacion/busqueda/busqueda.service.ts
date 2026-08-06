@@ -237,4 +237,35 @@ export class BusquedaService {
       .where(eq(bannersPropios.activo, true))
       .orderBy(bannersPropios.orden);
   }
+
+  /**
+   * Ítem 16, Fase 2 (05-ago-2026) -- seguimiento GPS en vivo, consulta
+   * pública (sin autenticación, cualquiera con el id del viaje puede
+   * ver su posición -- mismo criterio de "público" que el resto de este
+   * service). null si el viaje no tiene GPS conectado todavía (la
+   * enorme mayoría hoy, bloqueo externo de hardware, no de código).
+   */
+  async obtenerUbicacionViaje(viajeId: string): Promise<{
+    latitud: number;
+    longitud: number;
+    actualizadaEn: Date;
+  } | null> {
+    const [fila] = await this.db
+      .select({
+        latitud: viajes.ubicacionLatitud,
+        longitud: viajes.ubicacionLongitud,
+        actualizadaEn: viajes.ubicacionActualizadaEn,
+      })
+      .from(viajes)
+      .where(eq(viajes.id, viajeId));
+
+    if (!fila || fila.latitud === null || fila.longitud === null || fila.actualizadaEn === null) {
+      return null;
+    }
+    return {
+      latitud: Number(fila.latitud),
+      longitud: Number(fila.longitud),
+      actualizadaEn: fila.actualizadaEn,
+    };
+  }
 }

@@ -54,6 +54,21 @@ export interface ApiExternaRepositorio {
     precioBase: number,
   ): Promise<{ ok: true } | { ok: false; motivo: string }>;
 
+  /**
+   * Ítem 16, Fase 2 (05-ago-2026) -- seguimiento GPS en vivo, "cableado"
+   * genérico. Mismo criterio de autenticación que actualizarPrecioViaje:
+   * el sistema propio de la cooperativa (o el hardware GPS conectado a
+   * él) llama esto directo con su llave API, sin sesión de usuario.
+   * Última posición conocida -- cada llamada sobrescribe la anterior,
+   * no se guarda un historial de todo el trayecto.
+   */
+  actualizarUbicacionViaje(
+    cooperativaId: string,
+    viajeId: string,
+    latitud: number,
+    longitud: number,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
   listarEventosWebhook(
     cooperativaId: string,
     desde?: string,
