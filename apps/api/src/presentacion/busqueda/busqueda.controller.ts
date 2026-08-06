@@ -1,4 +1,4 @@
-import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Query, Param, BadRequestException } from '@nestjs/common';
 import { BusquedaService } from '../../aplicacion/busqueda/busqueda.service';
 import { BuscarViajesDto } from './dto/buscar-viajes.dto';
 import { BuscarPuntosOperacionDto } from './dto/buscar-puntos-operacion.dto';
@@ -55,5 +55,15 @@ export class BusquedaController {
   @Get('banners-propios')
   async listarBannersActivos() {
     return this.busqueda.listarBannersActivos();
+  }
+
+  /**
+   * Ítem 16, Fase 2 (05-ago-2026) -- seguimiento GPS en vivo, consulta
+   * pública sin autenticación. null si el viaje no tiene GPS conectado
+   * todavía (bloqueo externo de hardware, no de código).
+   */
+  @Get('viajes/:id/ubicacion')
+  async obtenerUbicacionViaje(@Param('id') viajeId: string) {
+    return this.busqueda.obtenerUbicacionViaje(viajeId);
   }
 }

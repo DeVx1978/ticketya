@@ -149,6 +149,16 @@ export const viajes = pgTable(
 
     estado: estadoViajeEnum('estado').default('programado').notNull(),
 
+    // Ítem 16, Fase 2 (05-ago-2026) -- seguimiento GPS en vivo. Última
+    // posición conocida, NO un historial de todo el trayecto -- el
+    // requerimiento siempre fue "dónde está el bus ahora", cada ping
+    // nuevo sobrescribe el anterior. Nullable: la enorme mayoría de
+    // viajes no tienen hardware GPS conectado todavía (bloqueo externo,
+    // no técnico -- ver nota de "conector a la medida" en api_externa.ts).
+    ubicacionLatitud: numeric('ubicacion_latitud', { precision: 10, scale: 7 }),
+    ubicacionLongitud: numeric('ubicacion_longitud', { precision: 10, scale: 7 }),
+    ubicacionActualizadaEn: timestamp('ubicacion_actualizada_en', { withTimezone: true }),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },

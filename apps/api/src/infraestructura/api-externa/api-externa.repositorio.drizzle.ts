@@ -57,6 +57,31 @@ export class ApiExternaRepositorioDrizzle implements ApiExternaRepositorio {
     });
   }
 
+  async actualizarUbicacionViaje(
+    cooperativaId: string,
+    viajeId: string,
+    latitud: number,
+    longitud: number,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        UPDATE viajes
+        SET ubicacion_latitud = ${latitud},
+            ubicacion_longitud = ${longitud},
+            ubicacion_actualizada_en = now()
+        WHERE id = ${viajeId} AND cooperativa_id = ${cooperativaId}
+        RETURNING id
+      `);
+      if (resultado.rows.length === 0) {
+        return {
+          ok: false as const,
+          motivo: 'No existe un viaje con ese id para tu cooperativa.',
+        };
+      }
+      return { ok: true as const };
+    });
+  }
+
   async listarEventosWebhook(
     cooperativaId: string,
     desde?: string,
