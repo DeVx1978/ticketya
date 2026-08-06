@@ -6,6 +6,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { randomBytes, createHash } from 'node:crypto';
 import type {
   UsuarioRepositorio,
@@ -385,5 +386,59 @@ export class AuthService {
     await this.email.enviarVerificacionCorreo(usuario.correo, tokenPlano);
 
     return { ok: true, yaVerificado: false };
+  }
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- LOPDP, derecho de eliminación.
+   * Confirmación real antes de ejecutar (decisión del director): si la
+   * cuenta tiene contraseña, debe reingresarla -- mismo criterio que
+   * cambiarPassword/solicitarCambioCorreo. Si no tiene (login externo,
+   * ej. Google), no hay contraseña que verificar -- exige escribir
+   * literalmente "ELIMINAR" como confirmación equivalente.
+   */
+  async eliminarMiCuenta(
+    usuarioId: string,
+    confirmacion: { password?: string; frase?: string },
+  ) {
+    const usuario = await this.usuarios.buscarPorId(usuarioId);
+    if (!usuario) throw new NotFoundException('Usuario no encontrado.');
+
+    if (usuario.passwordHash) {
+      if (!confirmacion.password) {
+        throw new BadRequestException(
+          'Debes ingresar tu contraseña actual para confirmar la eliminación.',
+        );
+      }
+      const valido = await this.hasher.comparar(confirmacion.password, usuario.passwordHash);
+      if (!valido) {
+        throw new BadRequestException('La contraseña actual no es correcta.');
+      }
+    } else {
+      if (confirmacion.frase !== 'ELIMINAR') {
+        throw new BadRequestException(
+          'Tu cuenta no tiene contraseña (inicio de sesión externo) -- escribe "ELIMINAR" exactamente para confirmar.',
+        );
+      }
+    }
+
+    // Correo único no reversible -- no se puede dejar el correo real
+    // (violaría el propósito de anonimizar) ni dejarlo vacío (viola la
+    // restricción de único de la columna).
+    const correoAnonimo = `usuario-eliminado-${usuarioId}@ticketya.invalido`;
+    await this.usuarios.eliminarCuenta(usuarioId, correoAnonimo);
+
+    return { ok: true };
+  }
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- job de limpieza periódica, mismo
+   * patrón @Cron ya usado en notificaciones/webhooks. Diario a las 3am,
+   * borra tokens usados o expirados hace más de 30 días -- principio de
+   * conservación de la LOPDP ("solo el tiempo necesario").
+   */
+  @Cron('0 3 * * *')
+  async limpiarTokensAntiguos() {
+    const hace30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    await this.usuarios.eliminarTokensAntiguos(hace30Dias);
   }
 }

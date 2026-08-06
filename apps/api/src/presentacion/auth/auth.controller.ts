@@ -18,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { ActualizarIdentidadDto } from './dto/actualizar-identidad.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import { EliminarCuentaDto } from './dto/eliminar-cuenta.dto';
 import { SolicitarCambioCorreoDto, ConfirmarCambioCorreoDto } from './dto/cambiar-correo.dto';
 import { SolicitarResetDto } from './dto/solicitar-reset.dto';
 import { RestablecerPasswordDto } from './dto/restablecer-password.dto';
@@ -100,6 +101,23 @@ export class AuthController {
       dto.passwordNueva,
     );
     return { ok: true };
+  }
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- LOPDP, derecho de eliminación.
+   * Requiere confirmación real: contraseña actual, o "ELIMINAR" escrito
+   * literal si la cuenta no tiene contraseña (login externo).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('eliminar-cuenta')
+  async eliminarCuenta(
+    @Body() dto: EliminarCuentaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.authService.eliminarMiCuenta(req.user.sub, {
+      password: dto.password,
+      frase: dto.frase,
+    });
   }
 
   /**

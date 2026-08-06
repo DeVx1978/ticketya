@@ -329,4 +329,47 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
     if (!fila) return null;
     return { id: fila.id, usuarioId: fila.usuario_id };
   }
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- anonimización, no DELETE de la
+   * fila. Envuelto en transacción: o se anonimiza la cuenta completa +
+   * se limpian sus tokens + se desvincula de sus compras, o no pasa
+   * nada -- no queda a medio hacer si algo falla en el medio.
+   */
+  async eliminarCuenta(usuarioId: string, correoAnonimo: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(sql`
+        UPDATE usuarios
+        SET correo = ${correoAnonimo},
+            nombre_completo = 'Usuario eliminado',
+            cedula = NULL,
+            telefono = NULL,
+            foto_url = NULL,
+            password_hash = NULL,
+            proveedor_externo = NULL,
+            proveedor_externo_id = NULL,
+            activo = false
+        WHERE id = ${usuarioId}
+      `);
+      await tx.execute(sql`
+        DELETE FROM tokens_usuario WHERE usuario_id = ${usuarioId}
+      `);
+      // No se tocan pasajeros_compra.nombre_completo/.documento -- es el
+      // registro contable de una venta real de la cooperativa, decisión
+      // del director confirmada, no un dato exclusivo de esta cuenta.
+      await tx.execute(sql`
+        UPDATE compras SET comprador_usuario_id = NULL WHERE comprador_usuario_id = ${usuarioId}
+      `);
+    });
+  }
+
+  async eliminarTokensAntiguos(antesDe: Date): Promise<number> {
+    const resultado = await this.db.execute(sql`
+      DELETE FROM tokens_usuario
+      WHERE (usado_en IS NOT NULL OR expira_en < now())
+        AND creado_en < ${antesDe.toISOString()}
+      RETURNING id
+    `);
+    return resultado.rows.length;
+  }
 }

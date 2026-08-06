@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Interfaces (puertos) del dominio de autenticación — RF-AUTH.
  *
  * Nada en este archivo depende de NestJS, Drizzle, bcrypt ni JWT. La capa
@@ -155,6 +155,29 @@ export interface UsuarioRepositorio {
   consumirTokenRefreshVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null>;
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- LOPDP, derecho de eliminación.
+   * Anonimiza, no borra la fila -- decisión del director confirmada:
+   * los datos del pasajero dentro de cada boleto ya vendido
+   * (pasajeros_compra.nombre_completo/.documento) NO se tocan, porque
+   * son el registro contable de una venta real de la cooperativa, no
+   * un dato que pertenezca solo a la cuenta que se elimina. compras
+   * cuyo comprador era esta cuenta pasan a comprador_usuario_id = null
+   * (ya nullable hoy, para ventas de ventanilla). Todos los tokens de
+   * la cuenta se eliminan de verdad -- ninguna razón legítima para
+   * conservarlos tras eliminar la cuenta.
+   */
+  eliminarCuenta(usuarioId: string, correoAnonimo: string): Promise<void>;
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- LOPDP, principio de conservación
+   * ("solo el tiempo necesario para la finalidad"). Hallazgo real: los
+   * tokens de un solo uso nunca se eliminaban tras expirar/usarse,
+   * acumulándose para siempre sin ninguna razón legítima. Devuelve
+   * cuántos se borraron, para que el cron pueda registrarlo.
+   */
+  eliminarTokensAntiguos(antesDe: Date): Promise<number>;
 }
 
 export interface NotificadorEmail {
