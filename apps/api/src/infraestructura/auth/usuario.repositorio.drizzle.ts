@@ -100,6 +100,7 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       bloqueadoHasta: fila.bloqueadoHasta,
       correoVerificado: fila.correoVerificado,
       activo: fila.activo,
+      totpHabilitado: fila.totpHabilitado,
     };
   }
 
@@ -371,5 +372,90 @@ export class UsuarioRepositorioDrizzle implements UsuarioRepositorio {
       RETURNING id
     `);
     return resultado.rows.length;
+  }
+
+  async guardarTokenLogin2fa(
+    usuarioId: string,
+    tokenHash: string,
+    expiraEn: Date,
+  ): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO tokens_usuario (usuario_id, proposito, token_hash, expira_en)
+      VALUES (${usuarioId}, 'login_2fa', ${tokenHash}, ${expiraEn.toISOString()})
+    `);
+  }
+
+  /**
+   * A propósito NO consume el token aquí (a diferencia de los demás
+   * "consumir...Vigente") -- este token intermedio se usa varias veces
+   * dentro de su propia ventana de 10 minutos: primero para pedir el QR
+   * de configuración, después para confirmar el código, o para
+   * reintentar si el admin se equivocó al escribirlo.
+   */
+  async buscarTokenLogin2faVigente(
+    tokenHash: string,
+  ): Promise<{ usuarioId: string } | null> {
+    const resultado = await this.db.execute(sql`
+      SELECT usuario_id FROM tokens_usuario
+      WHERE token_hash = ${tokenHash}
+        AND proposito = 'login_2fa'
+        AND usado_en IS NULL
+        AND expira_en > now()
+      LIMIT 1
+    `);
+    const fila = resultado.rows[0] as { usuario_id: string } | undefined;
+    if (!fila) return null;
+    return { usuarioId: fila.usuario_id };
+  }
+
+  async guardarSecretoTotpPendiente(
+    usuarioId: string,
+    secretoCifrado: string,
+  ): Promise<void> {
+    await this.db.execute(sql`
+      UPDATE usuarios SET totp_secret = ${secretoCifrado} WHERE id = ${usuarioId}
+    `);
+  }
+
+  async obtenerSecretoTotpCifrado(usuarioId: string): Promise<string | null> {
+    const resultado = await this.db.execute(sql`
+      SELECT totp_secret FROM usuarios WHERE id = ${usuarioId}
+    `);
+    const fila = resultado.rows[0] as { totp_secret: string | null } | undefined;
+    return fila?.totp_secret ?? null;
+  }
+
+  /** Transacción: activar 2FA + guardar los 10 códigos de recuperación es todo o nada. */
+  async activarTotp(
+    usuarioId: string,
+    codigosRecuperacionHash: string[],
+  ): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx.execute(sql`
+        UPDATE usuarios SET totp_habilitado = true WHERE id = ${usuarioId}
+      `);
+      for (const hash of codigosRecuperacionHash) {
+        await tx.execute(sql`
+          INSERT INTO codigos_recuperacion_2fa (usuario_id, codigo_hash)
+          VALUES (${usuarioId}, ${hash})
+        `);
+      }
+    });
+  }
+
+  /** Atómico -- mismo patrón de condición de carrera ya corregido en el resto de tokens de un solo uso. */
+  async consumirCodigoRecuperacion(
+    usuarioId: string,
+    codigoHash: string,
+  ): Promise<boolean> {
+    const resultado = await this.db.execute(sql`
+      UPDATE codigos_recuperacion_2fa
+      SET usado_en = now()
+      WHERE usuario_id = ${usuarioId}
+        AND codigo_hash = ${codigoHash}
+        AND usado_en IS NULL
+      RETURNING id
+    `);
+    return resultado.rows.length > 0;
   }
 }

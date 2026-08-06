@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -10,10 +10,12 @@ import {
   EMISOR_TOKENS,
   NOTIFICADOR_EMAIL,
   ALMACENAMIENTO_ARCHIVOS,
+  CIFRADOR_TOTP,
 } from '../../aplicacion/auth/auth.service';
 import { UsuarioRepositorioDrizzle } from '../../infraestructura/auth/usuario.repositorio.drizzle';
 import { BcryptHasher } from '../../infraestructura/auth/bcrypt.hasher';
 import { JwtEmisorTokens } from '../../infraestructura/auth/jwt.emisor-tokens';
+import { CifradorTotpAesGcm } from '../../infraestructura/auth/cifrador-totp.aes-gcm';
 import { SimuladorNotificador } from '../../infraestructura/notificaciones/simulador.notificador';
 import { SimuladorAlmacenamiento } from '../../infraestructura/almacenamiento/simulador.almacenamiento';
 import { JwtStrategy } from './guards/jwt.strategy';
@@ -53,6 +55,7 @@ import { RolesGuard } from './guards/roles.guard';
     { provide: EMISOR_TOKENS, useClass: JwtEmisorTokens },
     { provide: NOTIFICADOR_EMAIL, useClass: SimuladorNotificador },
     { provide: ALMACENAMIENTO_ARCHIVOS, useClass: SimuladorAlmacenamiento },
+    { provide: CIFRADOR_TOTP, useClass: CifradorTotpAesGcm },
   ],
   exports: [RolesGuard, NOTIFICADOR_EMAIL, ALMACENAMIENTO_ARCHIVOS],
 })

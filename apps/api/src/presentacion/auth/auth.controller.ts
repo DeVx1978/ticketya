@@ -18,6 +18,9 @@ import { LoginDto } from './dto/login.dto';
 import { ActualizarPerfilDto } from './dto/actualizar-perfil.dto';
 import { ActualizarIdentidadDto } from './dto/actualizar-identidad.dto';
 import { CambiarPasswordDto } from './dto/cambiar-password.dto';
+import { TokenTemporal2faDto } from './dto/token-temporal-2fa.dto';
+import { Codigo2faDto } from './dto/codigo-2fa.dto';
+import { RecuperarCodigo2faDto } from './dto/recuperar-codigo-2fa.dto';
 import { EliminarCuentaDto } from './dto/eliminar-cuenta.dto';
 import { SolicitarCambioCorreoDto, ConfirmarCambioCorreoDto } from './dto/cambiar-correo.dto';
 import { SolicitarResetDto } from './dto/solicitar-reset.dto';
@@ -54,6 +57,39 @@ export class AuthController {
   @Post('login')
   async login(@Body() datos: LoginDto) {
     return this.authService.login(datos.correo, datos.password);
+  }
+
+  /**
+   * Ítem 19, Fase 3 (05-ago-2026) -- 2FA obligatorio, paso 1: genera el
+   * secreto y el QR para escanear. Público (sin JwtAuthGuard) a
+   * propósito -- el usuario todavía no tiene una sesión real, solo el
+   * token temporal que login() le entregó; ese token es la credencial
+   * de este flujo, validado dentro del service.
+   */
+  @Post('2fa/iniciar-configuracion')
+  async iniciarConfiguracion2fa(@Body() dto: TokenTemporal2faDto) {
+    return this.authService.iniciarConfiguracion2fa(dto.tokenTemporal);
+  }
+
+  /** Ítem 19 -- paso 2: confirma el código real, activa 2FA, entrega credenciales + códigos de recuperación (una sola vez). */
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
+  @Post('2fa/confirmar-configuracion')
+  async confirmarConfiguracion2fa(@Body() dto: Codigo2faDto) {
+    return this.authService.confirmarConfiguracion2fa(dto.tokenTemporal, dto.codigo);
+  }
+
+  /** Ítem 19 -- segundo paso de un login normal, cuando 2FA ya está activo. */
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
+  @Post('2fa/verificar')
+  async verificar2fa(@Body() dto: Codigo2faDto) {
+    return this.authService.verificar2fa(dto.tokenTemporal, dto.codigo);
+  }
+
+  /** Ítem 19 -- respaldo si el admin perdió su app autenticadora. */
+  @Throttle({ default: { limit: process.env.NODE_ENV === 'test' ? 10000 : 5, ttl: 60000 } })
+  @Post('2fa/recuperar')
+  async recuperarCon2fa(@Body() dto: RecuperarCodigo2faDto) {
+    return this.authService.recuperarCon2fa(dto.tokenTemporal, dto.codigoRecuperacion);
   }
 
   /** RF-AUTH-006 — perfil real del usuario (nombre, teléfono, foto, viajes completados), no solo el payload del token. */

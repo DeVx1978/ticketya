@@ -86,6 +86,16 @@ export const usuarios = pgTable(
     correoVerificado: boolean('correo_verificado').default(false).notNull(),
     activo: boolean('activo').default(true).notNull(),
 
+    // Ítem 19, Fase 3 (05-ago-2026) -- 2FA obligatorio para las 3
+    // cuentas administrativas reales (super_admin, admin_plataforma,
+    // admin_cooperativa). totpSecret se guarda CIFRADO (AES-256-GCM,
+    // no hasheado como la contraseña) -- a diferencia de un password,
+    // el secreto TOTP necesita poder leerse de vuelta para calcular el
+    // código esperado y compararlo, no solo verificar coincidencia de
+    // un hash de un solo sentido.
+    totpSecret: text('totp_secret'),
+    totpHabilitado: boolean('totp_habilitado').default(false).notNull(),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -142,6 +152,34 @@ export const usuariosRelations = relations(usuarios, ({ one, many }) => ({
     references: [cooperativas.id],
   }),
   tokens: many(tokensUsuario),
+  codigosRecuperacion2fa: many(codigosRecuperacion2fa),
+}));
+
+/**
+ * Ítem 19, Fase 3 (05-ago-2026) -- códigos de recuperación de 2FA. 10
+ * códigos de un solo uso, generados al activar 2FA -- sin esto, un
+ * admin que pierde su teléfono con la app autenticadora quedaría fuera
+ * de su propia cuenta para siempre, sin ningún camino de autoservicio
+ * (decisión del director: obligatorio junto con 2FA, no aparte).
+ * codigoHash igual que passwordHash -- hasheado, un solo sentido, se
+ * verifica por comparación, nunca se lee de vuelta.
+ */
+export const codigosRecuperacion2fa = pgTable(
+  'codigos_recuperacion_2fa',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    usuarioId: uuid('usuario_id')
+      .references(() => usuarios.id)
+      .notNull(),
+    codigoHash: varchar('codigo_hash', { length: 255 }).notNull(),
+    usadoEn: timestamp('usado_en', { withTimezone: true }),
+    creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index('idx_codigos_recuperacion_2fa_usuario').on(t.usuarioId)],
+);
+
+export const codigosRecuperacion2faRelations = relations(codigosRecuperacion2fa, ({ one }) => ({
+  usuario: one(usuarios, { fields: [codigosRecuperacion2fa.usuarioId], references: [usuarios.id] }),
 }));
 
 export const tokensUsuarioRelations = relations(tokensUsuario, ({ one }) => ({

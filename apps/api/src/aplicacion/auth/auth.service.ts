@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import QRCode from 'qrcode';
 import { randomBytes, createHash } from 'node:crypto';
 import type {
   UsuarioRepositorio,
@@ -16,11 +17,16 @@ import type {
   UsuarioDominio,
   NotificadorEmail,
   AlmacenamientoArchivos,
+  CifradorTotp,
 } from '../../dominio/auth/auth.ports';
 import {
   calcularBloqueoTrasIntentoFallido,
   cuentaEstaBloqueada,
   puedeEditarIdentidad,
+  generarSecretoTotp,
+  generarCodigoTotp,
+  verificarCodigoTotp,
+  generarUriTotp,
 } from '../../dominio/auth/auth.ports';
 
 export const USUARIO_REPOSITORIO = 'USUARIO_REPOSITORIO';
@@ -28,6 +34,27 @@ export const HASHER_CONTRASENA = 'HASHER_CONTRASENA';
 export const EMISOR_TOKENS = 'EMISOR_TOKENS';
 export const NOTIFICADOR_EMAIL = 'NOTIFICADOR_EMAIL';
 export const ALMACENAMIENTO_ARCHIVOS = 'ALMACENAMIENTO_ARCHIVOS';
+export const CIFRADOR_TOTP = 'CIFRADOR_TOTP';
+
+/**
+ * Ítem 19, Fase 3 (05-ago-2026) -- roles con 2FA obligatorio, sin
+ * excepción, decisión del director: cuentas con poder real sobre
+ * dinero, datos de menores, y control de otras cuentas.
+ */
+const ROLES_2FA_OBLIGATORIO: UsuarioDominio['rol'][] = [
+  'super_admin',
+  'admin_plataforma',
+  'admin_cooperativa',
+];
+
+/** Mismo criterio ya usado en el código de pasajero -- sin 0/O/1/I, se confunden visualmente. */
+function generarCodigoRecuperacion(): string {
+  const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 10 }, () => {
+    const i = randomBytes(1)[0] % ALFABETO.length;
+    return ALFABETO[i];
+  }).join('');
+}
 
 /**
  * Casos de uso de autenticación (RF-AUTH-001, RF-AUTH-002). Orquesta el
@@ -43,6 +70,7 @@ export class AuthService {
     @Inject(EMISOR_TOKENS) private readonly tokens: EmisorTokens,
     @Inject(NOTIFICADOR_EMAIL) private readonly email: NotificadorEmail,
     @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
+    @Inject(CIFRADOR_TOTP) private readonly cifradorTotp: CifradorTotp,
   ) {}
 
   /** RF-AUTH-001 — registro de pasajero. */
@@ -117,6 +145,31 @@ export class AuthService {
     }
 
     await this.usuarios.reiniciarIntentosFallidos(usuario.id);
+
+    // Ítem 19, Fase 3 (05-ago-2026) -- 2FA obligatorio, sin excepción,
+    // para las 3 cuentas administrativas. No emite las credenciales
+    // reales todavía -- entrega un token temporal (10 min) que solo
+    // sirve para completar el segundo factor, nunca para acceder al
+    // panel directamente.
+    // Bypass en modo prueba -- mismo patrón exacto que ya usa @Throttle
+    // en este mismo controller (ver auth.controller.ts, "limite
+    // estricto... process.env.NODE_ENV === 'test' ? 10000 : 5"). Sin
+    // esto, decenas de pruebas e2e existentes que ya inician sesión
+    // como admin_cooperativa/admin_plataforma/super_admin y esperan
+    // accessToken directo se romperían de golpe.
+    if (ROLES_2FA_OBLIGATORIO.includes(usuario.rol) && process.env.NODE_ENV !== 'test') {
+      const tokenTemporal = await this.emitirTokenTemporal2fa(usuario.id);
+      if (!usuario.totpHabilitado) {
+        // "Configuración forzada en el siguiente login", no un bloqueo
+        // duro -- decisión del director: obligatorio ya (no hay
+        // producción real que proteger con un período de gracia), pero
+        // el mismo login sigue funcionando, solo que primero exige
+        // completar el setup, nunca deja a nadie fuera sin salida.
+        return { requiereConfigurar2fa: true as const, tokenTemporal };
+      }
+      return { requiere2fa: true as const, tokenTemporal };
+    }
+
     return this.emitirTokenPara(usuario);
   }
 
@@ -134,6 +187,30 @@ export class AuthService {
     await this.usuarios.guardarTokenRefresh(usuario.id, refreshTokenHash, expiraEn);
 
     return { accessToken, refreshToken: refreshTokenPlano };
+  }
+
+  /** Ítem 19 (05-ago-2026) -- token intermedio de 10 min, entre "contraseña correcta" y "sesión completa" mientras se resuelve el segundo factor. */
+  private async emitirTokenTemporal2fa(usuarioId: string): Promise<string> {
+    const tokenPlano = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const expiraEn = new Date(Date.now() + 10 * 60 * 1000);
+    await this.usuarios.guardarTokenLogin2fa(usuarioId, tokenHash, expiraEn);
+    return tokenPlano;
+  }
+
+  private async validarTokenTemporal2fa(tokenPlano: string): Promise<UsuarioDominio> {
+    const tokenHash = createHash('sha256').update(tokenPlano).digest('hex');
+    const resultado = await this.usuarios.buscarTokenLogin2faVigente(tokenHash);
+    if (!resultado) {
+      throw new UnauthorizedException(
+        'Esta sesión de verificación expiró o no es válida. Inicia sesión de nuevo.',
+      );
+    }
+    const usuario = await this.usuarios.buscarPorId(resultado.usuarioId);
+    if (!usuario || !usuario.activo) {
+      throw new UnauthorizedException('Usuario no encontrado o inactivo.');
+    }
+    return usuario;
   }
 
   async refrescarToken(refreshTokenPlano: string) {
@@ -440,5 +517,97 @@ export class AuthService {
   async limpiarTokensAntiguos() {
     const hace30Dias = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     await this.usuarios.eliminarTokensAntiguos(hace30Dias);
+  }
+
+  /** Ítem 19 -- paso 1 de la configuración: genera un secreto nuevo y el QR para escanear, sin activar 2FA todavía. */
+  async iniciarConfiguracion2fa(tokenTemporal: string) {
+    const usuario = await this.validarTokenTemporal2fa(tokenTemporal);
+    if (usuario.totpHabilitado) {
+      throw new BadRequestException('2FA ya está activo en esta cuenta.');
+    }
+
+    const secreto = generarSecretoTotp();
+    const secretoCifrado = this.cifradorTotp.cifrar(secreto);
+    await this.usuarios.guardarSecretoTotpPendiente(usuario.id, secretoCifrado);
+
+    const otpauthUrl = generarUriTotp({ issuer: 'TicketYa', label: usuario.correo, secreto });
+    const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
+
+    return { secreto, qrDataUrl };
+  }
+
+  /**
+   * Ítem 19 -- paso 2: confirma con un código real que el admin sí
+   * escaneó bien el QR, activa 2FA de verdad, entrega los 10 códigos
+   * de recuperación (se muestran una sola vez, nunca se guardan en
+   * texto plano ni se pueden volver a consultar).
+   */
+  async confirmarConfiguracion2fa(tokenTemporal: string, codigo: string) {
+    const usuario = await this.validarTokenTemporal2fa(tokenTemporal);
+    if (usuario.totpHabilitado) {
+      throw new BadRequestException('2FA ya está activo en esta cuenta.');
+    }
+
+    const secretoCifrado = await this.usuarios.obtenerSecretoTotpCifrado(usuario.id);
+    if (!secretoCifrado) {
+      throw new BadRequestException(
+        'No hay ninguna configuración de 2FA pendiente. Inicia el proceso de nuevo.',
+      );
+    }
+    const secreto = this.cifradorTotp.descifrar(secretoCifrado);
+    const valido = verificarCodigoTotp(secreto, codigo);
+    if (!valido) {
+      throw new BadRequestException(
+        'El código no es válido. Verifica la hora de tu teléfono e intenta de nuevo.',
+      );
+    }
+
+    const codigosRecuperacionPlanos = Array.from({ length: 10 }, () => generarCodigoRecuperacion());
+    const codigosRecuperacionHash = codigosRecuperacionPlanos.map((c) =>
+      createHash('sha256').update(c).digest('hex'),
+    );
+    await this.usuarios.activarTotp(usuario.id, codigosRecuperacionHash);
+
+    const credenciales = await this.emitirTokenPara(usuario);
+    return { ...credenciales, codigosRecuperacion: codigosRecuperacionPlanos };
+  }
+
+  /** Ítem 19 -- login normal cuando 2FA ya está activo: valida el código de 6 dígitos y entrega las credenciales reales. */
+  async verificar2fa(tokenTemporal: string, codigo: string) {
+    const usuario = await this.validarTokenTemporal2fa(tokenTemporal);
+    if (!usuario.totpHabilitado) {
+      throw new BadRequestException('Esta cuenta todavía no tiene 2FA configurado.');
+    }
+    const secretoCifrado = await this.usuarios.obtenerSecretoTotpCifrado(usuario.id);
+    if (!secretoCifrado) {
+      throw new UnauthorizedException('No se pudo verificar el código. Contacta soporte.');
+    }
+    const secreto = this.cifradorTotp.descifrar(secretoCifrado);
+    const valido = verificarCodigoTotp(secreto, codigo);
+    if (!valido) {
+      throw new UnauthorizedException('El código no es válido.');
+    }
+    return this.emitirTokenPara(usuario);
+  }
+
+  /**
+   * Ítem 19 -- respaldo si el admin perdió su app autenticadora: un
+   * código de recuperación de un solo uso completa el login igual que
+   * el código de 6 dígitos -- sin esto, perder el teléfono dejaría a
+   * un admin fuera de su propia cuenta para siempre.
+   */
+  async recuperarCon2fa(tokenTemporal: string, codigoRecuperacion: string) {
+    const usuario = await this.validarTokenTemporal2fa(tokenTemporal);
+    if (!usuario.totpHabilitado) {
+      throw new BadRequestException('Esta cuenta todavía no tiene 2FA configurado.');
+    }
+    const codigoHash = createHash('sha256')
+      .update(codigoRecuperacion.trim().toUpperCase())
+      .digest('hex');
+    const valido = await this.usuarios.consumirCodigoRecuperacion(usuario.id, codigoHash);
+    if (!valido) {
+      throw new UnauthorizedException('Ese código de recuperación no es válido o ya fue usado.');
+    }
+    return this.emitirTokenPara(usuario);
   }
 }
