@@ -147,7 +147,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
               <h1 className="font-display text-xl font-bold text-brand-dark">
                 ¡Comprobante recibido!
               </h1>
-              <p className="mt-2 text-sm text-brand-dark/60">
+              <p className="mt-2 text-sm text-brand-dark/70">
                 Tu asiento queda reservado mientras la cooperativa confirma tu pago. Te avisaremos
                 cuando esté listo — revisa tu cuenta en "Mis boletos".
               </p>
@@ -174,7 +174,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 </div>
               )}
               <div className="mt-4">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                   Foto o captura del comprobante
                 </label>
                 <input
@@ -206,7 +206,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
       <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
         <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-black/5">
           <p className="font-display text-lg font-bold text-brand-dark">¡Boleto confirmado!</p>
-          <p className="mt-1 text-sm text-brand-dark/60">Asiento {numeroAsiento}</p>
+          <p className="mt-1 text-sm text-brand-dark/70">Asiento {numeroAsiento}</p>
 
           <div className="mt-4 space-y-1 rounded-lg bg-brand-light/30 px-4 py-3 text-left text-sm">
             <div className="flex justify-between text-brand-dark/70">
@@ -281,11 +281,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     <main className="flex-1 bg-brand-light/40 px-4 py-10">
       <div className="mx-auto max-w-md">
         <h1 className="font-display text-xl font-bold text-brand-dark">Datos del pasajero</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">Asiento {numeroAsiento}</p>
+        <p className="mt-1 text-sm text-brand-dark/70">Asiento {numeroAsiento}</p>
 
         <form onSubmit={pagar} className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
@@ -298,7 +298,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Cédula / documento
             </label>
             <input
@@ -311,7 +311,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Tipo de tarifa
             </label>
             <select
@@ -328,7 +328,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           </div>
           {tipoTarifa === "nino" && (
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Fecha de nacimiento
               </label>
               <input
@@ -343,12 +343,12 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           {tipoTarifa === "nino" && (
             <div className="rounded-lg bg-brand-light/30 p-4">
               <p className="text-sm font-semibold text-brand-dark">Autorización de viaje (RF-MENOR)</p>
-              <p className="mt-1 text-xs text-brand-dark/60">
+              <p className="mt-1 text-xs text-brand-dark/70">
                 Por ser un pasajero menor de edad, indica el adulto responsable que autoriza el viaje.
               </p>
               <div className="mt-3 space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                     Nombre del adulto responsable
                   </label>
                   <input
@@ -359,7 +359,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                     Documento del adulto responsable
                   </label>
                   <input
@@ -370,7 +370,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                     Teléfono del adulto responsable (opcional)
                   </label>
                   <input
@@ -403,7 +403,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
           {metodosDisponibles.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Cómo quieres pagar
               </label>
               <select
@@ -437,7 +437,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
           {creditos.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Usar un crédito disponible (opcional)
               </label>
               <select

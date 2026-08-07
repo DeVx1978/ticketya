@@ -70,7 +70,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
 
   if (!mapa) {
     return (
-      <main className="flex-1 px-4 py-16 text-center text-brand-dark/60">
+      <main className="flex-1 px-4 py-16 text-center text-brand-dark/70">
         Cargando mapa de asientos...
       </main>
     );
@@ -121,7 +121,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
     <main className="flex-1 bg-brand-light/40 px-4 py-10">
       <div className="mx-auto max-w-md">
         <h1 className="font-display text-xl font-bold text-brand-dark">Elige tu asiento</h1>
-        <p className="mt-1 flex items-center gap-3 text-sm text-brand-dark/60">
+        <p className="mt-1 flex items-center gap-3 text-sm text-brand-dark/70">
           <span>
             <span className="font-semibold text-brand-dark">{disponibles}</span> disponibles
           </span>
@@ -151,7 +151,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
         )}
 
         {hayEtiquetas && (
-          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-brand-dark/60">
+          <div className="mt-4 flex items-center justify-center gap-4 text-xs text-brand-dark/70">
             <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> VIP
             </span>

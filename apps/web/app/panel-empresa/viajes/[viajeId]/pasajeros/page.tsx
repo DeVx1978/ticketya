@@ -48,7 +48,7 @@ export default function ManifiestoViajePage() {
           ← Volver a viajes
         </Link>
         <h1 className="mt-2 font-display text-2xl font-bold text-brand-dark">Lista de pasajeros</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           {pasajeros === null ? "Cargando..." : `${vigentes} pasajero${vigentes === 1 ? "" : "s"} · ${abordaron} ya abordó/aron`}
         </p>
       </div>
@@ -68,7 +68,7 @@ export default function ManifiestoViajePage() {
 
         {pasajeros !== null && pasajeros.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Asiento</th>
                 <th className="px-6 py-3">Nombre</th>
