@@ -925,7 +925,19 @@ export async function crearCompra(
   return cuerpo;
 }
 
-export async function login(correo: string, password: string): Promise<{ accessToken: string }> {
+/**
+ * Ítem 19, Fase 3 (06-ago-2026) -- 2FA obligatorio para las 3 cuentas
+ * administrativas. login() ahora devuelve una de 3 formas distintas:
+ * credenciales reales de una vez (pasajero/vendedor, sin 2FA), o un
+ * token temporal que exige un paso más (admin sin 2FA configurado
+ * todavía, o admin con 2FA ya activo).
+ */
+export type RespuestaLogin =
+  | { accessToken: string; refreshToken: string }
+  | { requiereConfigurar2fa: true; tokenTemporal: string }
+  | { requiere2fa: true; tokenTemporal: string };
+
+export async function login(correo: string, password: string): Promise<RespuestaLogin> {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -935,6 +947,65 @@ export async function login(correo: string, password: string): Promise<{ accessT
   if (!res.ok) {
     throw new Error(cuerpo?.message ?? "No se pudo iniciar sesión.");
   }
+  return cuerpo;
+}
+
+/** Paso 1 de la configuración de 2FA: genera el secreto y el QR para escanear. */
+export async function iniciarConfiguracion2fa(
+  tokenTemporal: string,
+): Promise<{ secreto: string; qrDataUrl: string }> {
+  const res = await fetch(`${API_URL}/auth/2fa/iniciar-configuracion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tokenTemporal }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo iniciar la configuración de 2FA.");
+  return cuerpo;
+}
+
+/** Paso 2: confirma con un código real, activa 2FA, entrega credenciales + 10 códigos de recuperación (una sola vez). */
+export async function confirmarConfiguracion2fa(
+  tokenTemporal: string,
+  codigo: string,
+): Promise<{ accessToken: string; refreshToken: string; codigosRecuperacion: string[] }> {
+  const res = await fetch(`${API_URL}/auth/2fa/confirmar-configuracion`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tokenTemporal, codigo }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "El código no es válido.");
+  return cuerpo;
+}
+
+/** Login normal cuando 2FA ya está activo: valida el código de 6 dígitos. */
+export async function verificar2fa(
+  tokenTemporal: string,
+  codigo: string,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const res = await fetch(`${API_URL}/auth/2fa/verificar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tokenTemporal, codigo }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "El código no es válido.");
+  return cuerpo;
+}
+
+/** Respaldo si se perdió el dispositivo con la app autenticadora. */
+export async function recuperarCon2fa(
+  tokenTemporal: string,
+  codigoRecuperacion: string,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const res = await fetch(`${API_URL}/auth/2fa/recuperar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tokenTemporal, codigoRecuperacion }),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "Ese código de recuperación no es válido.");
   return cuerpo;
 }
 
