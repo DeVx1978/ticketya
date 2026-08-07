@@ -478,19 +478,19 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~20. `npm audit` a fondo~~ -- **cerrado 06-ago-2026** (ver requerimientos no funcionales, PR #49): 5 de 6 vulnerabilidades corregidas, 1 documentada como pendiente de bajo riesgo real
 21. Accesibilidad -- **parte 1 cerrada 06-ago-2026** (ver requerimientos no funcionales, PRs #50, #51): contraste WCAG AA y etiquetas del buscador principal corregidos, portada 90→100/100 en Lighthouse. **Parte 2 pendiente:** 121 etiquetas restantes, navegación por teclado completa, landmarks -- Fase 6 para lo que requiere rediseño
 
-~~22. Catálogo cerrado de entidad financiera para métodos de pago~~ -- **cerrado 06-ago-2026** (PR #52). Hallazgo del usuario: el pasajero debe VER el banco receptor de una transferencia (reconocimiento visual = confianza y velocidad de elección), no solo texto libre. Investigado antes de construir: (1) el nombre del banco vivía sin estructura dentro de un JSON libre -- "Pichincha" y "Banco Pichincha" no se relacionaban entre sí, imposible mostrar el logo correcto con certeza; (2) el `<select>` HTML nativo no permite imágenes en sus opciones -- limitación real del navegador, no del código; (3) **cuestión legal investigada, con matiz importante aportado por el director:** mostrar el NOMBRE de un banco como identificador de la cuenta receptora de una transferencia real es uso operativo estándar (mismo criterio que cualquier factura/comprobante en Ecuador), no publicidad ni endoso -- bajo riesgo. Mostrar su LOGO en ese mismo contexto probablemente cae en la misma categoría de bajo riesgo, pero **queda pendiente de confirmación con un abogado ecuatoriano real** antes de publicarlo, con esta distinción exacta anotada para cuando se retome: "identificar la cuenta receptora de un pago real" (bajo riesgo) contra "logo usado como publicidad o endoso" (alto riesgo) -- son usos legalmente distintos y no deben tratarse igual. **Construido:** catálogo cerrado (8 bancos más grandes de Ecuador por activos + 2 cooperativas de ahorro conocidas + "otro" como respaldo con texto libre, para no bloquear a ninguna cooperativa), obligatorio para transferencia_bancaria, columna estructurada nueva en base de datos. **Pendiente para cuando se confirme lo legal:** mostrar el logo real de cada entidad en el frontend -- hoy se muestra el nombre
+~~22. Catálogo cerrado de entidad financiera para métodos de pago~~ (ítem nuevo, no estaba en la hoja de ruta original de 27 -- nació de la conversación de pagos de esta sesión) -- **cerrado 06-ago-2026** (PR #52). Hallazgo del usuario: el pasajero debe VER el banco receptor de una transferencia (reconocimiento visual = confianza y velocidad de elección), no solo texto libre. Investigado antes de construir: (1) el nombre del banco vivía sin estructura dentro de un JSON libre -- "Pichincha" y "Banco Pichincha" no se relacionaban entre sí, imposible mostrar el logo correcto con certeza; (2) el `<select>` HTML nativo no permite imágenes en sus opciones -- limitación real del navegador, no del código; (3) **cuestión legal investigada, con matiz importante aportado por el director:** mostrar el NOMBRE de un banco como identificador de la cuenta receptora de una transferencia real es uso operativo estándar (mismo criterio que cualquier factura/comprobante en Ecuador), no publicidad ni endoso -- bajo riesgo. Mostrar su LOGO en ese mismo contexto probablemente cae en la misma categoría de bajo riesgo, pero **queda pendiente de confirmación con un abogado ecuatoriano real** antes de publicarlo, con esta distinción exacta anotada para cuando se retome: "identificar la cuenta receptora de un pago real" (bajo riesgo) contra "logo usado como publicidad o endoso" (alto riesgo) -- son usos legalmente distintos y no deben tratarse igual. **Construido:** catálogo cerrado (8 bancos más grandes de Ecuador por activos + 2 cooperativas de ahorro conocidas + "otro" como respaldo con texto libre, para no bloquear a ninguna cooperativa), obligatorio para transferencia_bancaria, columna estructurada nueva en base de datos. **Pendiente para cuando se confirme lo legal:** mostrar el logo real de cada entidad en el frontend -- hoy se muestra el nombre
 
 ### Fase 4 — Conexiones externas reales (bloqueadas por decisiones/gestiones externas al desarrollo)
-22. Pasarela de pago con tarjeta real (esperando decisión de proveedor)
-23. Proveedor certificado de facturación electrónica (esperando gestión externa)
+23. Pasarela de pago con tarjeta real (esperando decisión de proveedor)
+24. Proveedor certificado de facturación electrónica (esperando gestión externa)
 
 ### Fase 5 — Infraestructura
-24. Ejecutar despliegue real a Render + Vercel
-25. Prueba de carga real
+25. Ejecutar despliegue real a Render + Vercel
+26. Prueba de carga real
 
 ### Fase 6 — Frontend y marca (al final, ya acordado)
-26. Rebrand completo a "Columbus" en `apps/web`
-27. Diseño visual final de la landing
+27. Rebrand completo a "Columbus" en `apps/web`
+28. Diseño visual final de la landing
 
 ---
 
