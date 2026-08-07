@@ -1,10 +1,15 @@
-﻿/**
+/**
  * Interfaces (puertos) del dominio de autenticación — RF-AUTH.
  *
- * Nada en este archivo depende de NestJS, Drizzle, bcrypt ni JWT. La capa
- * de infraestructura implementa estas interfaces con la tecnología
- * concreta elegida (ver infraestructura/auth/).
+ * Nada en este archivo depende de NestJS, Drizzle, bcrypt ni JWT -- la
+ * capa de infraestructura implementa estas interfaces con la tecnología
+ * concreta elegida (ver infraestructura/auth/). node:crypto es la
+ * única excepción real, y es intencional: es un primitivo del propio
+ * lenguaje (no una librería de terceros intercambiable como bcrypt),
+ * usado aquí para el algoritmo TOTP (RFC 6238, ítem 19), que no es una
+ * elección de proveedor sino la definición misma del estándar.
  */
+import { createHmac, randomBytes as randomBytesNode } from 'node:crypto';
 
 /** Forma mínima de un usuario que el dominio necesita conocer. */
 export interface UsuarioDominio {
@@ -24,6 +29,7 @@ export interface UsuarioDominio {
   bloqueadoHasta: Date | null;
   correoVerificado: boolean;
   activo: boolean;
+  totpHabilitado: boolean;
 }
 
 export interface DatosRegistro {
@@ -155,6 +161,69 @@ export interface UsuarioRepositorio {
   consumirTokenRefreshVigente(
     tokenHash: string,
   ): Promise<{ id: string; usuarioId: string } | null>;
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- LOPDP, derecho de eliminación.
+   * Anonimiza, no borra la fila -- decisión del director confirmada:
+   * los datos del pasajero dentro de cada boleto ya vendido
+   * (pasajeros_compra.nombre_completo/.documento) NO se tocan, porque
+   * son el registro contable de una venta real de la cooperativa, no
+   * un dato que pertenezca solo a la cuenta que se elimina. compras
+   * cuyo comprador era esta cuenta pasan a comprador_usuario_id = null
+   * (ya nullable hoy, para ventas de ventanilla). Todos los tokens de
+   * la cuenta se eliminan de verdad -- ninguna razón legítima para
+   * conservarlos tras eliminar la cuenta.
+   */
+  eliminarCuenta(usuarioId: string, correoAnonimo: string): Promise<void>;
+
+  /**
+   * Ítem 17, Fase 3 (05-ago-2026) -- LOPDP, principio de conservación
+   * ("solo el tiempo necesario para la finalidad"). Hallazgo real: los
+   * tokens de un solo uso nunca se eliminaban tras expirar/usarse,
+   * acumulándose para siempre sin ninguna razón legítima. Devuelve
+   * cuántos se borraron, para que el cron pueda registrarlo.
+   */
+  eliminarTokensAntiguos(antesDe: Date): Promise<number>;
+
+  /**
+   * Ítem 19, Fase 3 (05-ago-2026) -- 2FA obligatorio para las 3 cuentas
+   * administrativas. Mismo mecanismo de token de un solo uso que el
+   * resto (reset_password, verificar_correo, etc.), proposito nuevo
+   * 'login_2fa' -- el paso intermedio entre "contraseña correcta" y
+   * "sesión completa" mientras se resuelve el segundo factor.
+   */
+  guardarTokenLogin2fa(usuarioId: string, tokenHash: string, expiraEn: Date): Promise<void>;
+
+  /** Atómico, mismo patrón que los demás tokens -- NO se consume aquí (se puede usar varias veces dentro de su ventana: setup, verificar código, reintento). */
+  buscarTokenLogin2faVigente(
+    tokenHash: string,
+  ): Promise<{ usuarioId: string } | null>;
+
+  /**
+   * Guarda el secreto TOTP cifrado, SIN activar 2FA todavía -- paso de
+   * "configuración pendiente", antes de que el admin confirme con un
+   * código real que sí escaneó el QR correctamente.
+   */
+  guardarSecretoTotpPendiente(usuarioId: string, secretoCifrado: string): Promise<void>;
+
+  obtenerSecretoTotpCifrado(usuarioId: string): Promise<string | null>;
+
+  /**
+   * Activa 2FA de verdad (totpHabilitado = true) y guarda los 10
+   * códigos de recuperación (ya hasheados) en la misma operación --
+   * mismo criterio de "todo o nada" que eliminarCuenta.
+   */
+  activarTotp(usuarioId: string, codigosRecuperacionHash: string[]): Promise<void>;
+
+  /**
+   * Busca un código de recuperación vigente (sin usar) y lo marca como
+   * usado en una sola operación atómica -- mismo patrón de condición de
+   * carrera ya corregido en el resto de tokens de un solo uso.
+   */
+  consumirCodigoRecuperacion(
+    usuarioId: string,
+    codigoHash: string,
+  ): Promise<boolean>;
 }
 
 export interface NotificadorEmail {
@@ -226,6 +295,18 @@ export interface HasherContrasena {
   comparar(passwordPlano: string, hash: string): Promise<boolean>;
 }
 
+/**
+ * Ítem 19, Fase 3 (05-ago-2026) -- puerto de cifrado del secreto TOTP.
+ * A diferencia de HasherContrasena (un solo sentido, nunca se lee de
+ * vuelta), este SÍ necesita ser reversible -- verificar un código de
+ * 6 dígitos exige el secreto real para calcular el código esperado.
+ * La capa de infra decide el algoritmo (AES-256-GCM hoy).
+ */
+export interface CifradorTotp {
+  cifrar(textoPlano: string): string;
+  descifrar(textoCifrado: string): string;
+}
+
 /** Puerto de emisión/verificación de tokens de sesión. */
 export interface EmisorTokens {
   firmar(payload: PayloadToken): string;
@@ -295,4 +376,101 @@ export function puedeEditarIdentidad(
     permitido: false,
     diasRestantes: Math.ceil(DIAS_LIMITE_CAMBIO_IDENTIDAD - diasTranscurridos),
   };
+}
+
+/**
+ * Ítem 19, Fase 3 (05-ago-2026) -- TOTP (RFC 6238) implementado directo
+ * con node:crypto, SIN depender de otplib. Decisión tomada después de
+ * 2 fricciones reales con esa librería en la misma sesión: primero su
+ * v13 rompió la API que se había asumido sin verificar, y después se
+ * descubrió que depende de paquetes ESM puros (@scure/base) que Jest
+ * no puede procesar sin configuración adicional -- rompía las 14
+ * suites de pruebas al arrancar. TOTP es un algoritmo bien definido
+ * (no una elección de proveedor intercambiable como el hashing de
+ * contraseñas), así que implementarlo directo es más simple y
+ * confiable que arrastrar una dependencia externa con este historial
+ * de fricción, sin perder nada real -- mismo criterio de "aburrido es
+ * bueno" que ya se usa en el resto del proyecto (simulador → proveedor
+ * real después, nunca magia innecesaria).
+ */
+
+const BASE32_ALFABETO = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(base32: string): Buffer {
+  const limpio = base32.toUpperCase().replace(/=+$/, '');
+  let bits = '';
+  for (const caracter of limpio) {
+    const valor = BASE32_ALFABETO.indexOf(caracter);
+    if (valor === -1) throw new Error('Carácter base32 inválido en el secreto TOTP.');
+    bits += valor.toString(2).padStart(5, '0');
+  }
+  const bytes: number[] = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.slice(i, i + 8), 2));
+  }
+  return Buffer.from(bytes);
+}
+
+function base32Encode(buffer: Buffer): string {
+  let bits = '';
+  for (const byte of buffer) {
+    bits += byte.toString(2).padStart(8, '0');
+  }
+  let resultado = '';
+  for (let i = 0; i + 5 <= bits.length; i += 5) {
+    resultado += BASE32_ALFABETO[parseInt(bits.slice(i, i + 5), 2)];
+  }
+  return resultado;
+}
+
+/** 20 bytes (160 bits) -- múltiplo exacto de 5 bits, produce 32 caracteres base32 sin relleno. Longitud recomendada estándar para TOTP. */
+export function generarSecretoTotp(): string {
+  return base32Encode(randomBytesNode(20));
+}
+
+function hotp(secretBytes: Buffer, counter: number): string {
+  const counterBuffer = Buffer.alloc(8);
+  counterBuffer.writeBigUInt64BE(BigInt(counter));
+  const hmac = createHmac('sha1', secretBytes).update(counterBuffer).digest();
+  const offset = hmac[hmac.length - 1] & 0x0f;
+  const binario =
+    ((hmac[offset] & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) << 8) |
+    (hmac[offset + 3] & 0xff);
+  return (binario % 1_000_000).toString().padStart(6, '0');
+}
+
+export function generarCodigoTotp(
+  secretoBase32: string,
+  epochSegundos: number = Math.floor(Date.now() / 1000),
+): string {
+  const counter = Math.floor(epochSegundos / 30);
+  return hotp(base32Decode(secretoBase32), counter);
+}
+
+/** Tolerancia de ±1 paso (30s) para el desfase de reloj típico de un teléfono -- práctica estándar de la industria, misma que usaba otplib por defecto. */
+export function verificarCodigoTotp(
+  secretoBase32: string,
+  codigo: string,
+  epochSegundos: number = Math.floor(Date.now() / 1000),
+): boolean {
+  const counterActual = Math.floor(epochSegundos / 30);
+  const secretBytes = base32Decode(secretoBase32);
+  for (const delta of [-1, 0, 1]) {
+    if (hotp(secretBytes, counterActual + delta) === codigo) return true;
+  }
+  return false;
+}
+
+export function generarUriTotp(opciones: { issuer: string; label: string; secreto: string }): string {
+  const { issuer, label, secreto } = opciones;
+  const params = new URLSearchParams({
+    secret: secreto,
+    issuer,
+    algorithm: 'SHA1',
+    digits: '6',
+    period: '30',
+  });
+  return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(label)}?${params.toString()}`;
 }

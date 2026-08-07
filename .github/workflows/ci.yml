@@ -70,6 +70,7 @@ jobs:
           DATABASE_URL=postgresql://ticketya_app:cambia_esta_contrasena_app@localhost:5432/ticketya_ci
           DATABASE_URL_PUBLICO=postgresql://ticketya_platform_admin:cambia_esta_contrasena_admin@localhost:5432/ticketya_ci
           JWT_SECRET=secreto-solo-para-ci-nunca-usar-en-produccion
+          TOTP_CIFRADO_CLAVE=secreto-totp-solo-para-ci-nunca-usar-en-produccion-0123456789abcdef
           EOF
 
       - name: Verificar tipos (TypeScript)
