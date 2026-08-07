@@ -107,7 +107,7 @@ export default function CooperativasAdminPage() {
       <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Cooperativas</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Alta de una nueva cooperativa junto con su primer usuario administrador (RF-ADMIN-001).
         </p>
       </div>
@@ -116,7 +116,7 @@ export default function CooperativasAdminPage() {
         <h2 className="font-display text-base font-bold text-brand-dark">Datos de la cooperativa</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               RUC
             </label>
             <input
@@ -128,7 +128,7 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Razón social
             </label>
             <input
@@ -140,7 +140,7 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre comercial
             </label>
             <input
@@ -152,7 +152,7 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Modelo de integración
             </label>
             <select
@@ -165,7 +165,7 @@ export default function CooperativasAdminPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contacto — nombre (opcional)
             </label>
             <input
@@ -176,7 +176,7 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contacto — correo (opcional)
             </label>
             <input
@@ -194,7 +194,7 @@ export default function CooperativasAdminPage() {
         </p>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
@@ -205,7 +205,7 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
@@ -216,7 +216,7 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
             <CampoPassword
@@ -261,7 +261,7 @@ export default function CooperativasAdminPage() {
 
         {cooperativas !== null && cooperativas.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Nombre comercial</th>
                 <th className="px-6 py-3">Estado</th>

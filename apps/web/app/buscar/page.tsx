@@ -55,7 +55,7 @@ export default async function ResultadosBusquedaPage({
         <h1 className="font-display mt-3 text-2xl font-bold text-brand-dark">
           {origenCiudad ?? "Origen"} → {destinoCiudad ?? "Destino"}
         </h1>
-        <p className="text-sm text-brand-dark/60">
+        <p className="text-sm text-brand-dark/70">
           {new Date(`${fecha}T00:00:00`).toLocaleDateString("es-EC", {
             weekday: "long",
             day: "numeric",
@@ -76,7 +76,7 @@ export default async function ResultadosBusquedaPage({
               <p className="font-display text-lg font-bold text-brand-dark">
                 No encontramos viajes para esta fecha.
               </p>
-              <p className="mt-1 text-sm text-brand-dark/60">
+              <p className="mt-1 text-sm text-brand-dark/70">
                 Prueba con otra fecha, o confirma que la ruta ya esté publicada por alguna cooperativa.
               </p>
             </div>
@@ -108,7 +108,7 @@ export default async function ResultadosBusquedaPage({
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-brand-dark/60">{r.tipoVehiculoNombre}</p>
+                <p className="text-sm text-brand-dark/70">{r.tipoVehiculoNombre}</p>
                 {r.tipoVehiculoAmenidades.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     {r.tipoVehiculoAmenidades.map((a) => (

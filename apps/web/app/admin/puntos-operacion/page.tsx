@@ -86,7 +86,7 @@ function TasaEditable({
       </button>
       <button
         onClick={() => setEditando(false)}
-        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/70 hover:bg-brand-light/40"
       >
         ✕
       </button>
@@ -167,7 +167,7 @@ export default function PuntosOperacionAdminPage() {
       <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Puntos de operación</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Terminales, oficinas y paradas — cada terminal puede tener su propia tasa fija por pasajero (RF-FLOTA-003).
         </p>
       </div>
@@ -177,7 +177,7 @@ export default function PuntosOperacionAdminPage() {
         className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-3"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Tipo
           </label>
           <select
@@ -191,7 +191,7 @@ export default function PuntosOperacionAdminPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre
           </label>
           <input
@@ -203,7 +203,7 @@ export default function PuntosOperacionAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ciudad
           </label>
           <input
@@ -215,7 +215,7 @@ export default function PuntosOperacionAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Provincia
           </label>
           <input
@@ -227,7 +227,7 @@ export default function PuntosOperacionAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Cooperativa propietaria (opcional)
           </label>
           <select
@@ -244,7 +244,7 @@ export default function PuntosOperacionAdminPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Tasa por pasajero (USD, opcional)
           </label>
           <input
@@ -292,7 +292,7 @@ export default function PuntosOperacionAdminPage() {
 
         {puntos !== null && puntos.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Nombre</th>
                 <th className="px-6 py-3">Tipo</th>

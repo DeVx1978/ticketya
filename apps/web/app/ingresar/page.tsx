@@ -161,7 +161,7 @@ function FormularioIngreso() {
           <h1 className="mt-4 text-center font-display text-xl font-bold text-brand-dark">
             Activa la verificación en dos pasos
           </h1>
-          <p className="mt-2 text-center text-sm text-brand-dark/60">
+          <p className="mt-2 text-center text-sm text-brand-dark/70">
             Es obligatoria para cuentas administrativas. Escanea este código con tu app
             autenticadora (Google Authenticator, Authy, etc.).
           </p>
@@ -189,7 +189,7 @@ function FormularioIngreso() {
 
           <form onSubmit={enviarConfiguracion} className="mt-6 space-y-4">
             <div>
-              <label className="mb-2 block text-center text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-2 block text-center text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Código de 6 dígitos
               </label>
               <EntradaCodigoOtp valor={codigo} onChange={setCodigo} />
@@ -274,7 +274,7 @@ function FormularioIngreso() {
           <h1 className="text-center font-display text-xl font-bold text-brand-dark">
             Código de recuperación
           </h1>
-          <p className="mt-2 text-center text-sm text-brand-dark/60">
+          <p className="mt-2 text-center text-sm text-brand-dark/70">
             Ingresa uno de los 10 códigos que guardaste al activar la verificación en dos pasos.
           </p>
 
@@ -336,7 +336,7 @@ function FormularioIngreso() {
           <h1 className="mt-4 text-center font-display text-xl font-bold text-brand-dark">
             Verificación en dos pasos
           </h1>
-          <p className="mt-2 text-center text-sm text-brand-dark/60">
+          <p className="mt-2 text-center text-sm text-brand-dark/70">
             Ingresa el código de 6 dígitos de tu app autenticadora.
           </p>
 
@@ -375,11 +375,11 @@ function FormularioIngreso() {
     <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-black/5">
         <h1 className="font-display text-2xl font-bold text-brand-dark">Iniciar sesión</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">Entra a tu cuenta de TicketYa.</p>
+        <p className="mt-1 text-sm text-brand-dark/70">Entra a tu cuenta de TicketYa.</p>
 
         <form onSubmit={enviarLogin} className="mt-6 space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
@@ -391,7 +391,7 @@ function FormularioIngreso() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
             <CampoPassword value={password} onChange={setPassword} />
@@ -408,7 +408,7 @@ function FormularioIngreso() {
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-brand-dark/60">
+        <p className="mt-4 text-center text-sm text-brand-dark/70">
           ¿No tienes cuenta?{" "}
           <Link
             href={`/registro${searchParams.get("volverA") ? `?volverA=${encodeURIComponent(searchParams.get("volverA")!)}` : ""}`}

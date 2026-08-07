@@ -111,7 +111,7 @@ export function SolicitarFactura({ boletoId }: { boletoId: string }) {
         </button>
         <button
           onClick={() => setAbierto(false)}
-          className="rounded-lg border border-brand-light px-4 py-1.5 text-sm text-brand-dark/60 hover:bg-brand-light/40"
+          className="rounded-lg border border-brand-light px-4 py-1.5 text-sm text-brand-dark/70 hover:bg-brand-light/40"
         >
           Cancelar
         </button>

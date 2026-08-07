@@ -143,7 +143,7 @@ export default function ConfiguracionPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Configuración</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Ajustes propios de tu cooperativa — cada empresa afiliada configura los suyos.
       </p>
 
@@ -182,7 +182,7 @@ export default function ConfiguracionPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Razón social
               </label>
               <input
@@ -193,7 +193,7 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 RUC
               </label>
               <input
@@ -204,7 +204,7 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Dirección legal
               </label>
               <input
@@ -215,7 +215,7 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Nombre de contacto
               </label>
               <input
@@ -226,7 +226,7 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Correo de contacto
               </label>
               <input
@@ -237,7 +237,7 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Teléfono de contacto
               </label>
               <input
@@ -301,7 +301,7 @@ export default function ConfiguracionPage() {
         </div>
         {politica.permiteCancelacion && (
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Horas mínimas antes de la salida para poder cancelar
             </label>
             <input
@@ -354,7 +354,7 @@ export default function ConfiguracionPage() {
         </div>
         {politica.permiteReprogramacion && (
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Horas mínimas antes de la salida para poder reprogramar
             </label>
             <input
@@ -402,7 +402,7 @@ export default function ConfiguracionPage() {
       >
         <h2 className="font-display text-base font-bold text-brand-dark">IVA</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Porcentaje de IVA
           </label>
           <input

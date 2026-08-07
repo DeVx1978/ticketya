@@ -149,7 +149,7 @@ export default function CredencialesApiPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Credenciales API</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Conecta tu propio sistema de venta a Columbus. Genera una llave, configura a dónde avisamos
         cada venta, y revócala cuando quieras.
       </p>
@@ -197,7 +197,7 @@ export default function CredencialesApiPage() {
       >
         <h2 className="font-display text-base font-bold text-brand-dark">Nueva credencial</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             URL del webhook (opcional, puedes configurarla después)
           </label>
           <input
@@ -242,7 +242,7 @@ export default function CredencialesApiPage() {
               <p className="mt-1 text-xs text-brand-dark/40">Creada el {formatearFecha(c.creadoEn)}</p>
 
               <div className="mt-3">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                   Webhook
                 </label>
                 <div className="flex gap-2">
@@ -290,7 +290,7 @@ export default function CredencialesApiPage() {
                     <button
                       type="button"
                       onClick={() => setIdConfirmandoRevocar(null)}
-                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/60"
+                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/70"
                     >
                       Cancelar
                     </button>

@@ -250,7 +250,7 @@ export function TabDatosPersonales({
           </p>
         )}
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre completo
           </label>
           <input
@@ -262,7 +262,7 @@ export function TabDatosPersonales({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Cédula / documento
           </label>
           <input
@@ -290,7 +290,7 @@ export function TabDatosPersonales({
       >
         <h2 className="font-display text-base font-bold text-brand-dark">Mis datos</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Correo
           </label>
           <input
@@ -301,7 +301,7 @@ export function TabDatosPersonales({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             WhatsApp
           </label>
           <input
@@ -314,7 +314,7 @@ export function TabDatosPersonales({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Foto de perfil
           </label>
           <input
@@ -341,7 +341,7 @@ export function TabDatosPersonales({
             disabled={subiendoFoto}
             className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-sm text-brand-dark file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white disabled:opacity-50"
           />
-          {subiendoFoto && <p className="mt-1 text-xs text-brand-dark/60">Subiendo…</p>}
+          {subiendoFoto && <p className="mt-1 text-xs text-brand-dark/70">Subiendo…</p>}
           <p className="mt-1 text-xs text-brand-dark/50">JPG, PNG o WEBP, hasta 5 MB.</p>
         </div>
         {errorPerfil && <p className="text-sm font-medium text-red-600">{errorPerfil}</p>}
@@ -361,13 +361,13 @@ export function TabDatosPersonales({
       >
         <h2 className="font-display text-base font-bold text-brand-dark">Cambiar contraseña</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Contraseña actual
           </label>
           <CampoPassword value={passwordActual} onChange={setPasswordActual} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nueva contraseña
           </label>
           <CampoPassword value={passwordNueva} onChange={setPasswordNueva} placeholder="Mínimo 8 caracteres" />
@@ -399,7 +399,7 @@ export function TabDatosPersonales({
         ) : (
           <>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Correo nuevo
               </label>
               <input
@@ -410,7 +410,7 @@ export function TabDatosPersonales({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Tu contraseña actual (para confirmar que eres tú)
               </label>
               <CampoPassword value={passwordParaCorreo} onChange={setPasswordParaCorreo} />

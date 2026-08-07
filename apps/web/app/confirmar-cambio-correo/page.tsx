@@ -35,14 +35,14 @@ function ConfirmacionCambioCorreo() {
     <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-black/5">
         {estado === "cargando" && (
-          <p className="text-brand-dark/60">Confirmando tu correo nuevo...</p>
+          <p className="text-brand-dark/70">Confirmando tu correo nuevo...</p>
         )}
         {estado === "exito" && (
           <>
             <h1 className="font-display text-xl font-bold text-brand-dark">
               ¡Listo! Tu correo quedó actualizado
             </h1>
-            <p className="mt-2 text-sm text-brand-dark/60">
+            <p className="mt-2 text-sm text-brand-dark/70">
               Desde ahora, inicia sesión con tu correo nuevo.
             </p>
             <Link
@@ -59,7 +59,7 @@ function ConfirmacionCambioCorreo() {
               No pudimos confirmar tu correo
             </h1>
             <p className="mt-2 text-sm text-red-600">{error}</p>
-            <p className="mt-2 text-sm text-brand-dark/60">
+            <p className="mt-2 text-sm text-brand-dark/70">
               El enlace puede haber expirado (dura 24 horas) o ya haberse usado antes. Vuelve a
               solicitar el cambio desde tu perfil.
             </p>

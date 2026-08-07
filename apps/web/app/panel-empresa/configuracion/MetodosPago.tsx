@@ -126,7 +126,7 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
       )}
 
       <form onSubmit={agregar} className="space-y-3 border-t border-black/5 pt-4">
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           Agregar método
         </label>
         <select
@@ -148,7 +148,7 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
         {tipoNuevo &&
           CAMPOS[tipoNuevo].map((campo) => (
             <div key={campo.clave}>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 {campo.etiqueta}
               </label>
               <input
