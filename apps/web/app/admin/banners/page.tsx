@@ -92,7 +92,7 @@ export default function BannersAdminPage() {
 
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Banners propios</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Promoción de productos propios (DevX, Surebets24/7, el terminal, etc.) en la portada — no es venta a
           terceros, esa parte del sistema comercial llega más adelante.
         </p>
@@ -100,7 +100,7 @@ export default function BannersAdminPage() {
 
       <form onSubmit={crear} className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Título (interno, no se muestra)
           </label>
           <input
@@ -112,7 +112,7 @@ export default function BannersAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Enlace al hacer clic
           </label>
           <input
@@ -124,7 +124,7 @@ export default function BannersAdminPage() {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             URL de la imagen
           </label>
           <input

@@ -80,7 +80,7 @@ export function FiltrosBusqueda() {
       {abierto && (
         <div className="mt-4 space-y-4 border-t border-black/5 pt-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Hora de salida
             </label>
             <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export function FiltrosBusqueda() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Amenidades
             </label>
             <div className="flex flex-wrap gap-2">
@@ -113,7 +113,7 @@ export function FiltrosBusqueda() {
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                     amenidades.includes(a.valor)
                       ? "bg-brand text-white"
-                      : "bg-brand-light/40 text-brand-dark/60"
+                      : "bg-brand-light/40 text-brand-dark/70"
                   }`}
                 >
                   {a.etiqueta}
@@ -134,7 +134,7 @@ export function FiltrosBusqueda() {
               <button
                 type="button"
                 onClick={limpiar}
-                className="rounded-lg px-4 py-2 text-sm font-semibold text-brand-dark/60"
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-brand-dark/70"
               >
                 Limpiar
               </button>

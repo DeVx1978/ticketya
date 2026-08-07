@@ -80,7 +80,7 @@ export default function LiquidacionesAdminPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Liquidaciones</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Genera la liquidación de una cooperativa por período, y márcala como pagada cuando
         corresponda.
       </p>
@@ -90,7 +90,7 @@ export default function LiquidacionesAdminPage() {
         className="mt-6 grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
       >
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             ID de la cooperativa
           </label>
           <input
@@ -102,7 +102,7 @@ export default function LiquidacionesAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Desde
           </label>
           <input
@@ -113,7 +113,7 @@ export default function LiquidacionesAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Hasta
           </label>
           <input

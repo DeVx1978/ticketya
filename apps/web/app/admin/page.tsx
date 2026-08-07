@@ -122,7 +122,7 @@ export default function AdminHome() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Dashboard nacional</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Ventas acumuladas por cooperativa, en toda la red (RF-ADMIN-002).
         </p>
       </div>
@@ -171,7 +171,7 @@ export default function AdminHome() {
 
         {ventas !== null && ventas.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Cooperativa</th>
                 <th className="px-6 py-3 text-right">Boletos vendidos</th>
@@ -195,7 +195,7 @@ export default function AdminHome() {
 
       <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
         <h2 className="font-display text-lg font-bold text-brand-dark">Usuarios registrados</h2>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Total de cuentas activas en la plataforma, desglosado por rol (RF-ADMIN, sección 3.13).
         </p>
 
@@ -231,7 +231,7 @@ export default function AdminHome() {
 
       <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
         <h2 className="font-display text-lg font-bold text-brand-dark">IVA nacional</h2>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Al cambiarlo, se propaga de inmediato a todas las cooperativas que estén en modo automático. Las que
           fijaron su propio valor manualmente no se ven afectadas.
         </p>
@@ -241,7 +241,7 @@ export default function AdminHome() {
         ) : (
           <form onSubmit={guardar} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Porcentaje de IVA vigente
               </label>
               <div className="flex items-center gap-1">
@@ -254,7 +254,7 @@ export default function AdminHome() {
                   onChange={(e) => setIvaPorcentaje(e.target.value)}
                   className="w-28 rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
                 />
-                <span className="text-brand-dark/60">%</span>
+                <span className="text-brand-dark/70">%</span>
               </div>
             </div>
             <button
@@ -272,7 +272,7 @@ export default function AdminHome() {
 
       <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
         <h2 className="font-display text-lg font-bold text-brand-dark">Cargo de plataforma</h2>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Monto fijo que la plataforma cobra por cada pasajero, sumado aparte de la tarifa (RN-002).
         </p>
 
@@ -281,11 +281,11 @@ export default function AdminHome() {
         ) : (
           <form onSubmit={guardarCargo} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Monto por pasajero
               </label>
               <div className="flex items-center gap-1">
-                <span className="text-brand-dark/60">$</span>
+                <span className="text-brand-dark/70">$</span>
                 <input
                   type="number"
                   min="0"

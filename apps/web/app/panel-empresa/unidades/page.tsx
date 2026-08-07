@@ -207,7 +207,7 @@ export default function UnidadesPage() {
       <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Unidades</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Primero define los tipos de vehículo que operas (bus estándar, buseta, doble piso...), y luego
           registra cada unidad física con su placa y su identificador operativo.
         </p>
@@ -228,7 +228,7 @@ export default function UnidadesPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre
             </label>
             <input
@@ -240,7 +240,7 @@ export default function UnidadesPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Categoría
             </label>
             <select
@@ -256,7 +256,7 @@ export default function UnidadesPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Capacidad (asientos)
             </label>
             <input
@@ -277,7 +277,7 @@ export default function UnidadesPage() {
           </button>
           {errorTipo && <p className="sm:col-span-3 text-sm font-medium text-red-600">{errorTipo}</p>}
           <div className="sm:col-span-4">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Amenidades
             </label>
             <div className="flex flex-wrap gap-2">
@@ -289,7 +289,7 @@ export default function UnidadesPage() {
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                     amenidadesTipo.includes(a.valor)
                       ? "bg-brand text-white"
-                      : "bg-brand-light/40 text-brand-dark/60"
+                      : "bg-brand-light/40 text-brand-dark/70"
                   }`}
                 >
                   {a.etiqueta}
@@ -331,7 +331,7 @@ export default function UnidadesPage() {
 
                 {distribucionParseada && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                       Vista previa
                     </p>
                     <div className="space-y-3 rounded-lg bg-white p-4">
@@ -388,7 +388,7 @@ export default function UnidadesPage() {
           )}
           {tipos !== null && tipos.length > 0 && (
             <table className="w-full text-left text-sm">
-              <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 <tr>
                   <th className="px-6 py-3">Nombre</th>
                   <th className="px-6 py-3">Categoría</th>
@@ -443,7 +443,7 @@ export default function UnidadesPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Tipo de vehículo
             </label>
             <select
@@ -460,7 +460,7 @@ export default function UnidadesPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Placa
             </label>
             <input
@@ -472,7 +472,7 @@ export default function UnidadesPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Identificador operativo (disco)
             </label>
             <input
@@ -508,7 +508,7 @@ export default function UnidadesPage() {
           )}
           {unidades !== null && unidades.length > 0 && (
             <table className="w-full text-left text-sm">
-              <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 <tr>
                   <th className="px-6 py-3">Placa</th>
                   <th className="px-6 py-3">Identificador operativo</th>

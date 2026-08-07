@@ -129,7 +129,7 @@ export default function SolicitudesFacturaPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Solicitudes de factura</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Pasajeros que pidieron la factura de su pasaje — la emites en tu propio sistema contable y
         la marcas aquí como lista.
       </p>

@@ -48,10 +48,11 @@ export function BuscadorForm() {
         <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} />
         <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} />
         <div className="w-full md:w-40">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label htmlFor="buscador-fecha" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Fecha
           </label>
           <input
+            id="buscador-fecha"
             type="date"
             value={fecha}
             min={hoyISO()}
@@ -60,10 +61,11 @@ export function BuscadorForm() {
           />
         </div>
         <div className="w-full md:w-28">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label htmlFor="buscador-pasajeros" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Pasajeros
           </label>
           <input
+            id="buscador-pasajeros"
             type="number"
             min={1}
             max={10}

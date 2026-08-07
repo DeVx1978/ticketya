@@ -87,7 +87,7 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
         className="grid grid-cols-1 gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:grid-cols-5 sm:items-end"
       >
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre
           </label>
           <input
@@ -98,7 +98,7 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ubicación
           </label>
           <input
@@ -109,7 +109,7 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ancho (px)
           </label>
           <input
@@ -121,7 +121,7 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Alto (px)
           </label>
           <input
@@ -210,7 +210,7 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
         className="grid grid-cols-1 gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Plan
           </label>
           <select
@@ -224,7 +224,7 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio mensual (opcional)
           </label>
           <input
@@ -236,7 +236,7 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Duración por defecto (días)
           </label>
           <input
@@ -260,7 +260,7 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
         {planes?.map((p) => (
           <div key={p.id} className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-black/5">
             <p className="font-semibold capitalize text-brand-dark">{p.nombre}</p>
-            <p className="text-sm text-brand-dark/60">
+            <p className="text-sm text-brand-dark/70">
               {p.precioMensual ? `$${p.precioMensual}/mes` : "Sin precio fijo"}
               {p.duracionDiasDefault && ` · ${p.duracionDiasDefault} días`}
             </p>
@@ -635,7 +635,7 @@ export default function ComercialAdminPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Comercial / Publicidad</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Espacios, planes, leads de anunciantes, y campañas — con aprobación obligatoria antes de
         que cualquier anuncio salga en vivo.
       </p>

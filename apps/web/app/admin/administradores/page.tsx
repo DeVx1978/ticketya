@@ -91,7 +91,7 @@ export default function AdministradoresPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Administradores</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Solo un super admin puede crear o eliminar otros administradores. Un administrador normal
           puede ver esta lista, pero no modificarla.
         </p>
@@ -109,7 +109,7 @@ export default function AdministradoresPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
@@ -121,7 +121,7 @@ export default function AdministradoresPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
             <input
@@ -134,7 +134,7 @@ export default function AdministradoresPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
@@ -146,7 +146,7 @@ export default function AdministradoresPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Rol
             </label>
             <select
@@ -180,7 +180,7 @@ export default function AdministradoresPage() {
 
         {administradores !== null && administradores.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Nombre</th>
                 <th className="px-6 py-3">Correo</th>
@@ -229,7 +229,7 @@ export default function AdministradoresPage() {
                             <button
                               type="button"
                               onClick={() => setIdConfirmandoEliminar(null)}
-                              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/60"
+                              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/70"
                             >
                               Cancelar
                             </button>

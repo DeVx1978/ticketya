@@ -102,7 +102,7 @@ function BotonEditarViaje({
       </button>
       <button
         onClick={() => setAbierto(false)}
-        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/70 hover:bg-brand-light/40"
       >
         ✕
       </button>
@@ -174,7 +174,7 @@ function BotonCambiarUnidad({
       </button>
       <button
         onClick={() => setAbierto(false)}
-        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/70 hover:bg-brand-light/40"
       >
         ✕
       </button>
@@ -212,7 +212,7 @@ function BotonCancelarViaje({
   if (confirmando) {
     return (
       <div className="flex items-center justify-end gap-2">
-        <span className="text-xs text-brand-dark/60">¿Cancelar?</span>
+        <span className="text-xs text-brand-dark/70">¿Cancelar?</span>
         <button
           onClick={confirmar}
           disabled={cancelando}
@@ -222,7 +222,7 @@ function BotonCancelarViaje({
         </button>
         <button
           onClick={() => setConfirmando(false)}
-          className="rounded-lg border border-brand-light px-2.5 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+          className="rounded-lg border border-brand-light px-2.5 py-1 text-xs text-brand-dark/70 hover:bg-brand-light/40"
         >
           No
         </button>
@@ -309,7 +309,7 @@ export default function ViajesPage() {
       <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Viajes</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Cada viaje programado aquí es el que un pasajero ve al buscar — con la misma ruta, unidad y precio.
         </p>
       </div>
@@ -332,7 +332,7 @@ export default function ViajesPage() {
         className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ruta
           </label>
           <select
@@ -349,7 +349,7 @@ export default function ViajesPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Unidad
           </label>
           <select
@@ -368,7 +368,7 @@ export default function ViajesPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Fecha
           </label>
           <input
@@ -379,7 +379,7 @@ export default function ViajesPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Hora de salida
           </label>
           <input
@@ -390,7 +390,7 @@ export default function ViajesPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio (USD)
           </label>
           <input
@@ -428,7 +428,7 @@ export default function ViajesPage() {
 
         {viajes !== null && viajes.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Ruta</th>
                 <th className="px-6 py-3">Fecha y hora</th>

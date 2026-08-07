@@ -73,7 +73,7 @@ function TarjetaPago({
       <div className="flex items-start justify-between">
         <div>
           <p className="font-display font-bold text-brand-dark">{pago.compradorNombre}</p>
-          <p className="text-sm text-brand-dark/60">
+          <p className="text-sm text-brand-dark/70">
             {ETIQUETAS_PROVEEDOR[pago.proveedor] ?? pago.proveedor} · ${pago.monto.toFixed(2)}
           </p>
           <p className="text-xs text-brand-dark/40">Subido {formatearFecha(pago.creadoEn)}</p>
@@ -128,7 +128,7 @@ function TarjetaPago({
             </button>
             <button
               onClick={() => setRechazando(false)}
-              className="rounded-lg border border-brand-light px-4 py-2 text-sm text-brand-dark/60 hover:bg-brand-light/40"
+              className="rounded-lg border border-brand-light px-4 py-2 text-sm text-brand-dark/70 hover:bg-brand-light/40"
             >
               Cancelar
             </button>
@@ -158,7 +158,7 @@ export default function PagosPendientesPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Pagos pendientes</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Boletos pagados por transferencia, efectivo, DeUna o PayPhone, esperando tu confirmación.
       </p>
 

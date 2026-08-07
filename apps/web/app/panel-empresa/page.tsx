@@ -106,7 +106,7 @@ export default function PanelEmpresaDashboard() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Ventas de hoy</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Resumen de boletos vendidos hoy, en línea y en ventanilla, por ruta y por vendedor.
         </p>
       </div>
@@ -153,7 +153,7 @@ export default function PanelEmpresaDashboard() {
 
         {filas !== null && filas.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Ruta</th>
                 <th className="px-6 py-3">Vendedor</th>
@@ -181,7 +181,7 @@ export default function PanelEmpresaDashboard() {
 
       <div className="overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
         <h2 className="font-display text-base font-bold text-brand-dark">Logo de la cooperativa</h2>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Se muestra junto al nombre de tu cooperativa en los resultados de búsqueda del pasajero. Pega el enlace de
           una imagen ya subida (por ejemplo, a Cloudinary) — no se sube el archivo desde aquí todavía.
         </p>
@@ -199,7 +199,7 @@ export default function PanelEmpresaDashboard() {
               />
             )}
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 URL de la imagen
               </label>
               <input
@@ -224,7 +224,7 @@ export default function PanelEmpresaDashboard() {
 
       <div className="overflow-hidden rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
         <h2 className="font-display text-base font-bold text-brand-dark">Configuración de IVA</h2>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           El precio de cada boleto ya incluye este porcentaje — no se suma aparte al total.
         </p>
 
@@ -233,7 +233,7 @@ export default function PanelEmpresaDashboard() {
         ) : (
           <form onSubmit={guardarFiscal} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Porcentaje de IVA
               </label>
               <div className="flex items-center gap-1">
@@ -246,7 +246,7 @@ export default function PanelEmpresaDashboard() {
                   onChange={(e) => setIvaPorcentaje(e.target.value)}
                   className="w-28 rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
                 />
-                <span className="text-brand-dark/60">%</span>
+                <span className="text-brand-dark/70">%</span>
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-brand-dark/70">

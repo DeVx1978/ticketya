@@ -100,7 +100,7 @@ function BotonCancelar({
   if (confirmando) {
     return (
       <div className="mt-2 flex items-center gap-2">
-        <span className="text-xs text-brand-dark/60">¿Seguro que quieres cancelar este boleto?</span>
+        <span className="text-xs text-brand-dark/70">¿Seguro que quieres cancelar este boleto?</span>
         <button
           onClick={confirmar}
           disabled={cancelando}
@@ -110,7 +110,7 @@ function BotonCancelar({
         </button>
         <button
           onClick={() => setConfirmando(false)}
-          className="rounded-lg border border-brand-light px-3 py-1 text-xs text-brand-dark/60 hover:bg-brand-light/40"
+          className="rounded-lg border border-brand-light px-3 py-1 text-xs text-brand-dark/70 hover:bg-brand-light/40"
         >
           No
         </button>
@@ -224,7 +224,7 @@ export function TabMisBoletos({ onExito }: { onExito: (mensaje: string) => void 
 
   return (
     <>
-      <p className="text-sm text-brand-dark/60">
+      <p className="text-sm text-brand-dark/70">
         Tu historial de viajes comprados. Podrás calificar cada uno después de la hora estimada de llegada.
       </p>
 
@@ -249,7 +249,7 @@ export function TabMisBoletos({ onExito }: { onExito: (mensaje: string) => void 
               <p className="font-display font-bold text-brand-dark">
                 {b.origenCiudad} → {b.destinoCiudad}
               </p>
-              <p className="text-sm text-brand-dark/60">
+              <p className="text-sm text-brand-dark/70">
                 {b.cooperativaNombre} · Sale {formatearFechaHora(b.horaSalidaProgramada)}
               </p>
               <span

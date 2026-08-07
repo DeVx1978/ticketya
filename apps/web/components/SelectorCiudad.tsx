@@ -38,7 +38,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
 
   return (
     <div className="relative flex-1">
-      <label className="block text-xs font-semibold uppercase tracking-wide text-brand-dark/60 mb-1">
+      <label className="block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1">
         {etiqueta}
       </label>
       <input

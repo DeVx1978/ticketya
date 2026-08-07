@@ -60,12 +60,12 @@ function FormularioRegistro() {
     <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-black/5">
         <h1 className="font-display text-2xl font-bold text-brand-dark">Crear cuenta</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">Regístrate para comprar tu pasaje.</p>
+        <p className="mt-1 text-sm text-brand-dark/70">Regístrate para comprar tu pasaje.</p>
 
         <form onSubmit={enviar} className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Nombres
               </label>
               <input
@@ -78,7 +78,7 @@ function FormularioRegistro() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Apellidos
               </label>
               <input
@@ -93,7 +93,7 @@ function FormularioRegistro() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Cédula
             </label>
             <input
@@ -111,7 +111,7 @@ function FormularioRegistro() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               WhatsApp
             </label>
             <input
@@ -129,7 +129,7 @@ function FormularioRegistro() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
@@ -141,7 +141,7 @@ function FormularioRegistro() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña (mínimo 8 caracteres)
             </label>
             <CampoPassword value={password} onChange={setPassword} />
@@ -158,7 +158,7 @@ function FormularioRegistro() {
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-brand-dark/60">
+        <p className="mt-4 text-center text-sm text-brand-dark/70">
           ¿Ya tienes cuenta?{" "}
           <Link
             href={`/ingresar${searchParams.get("volverA") ? `?volverA=${encodeURIComponent(searchParams.get("volverA")!)}` : ""}`}

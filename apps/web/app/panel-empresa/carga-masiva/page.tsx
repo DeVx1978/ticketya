@@ -68,7 +68,7 @@ export default function CargaMasivaPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Carga masiva</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Sube tipos de vehículo, conductores, unidades, rutas y horarios de una sola vez, en vez
           de crear cada uno a mano. Si incluyes <code className="text-xs">generarViajesDesde</code>{" "}
           y <code className="text-xs">generarViajesHasta</code>, también se generan los viajes
@@ -77,7 +77,7 @@ export default function CargaMasivaPage() {
       </div>
 
       <form onSubmit={enviar} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           JSON a importar
         </label>
         <textarea

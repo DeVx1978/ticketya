@@ -37,7 +37,7 @@ export function TabMisCreditos() {
 
   return (
     <>
-      <p className="text-sm text-brand-dark/60">
+      <p className="text-sm text-brand-dark/70">
         El saldo que te queda cuando reprogramas un boleto a un pasaje más barato. Se usa eligiéndolo
         en el checkout de tu próxima compra con esa misma cooperativa.
       </p>
@@ -87,7 +87,7 @@ export function TabMisCreditos() {
                 className="flex items-center justify-between rounded-xl bg-brand-light/30 px-4 py-3"
               >
                 <div>
-                  <p className="font-semibold text-brand-dark/60">{c.cooperativaNombre}</p>
+                  <p className="font-semibold text-brand-dark/70">{c.cooperativaNombre}</p>
                   <p className="text-xs text-brand-dark/40">
                     Usado el {formatearFecha(c.usadoEn!)}
                   </p>

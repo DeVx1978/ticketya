@@ -120,13 +120,13 @@ export default function ValidarQrPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Validar boleto</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Escanea el código QR del boleto (o pégalo aquí) para confirmar el abordaje.
         </p>
       </div>
 
       <form onSubmit={validar} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           Código QR
         </label>
         <div className="flex gap-3">

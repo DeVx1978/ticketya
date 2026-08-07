@@ -203,7 +203,7 @@ export default function RutasPage() {
       <Toast mensaje={mensajeError} onCerrar={() => setMensajeError(null)} tipo="error" />
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-dark">Rutas</h1>
-        <p className="mt-1 text-sm text-brand-dark/60">
+        <p className="mt-1 text-sm text-brand-dark/70">
           Las rutas que operas hoy — el precio base es el punto de partida; cada viaje puede ajustarlo.
         </p>
       </div>
@@ -215,7 +215,7 @@ export default function RutasPage() {
         <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde?" valor={origen} onCambio={setOrigen} />
         <SelectorCiudad etiqueta="Destino" placeholder="¿Hacia dónde?" valor={destino} onCambio={setDestino} />
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio base (USD)
           </label>
           <input
@@ -236,7 +236,7 @@ export default function RutasPage() {
           {guardando ? "Guardando..." : "Crear ruta"}
         </button>
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre de la ruta (opcional)
           </label>
           <input
@@ -273,7 +273,7 @@ export default function RutasPage() {
 
         {rutas !== null && rutas.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               <tr>
                 <th className="px-6 py-3">Ruta</th>
                 <th className="px-6 py-3">Trayecto</th>
@@ -329,7 +329,7 @@ export default function RutasPage() {
                                 >
                                   <div>
                                     <span className="font-semibold text-brand-dark">{h.horaSalida}</span>{" "}
-                                    <span className="text-brand-dark/60">
+                                    <span className="text-brand-dark/70">
                                       ·{" "}
                                       {DIAS_SEMANA.filter((d) => h.diasSemana.includes(d.valor))
                                         .map((d) => d.etiqueta)
@@ -363,7 +363,7 @@ export default function RutasPage() {
                             >
                               <div className="flex gap-3">
                                 <div>
-                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                     Hora
                                   </label>
                                   <input
@@ -374,7 +374,7 @@ export default function RutasPage() {
                                   />
                                 </div>
                                 <div className="flex-1">
-                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                     Tipo de vehículo
                                   </label>
                                   <select
@@ -392,7 +392,7 @@ export default function RutasPage() {
                                 </div>
                               </div>
                               <div>
-                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                   Días de la semana
                                 </label>
                                 <div className="flex flex-wrap gap-1.5">
@@ -404,7 +404,7 @@ export default function RutasPage() {
                                       className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
                                         diasSeleccionados.includes(d.valor)
                                           ? "bg-brand text-white"
-                                          : "bg-brand-light/40 text-brand-dark/60"
+                                          : "bg-brand-light/40 text-brand-dark/70"
                                       }`}
                                     >
                                       {d.etiqueta}
@@ -439,7 +439,7 @@ export default function RutasPage() {
 
                             <div className="mt-4 flex gap-3">
                               <div>
-                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                   Desde
                                 </label>
                                 <input
@@ -450,7 +450,7 @@ export default function RutasPage() {
                                 />
                               </div>
                               <div>
-                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                   Hasta
                                 </label>
                                 <input
@@ -501,7 +501,7 @@ export default function RutasPage() {
                                     <button
                                       type="button"
                                       onClick={() => setConfirmandoMasivo(false)}
-                                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/60"
+                                      className="rounded-lg px-3 py-1.5 text-xs font-semibold text-brand-dark/70"
                                     >
                                       Cancelar
                                     </button>
