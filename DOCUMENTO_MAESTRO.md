@@ -485,7 +485,15 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 24. Proveedor certificado de facturación electrónica (esperando gestión externa)
 
 ### Fase 5 — Infraestructura
-25. Ejecutar despliegue real a Render + Vercel
+~~25. Ejecutar despliegue real a Render + Vercel~~ -- **cerrado 07-ago-2026, verificado de punta a punta con datos reales.** Base de datos Postgres real en Render (PostgreSQL 16, plan Free -- expira a los 90 días, sin respaldos hasta pasar a plan pago, documentado explícitamente para no operar así con pasajeros reales). Backend NestJS real en Render (plan Free), con las 5 variables de entorno reales (JWT_SECRET y TOTP_CIFRADO_CLAVE generados nuevos, nunca los de prueba). Frontend Next.js real en Vercel, conectado al backend real vía NEXT_PUBLIC_API_URL.
+
+**2 hallazgos reales de arquitectura descubiertos durante el despliegue, no antes (solo se manifiestan en un entorno gestionado real, no en local):**
+1. **RLS con bypass real:** el usuario que Render provee no es superusuario y no tiene ni puede recibir el atributo `BYPASSRLS` (regla dura de PostgreSQL, confirmada con documentación oficial) -- la migración manual 001 (que le da `BYPASSRLS` a `ticketya_platform_admin`) no se puede aplicar en Render. Resuelto sin debilitar la seguridad: el usuario administrador que Render sí entrega es dueño de todas las tablas, y por diseño de PostgreSQL el dueño de una tabla bypasea RLS sin necesitar el atributo explícito (confirmado: el esquema nunca activa `FORCE ROW LEVEL SECURITY`). `DATABASE_URL_PUBLICO` en producción usa ese usuario dueño en vez de `ticketya_platform_admin` -- mismo resultado práctico, camino distinto. Verificado con una consulta real contra la base de datos de Render.
+2. **`NODE_ENV=production` omite las dependencias de desarrollo por defecto** de `npm install`, incluyendo `@nestjs/cli` (el comando `nest build` necesario para compilar) -- corregido con `--include=dev` en el comando de construcción de Render.
+
+**Datos reales de prueba creados en producción** (cooperativa, ruta Quito-Guayaquil, viaje) para verificar el sistema completo -- confirmado visualmente en el navegador: la búsqueda real en el frontend de Vercel devuelve el punto de operación real creado en la base de datos real de Render, a través del backend real.
+
+**Pendiente, explícito:** el dominio real de Columbus se compra al final, cuando el proyecto esté completamente terminado y probado (decisión del director) -- por ahora se usan las direcciones gratuitas de Render/Vercel. Ambos planes (base de datos y backend) siguen en el nivel gratuito -- suficiente para seguir probando, pero se necesita subir a un plan pago antes de operar con pasajeros y dinero reales.
 26. Prueba de carga real
 
 ### Fase 6 — Frontend y marca (al final, ya acordado)
