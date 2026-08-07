@@ -422,13 +422,15 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 | Despliegue real (Render + Vercel) | 🔴 Decisión tomada, sin ejecutar — corre solo en local |
 | Prueba de carga real | 🔴 Nunca simulada |
 | Rebrand a "Columbus" en código real | 🔴 Pendiente, software real sigue diciendo "TicketYa" |
-| Accesibilidad (lectores de pantalla, contraste, navegación por teclado) | 🔴 No analizado en ningún momento del proyecto |
+| Accesibilidad -- **🟡 parte 1 cerrada 06-ago-2026 (PRs #50, #51)** | Estándar: WCAG 2.2 nivel AA (confirmado con 7 fuentes reales como el estándar de facto de la industria). Auditado con Lighthouse contra 2 pantallas reales (portada pública y panel admin autenticado): ambas partían de 90/100 con los mismos 2 problemas sistémicos -- contraste insuficiente (`text-brand-dark/60` da 4.38:1 sobre blanco, calculado con la fórmula real de WCAG; por debajo del mínimo de 4.5:1) y etiquetas de formulario sin conectar (0 usos de `htmlFor` en las 125 etiquetas `<label>` de todo el frontend). **Corregido:** las 198 apariciones de `/60` subidas a `/70` (contraste real ≈5.16:1) en todo el proyecto; etiquetas conectadas en el buscador principal (portada). Portada verificada de nuevo con Lighthouse: **100/100.** **Incidente real durante la corrección, documentado sin ocultarlo:** un script de PowerShell corrompió 3 archivos con corchetes en la ruta (`[id]`, `[viajeId]`) por un bug real de manejo de variables tras un error -- se fusionó a `main` sin detectarlo a tiempo. Encontrado por revisión del propio diff antes de seguir avanzando, revertido, corregido a mano con precisión, y verificado con una corrida de CI real contra el estado final de `main` (PR #51) -- no se dio por cerrado con solo la palabra de que "ya se revisó localmente". **Falta (parte 2, tarea aparte):** conectar `htmlFor`/`id` en las 121 etiquetas restantes del resto del proyecto -- no es rediseño, pero sí requiere revisión archivo por archivo (varias viven dentro de listas repetidas con `.map()`, donde un id fijo causaría colisiones); navegación completa por teclado, regiones de referencia (landmarks), lectores de pantalla en componentes complejos (mapa de asientos, editor de distribución) -- quedan para Fase 6 |
 
 **Análisis de prioridad del director (30-jul-2026), no todos estos pesan igual:**
 
 **LOPD Ecuador sube de prioridad — riesgo real, no genérico.** El sistema maneja cédulas de pasajeros adultos, y datos de menores de edad (autorización de viaje acompañado). Estos son categorías de datos con protección reforzada en la mayoría de leyes de protección de datos, incluida la ecuatoriana. Esto no es un "revisar cuando haya tiempo" — es el tipo de incumplimiento que puede generar sanciones reales si se lanza sin revisarlo. Se sube a la Fase 3, primero en su lista, no al final.
 
 **Accesibilidad — hallazgo nuevo, no analizado hasta hoy.** Ninguna sesión de este proyecto la mencionó. Para una plataforma que aspira a ser "la mejor del mercado" y de uso masivo nacional, ignorarla no es neutral — deja fuera a personas con discapacidad visual o motriz de un servicio esencial (transporte). Se agrega como requerimiento nuevo.
+
+**Parte 1 cerrada 06-ago-2026** (ver tabla de requerimientos no funcionales para el detalle completo) -- investigado con Lighthouse real, corregidos los 2 hallazgos sistémicos (contraste, etiquetas del buscador principal), portada a 100/100.
 
 **Diferencia CI vs local (137 vs 88) — hallazgo cerrado (2-ago-2026).** Investigado y corregido: era una etiqueta de texto vieja en `ci.yml`, no una diferencia real de cobertura. El CI y el entorno local corren exactamente las mismas 137 pruebas.
 
@@ -474,7 +476,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ~~18. Investigar la diferencia CI (88) vs local (137) en las pruebas automatizadas~~ — **resuelto 2-ago-2026**, era una etiqueta de texto vieja en `ci.yml`, corregida
 ~~19. 2FA para cuentas administrativas~~ -- **cerrado 06-ago-2026** (ver requerimientos no funcionales, PRs #47 backend, #48 frontend): construido y verificado de punta a punta
 ~~20. `npm audit` a fondo~~ -- **cerrado 06-ago-2026** (ver requerimientos no funcionales, PR #49): 5 de 6 vulnerabilidades corregidas, 1 documentada como pendiente de bajo riesgo real
-21. Accesibilidad (lectores de pantalla, contraste, navegación por teclado) — hallazgo nuevo, nunca analizado antes
+21. Accesibilidad -- **parte 1 cerrada 06-ago-2026** (ver requerimientos no funcionales, PRs #50, #51): contraste WCAG AA y etiquetas del buscador principal corregidos, portada 90→100/100 en Lighthouse. **Parte 2 pendiente:** 121 etiquetas restantes, navegación por teclado completa, landmarks -- Fase 6 para lo que requiere rediseño
 
 ### Fase 4 — Conexiones externas reales (bloqueadas por decisiones/gestiones externas al desarrollo)
 22. Pasarela de pago con tarjeta real (esperando decisión de proveedor)
