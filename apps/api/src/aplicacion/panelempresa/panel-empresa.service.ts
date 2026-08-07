@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
@@ -21,6 +21,7 @@ import {
   validarDistribucionAsientos,
   calcularEstadoActualizacionDatos,
   type TipoMetodoPago,
+  type EntidadFinanciera,
 } from '../../dominio/panelempresa/panel-empresa.ports';
 
 export const PANEL_EMPRESA_REPOSITORIO = 'PANEL_EMPRESA_REPOSITORIO';
@@ -37,10 +38,10 @@ export class PanelEmpresaService {
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
-    // Vacío real de diseño encontrado el 29-jul-2026 — se valida solo
-    // cuando de verdad se está configurando una distribución real. El
-    // DTO manda `{}` por defecto cuando el cliente no envía nada
-    // (la columna es NOT NULL) — eso NO es un intento de configurar
+    // VacÃ­o real de diseÃ±o encontrado el 29-jul-2026 â€” se valida solo
+    // cuando de verdad se estÃ¡ configurando una distribuciÃ³n real. El
+    // DTO manda `{}` por defecto cuando el cliente no envÃ­a nada
+    // (la columna es NOT NULL) â€” eso NO es un intento de configurar
     // pisos, es el valor de reserva, y no debe rechazarse.
     if (
       datos.distribucionAsientos !== undefined &&
@@ -65,8 +66,8 @@ export class PanelEmpresaService {
     datos: DatosEditarTipoVehiculo,
   ) {
     // Solo se puede validar la coherencia con la capacidad si ambos
-    // valores llegan juntos en la misma edición — si solo se manda
-    // distribucionAsientos sin capacidadTotal, no hay con qué
+    // valores llegan juntos en la misma ediciÃ³n â€” si solo se manda
+    // distribucionAsientos sin capacidadTotal, no hay con quÃ©
     // comparar sin una consulta extra (fuera del alcance de esta
     // entrega, ver LEEME del mapa de asientos).
     if (
@@ -120,27 +121,27 @@ export class PanelEmpresaService {
   }
 
   /**
-   * 03-ago-2026 -- notifica ANTES de cancelar a propósito: la
-   * notificación necesita ver los boletos todavía 'vigente' para saber
-   * a quién avisar; después de cancelar ya no los encontraría.
+   * 03-ago-2026 -- notifica ANTES de cancelar a propÃ³sito: la
+   * notificaciÃ³n necesita ver los boletos todavÃ­a 'vigente' para saber
+   * a quiÃ©n avisar; despuÃ©s de cancelar ya no los encontrarÃ­a.
    */
   async cancelarViaje(cooperativaId: string, viajeId: string) {
     await this.notificaciones.notificarCambioOperativo(
       cooperativaId,
       viajeId,
-      'Tu viaje fue cancelado. Se generó un crédito por el monto pagado, disponible en tu cuenta.',
+      'Tu viaje fue cancelado. Se generÃ³ un crÃ©dito por el monto pagado, disponible en tu cuenta.',
     );
     return this.panel.cancelarViaje(cooperativaId, viajeId);
   }
 
   /**
-   * Horarios recurrentes (plantilla) — ítem 7, RF-COOP-002.
+   * Horarios recurrentes (plantilla) â€” Ã­tem 7, RF-COOP-002.
    */
   /**
-   * Ítem 10, Fase 2 (04-ago-2026) -- bloqueado si la cooperativa lleva
+   * Ãtem 10, Fase 2 (04-ago-2026) -- bloqueado si la cooperativa lleva
    * 12 meses sin confirmar sus datos legales. Nunca bloquea venta,
-   * validación de boletos, ni pagos -- solo esta función y la carga
-   * masiva (decisión del director).
+   * validaciÃ³n de boletos, ni pagos -- solo esta funciÃ³n y la carga
+   * masiva (decisiÃ³n del director).
    */
   async crearHorarioRuta(cooperativaId: string, datos: DatosNuevoHorarioRuta) {
     await this.verificarNoBloqueadoPorDatos(cooperativaId);
@@ -156,9 +157,9 @@ export class PanelEmpresaService {
   }
 
   /**
-   * Cancelación/suspensión masiva — ítem 7. Reutiliza cancelarViaje()
-   * de arriba por cada viaje afectado (misma lógica de crédito +
-   * notificación + cascada de boletos, sin duplicarla).
+   * CancelaciÃ³n/suspensiÃ³n masiva â€” Ã­tem 7. Reutiliza cancelarViaje()
+   * de arriba por cada viaje afectado (misma lÃ³gica de crÃ©dito +
+   * notificaciÃ³n + cascada de boletos, sin duplicarla).
    */
   async cancelarViajesMasivo(
     cooperativaId: string,
@@ -196,14 +197,14 @@ export class PanelEmpresaService {
       viajeId,
       nuevaUnidadId,
     );
-    // RF-NOTIF-003 (03-ago-2026) -- solo se avisa si el cambio se aplicó
+    // RF-NOTIF-003 (03-ago-2026) -- solo se avisa si el cambio se aplicÃ³
     // de verdad, nunca si fue rechazado por regla de negocio (capacidad
     // insuficiente, viaje no programado, etc).
     if (resultado.ok) {
       await this.notificaciones.notificarCambioOperativo(
         cooperativaId,
         viajeId,
-        'Se cambió la unidad asignada a tu viaje.',
+        'Se cambiÃ³ la unidad asignada a tu viaje.',
       );
     }
     return resultado;
@@ -238,14 +239,14 @@ export class PanelEmpresaService {
   }
 
   /**
-   * 04-ago-2026 -- ítem 8: la generación de viajes ya no ocurre dentro
+   * 04-ago-2026 -- Ã­tem 8: la generaciÃ³n de viajes ya no ocurre dentro
    * del repositorio (ver comentario en panel-empresa.repositorio.drizzle.ts)
-   * -- se dispara aquí, después, con el mismo mecanismo que el cron del
-   * ítem 7 (GeneradorViajesService), en vez de un camino paralelo más
-   * débil que existía antes.
+   * -- se dispara aquÃ­, despuÃ©s, con el mismo mecanismo que el cron del
+   * Ã­tem 7 (GeneradorViajesService), en vez de un camino paralelo mÃ¡s
+   * dÃ©bil que existÃ­a antes.
    */
   async importarDatos(cooperativaId: string, datos: DatosImportacion) {
-    // Ítem 10, Fase 2 (04-ago-2026) -- mismo bloqueo que crearHorarioRuta.
+    // Ãtem 10, Fase 2 (04-ago-2026) -- mismo bloqueo que crearHorarioRuta.
     await this.verificarNoBloqueadoPorDatos(cooperativaId);
 
     const resultado = await this.panel.importarDatos(cooperativaId, datos);
@@ -337,13 +338,24 @@ export class PanelEmpresaService {
     return this.panel.listarMetodosPago(cooperativaId);
   }
 
+  /**
+   * Item 21/22 (06-ago-2026) -- regla de negocio real: si el tipo es
+   * transferencia_bancaria, la entidad financiera es obligatoria --
+   * catalogo cerrado, no tiene sentido guardar una transferencia sin
+   * saber a que banco/cooperativa pertenece.
+   */
   guardarMetodoPago(
     cooperativaId: string,
     tipo: TipoMetodoPago,
     datosCuenta: Record<string, string>,
     activo: boolean,
+    entidadFinanciera: EntidadFinanciera | null,
   ) {
-    return this.panel.guardarMetodoPago(cooperativaId, tipo, datosCuenta, activo);
+    if (tipo === 'transferencia_bancaria' && !entidadFinanciera) {
+      throw new BadRequestException('Elige el banco o entidad receptora de la transferencia.');
+    }
+    const entidadReal = tipo === 'transferencia_bancaria' ? entidadFinanciera : null;
+    return this.panel.guardarMetodoPago(cooperativaId, tipo, datosCuenta, activo, entidadReal);
   }
 
   eliminarMetodoPago(cooperativaId: string, metodoPagoId: string) {
@@ -403,11 +415,11 @@ export class PanelEmpresaService {
   }
 
   /**
-   * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
-   * obligatoria de datos de cooperativa (sección 3.7 del documento
+   * Ãtem 10, Fase 2 (04-ago-2026) -- actualizaciÃ³n periÃ³dica
+   * obligatoria de datos de cooperativa (secciÃ³n 3.7 del documento
    * maestro). 6 meses sin confirmar = advertencia (banner en el
    * panel, no bloqueante). 12 meses de silencio total = se bloquea
-   * SOLO creación de horarios recurrentes y carga masiva.
+   * SOLO creaciÃ³n de horarios recurrentes y carga masiva.
    */
   async obtenerEstadoDatosCooperativa(cooperativaId: string) {
     const { ultimaConfirmacion, fechaAfiliacion, datosActuales } =
@@ -425,7 +437,7 @@ export class PanelEmpresaService {
   }
 
   /**
-   * No lanza si no hay suficiente información para evaluar (mismo
+   * No lanza si no hay suficiente informaciÃ³n para evaluar (mismo
    * criterio conservador que calcularEstadoActualizacionDatos): un
    * hueco de datos no debe convertirse en un bloqueo injusto.
    */
@@ -435,7 +447,7 @@ export class PanelEmpresaService {
     const estado = calcularEstadoActualizacionDatos(ultimaConfirmacion, fechaAfiliacion);
     if (estado.estado === 'bloqueado') {
       throw new BadRequestException(
-        `Tus datos de cooperativa llevan ${estado.mesesSinConfirmar} meses sin confirmarse. Confirma tus datos legales en la sección de configuración para poder crear horarios recurrentes o usar la carga masiva.`,
+        `Tus datos de cooperativa llevan ${estado.mesesSinConfirmar} meses sin confirmarse. Confirma tus datos legales en la secciÃ³n de configuraciÃ³n para poder crear horarios recurrentes o usar la carga masiva.`,
       );
     }
   }

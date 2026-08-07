@@ -180,6 +180,7 @@ describe('Métodos de pago manuales (e2e)', () => {
       .set('Authorization', `Bearer ${tokenCoop}`)
       .send({
         tipo: 'transferencia_bancaria',
+        entidadFinanciera: 'banco_pichincha',
         datosCuenta: {
           banco: 'Banco Pichincha',
           numeroCuenta: '2201234567',

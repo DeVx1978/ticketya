@@ -19,7 +19,7 @@
 import { pgTable, uuid, boolean, jsonb, timestamp, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
-import { tipoMetodoPagoEnum } from './enums';
+import { tipoMetodoPagoEnum, entidadFinancieraEnum } from './enums';
 
 export const metodosPagoCooperativa = pgTable(
   'metodos_pago_cooperativa',
@@ -29,6 +29,14 @@ export const metodosPagoCooperativa = pgTable(
       .references(() => cooperativas.id)
       .notNull(),
     tipo: tipoMetodoPagoEnum('tipo').notNull(),
+
+    // Ítem 21/22 (06-ago-2026) -- solo aplica cuando tipo =
+    // 'transferencia_bancaria', null en el resto (efectivo, deuna,
+    // payphone, tarjeta_pasarela no tienen "banco receptor"). Catálogo
+    // cerrado -- ver nota completa en enums.ts sobre por qué el texto
+    // libre que vivía dentro de datosCuenta no era suficiente.
+    entidadFinanciera: entidadFinancieraEnum('entidad_financiera'),
+
     activo: boolean('activo').default(true).notNull(),
 
     // Estructura libre a propósito -- cada tipo necesita datos

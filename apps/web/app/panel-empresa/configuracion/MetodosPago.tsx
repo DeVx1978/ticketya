@@ -7,6 +7,7 @@ import {
   eliminarMetodoPago,
   type MetodoPagoCooperativa,
   type TipoMetodoPago,
+  type EntidadFinanciera,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 
@@ -18,10 +19,35 @@ const ETIQUETAS: Record<TipoMetodoPago, string> = {
   tarjeta_pasarela: "Tarjeta (pasarela — próximamente)",
 };
 
+/**
+ * Ítem 21/22 (06-ago-2026) -- catálogo cerrado de entidad financiera.
+ * Reemplaza el campo "banco" de texto libre que vivía en CAMPOS más
+ * abajo -- sin esto no había forma confiable de saber qué banco era
+ * cada configuración (ver nota completa en el esquema de base de
+ * datos). "otro" mantiene un campo de texto libre como respaldo, para
+ * no bloquear a ninguna cooperativa cuyo banco no esté en esta lista.
+ */
+const ENTIDADES_FINANCIERAS: Array<{ valor: EntidadFinanciera; etiqueta: string }> = [
+  { valor: "banco_pichincha", etiqueta: "Banco Pichincha" },
+  { valor: "banco_guayaquil", etiqueta: "Banco Guayaquil" },
+  { valor: "banco_pacifico", etiqueta: "Banco del Pacífico" },
+  { valor: "produbanco", etiqueta: "Produbanco" },
+  { valor: "banco_bolivariano", etiqueta: "Banco Bolivariano" },
+  { valor: "banco_internacional", etiqueta: "Banco Internacional" },
+  { valor: "diners_club", etiqueta: "Diners Club" },
+  { valor: "banco_ruminahui", etiqueta: "Banco Rumiñahui" },
+  { valor: "coop_jep", etiqueta: "Coop. JEP" },
+  { valor: "coop_jardin_azuayo", etiqueta: "Coop. Jardín Azuayo" },
+  { valor: "otro", etiqueta: "Otro (no está en la lista)" },
+];
+
+const ETIQUETA_ENTIDAD: Record<EntidadFinanciera, string> = Object.fromEntries(
+  ENTIDADES_FINANCIERAS.map((e) => [e.valor, e.etiqueta]),
+) as Record<EntidadFinanciera, string>;
+
 /** Campos que pide cada tipo de método -- estructura libre a propósito, cada uno necesita datos distintos. */
 const CAMPOS: Record<TipoMetodoPago, Array<{ clave: string; etiqueta: string; placeholder?: string }>> = {
   transferencia_bancaria: [
-    { clave: "banco", etiqueta: "Banco" },
     { clave: "tipoCuenta", etiqueta: "Tipo de cuenta", placeholder: "Ahorros o corriente" },
     { clave: "numeroCuenta", etiqueta: "Número de cuenta" },
     { clave: "titular", etiqueta: "Titular de la cuenta" },
@@ -50,6 +76,8 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
   const [metodos, setMetodos] = useState<MetodoPagoCooperativa[] | null>(null);
   const [tipoNuevo, setTipoNuevo] = useState<TipoMetodoPago | "">("");
   const [datosNuevo, setDatosNuevo] = useState<Record<string, string>>({});
+  const [entidadNueva, setEntidadNueva] = useState<EntidadFinanciera | "">("");
+  const [nombreEntidadOtro, setNombreEntidadOtro] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   function cargar() {
@@ -63,12 +91,23 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
     e.preventDefault();
     const token = obtenerToken();
     if (!token || !tipoNuevo) return;
+    if (tipoNuevo === "transferencia_bancaria" && !entidadNueva) {
+      onError("Elige el banco o entidad receptora de la transferencia.");
+      return;
+    }
     setGuardando(true);
     try {
-      await guardarMetodoPago(token, tipoNuevo, datosNuevo, true);
+      const datosFinales =
+        tipoNuevo === "transferencia_bancaria" && entidadNueva === "otro"
+          ? { ...datosNuevo, banco: nombreEntidadOtro }
+          : datosNuevo;
+      const entidadFinal = tipoNuevo === "transferencia_bancaria" ? (entidadNueva as EntidadFinanciera) : null;
+      await guardarMetodoPago(token, tipoNuevo, datosFinales, true, entidadFinal);
       onExito(`${ETIQUETAS[tipoNuevo]} configurado.`);
       setTipoNuevo("");
       setDatosNuevo({});
+      setEntidadNueva("");
+      setNombreEntidadOtro("");
       cargar();
     } catch (err) {
       onError(err instanceof Error ? err.message : "No se pudo guardar.");
@@ -109,6 +148,11 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
               <div>
                 <p className="text-sm font-semibold text-brand-dark">{ETIQUETAS[m.tipo]}</p>
                 <p className="text-xs text-brand-dark/50">
+                  {m.entidadFinanciera && m.entidadFinanciera !== "otro" && (
+                    <span className="font-medium text-brand-dark/70">
+                      {ETIQUETA_ENTIDAD[m.entidadFinanciera]} ·{" "}
+                    </span>
+                  )}
                   {Object.entries(m.datosCuenta)
                     .map(([, v]) => v)
                     .join(" · ")}
@@ -145,13 +189,59 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
           ))}
         </select>
 
+        {tipoNuevo === "transferencia_bancaria" && (
+          <div>
+            <label
+              htmlFor="metodo-pago-entidad"
+              className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70"
+            >
+              Banco o entidad receptora
+            </label>
+            <select
+              id="metodo-pago-entidad"
+              value={entidadNueva}
+              onChange={(e) => setEntidadNueva(e.target.value as EntidadFinanciera | "")}
+              className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+            >
+              <option value="">Elige el banco...</option>
+              {ENTIDADES_FINANCIERAS.map((ent) => (
+                <option key={ent.valor} value={ent.valor}>
+                  {ent.etiqueta}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {tipoNuevo === "transferencia_bancaria" && entidadNueva === "otro" && (
+          <div>
+            <label
+              htmlFor="metodo-pago-otro"
+              className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70"
+            >
+              Nombre del banco
+            </label>
+            <input
+              id="metodo-pago-otro"
+              type="text"
+              value={nombreEntidadOtro}
+              onChange={(e) => setNombreEntidadOtro(e.target.value)}
+              className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+            />
+          </div>
+        )}
+
         {tipoNuevo &&
           CAMPOS[tipoNuevo].map((campo) => (
             <div key={campo.clave}>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label
+                htmlFor={`metodo-pago-${campo.clave}`}
+                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70"
+              >
                 {campo.etiqueta}
               </label>
               <input
+                id={`metodo-pago-${campo.clave}`}
                 type="text"
                 value={datosNuevo[campo.clave] ?? ""}
                 placeholder={campo.placeholder}

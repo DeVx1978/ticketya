@@ -932,6 +932,7 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
         .set('Authorization', `Bearer ${tokenCoop}`)
         .send({
           tipo: 'transferencia_bancaria',
+          entidadFinanciera: 'banco_pichincha',
           datosCuenta: {
             banco: 'Banco Pichincha',
             tipoCuenta: 'ahorros',

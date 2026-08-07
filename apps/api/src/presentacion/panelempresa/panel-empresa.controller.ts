@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Body,
   Controller,
@@ -50,8 +50,8 @@ import { PayloadToken } from '../../dominio/auth/auth.ports';
 
 /**
  * La cooperativa del usuario sale SIEMPRE de su propio token firmado
- * (nunca de un parámetro que el cliente podría manipular) — así un
- * admin_cooperativa físicamente no puede operar sobre otra cooperativa
+ * (nunca de un parÃ¡metro que el cliente podrÃ­a manipular) â€” asÃ­ un
+ * admin_cooperativa fÃ­sicamente no puede operar sobre otra cooperativa
  * aunque lo intente, sin necesidad de validarlo caso por caso.
  */
 function cooperativaDelToken(user: PayloadToken): string {
@@ -120,7 +120,7 @@ export class PanelEmpresaController {
     return this.panel.listarUnidades(cooperativaDelToken(req.user));
   }
 
-  /** Activar/desactivar una unidad — hallazgo cerrado 22-jul-2026. */
+  /** Activar/desactivar una unidad â€” hallazgo cerrado 22-jul-2026. */
   @Roles('admin_cooperativa')
   @Patch('unidades/:unidadId/estado')
   async actualizarEstadoUnidad(
@@ -184,7 +184,7 @@ export class PanelEmpresaController {
     return this.panel.listarViajes(cooperativaDelToken(req.user));
   }
 
-  /** Cancelar un viaje completo (cascada a sus boletos) — hallazgo cerrado 22-jul-2026. Solo el admin, no el vendedor. */
+  /** Cancelar un viaje completo (cascada a sus boletos) â€” hallazgo cerrado 22-jul-2026. Solo el admin, no el vendedor. */
   @Roles('admin_cooperativa')
   @Post('viajes/:viajeId/cancelar')
   async cancelarViaje(
@@ -202,7 +202,7 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Horarios recurrentes (plantilla) -- ítem 7, RF-COOP-002
+   * Horarios recurrentes (plantilla) -- Ã­tem 7, RF-COOP-002
    * (03-ago-2026). Un generador aparte (cron diario) crea los viajes
    * reales a partir de estas plantillas.
    */
@@ -240,11 +240,11 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Cancelación/suspensión masiva por ruta y rango de fechas -- ítem 7
-   * (03-ago-2026), para contratiempos operativos (cierre de vía,
-   * feriado, paro). Los viajes con boletos vendidos SÍ se cancelan,
-   * generando crédito automático y notificación por WhatsApp -- decisión
-   * del director, no se bloquea la acción ni se saltan en silencio.
+   * CancelaciÃ³n/suspensiÃ³n masiva por ruta y rango de fechas -- Ã­tem 7
+   * (03-ago-2026), para contratiempos operativos (cierre de vÃ­a,
+   * feriado, paro). Los viajes con boletos vendidos SÃ se cancelan,
+   * generando crÃ©dito automÃ¡tico y notificaciÃ³n por WhatsApp -- decisiÃ³n
+   * del director, no se bloquea la acciÃ³n ni se saltan en silencio.
    */
   @Roles('admin_cooperativa')
   @Post('rutas/:id/cancelar-masivo')
@@ -262,7 +262,7 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Cambiar la unidad de un viaje ya programado — "vehículo de
+   * Cambiar la unidad de un viaje ya programado â€” "vehÃ­culo de
    * reemplazo" (investigado y confirmado 22-jul-2026, ver comentario
    * completo en panel-empresa.ports.ts). No toca boletos ni asientos.
    */
@@ -284,7 +284,7 @@ export class PanelEmpresaController {
     return resultado;
   }
 
-  /** Editar hora/precio de un viaje sin boletos vendidos — hallazgo cerrado 22-jul-2026. */
+  /** Editar hora/precio de un viaje sin boletos vendidos â€” hallazgo cerrado 22-jul-2026. */
   @Roles('admin_cooperativa')
   @Patch('viajes/:viajeId')
   async editarViaje(
@@ -303,7 +303,7 @@ export class PanelEmpresaController {
     return resultado;
   }
 
-  /** Lista de pasajeros de un viaje ("manifiesto") — hallazgo cerrado 22-jul-2026. */
+  /** Lista de pasajeros de un viaje ("manifiesto") â€” hallazgo cerrado 22-jul-2026. */
   @Roles('admin_cooperativa', 'vendedor')
   @Get('viajes/:viajeId/pasajeros')
   async listarPasajerosDeViaje(
@@ -316,7 +316,7 @@ export class PanelEmpresaController {
     );
   }
 
-  /** RF-COOP-007 — múltiples usuarios por cooperativa con permisos diferenciados. */
+  /** RF-COOP-007 â€” mÃºltiples usuarios por cooperativa con permisos diferenciados. */
   @Roles('admin_cooperativa')
   @Post('usuarios')
   async crearUsuarioStaff(
@@ -348,8 +348,8 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Carga masiva de rutas/horarios/flota/conductores — pensado para
-   * cuando una cooperativa ya tiene toda esta información en su propio
+   * Carga masiva de rutas/horarios/flota/conductores â€” pensado para
+   * cuando una cooperativa ya tiene toda esta informaciÃ³n en su propio
    * sistema y necesita subirla de una sola vez, en vez de crear cada
    * recurso uno por uno a mano.
    */
@@ -369,7 +369,7 @@ export class PanelEmpresaController {
     return this.panel.dashboardVentasDelDia(cooperativaDelToken(req.user));
   }
 
-  /** Perfil visual de la cooperativa — hoy solo el logo (22-jul-2026). */
+  /** Perfil visual de la cooperativa â€” hoy solo el logo (22-jul-2026). */
   @Roles('admin_cooperativa')
   @Get('perfil')
   async obtenerPerfil(@Request() req: { user: PayloadToken }) {
@@ -413,7 +413,7 @@ export class PanelEmpresaController {
     );
   }
 
-  /** IVA de la cooperativa — solo el admin puede verla/cambiarla (21-jul-2026). */
+  /** IVA de la cooperativa â€” solo el admin puede verla/cambiarla (21-jul-2026). */
   @Roles('admin_cooperativa')
   @Get('configuracion-fiscal')
   async obtenerConfiguracionFiscal(@Request() req: { user: PayloadToken }) {
@@ -433,7 +433,7 @@ export class PanelEmpresaController {
     return { ok: true };
   }
 
-  /** Reprogramación con crédito (Fase C, 28-jul-2026) — horas mínimas antes de la salida, configurable por cooperativa. */
+  /** ReprogramaciÃ³n con crÃ©dito (Fase C, 28-jul-2026) â€” horas mÃ­nimas antes de la salida, configurable por cooperativa. */
   @Roles('admin_cooperativa')
   @Get('horas-limite-reprogramacion')
   async obtenerHorasLimiteReprogramacion(@Request() req: { user: PayloadToken }) {
@@ -457,10 +457,10 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Política de cancelación/reprogramación (29-jul-2026, hallazgo real
+   * PolÃ­tica de cancelaciÃ³n/reprogramaciÃ³n (29-jul-2026, hallazgo real
    * de negocio): algunas cooperativas (ej. Transportes Occidental, no
    * permite cambios ni devoluciones) no admiten estas opciones en
-   * absoluto. Se configuran por separado a propósito -- cancelar es
+   * absoluto. Se configuran por separado a propÃ³sito -- cancelar es
    * una venta perdida para la cooperativa, reprogramar no.
    */
   @Roles('admin_cooperativa')
@@ -485,7 +485,7 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Métodos de pago manuales (29-jul-2026) — mientras no hay pasarela
+   * MÃ©todos de pago manuales (29-jul-2026) â€” mientras no hay pasarela
    * real conectada, cada cooperativa configura los que ya usa hoy en
    * Ecuador (transferencia, efectivo, DeUna, PayPhone) con sus propios
    * datos para recibir el pago.
@@ -507,6 +507,7 @@ export class PanelEmpresaController {
       dto.tipo,
       dto.datosCuenta,
       dto.activo ?? true,
+      dto.entidadFinanciera ?? null,
     );
     return resultado;
   }
@@ -523,9 +524,9 @@ export class PanelEmpresaController {
 
   /**
    * Credenciales API -- Modelo B (02-ago-2026), autoservicio de la
-   * propia cooperativa (RF-API-001, sección 3.11 del documento maestro).
+   * propia cooperativa (RF-API-001, secciÃ³n 3.11 del documento maestro).
    * La llave completa (apiKeyCompleta) solo aparece en la respuesta de
-   * crear/rotar -- nunca más se puede recuperar después de eso, ni
+   * crear/rotar -- nunca mÃ¡s se puede recuperar despuÃ©s de eso, ni
    * siquiera por este mismo endpoint.
    */
   @Roles('admin_cooperativa')
@@ -642,7 +643,7 @@ export class PanelEmpresaController {
     return this.checkout.marcarFacturaEmitida(id, cooperativaDelToken(req.user), dto.urlFactura);
   }
 
-  /** RF-COOP-006 — tanto el vendedor como el admin pueden validar boletos en el andén. */
+  /** RF-COOP-006 â€” tanto el vendedor como el admin pueden validar boletos en el andÃ©n. */
   @Roles('vendedor', 'admin_cooperativa')
   @Post('validar-qr')
   async validarQr(
@@ -656,7 +657,7 @@ export class PanelEmpresaController {
     );
   }
 
-  /** RF-MENOR-004 — verificación de documentos del menor en abordaje (22-jul-2026). */
+  /** RF-MENOR-004 â€” verificaciÃ³n de documentos del menor en abordaje (22-jul-2026). */
   @Roles('vendedor', 'admin_cooperativa')
   @Post('verificar-menor')
   async verificarMenor(
@@ -675,10 +676,10 @@ export class PanelEmpresaController {
 
   /**
    * Historial de liquidaciones propio de la cooperativa (30-jul-2026,
-   * hallazgo real de la auditoría): antes, el único acceso a
-   * liquidaciones era admin_plataforma -- la cooperativa no tenía
-   * ninguna forma de consultar cuánto se le debe o cuándo se le pagó
-   * sin pedírselo al admin de plataforma cada vez. Solo lectura --
+   * hallazgo real de la auditorÃ­a): antes, el Ãºnico acceso a
+   * liquidaciones era admin_plataforma -- la cooperativa no tenÃ­a
+   * ninguna forma de consultar cuÃ¡nto se le debe o cuÃ¡ndo se le pagÃ³
+   * sin pedÃ­rselo al admin de plataforma cada vez. Solo lectura --
    * generar y marcar pagada siguen siendo exclusivos del admin de
    * plataforma, en /admin/liquidaciones.
    */
@@ -689,11 +690,11 @@ export class PanelEmpresaController {
   }
 
   /**
-   * Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
-   * obligatoria de datos de cooperativa (sección 3.7 del documento
+   * Ãtem 10, Fase 2 (04-ago-2026) -- actualizaciÃ³n periÃ³dica
+   * obligatoria de datos de cooperativa (secciÃ³n 3.7 del documento
    * maestro). 6 meses sin confirmar = advertencia; 12 meses de
    * silencio total = se bloquea SOLO horarios recurrentes y carga
-   * masiva -- nunca venta, validación de boletos, ni pagos.
+   * masiva -- nunca venta, validaciÃ³n de boletos, ni pagos.
    */
   @Roles('admin_cooperativa')
   @Get('estado-datos')

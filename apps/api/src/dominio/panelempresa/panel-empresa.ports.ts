@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Dominio del Panel Empresa — RF-COOP, RF-FLOTA.
  */
 
@@ -13,11 +13,31 @@ export type TipoMetodoPago =
   | 'payphone'
   | 'tarjeta_pasarela';
 
+/**
+ * Ítem 21/22 (06-ago-2026) -- catálogo cerrado de entidad financiera,
+ * ver enums.ts en el paquete de base de datos para el contexto
+ * completo de por qué el texto libre no era suficiente.
+ */
+export type EntidadFinanciera =
+  | 'banco_pichincha'
+  | 'banco_guayaquil'
+  | 'banco_pacifico'
+  | 'produbanco'
+  | 'banco_bolivariano'
+  | 'banco_internacional'
+  | 'diners_club'
+  | 'banco_ruminahui'
+  | 'coop_jep'
+  | 'coop_jardin_azuayo'
+  | 'otro';
+
 export interface MetodoPagoCooperativa {
   id: string;
   tipo: TipoMetodoPago;
   activo: boolean;
   datosCuenta: Record<string, string>;
+  /** Solo aplica cuando tipo = 'transferencia_bancaria', null en el resto. */
+  entidadFinanciera: EntidadFinanciera | null;
 }
 
 /**
@@ -720,6 +740,7 @@ export interface PanelEmpresaRepositorio {
     tipo: TipoMetodoPago,
     datosCuenta: Record<string, string>,
     activo: boolean,
+    entidadFinanciera: EntidadFinanciera | null,
   ): Promise<{ id: string }>;
   eliminarMetodoPago(cooperativaId: string, metodoPagoId: string): Promise<void>;
 

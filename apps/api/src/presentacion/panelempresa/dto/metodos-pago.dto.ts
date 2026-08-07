@@ -1,4 +1,5 @@
 import { IsIn, IsBoolean, IsObject, IsOptional, IsString, IsUUID } from 'class-validator';
+import type { EntidadFinanciera } from '../../../dominio/panelempresa/panel-empresa.ports';
 
 /**
  * Métodos de pago manuales (29-jul-2026) — mientras no hay pasarela
@@ -15,6 +16,28 @@ export class GuardarMetodoPagoDto {
   @IsOptional()
   @IsBoolean()
   activo?: boolean;
+
+  /**
+   * Ítem 21/22 (06-ago-2026) -- catálogo cerrado, obligatorio solo
+   * cuando tipo = 'transferencia_bancaria' (la regla real vive en el
+   * service, no aquí -- el DTO solo valida la FORMA, no las reglas de
+   * negocio que dependen de otro campo).
+   */
+  @IsOptional()
+  @IsIn([
+    'banco_pichincha',
+    'banco_guayaquil',
+    'banco_pacifico',
+    'produbanco',
+    'banco_bolivariano',
+    'banco_internacional',
+    'diners_club',
+    'banco_ruminahui',
+    'coop_jep',
+    'coop_jardin_azuayo',
+    'otro',
+  ])
+  entidadFinanciera?: EntidadFinanciera;
 }
 
 export class SubirComprobanteDto {
