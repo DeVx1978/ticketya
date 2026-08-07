@@ -50,14 +50,14 @@
 
 **Requerimiento completo:** registro con verificación de correo, login, recuperación de contraseña, cambio de contraseña, cambio de correo (con verificación en ambos correos), refresh tokens, roles diferenciados, 2FA para cuentas administrativas.
 
-**Estado real:** ✅ Completo, salvo 2FA.
+**Estado real:** ✅ Completo. 2FA: backend cerrado 06-ago-2026 (PR #47), frontend pendiente -- ver detalle en sección de requerimientos no funcionales.
 - Registro con verificación real de correo (token, expira, un solo uso)
 - Login, recuperación de contraseña (token con hash SHA-256, expira 30 min)
 - Cambio de correo con flujo de doble verificación (correo viejo sigue activo hasta confirmar el nuevo)
 - Refresh tokens reales
 - Roles: pasajero, vendedor, admin_cooperativa, admin_plataforma
 
-**Falta:** 2FA para cuentas admin_plataforma y admin_cooperativa.
+**Falta:** nada de autenticación base. 2FA: ver sección de requerimientos no funcionales.
 
 ### 3.1.1 Perfil del pasajero — análisis a profundidad (30-jul-2026)
 
@@ -416,8 +416,8 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 | Backups de base de datos | ✅ Automatizados, verificados con respaldos reales |
 | Pruebas automatizadas | ✅ 155 pruebas end-to-end locales (144 previas + 11 nuevas de la frontera de seguridad super_admin/admin_plataforma, ítem 9, 04-ago-2026), ejecución en serie (corregido un riesgo real de falsos negativos por paralelismo). CI verificado con el mismo número (ver 3.13 -- discrepancia anterior era solo una etiqueta de texto vieja, ya corregida). |
 | Multi-tenancy (RLS) | ✅ Verificado en vivo — una cooperativa no puede ver datos de otra |
-| 2FA | 🔴 No construido |
-| Cumplimiento LOPD Ecuador | 🔴 No revisado formalmente |
+| 2FA -- **backend cerrado 06-ago-2026 (PR #47)** | 🟡 Obligatorio para las 3 cuentas administrativas (super_admin, admin_plataforma, admin_cooperativa), TOTP nativo con node:crypto (sin dependencia externa, tras 2 fricciones reales con `otplib`: API rota en su v13, e incompatible con Jest por depender de paquetes ESM puros). 10 códigos de recuperación de un solo uso. Verificado con el flujo completo real (QR real, código TOTP real, activación) en 165/165 pruebas e2e. **Falta:** frontend (pantalla de configuración con QR, pantalla de código en login) |
+| Cumplimiento LOPD Ecuador -- **cerrado 06-ago-2026 (PR #47), con 3 excepciones externas documentadas** | 🟡 Investigado con fuentes reales (SPDP, ley misma, firmas de auditoría ecuatorianas) contra las 4 preguntas del director: consentimiento explícito (menores de 15 requieren representante legal, adolescentes 15-17 pueden dar el suyo), retención (principio de "solo el tiempo necesario", sin plazo fijo), derecho de eliminación (✅ construido, ver 3.1.1), y obligación de registro ante la autoridad. **Construido:** eliminación de cuenta por anonimización (no borra los datos del pasajero dentro de un boleto ya vendido -- es el registro contable de la cooperativa, decisión del director) + job de limpieza periódica de tokens antiguos. **Pendiente de gestión externa, no de código** (mismo criterio que pasarela de pago y facturación electrónica): Delegado de Protección de Datos (plazo de registro ya vencido, nov-dic 2025 -- posiblemente aplica a Columbus por manejar datos de menores y tener módulo de publicidad/leads, requiere confirmación de abogado real), Registro de Actividades de Tratamiento, y declaración de transferencias internacionales de datos (hosting) en la política de privacidad |
 | `npm audit` | 🔴 Nunca revisado a fondo (se detectaron vulnerabilidades sin resolver en una sesión anterior) |
 | Despliegue real (Render + Vercel) | 🔴 Decisión tomada, sin ejecutar — corre solo en local |
 | Prueba de carga real | 🔴 Nunca simulada |
@@ -470,9 +470,9 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 **✅ Fase 2: completa (05-ago-2026), con 1 excepción externa documentada** — los 16 ítems tienen su trabajo de desarrollo cerrado; el único punto pendiente (frontend del mapa GPS en vivo, ítem 16) espera una gestión externa (API key de Google Maps), no código. Se avanza a la Fase 3 con esta excepción documentada, mismo criterio que se aplicará a la Fase 4.
 
 ### Fase 3 — Seguridad y cumplimiento de producción
-17. **Revisión de cumplimiento LOPD Ecuador — primero de esta fase**, maneja cédulas y datos de menores, riesgo legal real, no genérico
+~~17. Revisión de cumplimiento LOPD Ecuador~~ — **cerrado 06-ago-2026** (ver requerimientos no funcionales, PR #47): investigado con fuentes reales, construidas las 2 piezas técnicas (eliminación de cuenta, limpieza de tokens), 3 excepciones externas documentadas (DPD, RAT, declaración de hosting)
 ~~18. Investigar la diferencia CI (88) vs local (137) en las pruebas automatizadas~~ — **resuelto 2-ago-2026**, era una etiqueta de texto vieja en `ci.yml`, corregida
-19. 2FA para cuentas administrativas
+19. 2FA para cuentas administrativas -- **backend cerrado 06-ago-2026** (PR #47, ver requerimientos no funcionales). Frontend pendiente
 20. `npm audit` a fondo
 21. Accesibilidad (lectores de pantalla, contraste, navegación por teclado) — hallazgo nuevo, nunca analizado antes
 
