@@ -1054,7 +1054,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   async listarMetodosPago(cooperativaId: string): Promise<MetodoPagoCooperativa[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
-        SELECT id, tipo, activo, datos_cuenta
+        SELECT id, tipo, activo, datos_cuenta, entidad_financiera
         FROM metodos_pago_cooperativa
         WHERE cooperativa_id = ${cooperativaId}
         ORDER BY creado_en ASC
@@ -1065,22 +1065,31 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           tipo: string;
           activo: boolean;
           datos_cuenta: Record<string, string>;
+          entidad_financiera: string | null;
         };
         return {
           id: f.id,
           tipo: f.tipo as MetodoPagoCooperativa['tipo'],
           activo: f.activo,
           datosCuenta: f.datos_cuenta,
+          entidadFinanciera: f.entidad_financiera as MetodoPagoCooperativa['entidadFinanciera'],
         };
       });
     });
   }
 
+  /**
+   * Ítem 21/22 (06-ago-2026) -- entidadFinanciera solo aplica a
+   * transferencia_bancaria, null en el resto -- catálogo cerrado,
+   * reemplaza el texto libre sin estructura que vivía dentro de
+   * datosCuenta.
+   */
   async guardarMetodoPago(
     cooperativaId: string,
     tipo: string,
     datosCuenta: Record<string, string>,
     activo: boolean,
+    entidadFinanciera: string | null,
   ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       // "Upsert" manual sobre la restricción única (cooperativa_id, tipo)
@@ -1088,10 +1097,10 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       // duplicar (evita el error de la restricción única y confusión de
       // "¿cuál cuenta uso?").
       const resultado = await tx.execute(sql`
-        INSERT INTO metodos_pago_cooperativa (cooperativa_id, tipo, datos_cuenta, activo)
-        VALUES (${cooperativaId}, ${tipo}, ${JSON.stringify(datosCuenta)}, ${activo})
+        INSERT INTO metodos_pago_cooperativa (cooperativa_id, tipo, datos_cuenta, activo, entidad_financiera)
+        VALUES (${cooperativaId}, ${tipo}, ${JSON.stringify(datosCuenta)}, ${activo}, ${entidadFinanciera})
         ON CONFLICT (cooperativa_id, tipo)
-        DO UPDATE SET datos_cuenta = ${JSON.stringify(datosCuenta)}, activo = ${activo}, actualizado_en = now()
+        DO UPDATE SET datos_cuenta = ${JSON.stringify(datosCuenta)}, activo = ${activo}, entidad_financiera = ${entidadFinanciera}, actualizado_en = now()
         RETURNING id
       `);
       return { id: (resultado.rows[0] as { id: string }).id };

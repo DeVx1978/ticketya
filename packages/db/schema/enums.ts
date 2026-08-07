@@ -227,6 +227,41 @@ export const tipoMetodoPagoEnum = pgEnum('tipo_metodo_pago', [
   'tarjeta_pasarela',
 ]);
 
+/**
+ * Ítem 21/22, Fase 3 (06-ago-2026) -- catálogo cerrado de entidades
+ * financieras, solo aplica cuando tipo = 'transferencia_bancaria'.
+ * Hallazgo real que motivó esto: el nombre del banco vivía como texto
+ * libre dentro de datosCuenta (JSON), sin ninguna forma confiable de
+ * saber "qué banco es" de verdad -- "Pichincha", "Banco Pichincha" y
+ * "BANCO DEL PICHINCHA" eran 3 valores sin relación entre sí. Un
+ * catálogo estructurado es requisito, no solo mejora visual, para
+ * poder identificar la entidad receptora con certeza (y en el futuro,
+ * mostrar su logo -- decisión de negocio pendiente de confirmación
+ * legal real, ver nota completa en el documento maestro sobre la
+ * distinción entre "identificar la cuenta receptora de un pago real"
+ * -- bajo riesgo -- contra "logo usado como publicidad o endoso" --
+ * alto riesgo).
+ *
+ * Los 8 bancos más grandes de Ecuador por activos (investigado,
+ * 06-ago-2026) + las 2 cooperativas de ahorro que el director señaló
+ * como conocidas + 'otro' como respaldo, para no bloquear a ninguna
+ * cooperativa cuyo banco no esté en esta lista inicial -- 'otro' sigue
+ * pidiendo el nombre como texto libre, igual que hoy.
+ */
+export const entidadFinancieraEnum = pgEnum('entidad_financiera', [
+  'banco_pichincha',
+  'banco_guayaquil',
+  'banco_pacifico',
+  'produbanco',
+  'banco_bolivariano',
+  'banco_internacional',
+  'diners_club',
+  'banco_ruminahui',
+  'coop_jep',
+  'coop_jardin_azuayo',
+  'otro',
+]);
+
 /** Solicitud de factura del pasaje (29-jul-2026) -- ver solicitudes-factura.ts para el contexto completo. */
 export const estadoSolicitudFacturaEnum = pgEnum('estado_solicitud_factura', [
   'pendiente',

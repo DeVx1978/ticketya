@@ -296,11 +296,31 @@ export async function actualizarPoliticaCancelacionReprogramacion(
  */
 export type TipoMetodoPago = "transferencia_bancaria" | "efectivo" | "deuna" | "payphone" | "tarjeta_pasarela";
 
+/**
+ * Ítem 21/22 (06-ago-2026) -- catálogo cerrado, ver enums.ts en el
+ * paquete de base de datos para el contexto completo de por qué el
+ * texto libre no era suficiente para mostrar el logo/nombre correcto
+ * del banco receptor.
+ */
+export type EntidadFinanciera =
+  | "banco_pichincha"
+  | "banco_guayaquil"
+  | "banco_pacifico"
+  | "produbanco"
+  | "banco_bolivariano"
+  | "banco_internacional"
+  | "diners_club"
+  | "banco_ruminahui"
+  | "coop_jep"
+  | "coop_jardin_azuayo"
+  | "otro";
+
 export interface MetodoPagoCooperativa {
   id: string;
   tipo: TipoMetodoPago;
   activo: boolean;
   datosCuenta: Record<string, string>;
+  entidadFinanciera: EntidadFinanciera | null;
 }
 
 export async function listarMetodosPago(token: string): Promise<MetodoPagoCooperativa[]> {
@@ -318,11 +338,12 @@ export async function guardarMetodoPago(
   tipo: TipoMetodoPago,
   datosCuenta: Record<string, string>,
   activo: boolean,
+  entidadFinanciera: EntidadFinanciera | null,
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_URL}/coop/metodos-pago`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ tipo, datosCuenta, activo }),
+    body: JSON.stringify({ tipo, datosCuenta, activo, entidadFinanciera }),
   });
   const cuerpo = await res.json();
   if (!res.ok) {
