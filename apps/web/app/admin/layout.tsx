@@ -70,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-8">
             <span className="font-display text-lg font-extrabold text-white">
-              Ticket<span className="text-brand-amber">Ya</span>
+              Columbus
               <span className="ml-2 rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold text-white">
                 Panel Admin
               </span>

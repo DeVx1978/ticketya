@@ -93,7 +93,7 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-8">
             <span className="font-display text-lg font-extrabold text-brand">
-              Ticket<span className="text-brand-amber">Ya</span>
+              Columbus
               <span className="ml-2 rounded-full bg-brand-light px-2.5 py-0.5 text-xs font-bold text-brand">
                 Panel Empresa
               </span>

@@ -4,13 +4,19 @@
   --background: #ffffff;
   --foreground: #1a1523;
 
-  /* Identidad de marca TicketYa — morado/blanco estilo ClickBus,
-     establecida en el prototipo original tras revisar referencias reales
-     (ClickBus, MercadoLibre, ESPN). Se mantiene aquí sin reinventarla. */
-  --brand: #6d28d9;
-  --brand-dark: #2e1065;
-  --brand-medium: #9645ee;
-  --brand-light: #f4eeff;
+  /* Identidad de marca Columbus — negro/amarillo/blanco, colores reales
+     extraídos y medidos del logo oficial (07-ago-2026): amarillo #ffd425
+     (color dominante confirmado por muestreo de píxeles), negro puro
+     #000000. brand-medium usa el amarillo real como acento (focus rings,
+     gradientes, hover); brand y brand-dark quedan en negro/casi-negro
+     para mantener el patrón de "botón oscuro con texto blanco" ya
+     usado en cientos de lugares del código -- evita romper el
+     contraste WCAG recién corregido en el ítem 21 (un botón amarillo
+     con texto blanco encima habría fallado). */
+  --brand: #0f0d02;
+  --brand-dark: #000000;
+  --brand-medium: #ffd425;
+  --brand-light: #fffbe9;
   --brand-amber: #f5a800;
 }
 
