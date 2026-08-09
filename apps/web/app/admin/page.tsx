@@ -241,11 +241,12 @@ export default function AdminHome() {
         ) : (
           <form onSubmit={guardar} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="admin-iva-nacional" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Porcentaje de IVA vigente
               </label>
               <div className="flex items-center gap-1">
                 <input
+id="admin-iva-nacional"
                   type="number"
                   min="0"
                   max="100"
@@ -281,12 +282,13 @@ export default function AdminHome() {
         ) : (
           <form onSubmit={guardarCargo} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="admin-cargo-plataforma" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Monto por pasajero
               </label>
               <div className="flex items-center gap-1">
                 <span className="text-brand-dark/70">$</span>
                 <input
+id="admin-cargo-plataforma"
                   type="number"
                   min="0"
                   step="0.01"

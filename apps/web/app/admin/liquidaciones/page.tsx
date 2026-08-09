@@ -90,10 +90,11 @@ export default function LiquidacionesAdminPage() {
         className="mt-6 grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
       >
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="liq-cooperativa-id" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             ID de la cooperativa
           </label>
           <input
+id="liq-cooperativa-id"
             type="text"
             value={cooperativaId}
             onChange={(e) => setCooperativaId(e.target.value)}
@@ -102,10 +103,11 @@ export default function LiquidacionesAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="liq-desde" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Desde
           </label>
           <input
+id="liq-desde"
             type="date"
             value={periodoInicio}
             onChange={(e) => setPeriodoInicio(e.target.value)}
@@ -113,10 +115,11 @@ export default function LiquidacionesAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="liq-hasta" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Hasta
           </label>
           <input
+id="liq-hasta"
             type="date"
             value={periodoFin}
             onChange={(e) => setPeriodoFin(e.target.value)}

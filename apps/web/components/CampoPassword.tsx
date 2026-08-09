@@ -8,6 +8,8 @@ interface CampoPasswordProps {
   placeholder?: string;
   className?: string;
   autoComplete?: string;
+  /** Ítem 21 (07-ago-2026) -- para poder conectar un <label htmlFor> real al input interno. */
+  id?: string;
 }
 
 /**
@@ -15,12 +17,12 @@ interface CampoPasswordProps {
  * del usuario (22-jul-2026): sin esto, no hay forma de confirmar que se
  * escribió bien la contraseña antes de enviar el formulario.
  */
-export function CampoPassword({ value, onChange, placeholder, className, autoComplete }: CampoPasswordProps) {
+export function CampoPassword({ value, onChange, placeholder, className, autoComplete, id }: CampoPasswordProps) {
   const [visible, setVisible] = useState(false);
-
   return (
     <div className="relative">
       <input
+        id={id}
         type={visible ? "text" : "password"}
         value={value}
         onChange={(e) => onChange(e.target.value)}

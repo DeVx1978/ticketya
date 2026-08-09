@@ -189,10 +189,12 @@ function FormularioIngreso() {
 
           <form onSubmit={enviarConfiguracion} className="mt-6 space-y-4">
             <div>
-              <label className="mb-2 block text-center text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label id="config-2fa-codigo-label" className="mb-2 block text-center text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Código de 6 dígitos
               </label>
-              <EntradaCodigoOtp valor={codigo} onChange={setCodigo} />
+              <div role="group" aria-labelledby="config-2fa-codigo-label">
+                <EntradaCodigoOtp valor={codigo} onChange={setCodigo} />
+              </div>
             </div>
 
             {error && <p className="text-center text-sm font-medium text-red-600">{error}</p>}
@@ -379,10 +381,11 @@ function FormularioIngreso() {
 
         <form onSubmit={enviarLogin} className="mt-6 space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="login-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
+              id="login-correo"
               type="email"
               required
               value={correo}
@@ -391,10 +394,10 @@ function FormularioIngreso() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="login-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
-            <CampoPassword value={password} onChange={setPassword} />
+            <CampoPassword id="login-password" value={password} onChange={setPassword} />
           </div>
 
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}

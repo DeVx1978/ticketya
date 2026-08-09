@@ -116,10 +116,11 @@ export default function CooperativasAdminPage() {
         <h2 className="font-display text-base font-bold text-brand-dark">Datos de la cooperativa</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-ruc" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               RUC
             </label>
             <input
+              id="coop-ruc"
               type="text"
               value={ruc}
               onChange={(e) => setRuc(e.target.value)}
@@ -128,10 +129,11 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-razon-social" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Razón social
             </label>
             <input
+              id="coop-razon-social"
               type="text"
               value={razonSocial}
               onChange={(e) => setRazonSocial(e.target.value)}
@@ -140,10 +142,11 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-nombre-comercial" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre comercial
             </label>
             <input
+              id="coop-nombre-comercial"
               type="text"
               value={nombreComercial}
               onChange={(e) => setNombreComercial(e.target.value)}
@@ -152,10 +155,11 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-modelo-integracion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Modelo de integración
             </label>
             <select
+              id="coop-modelo-integracion"
               value={modeloIntegracion}
               onChange={(e) => setModeloIntegracion(e.target.value as "modelo_a" | "modelo_b")}
               className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -165,10 +169,11 @@ export default function CooperativasAdminPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-contacto-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contacto — nombre (opcional)
             </label>
             <input
+              id="coop-contacto-nombre"
               type="text"
               value={contactoNombre}
               onChange={(e) => setContactoNombre(e.target.value)}
@@ -176,10 +181,11 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-contacto-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contacto — correo (opcional)
             </label>
             <input
+              id="coop-contacto-correo"
               type="email"
               value={contactoCorreo}
               onChange={(e) => setContactoCorreo(e.target.value)}
@@ -194,10 +200,11 @@ export default function CooperativasAdminPage() {
         </p>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-usuario-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
+              id="coop-usuario-nombre"
               type="text"
               value={nombreUsuario}
               onChange={(e) => setNombreUsuario(e.target.value)}
@@ -205,10 +212,11 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-usuario-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
+              id="coop-usuario-correo"
               type="email"
               value={correoUsuario}
               onChange={(e) => setCorreoUsuario(e.target.value)}
@@ -216,10 +224,11 @@ export default function CooperativasAdminPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="coop-usuario-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
             <CampoPassword
+              id="coop-usuario-password"
               value={passwordUsuario}
               onChange={setPasswordUsuario}
               placeholder="Mínimo 8 caracteres"

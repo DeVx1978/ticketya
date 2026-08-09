@@ -65,10 +65,11 @@ function FormularioRegistro() {
         <form onSubmit={enviar} className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="registro-nombres" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Nombres
               </label>
               <input
+id="registro-nombres"
                 type="text"
                 required
                 minLength={2}
@@ -78,10 +79,11 @@ function FormularioRegistro() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="registro-apellidos" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Apellidos
               </label>
               <input
+id="registro-apellidos"
                 type="text"
                 required
                 minLength={2}
@@ -93,10 +95,11 @@ function FormularioRegistro() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="registro-cedula" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Cédula
             </label>
             <input
+id="registro-cedula"
               type="text"
               inputMode="numeric"
               required
@@ -111,10 +114,11 @@ function FormularioRegistro() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="registro-whatsapp" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               WhatsApp
             </label>
             <input
+id="registro-whatsapp"
               type="text"
               inputMode="numeric"
               required
@@ -129,10 +133,11 @@ function FormularioRegistro() {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="registro-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
+id="registro-correo"
               type="email"
               required
               value={correo}
@@ -141,10 +146,10 @@ function FormularioRegistro() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="registro-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña (mínimo 8 caracteres)
             </label>
-            <CampoPassword value={password} onChange={setPassword} />
+            <CampoPassword id="registro-password" value={password} onChange={setPassword} />
           </div>
 
           {error && <p className="text-sm font-medium text-red-600">{error}</p>}

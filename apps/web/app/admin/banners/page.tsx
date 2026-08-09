@@ -100,10 +100,11 @@ export default function BannersAdminPage() {
 
       <form onSubmit={crear} className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="banner-titulo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Título (interno, no se muestra)
           </label>
           <input
+id="banner-titulo"
             type="text"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
@@ -112,10 +113,11 @@ export default function BannersAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="banner-enlace" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Enlace al hacer clic
           </label>
           <input
+id="banner-enlace"
             type="text"
             value={enlaceUrl}
             onChange={(e) => setEnlaceUrl(e.target.value)}
@@ -124,10 +126,11 @@ export default function BannersAdminPage() {
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="banner-imagen" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             URL de la imagen
           </label>
           <input
+id="banner-imagen"
             type="text"
             value={imagenUrl}
             onChange={(e) => setImagenUrl(e.target.value)}

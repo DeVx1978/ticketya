@@ -80,12 +80,14 @@ function BotonEditarViaje({
   return (
     <div className="flex items-center justify-end gap-1">
       <input
+id="viaje-hora"
         type="time"
         value={hora}
         onChange={(e) => setHora(e.target.value)}
         className="w-24 rounded border border-brand-light px-1.5 py-1 text-xs"
       />
       <input
+id="viaje-precio"
         type="number"
         min="0"
         step="0.01"
@@ -154,6 +156,7 @@ function BotonCambiarUnidad({
   return (
     <div className="flex items-center justify-end gap-1">
       <select
+id="viaje-unidad"
         value={unidadElegida}
         onChange={(e) => setUnidadElegida(e.target.value)}
         className="rounded border border-brand-light px-1.5 py-1 text-xs"
@@ -332,10 +335,11 @@ export default function ViajesPage() {
         className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="viaje-ruta" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ruta
           </label>
           <select
+id="viaje-ruta"
             value={rutaElegida}
             onChange={(e) => setRutaElegida(e.target.value)}
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -349,7 +353,7 @@ export default function ViajesPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="viaje-unidad" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Unidad
           </label>
           <select
@@ -368,10 +372,11 @@ export default function ViajesPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="viaje-fecha" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Fecha
           </label>
           <input
+id="viaje-fecha"
             type="date"
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
@@ -379,7 +384,7 @@ export default function ViajesPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="viaje-hora" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Hora de salida
           </label>
           <input
@@ -390,7 +395,7 @@ export default function ViajesPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="viaje-precio" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio (USD)
           </label>
           <input

@@ -197,10 +197,11 @@ export default function CredencialesApiPage() {
       >
         <h2 className="font-display text-base font-bold text-brand-dark">Nueva credencial</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="credencial-webhook-nuevo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             URL del webhook (opcional, puedes configurarla después)
           </label>
           <input
+            id="credencial-webhook-nuevo"
             type="url"
             value={webhookNuevo}
             onChange={(e) => setWebhookNuevo(e.target.value)}
@@ -242,11 +243,12 @@ export default function CredencialesApiPage() {
               <p className="mt-1 text-xs text-brand-dark/40">Creada el {formatearFecha(c.creadoEn)}</p>
 
               <div className="mt-3">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                <label htmlFor={`credencial-webhook-${c.id}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                   Webhook
                 </label>
                 <div className="flex gap-2">
                   <input
+                    id={`credencial-webhook-${c.id}`}
                     type="url"
                     value={webhookEditando[c.id] ?? c.webhookUrl ?? ""}
                     onChange={(e) =>

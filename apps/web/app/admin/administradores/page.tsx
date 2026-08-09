@@ -109,10 +109,11 @@ export default function AdministradoresPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="admin-usuario-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
+              id="admin-usuario-correo"
               type="email"
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
@@ -121,10 +122,11 @@ export default function AdministradoresPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="admin-usuario-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
             <input
+              id="admin-usuario-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -134,10 +136,11 @@ export default function AdministradoresPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="admin-usuario-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
+              id="admin-usuario-nombre"
               type="text"
               value={nombreCompleto}
               onChange={(e) => setNombreCompleto(e.target.value)}
@@ -146,10 +149,11 @@ export default function AdministradoresPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="admin-usuario-rol" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Rol
             </label>
             <select
+              id="admin-usuario-rol"
               value={rol}
               onChange={(e) => setRol(e.target.value as "admin_plataforma" | "super_admin")}
               className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"

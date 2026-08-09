@@ -126,11 +126,12 @@ export default function ValidarQrPage() {
       </div>
 
       <form onSubmit={validar} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+        <label htmlFor="validar-qr-codigo" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           Código QR
         </label>
         <div className="flex gap-3">
           <input
+            id="validar-qr-codigo"
             ref={inputRef}
             type="text"
             value={codigo}
