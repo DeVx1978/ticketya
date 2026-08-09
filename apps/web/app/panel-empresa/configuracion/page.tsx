@@ -6,8 +6,11 @@ import {
   actualizarConfiguracionFiscal,
   obtenerPoliticaCancelacionReprogramacion,
   actualizarPoliticaCancelacionReprogramacion,
+  obtenerEstadoDatosCoop,
+  confirmarDatosCoop,
   type ConfiguracionFiscal,
   type PoliticaCancelacionReprogramacion,
+  type EstadoDatosCooperativa,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
@@ -28,6 +31,17 @@ export default function ConfiguracionPage() {
   const [guardandoFiscal, setGuardandoFiscal] = useState(false);
   const [guardandoPolitica, setGuardandoPolitica] = useState(false);
 
+  // Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
+  // obligatoria de datos legales.
+  const [estadoDatos, setEstadoDatos] = useState<EstadoDatosCooperativa | null>(null);
+  const [razonSocial, setRazonSocial] = useState("");
+  const [ruc, setRuc] = useState("");
+  const [direccionLegal, setDireccionLegal] = useState("");
+  const [contactoNombre, setContactoNombre] = useState("");
+  const [contactoCorreo, setContactoCorreo] = useState("");
+  const [contactoTelefono, setContactoTelefono] = useState("");
+  const [guardandoDatos, setGuardandoDatos] = useState(false);
+
   useEffect(() => {
     const token = obtenerToken();
     if (!token) return;
@@ -36,6 +50,17 @@ export default function ConfiguracionPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar."));
     obtenerPoliticaCancelacionReprogramacion(token)
       .then(setPolitica)
+      .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar."));
+    obtenerEstadoDatosCoop(token)
+      .then((res) => {
+        setEstadoDatos(res);
+        setRazonSocial(res.datosActuales.razonSocial);
+        setRuc(res.datosActuales.ruc);
+        setDireccionLegal(res.datosActuales.direccionLegal ?? "");
+        setContactoNombre(res.datosActuales.contactoNombre ?? "");
+        setContactoCorreo(res.datosActuales.contactoCorreo ?? "");
+        setContactoTelefono(res.datosActuales.contactoTelefono ?? "");
+      })
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar."));
   }, []);
 
@@ -52,6 +77,34 @@ export default function ConfiguracionPage() {
       setError(err instanceof Error ? err.message : "No se pudo guardar.");
     } finally {
       setGuardandoFiscal(false);
+    }
+  }
+
+  /**
+   * Ítem 10 (04-ago-2026) -- revisar y dejar igual también es una
+   * confirmación válida, no hace falta cambiar nada para "aprobar".
+   */
+  async function confirmarDatos(e: React.FormEvent) {
+    e.preventDefault();
+    const token = obtenerToken();
+    if (!token) return;
+    setGuardandoDatos(true);
+    setError(null);
+    try {
+      await confirmarDatosCoop(token, {
+        razonSocial,
+        ruc,
+        direccionLegal,
+        contactoNombre,
+        contactoCorreo,
+        contactoTelefono,
+      });
+      setEstadoDatos({ estado: "al_dia", datosActuales: { razonSocial, ruc, direccionLegal, contactoNombre, contactoCorreo, contactoTelefono } });
+      setMensajeExito("Datos confirmados. Podrás confirmarlos de nuevo en 6 meses.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo confirmar.");
+    } finally {
+      setGuardandoDatos(false);
     }
   }
 
@@ -90,11 +143,121 @@ export default function ConfiguracionPage() {
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Configuración</h1>
-      <p className="mt-1 text-sm text-brand-dark/60">
+      <p className="mt-1 text-sm text-brand-dark/70">
         Ajustes propios de tu cooperativa — cada empresa afiliada configura los suyos.
       </p>
 
       <MetodosPago onExito={setMensajeExito} onError={setError} />
+
+      {/* Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica obligatoria de datos legales */}
+      {estadoDatos && (
+        <form
+          onSubmit={confirmarDatos}
+          className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+        >
+          <div>
+            <h2 className="font-display text-base font-bold text-brand-dark">Datos legales</h2>
+            <p className="mt-1 text-xs text-brand-dark/50">
+              Revisa que estén correctos y confirma, aunque no cambies nada — se te pide cada 6
+              meses.
+            </p>
+          </div>
+
+          {estadoDatos.estado === "bloqueado" && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800 ring-1 ring-red-200">
+              Llevan {estadoDatos.mesesSinConfirmar} meses sin confirmarse — crear horarios
+              recurrentes y la carga masiva están bloqueados hasta que confirmes.
+            </p>
+          )}
+          {estadoDatos.estado === "advertencia" && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+              Llevan {estadoDatos.mesesSinConfirmar} meses sin confirmarse.
+            </p>
+          )}
+          {estadoDatos.estado === "al_dia" && (
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
+              Al día.
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Razón social
+              </label>
+              <input
+                type="text"
+                value={razonSocial}
+                onChange={(e) => setRazonSocial(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                RUC
+              </label>
+              <input
+                type="text"
+                value={ruc}
+                onChange={(e) => setRuc(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Dirección legal
+              </label>
+              <input
+                type="text"
+                value={direccionLegal}
+                onChange={(e) => setDireccionLegal(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Nombre de contacto
+              </label>
+              <input
+                type="text"
+                value={contactoNombre}
+                onChange={(e) => setContactoNombre(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Correo de contacto
+              </label>
+              <input
+                type="email"
+                value={contactoCorreo}
+                onChange={(e) => setContactoCorreo(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Teléfono de contacto
+              </label>
+              <input
+                type="text"
+                value={contactoTelefono}
+                onChange={(e) => setContactoTelefono(e.target.value)}
+                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={guardandoDatos}
+            className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          >
+            {guardandoDatos ? "Confirmando..." : "Confirmar datos"}
+          </button>
+        </form>
+      )}
 
       {/* Política de cancelación/reprogramación */}
       <form
@@ -138,7 +301,7 @@ export default function ConfiguracionPage() {
         </div>
         {politica.permiteCancelacion && (
           <div>
-            <label htmlFor="config-horas-cancelacion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label htmlFor="config-horas-cancelacion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Horas mínimas antes de la salida para poder cancelar
             </label>
             <input
@@ -192,7 +355,7 @@ export default function ConfiguracionPage() {
         </div>
         {politica.permiteReprogramacion && (
           <div>
-            <label htmlFor="config-horas-reprogramacion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+            <label htmlFor="config-horas-reprogramacion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Horas mínimas antes de la salida para poder reprogramar
             </label>
             <input
@@ -241,7 +404,7 @@ export default function ConfiguracionPage() {
       >
         <h2 className="font-display text-base font-bold text-brand-dark">IVA</h2>
         <div>
-          <label htmlFor="config-iva-porcentaje" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/60">
+          <label htmlFor="config-iva-porcentaje" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Porcentaje de IVA
           </label>
           <input
