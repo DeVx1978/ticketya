@@ -177,10 +177,11 @@ export default function PuntosOperacionAdminPage() {
         className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-3"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="punto-tipo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Tipo
           </label>
           <select
+id="punto-tipo"
             value={tipo}
             onChange={(e) => setTipo(e.target.value as typeof tipo)}
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -191,10 +192,11 @@ export default function PuntosOperacionAdminPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="punto-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre
           </label>
           <input
+id="punto-nombre"
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
@@ -203,10 +205,11 @@ export default function PuntosOperacionAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="punto-ciudad" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ciudad
           </label>
           <input
+id="punto-ciudad"
             type="text"
             value={ciudad}
             onChange={(e) => setCiudad(e.target.value)}
@@ -215,10 +218,11 @@ export default function PuntosOperacionAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="punto-provincia" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Provincia
           </label>
           <input
+id="punto-provincia"
             type="text"
             value={provincia}
             onChange={(e) => setProvincia(e.target.value)}
@@ -227,10 +231,11 @@ export default function PuntosOperacionAdminPage() {
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="punto-cooperativa" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Cooperativa propietaria (opcional)
           </label>
           <select
+id="punto-cooperativa"
             value={cooperativaPropietariaId}
             onChange={(e) => setCooperativaPropietariaId(e.target.value)}
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -244,10 +249,11 @@ export default function PuntosOperacionAdminPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="punto-tasa" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Tasa por pasajero (USD, opcional)
           </label>
           <input
+id="punto-tasa"
             type="number"
             min="0"
             step="0.01"

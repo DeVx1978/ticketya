@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { buscarPuntosOperacion, type PuntoOperacion } from "@/lib/api";
 
 interface Props {
@@ -15,6 +15,10 @@ interface Props {
  * 250ms para no disparar una consulta al backend en cada tecla.
  */
 export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props) {
+  // Ítem 21 (07-ago-2026) -- useId(), no un id fijo: este componente se
+  // usa 2 veces en la misma página (Origen y Destino) -- un id fijo
+  // haría que ambas etiquetas apuntaran al mismo campo.
+  const idCampo = useId();
   const [texto, setTexto] = useState(valor?.ciudad ?? "");
   const [sugerencias, setSugerencias] = useState<PuntoOperacion[]>([]);
   const [abierto, setAbierto] = useState(false);
@@ -38,10 +42,11 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
 
   return (
     <div className="relative flex-1">
-      <label className="block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1">
+      <label htmlFor={idCampo} className="block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1">
         {etiqueta}
       </label>
       <input
+        id={idCampo}
         type="text"
         value={texto}
         placeholder={placeholder}

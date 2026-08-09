@@ -77,10 +77,11 @@ export default function CargaMasivaPage() {
       </div>
 
       <form onSubmit={enviar} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+        <label htmlFor="carga-masiva-json" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           JSON a importar
         </label>
         <textarea
+          id="carga-masiva-json"
           value={json}
           onChange={(e) => setJson(e.target.value)}
           rows={20}

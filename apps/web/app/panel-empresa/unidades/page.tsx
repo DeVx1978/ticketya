@@ -228,10 +228,11 @@ export default function UnidadesPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="tipo-vehiculo-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre
             </label>
             <input
+              id="tipo-vehiculo-nombre"
               type="text"
               value={nombreTipo}
               onChange={(e) => setNombreTipo(e.target.value)}
@@ -240,10 +241,11 @@ export default function UnidadesPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="tipo-vehiculo-categoria" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Categoría
             </label>
             <select
+              id="tipo-vehiculo-categoria"
               value={categoriaTipo}
               onChange={(e) => setCategoriaTipo(e.target.value as typeof categoriaTipo)}
               className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -256,10 +258,11 @@ export default function UnidadesPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="tipo-vehiculo-capacidad" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Capacidad (asientos)
             </label>
             <input
+              id="tipo-vehiculo-capacidad"
               type="number"
               min="1"
               value={capacidad}
@@ -277,10 +280,10 @@ export default function UnidadesPage() {
           </button>
           {errorTipo && <p className="sm:col-span-3 text-sm font-medium text-red-600">{errorTipo}</p>}
           <div className="sm:col-span-4">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label id="tipo-vehiculo-amenidades-label" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Amenidades
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div role="group" aria-labelledby="tipo-vehiculo-amenidades-label" className="flex flex-wrap gap-2">
               {AMENIDADES_CATALOGO.map((a) => (
                 <button
                   key={a.valor}
@@ -443,10 +446,11 @@ export default function UnidadesPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="unidad-tipo-vehiculo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Tipo de vehículo
             </label>
             <select
+              id="unidad-tipo-vehiculo"
               value={tipoElegido}
               onChange={(e) => setTipoElegido(e.target.value)}
               className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -460,10 +464,11 @@ export default function UnidadesPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="unidad-placa" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Placa
             </label>
             <input
+              id="unidad-placa"
               type="text"
               value={placa}
               onChange={(e) => setPlaca(e.target.value)}
@@ -472,10 +477,11 @@ export default function UnidadesPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="unidad-identificador" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Identificador operativo (disco)
             </label>
             <input
+              id="unidad-identificador"
               type="text"
               value={identificador}
               onChange={(e) => setIdentificador(e.target.value)}

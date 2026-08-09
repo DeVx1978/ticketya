@@ -170,10 +170,11 @@ export function MetodosPago({ onExito, onError }: { onExito: (m: string) => void
       )}
 
       <form onSubmit={agregar} className="space-y-3 border-t border-black/5 pt-4">
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+        <label htmlFor="metodo-pago-tipo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           Agregar método
         </label>
         <select
+          id="metodo-pago-tipo"
           value={tipoNuevo}
           onChange={(e) => {
             setTipoNuevo(e.target.value as TipoMetodoPago);

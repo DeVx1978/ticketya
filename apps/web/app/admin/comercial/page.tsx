@@ -87,10 +87,11 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
         className="grid grid-cols-1 gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:grid-cols-5 sm:items-end"
       >
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-espacio-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre
           </label>
           <input
+            id="comercial-espacio-nombre"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             placeholder="Banner horizontal"
@@ -98,10 +99,11 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-espacio-ubicacion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ubicación
           </label>
           <input
+            id="comercial-espacio-ubicacion"
             value={ubicacion}
             onChange={(e) => setUbicacion(e.target.value)}
             placeholder="landing_top"
@@ -109,10 +111,11 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-espacio-ancho" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Ancho (px)
           </label>
           <input
+            id="comercial-espacio-ancho"
             type="number"
             value={anchoPx}
             onChange={(e) => setAnchoPx(e.target.value)}
@@ -121,10 +124,11 @@ function TabEspacios({ onExito, onError }: { onExito: (m: string) => void; onErr
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-espacio-alto" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Alto (px)
           </label>
           <input
+            id="comercial-espacio-alto"
             type="number"
             value={altoPx}
             onChange={(e) => setAltoPx(e.target.value)}
@@ -210,10 +214,11 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
         className="grid grid-cols-1 gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:grid-cols-4 sm:items-end"
       >
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-plan-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Plan
           </label>
           <select
+            id="comercial-plan-nombre"
             value={nombre}
             onChange={(e) => setNombre(e.target.value as typeof nombre)}
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -224,10 +229,11 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-plan-precio" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio mensual (opcional)
           </label>
           <input
+            id="comercial-plan-precio"
             type="number"
             value={precio}
             onChange={(e) => setPrecio(e.target.value)}
@@ -236,10 +242,11 @@ function TabPlanes({ onExito, onError }: { onExito: (m: string) => void; onError
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="comercial-plan-duracion" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Duración por defecto (días)
           </label>
           <input
+            id="comercial-plan-duracion"
             type="number"
             value={duracion}
             onChange={(e) => setDuracion(e.target.value)}

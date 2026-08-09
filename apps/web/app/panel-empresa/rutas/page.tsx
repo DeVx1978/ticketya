@@ -215,10 +215,11 @@ export default function RutasPage() {
         <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde?" valor={origen} onCambio={setOrigen} />
         <SelectorCiudad etiqueta="Destino" placeholder="¿Hacia dónde?" valor={destino} onCambio={setDestino} />
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="ruta-precio-base" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio base (USD)
           </label>
           <input
+            id="ruta-precio-base"
             type="number"
             min="0"
             step="0.01"
@@ -236,10 +237,11 @@ export default function RutasPage() {
           {guardando ? "Guardando..." : "Crear ruta"}
         </button>
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="ruta-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre de la ruta (opcional)
           </label>
           <input
+            id="ruta-nombre"
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
@@ -363,10 +365,11 @@ export default function RutasPage() {
                             >
                               <div className="flex gap-3">
                                 <div>
-                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                  <label htmlFor={`ruta-${r.id}-hora`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                     Hora
                                   </label>
                                   <input
+                                    id={`ruta-${r.id}-hora`}
                                     type="time"
                                     value={horaSalida}
                                     onChange={(e) => setHoraSalida(e.target.value)}
@@ -374,10 +377,11 @@ export default function RutasPage() {
                                   />
                                 </div>
                                 <div className="flex-1">
-                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                  <label htmlFor={`ruta-${r.id}-tipo-vehiculo`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                     Tipo de vehículo
                                   </label>
                                   <select
+                                    id={`ruta-${r.id}-tipo-vehiculo`}
                                     value={tipoVehiculoId}
                                     onChange={(e) => setTipoVehiculoId(e.target.value)}
                                     className="w-full rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -392,10 +396,10 @@ export default function RutasPage() {
                                 </div>
                               </div>
                               <div>
-                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                <label id={`ruta-${r.id}-dias-label`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                   Días de la semana
                                 </label>
-                                <div className="flex flex-wrap gap-1.5">
+                                <div role="group" aria-labelledby={`ruta-${r.id}-dias-label`} className="flex flex-wrap gap-1.5">
                                   {DIAS_SEMANA.map((d) => (
                                     <button
                                       key={d.valor}
@@ -439,10 +443,11 @@ export default function RutasPage() {
 
                             <div className="mt-4 flex gap-3">
                               <div>
-                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                <label htmlFor={`ruta-${r.id}-desde`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                   Desde
                                 </label>
                                 <input
+                                  id={`ruta-${r.id}-desde`}
                                   type="date"
                                   value={fechaInicioMasivo}
                                   onChange={(e) => setFechaInicioMasivo(e.target.value)}
@@ -450,10 +455,11 @@ export default function RutasPage() {
                                 />
                               </div>
                               <div>
-                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                <label htmlFor={`ruta-${r.id}-hasta`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                                   Hasta
                                 </label>
                                 <input
+                                  id={`ruta-${r.id}-hasta`}
                                   type="date"
                                   value={fechaFinMasivo}
                                   onChange={(e) => setFechaFinMasivo(e.target.value)}

@@ -145,10 +145,11 @@ export default function PersonalPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-staff-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
+              id="personal-staff-nombre"
               type="text"
               value={nombreStaff}
               onChange={(e) => setNombreStaff(e.target.value)}
@@ -156,10 +157,11 @@ export default function PersonalPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-staff-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Correo
             </label>
             <input
+              id="personal-staff-correo"
               type="email"
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
@@ -167,16 +169,17 @@ export default function PersonalPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-staff-password" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Contraseña
             </label>
-            <CampoPassword value={password} onChange={setPassword} placeholder="Mínimo 8 caracteres" />
+            <CampoPassword id="personal-staff-password" value={password} onChange={setPassword} placeholder="Mínimo 8 caracteres" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-staff-rol" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Rol
             </label>
             <select
+              id="personal-staff-rol"
               value={rol}
               onChange={(e) => setRol(e.target.value as typeof rol)}
               className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -245,10 +248,11 @@ export default function PersonalPage() {
           className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-3 lg:items-end"
         >
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-conductor-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
+              id="personal-conductor-nombre"
               type="text"
               value={nombreConductor}
               onChange={(e) => setNombreConductor(e.target.value)}
@@ -256,10 +260,11 @@ export default function PersonalPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-conductor-cedula" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Cédula
             </label>
             <input
+              id="personal-conductor-cedula"
               type="text"
               value={cedula}
               onChange={(e) => setCedula(e.target.value)}
@@ -267,10 +272,11 @@ export default function PersonalPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-conductor-licencia-numero" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Número de licencia (opcional)
             </label>
             <input
+              id="personal-conductor-licencia-numero"
               type="text"
               value={licenciaNumero}
               onChange={(e) => setLicenciaNumero(e.target.value)}
@@ -278,10 +284,11 @@ export default function PersonalPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-conductor-licencia-categoria" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Categoría de licencia (opcional)
             </label>
             <input
+              id="personal-conductor-licencia-categoria"
               type="text"
               value={licenciaCategoria}
               onChange={(e) => setLicenciaCategoria(e.target.value)}
@@ -290,10 +297,11 @@ export default function PersonalPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="personal-conductor-telefono" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Teléfono (opcional)
             </label>
             <input
+              id="personal-conductor-telefono"
               type="text"
               value={telefonoConductor}
               onChange={(e) => setTelefonoConductor(e.target.value)}

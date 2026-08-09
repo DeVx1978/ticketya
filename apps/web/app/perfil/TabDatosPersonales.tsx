@@ -250,10 +250,11 @@ export function TabDatosPersonales({
           </p>
         )}
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nombre completo
           </label>
           <input
+id="perfil-nombre"
             type="text"
             value={nombreIdentidad}
             onChange={(e) => setNombreIdentidad(e.target.value)}
@@ -262,10 +263,11 @@ export function TabDatosPersonales({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-cedula" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Cédula / documento
           </label>
           <input
+id="perfil-cedula"
             type="text"
             value={cedulaIdentidad}
             onChange={(e) => setCedulaIdentidad(e.target.value)}
@@ -290,10 +292,11 @@ export function TabDatosPersonales({
       >
         <h2 className="font-display text-base font-bold text-brand-dark">Mis datos</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Correo
           </label>
           <input
+id="perfil-correo"
             type="text"
             value={perfil.correo}
             disabled
@@ -301,10 +304,11 @@ export function TabDatosPersonales({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-whatsapp" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             WhatsApp
           </label>
           <input
+id="perfil-whatsapp"
             type="text"
             inputMode="numeric"
             value={telefono}
@@ -314,10 +318,11 @@ export function TabDatosPersonales({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-foto" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Foto de perfil
           </label>
           <input
+id="perfil-foto"
             type="file"
             accept="image/jpeg,image/png,image/webp"
             onChange={async (e) => {
@@ -361,16 +366,16 @@ export function TabDatosPersonales({
       >
         <h2 className="font-display text-base font-bold text-brand-dark">Cambiar contraseña</h2>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-password-actual" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Contraseña actual
           </label>
-          <CampoPassword value={passwordActual} onChange={setPasswordActual} />
+          <CampoPassword id="perfil-password-actual" value={passwordActual} onChange={setPasswordActual} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <label htmlFor="perfil-password-nueva" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Nueva contraseña
           </label>
-          <CampoPassword value={passwordNueva} onChange={setPasswordNueva} placeholder="Mínimo 8 caracteres" />
+          <CampoPassword id="perfil-password-nueva" value={passwordNueva} onChange={setPasswordNueva} placeholder="Mínimo 8 caracteres" />
         </div>
         {errorPassword && <p className="text-sm font-medium text-red-600">{errorPassword}</p>}
         <button
@@ -399,10 +404,11 @@ export function TabDatosPersonales({
         ) : (
           <>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="perfil-correo-nuevo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Correo nuevo
               </label>
               <input
+id="perfil-correo-nuevo"
                 type="email"
                 value={correoNuevo}
                 onChange={(e) => setCorreoNuevo(e.target.value)}
@@ -410,10 +416,10 @@ export function TabDatosPersonales({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="perfil-password-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Tu contraseña actual (para confirmar que eres tú)
               </label>
-              <CampoPassword value={passwordParaCorreo} onChange={setPasswordParaCorreo} />
+              <CampoPassword id="perfil-password-correo" value={passwordParaCorreo} onChange={setPasswordParaCorreo} />
             </div>
             {errorCambioCorreo && (
               <p className="text-sm font-medium text-red-600">{errorCambioCorreo}</p>

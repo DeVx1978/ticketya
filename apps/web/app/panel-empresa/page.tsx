@@ -199,10 +199,11 @@ export default function PanelEmpresaDashboard() {
               />
             )}
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="panel-logo-url" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 URL de la imagen
               </label>
               <input
+                id="panel-logo-url"
                 type="text"
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
@@ -233,11 +234,12 @@ export default function PanelEmpresaDashboard() {
         ) : (
           <form onSubmit={guardarFiscal} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="panel-iva-porcentaje" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Porcentaje de IVA
               </label>
               <div className="flex items-center gap-1">
                 <input
+                  id="panel-iva-porcentaje"
                   type="number"
                   min="0"
                   max="100"

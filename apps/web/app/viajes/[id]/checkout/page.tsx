@@ -174,10 +174,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 </div>
               )}
               <div className="mt-4">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                <label htmlFor="checkout-comprobante" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                   Foto o captura del comprobante
                 </label>
                 <input
+                  id="checkout-comprobante"
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
                   onChange={(e) => setComprobanteArchivo(e.target.files?.[0] ?? null)}
@@ -285,10 +286,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
         <form onSubmit={pagar} className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="checkout-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Nombre completo
             </label>
             <input
+id="checkout-nombre"
               type="text"
               required
               minLength={3}
@@ -298,10 +300,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="checkout-documento" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Cédula / documento
             </label>
             <input
+id="checkout-documento"
               type="text"
               required
               minLength={5}
@@ -311,10 +314,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            <label htmlFor="checkout-tipo-tarifa" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
               Tipo de tarifa
             </label>
             <select
+id="checkout-tipo-tarifa"
               value={tipoTarifa}
               onChange={(e) => setTipoTarifa(e.target.value as typeof tipoTarifa)}
               className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -328,10 +332,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           </div>
           {tipoTarifa === "nino" && (
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="checkout-fecha-nacimiento" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Fecha de nacimiento
               </label>
               <input
+id="checkout-fecha-nacimiento"
                 type="date"
                 value={fechaNacimiento}
                 onChange={(e) => setFechaNacimiento(e.target.value)}
@@ -348,10 +353,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
               </p>
               <div className="mt-3 space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  <label htmlFor="checkout-adulto-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                     Nombre del adulto responsable
                   </label>
                   <input
+id="checkout-adulto-nombre"
                     type="text"
                     value={adultoResponsableNombre}
                     onChange={(e) => setAdultoResponsableNombre(e.target.value)}
@@ -359,10 +365,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  <label htmlFor="checkout-adulto-documento" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                     Documento del adulto responsable
                   </label>
                   <input
+id="checkout-adulto-documento"
                     type="text"
                     value={adultoResponsableDocumento}
                     onChange={(e) => setAdultoResponsableDocumento(e.target.value)}
@@ -370,10 +377,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  <label htmlFor="checkout-adulto-telefono" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                     Teléfono del adulto responsable (opcional)
                   </label>
                   <input
+id="checkout-adulto-telefono"
                     type="text"
                     value={adultoResponsableTelefono}
                     onChange={(e) => setAdultoResponsableTelefono(e.target.value)}
@@ -403,10 +411,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
           {metodosDisponibles.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="checkout-metodo-pago" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Cómo quieres pagar
               </label>
               <select
+id="checkout-metodo-pago"
                 value={metodoElegido}
                 onChange={(e) => setMetodoElegido(e.target.value as typeof metodoElegido)}
                 className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
@@ -437,10 +446,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
           {creditos.length > 0 && (
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="checkout-credito" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Usar un crédito disponible (opcional)
               </label>
               <select
+id="checkout-credito"
                 value={creditoElegidoId}
                 onChange={(e) => setCreditoElegidoId(e.target.value)}
                 className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
