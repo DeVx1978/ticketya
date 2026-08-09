@@ -377,7 +377,7 @@ function FormularioIngreso() {
     <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-lg ring-1 ring-black/5">
         <h1 className="font-display text-2xl font-bold text-brand-dark">Iniciar sesión</h1>
-        <p className="mt-1 text-sm text-brand-dark/70">Entra a tu cuenta de TicketYa.</p>
+        <p className="mt-1 text-sm text-brand-dark/70">Entra a tu cuenta de Columbus.</p>
 
         <form onSubmit={enviarLogin} className="mt-6 space-y-4">
           <div>

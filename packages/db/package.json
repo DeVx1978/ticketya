@@ -1,5 +1,5 @@
 {
-  "name": "@ticketya/db",
+  "name": "@columbus/db",
   "version": "0.1.0",
   "description": "Esquema Drizzle (Postgres + RLS multi-tenant) de TicketYa, derivado de SRS v1.2 y Arquitectura Técnica v1.0",
   "main": "dist/index.js",

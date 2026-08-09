@@ -6,7 +6,7 @@ import {
   leadsAnunciantes,
   campanasPublicitarias,
   metricasPublicitarias,
-} from '@ticketya/db';
+} from '@columbus/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import type {

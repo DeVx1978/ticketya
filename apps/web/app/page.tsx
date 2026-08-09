@@ -7,7 +7,7 @@ export default function InicioPage() {
       <section className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-brand to-brand-medium pb-24 pt-10 text-white">
         <div className="mx-auto max-w-5xl px-4">
           <div className="mb-10 flex items-center gap-2">
-            <span className="font-display text-2xl font-extrabold tracking-tight">TicketYa</span>
+            <span className="font-display text-2xl font-extrabold tracking-tight">Columbus</span>
           </div>
 
           <h1 className="font-display max-w-2xl text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
@@ -30,7 +30,7 @@ export default function InicioPage() {
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-24">
         <FranjaBanners />
         <h2 className="font-display text-xl font-bold text-brand-dark">
-          ¿Por qué TicketYa?
+          ¿Por qué Columbus?
         </h2>
         <div className="mt-6 grid gap-6 md:grid-cols-3">
           <div className="rounded-xl bg-brand-light p-5">
