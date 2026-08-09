@@ -19,7 +19,7 @@ import {
   configuracionPlataforma,
   notificaciones,
   creditosPasajero,
-} from '@ticketya/db';
+} from '@columbus/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { ejecutarComoCooperativa } from '../database/tenant-transaction';

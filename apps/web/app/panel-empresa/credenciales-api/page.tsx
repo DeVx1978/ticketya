@@ -205,7 +205,7 @@ export default function CredencialesApiPage() {
             type="url"
             value={webhookNuevo}
             onChange={(e) => setWebhookNuevo(e.target.value)}
-            placeholder="https://tu-sistema.com/webhooks/ticketya"
+            placeholder="https://tu-sistema.com/webhooks/columbus"
             className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
           />
           <p className="mt-1 text-xs text-brand-dark/50">
@@ -254,7 +254,7 @@ export default function CredencialesApiPage() {
                     onChange={(e) =>
                       setWebhookEditando((w) => ({ ...w, [c.id]: e.target.value }))
                     }
-                    placeholder="https://tu-sistema.com/webhooks/ticketya"
+                    placeholder="https://tu-sistema.com/webhooks/columbus"
                     className="flex-1 rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
                   />
                   <button

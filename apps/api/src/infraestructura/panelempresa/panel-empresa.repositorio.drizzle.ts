@@ -1,7 +1,7 @@
 import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { sql, eq } from 'drizzle-orm';
-import { cooperativas } from '@ticketya/db';
+import { cooperativas } from '@columbus/db';
 import { DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { ejecutarComoCooperativa } from '../database/tenant-transaction';

@@ -10,7 +10,7 @@ import {
   puntosOperacion,
   viajeAsientos,
   bannersPropios,
-} from '@ticketya/db';
+} from '@columbus/db';
 import { DRIZZLE_DB_PUBLICO } from '../../infraestructura/database/database.module';
 import type { DrizzleDb } from '../../infraestructura/database/database.provider';
 

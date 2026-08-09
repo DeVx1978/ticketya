@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, and, sql, ne } from 'drizzle-orm';
-import { viajes, viajeAsientos, unidades, tiposVehiculo, cooperativas } from '@ticketya/db';
+import { viajes, viajeAsientos, unidades, tiposVehiculo, cooperativas } from '@columbus/db';
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { ejecutarComoCooperativa } from '../database/tenant-transaction';

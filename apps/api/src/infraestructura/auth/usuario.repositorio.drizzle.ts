@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, sql } from 'drizzle-orm';
 import { randomBytes } from 'node:crypto';
-import { usuarios } from '@ticketya/db';
+import { usuarios } from '@columbus/db';
 import { DRIZZLE_DB_PUBLICO } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import {
@@ -12,7 +12,7 @@ import {
 
 /**
  * Implementación concreta de UsuarioRepositorio usando Drizzle + el
- * esquema compartido de @ticketya/db. Es el único archivo del módulo de
+ * esquema compartido de @columbus/db. Es el único archivo del módulo de
  * auth que debería importar cosas de Drizzle directamente.
  *
  * ⚠ Usa DRIZZLE_DB_PUBLICO (rol con BYPASSRLS), no DRIZZLE_DB, y esto es
