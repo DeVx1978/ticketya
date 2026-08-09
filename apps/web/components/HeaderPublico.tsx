@@ -49,7 +49,7 @@ export function HeaderPublico() {
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/" className="font-display text-lg font-extrabold text-brand-dark">
-          Ticket<span className="text-brand">Ya</span>
+          Columbus
         </Link>
 
         {payload ? (
