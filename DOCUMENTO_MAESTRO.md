@@ -455,6 +455,17 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 **Decisiones pendientes de tu confirmación antes de construir (análisis ya hecho, sección 3):**
 - Aviso de cambio de HORA de un viaje ya vendido -- ¿se habilita `editarViaje` para viajes con boletos vendidos (con su propio aviso), o se descarta del alcance de notificaciones? (3.12, hallazgo del 03-ago-2026)
 
+**REGLA NUEVA, NO NEGOCIABLE, 07-ago-2026 -- superioridad funcional real, no solo funcionamiento correcto.** Esta plataforma debe tener absolutamente todas las funciones que tienen las mejores plataformas de compra de pasajes que existen en el mundo -- e incluso superarlas. Esta regla nace de un hallazgo grave: se reportó la Fase 6 como "completa" y "verificada en producción real" el mismo día en que se confirmó que faltaban funciones centrales de compra (ver ítem nuevo más abajo). El error real fue mezclar "verificado que funciona" con "está completo" -- son cosas distintas. **A partir de ahora, ningún ítem se marca como "completo" sin responder primero, explícitamente: "¿qué le falta a esto comparado con las mejores plataformas del mundo?" -- no solo "¿esto que construí funciona bien?".**
+
+**Auditoría real del 07-ago-2026, con evidencia de código -- 4 huecos reales confirmados en el flujo central de compra, ninguno detectado antes de hoy:**
+
+29. **Compra multi-pasajero (varias personas, una sola transacción)** -- **NO EXISTE**, confirmado con evidencia real: el campo "Pasajeros" del buscador (`BuscadorForm.tsx`) es decorativo, se pasa como texto a la página de resultados (`/buscar`) pero nunca llega a la pantalla de asientos ni al checkout. `apps/web/app/viajes` completo tiene CERO referencias a "pasajeros". **Hallazgo importante que reduce el tamaño real del arreglo:** el backend YA está listo de punta a punta -- `checkout.service.ts`, función `procesarCompra(pasajeros: PasajeroCheckout[], ...)`, recibe un ARREGLO, no un solo pasajero, y el controlador (`ventas.controller.ts`) pasa `dto.pasajeros` completo sin recortarlo. El único ajuste real de backend necesario: `bloquearAsiento` (`asientos.controller.ts`) solo acepta un asiento por llamada -- se resuelve llamándolo varias veces desde el frontend antes de mandar la compra completa junta, sin tocar el backend. Es, en la práctica, un trabajo de frontend: permitir elegir varios asientos en el mapa (hoy la variable es `seleccionado: string | null`, singular) y que el checkout pida los datos de cada pasajero elegido. **Prioridad máxima, primero en la lista.**
+30. **Límite de asientos por compra/por persona** -- **NO EXISTE ningún límite hoy.** Técnicamente, una sola persona podría comprar los 40 asientos de un bus, uno por uno, sin que el sistema lo impida ni lo detecte. Se construye junto con el ítem 29 -- cuando exista compra multi-pasajero real, se le pone un tope razonable (propuesta: 10, mismo límite que ya existe hoy en el campo del buscador, `max={10}`, ya validado en el código).
+31. **Ida y vuelta** -- **NO EXISTE**, confirmado con búsqueda exhaustiva en TODO el proyecto (backend + frontend): cero coincidencias de `idaYVuelta`, `ida_vuelta`, `roundTrip`, `round_trip`, `fechaRegreso`, `fechaVuelta`. Hoy son 2 búsquedas y 2 compras completamente separadas y desconectadas, sin descuento combinado. Requiere trabajo real de backend (relacionar 2 viajes en una compra) -- su alcance técnico exacto se investiga antes de construir.
+32. **Compra como invitado (sin crear cuenta)** -- **NO EXISTE**, confirmado: el flujo de selección de asientos redirige obligatoriamente a "Iniciar sesión / Crear cuenta" antes de poder continuar, sin ningún camino alterno. Prioridad más baja que los 3 anteriores -- es fricción real, pero no un bloqueo total como los otros.
+
+**Investigación comparativa completa realizada (07-ago-2026)** contra redBus, ClickBus, FlixBus, Busbud, Wanderu, Rome2Rio, CheckMyBus, Booking.com y Skyscanner, con reporte completo de brechas priorizadas en 3 categorías (esencial / ventaja competitiva / cosmético) -- documento aparte, referenciar para la priorización de las próximas fases después de cerrar los 4 huecos críticos de arriba. Hallazgos principales: rastreo en vivo del bus, contenido de descubrimiento en portada (rutas disponibles/populares con precio real, no inventado sin datos), wallet/cashback tipo ClickBus, reseñas de texto verificadas por viaje completado (hoy solo existe promedio numérico).
+
 ### Fase 1 — Paneles de administración faltantes (backend ya existe, salvo lo indicado)
 ~~1. Panel de Comercial/Publicidad~~ — **cerrado 30-jul-2026**
 ~~2. Panel de Liquidaciones (admin) + endpoint nuevo de solo lectura para la cooperativa~~ — **cerrado 30-jul-2026**
@@ -519,6 +530,14 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 ---
 
+### Fase 7 -- Funciones centrales de compra, nueva, 07-ago-2026 -- NO NEGOCIABLE, antes de cualquier otra cosa
+29. Compra multi-pasajero -- **EN INVESTIGACION DE ALCANCE TECNICO, prioridad maxima**
+30. Limite de asientos por compra -- se construye junto con el 29
+31. Ida y vuelta -- pendiente, investigar alcance tecnico despues del 29
+32. Compra como invitado -- pendiente, prioridad mas baja
+
+---
+
 ## 6. Regla de mantenimiento de este documento
 
-Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
+Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
