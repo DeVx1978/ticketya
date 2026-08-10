@@ -195,6 +195,21 @@ describe('Búsqueda de rutas (e2e)', () => {
       });
     puntoRelevanciaParcialId = parcial.body.puntoOperacionId;
 
+    // Fase 7-portada (07-ago-2026) -- el buscador de terminales ahora
+    // filtra solo puntos con al menos una ruta real (ver
+    // busqueda.service.ts, tieneRutaReal). Sin esto, ambos puntos de
+    // prueba de esta suite quedarian invisibles para el autocompletado
+    // y esta prueba fallaria por una razon ajena a lo que en realidad
+    // verifica (el orden de relevancia, no la existencia de rutas).
+    await request(app.getHttpServer())
+      .post('/coop/rutas')
+      .set('Authorization', `Bearer ${tokenCoopA}`)
+      .send({
+        origenPuntoOperacionId: puntoRelevanciaExactoId,
+        destinoPuntoOperacionId: puntoRelevanciaParcialId,
+        precioBaseReferencia: 5,
+      });
+
     tokenCoopB = await crearCooperativaConAdmin(
       `Coop Búsqueda B ${sufijo}`,
       `admin.b.${sufijo}@ticketya.ec`,

@@ -1,5 +1,6 @@
 import { BuscadorForm } from "@/components/BuscadorForm";
 import { FranjaBanners } from "@/components/FranjaBanners";
+import { RutasDisponibles } from "@/components/RutasDisponibles";
 
 export default function InicioPage() {
   return (
@@ -26,6 +27,8 @@ export default function InicioPage() {
           <BuscadorForm />
         </div>
       </section>
+
+      <RutasDisponibles />
 
       <section className="mx-auto max-w-5xl px-4 pb-16 pt-24">
         <FranjaBanners />
