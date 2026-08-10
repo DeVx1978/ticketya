@@ -54,6 +54,11 @@ export class BusquedaService {
         ELSE 3
       END
     `;
+    const tieneRutaReal = sql`EXISTS (
+      SELECT 1 FROM ${rutas}
+      WHERE ${rutas.origenPuntoOperacionId} = ${puntosOperacion.id}
+         OR ${rutas.destinoPuntoOperacionId} = ${puntosOperacion.id}
+    )`;
     return this.db
       .select({
         id: puntosOperacion.id,
@@ -66,9 +71,12 @@ export class BusquedaService {
       })
       .from(puntosOperacion)
       .where(
-        or(
-          ilike(puntosOperacion.ciudad, `%${textoNormalizado}%`),
-          ilike(puntosOperacion.nombre, `%${textoNormalizado}%`),
+        and(
+          or(
+            ilike(puntosOperacion.ciudad, `%${textoNormalizado}%`),
+            ilike(puntosOperacion.nombre, `%${textoNormalizado}%`),
+          ),
+          tieneRutaReal,
         ),
       )
       .orderBy(relevancia, puntosOperacion.ciudad)
@@ -266,6 +274,50 @@ export class BusquedaService {
       latitud: Number(fila.latitud),
       longitud: Number(fila.longitud),
       actualizadaEn: fila.actualizadaEn,
+    };
+  }
+
+  /**
+   * Fase 7-portada (07-ago-2026) -- rutas reales disponibles con precio
+   * de referencia, para la portada. Sin autenticacion, mismo criterio
+   * publico que el resto de este service. Decision del director de
+   * mostrar "rutas disponibles" (dato real) en vez de "populares"
+   * (implicaria datos de demanda que hoy casi no existen en
+   * produccion).
+   */
+  async listarRutasDisponibles(limite = 6) {
+    const origen = alias(puntosOperacion, 'origen_ruta');
+    const destino = alias(puntosOperacion, 'destino_ruta');
+    return this.db
+      .select({
+        rutaId: rutas.id,
+        origenCiudad: origen.ciudad,
+        origenNombre: origen.nombre,
+        destinoCiudad: destino.ciudad,
+        destinoNombre: destino.nombre,
+        precioReferencia: rutas.precioBaseReferencia,
+      })
+      .from(rutas)
+      .innerJoin(origen, eq(rutas.origenPuntoOperacionId, origen.id))
+      .innerJoin(destino, eq(rutas.destinoPuntoOperacionId, destino.id))
+      .orderBy(rutas.creadoEn)
+      .limit(limite);
+  }
+
+  /**
+   * Fase 7-portada (07-ago-2026) -- contador real de cooperativas
+   * activas y rutas disponibles, para la prueba social de la portada.
+   * Sin autenticacion. Solo cooperativas con estado 'aprobada' -- ningun
+   * numero inventado.
+   */
+  async obtenerEstadisticasPublicas() {
+    const resultadoCoop = await this.db.execute(
+      sql`SELECT COUNT(*)::int AS total FROM ${cooperativas} WHERE estado = 'aprobada'`,
+    );
+    const resultadoRutas = await this.db.execute(sql`SELECT COUNT(*)::int AS total FROM ${rutas}`);
+    return {
+      cooperativasActivas: (resultadoCoop.rows[0] as { total: number }).total,
+      rutasDisponibles: (resultadoRutas.rows[0] as { total: number }).total,
     };
   }
 }

@@ -47,6 +47,43 @@ export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperaci
 }
 
 /**
+ * Fase 7-portada (07-ago-2026) -- rutas reales disponibles con precio de
+ * referencia, para la portada. Decision del director: "rutas
+ * disponibles" (dato real), no "populares" (implicaria datos de demanda
+ * que hoy casi no existen en produccion).
+ */
+export interface RutaDisponible {
+  rutaId: string;
+  origenCiudad: string;
+  origenNombre: string;
+  destinoCiudad: string;
+  destinoNombre: string;
+  precioReferencia: string;
+}
+
+export async function listarRutasDisponibles(): Promise<RutaDisponible[]> {
+  const res = await fetch(`${API_URL}/rutas-disponibles`, { cache: "no-store" });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+/**
+ * Fase 7-portada (07-ago-2026) -- contador real de cooperativas activas
+ * y rutas disponibles, para la prueba social de la portada. Ningun
+ * numero inventado.
+ */
+export interface EstadisticasPublicas {
+  cooperativasActivas: number;
+  rutasDisponibles: number;
+}
+
+export async function obtenerEstadisticasPublicas(): Promise<EstadisticasPublicas | null> {
+  const res = await fetch(`${API_URL}/estadisticas-publicas`, { cache: "no-store" });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+/**
  * Ítem 11 (04-ago-2026) -- filtros nuevos de hora, tipo de vehículo y
  * amenidades. Objeto de parámetros en vez de seguir agregando
  * argumentos posicionales (mismo criterio que el backend).
