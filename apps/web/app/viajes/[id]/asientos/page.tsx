@@ -46,10 +46,27 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
   // componente) — tenía que elegir el asiento otra vez. Ahora, si
   // volvemos de login con `?preseleccionado=8A` en la URL (ver
   // `continuar()` más abajo), lo restauramos aquí.
-  const [seleccionado, setSeleccionado] = useState<string | null>(
-    () => searchParams.get("preseleccionado"),
+  // Fase 7-item29 (07-ago-2026) -- multi-pasajero: de un solo asiento a
+  // un arreglo. Limite de 10, mismo tope ya usado en el campo
+  // "Pasajeros" del buscador (BuscadorForm.tsx, max={10}).
+  const MAXIMO_ASIENTOS = 10;
+  const preseleccionadoInicial = searchParams.get("preseleccionado");
+  const [seleccionados, setSeleccionados] = useState<string[]>(
+    () => (preseleccionadoInicial ? preseleccionadoInicial.split(",") : []),
   );
   const [bloqueando, setBloqueando] = useState(false);
+
+  function alternarAsiento(numero: string) {
+    setSeleccionados((actual) => {
+      if (actual.includes(numero)) {
+        return actual.filter((n) => n !== numero);
+      }
+      if (actual.length >= MAXIMO_ASIENTOS) {
+        return actual;
+      }
+      return [...actual, numero];
+    });
+  }
 
   useEffect(() => {
     obtenerMapaAsientos(viajeId)
@@ -92,21 +109,33 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
   );
 
   async function continuar() {
-    if (!seleccionado) return;
+    if (seleccionados.length === 0) return;
     const token = tokenValido();
     if (!token) {
-      const volver = `/viajes/${viajeId}/asientos?preseleccionado=${encodeURIComponent(seleccionado)}`;
+      const volver = `/viajes/${viajeId}/asientos?preseleccionado=${encodeURIComponent(seleccionados.join(","))}`;
       router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
       return;
     }
     setBloqueando(true);
     setError(null);
     try {
-      await bloquearAsiento(viajeId, seleccionado, token);
-      router.push(`/viajes/${viajeId}/checkout?asiento=${encodeURIComponent(seleccionado)}`);
+      // Fase 7-item29 (07-ago-2026) -- se re-bloquean TODOS los asientos
+      // elegidos en cada llamada a continuar(), no solo el ultimo -- el
+      // backend ya soporta re-bloquear el propio asiento sin fallar,
+      // renovando su tiempo de expiracion (ver asiento.repositorio.drizzle.ts,
+      // comentario "es el mismo usuario re-seleccionando su propio
+      // asiento"). Esto sincroniza el reloj de expiracion de todos los
+      // asientos del grupo, para que el primero elegido no expire
+      // mientras se llenan los datos de los demas en el checkout.
+      for (const numero of seleccionados) {
+        await bloquearAsiento(viajeId, numero, token);
+      }
+      router.push(
+        `/viajes/${viajeId}/checkout?asientos=${encodeURIComponent(seleccionados.join(","))}`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo bloquear el asiento.");
-      setSeleccionado(null);
+      setSeleccionados([]);
       // Refresca el mapa para reflejar el estado real tras el intento fallido.
       obtenerMapaAsientos(viajeId).then(setMapa);
     } finally {
@@ -185,13 +214,13 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
                       const { numero, etiquetas } = interpretada;
                       const estado = estadoPorNumero.get(numero);
                       const noDisponible = estado === "ocupado" || estado === "bloqueado_temporal";
-                      const esSeleccionado = seleccionado === numero;
+                      const esSeleccionado = seleccionados.includes(numero);
                       return (
                         <div key={numero} className="relative">
-                          <button
+                        <button
                             type="button"
                             disabled={noDisponible}
-                            onClick={() => setSeleccionado(numero)}
+                            onClick={() => alternarAsiento(numero)}
                             className={`h-10 w-10 rounded-lg text-xs font-semibold transition ${
                               noDisponible
                                 ? "cursor-not-allowed bg-gray-200 text-gray-400"
@@ -233,11 +262,17 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
 
         <button
           type="button"
-          disabled={!seleccionado || bloqueando}
+          disabled={seleccionados.length === 0 || bloqueando}
           onClick={continuar}
           className="mt-6 w-full rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
         >
-          {bloqueando ? "Reservando..." : seleccionado ? `Continuar con el asiento ${seleccionado}` : "Elige un asiento"}
+          {bloqueando
+            ? "Reservando..."
+            : seleccionados.length === 0
+              ? "Elige un asiento"
+              : seleccionados.length === 1
+                ? `Continuar con el asiento ${seleccionados[0]}`
+                : `Continuar con ${seleccionados.length} asientos`}
         </button>
       </div>
     </main>
