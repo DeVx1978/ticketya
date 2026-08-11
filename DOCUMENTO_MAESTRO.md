@@ -562,6 +562,20 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **Confirmado, verificado con evidencia real (07-ago-2026): el selector de tipo de tarifa (adulto/nino/tercera edad -- 50% descuento/discapacidad -- descuento segun carnet CONADIS) YA esta construido y funcionando en el checkout real, con la logica de autorizacion de menores incluida -- NO es un hueco, cumple con la exigencia legal ecuatoriana (LOTTTSV Art. 79). Se verifico esto explicitamente porque el director lo pregunto directo, sin asumir nada -- mismo criterio de honestidad que rige el resto de este documento.**
 
+### Fase 8 -- Hallazgos nuevos del director, 11-ago-2026, pendientes de construir
+
+**Confirmado ya construido, verificado con evidencia real:** notificaciones de confirmacion de compra y recordatorio de viaje (WhatsApp, ver 3.12) -- SI existen. Limite real de esta verificacion: no se confirmo el detalle fino de cuantos avisos manda ni con que anticipacion exacta (ej. si manda uno la noche antes Y otro la manana del viaje, o solo uno) -- pendiente de revisar el codigo real antes de asumir cualquier cosa.
+
+32. Notificacion al abordar / cerca de llegar a destino -- **NUEVO, no existe.** El director pidio: aviso cuando el pasajero esta por llegar a su destino, recordandole recoger sus pertenencias. Extiende el sistema de notificaciones ya existente (mismo canal WhatsApp) -- tamaño real pequeño, no requiere arquitectura nueva. Pendiente investigar alcance tecnico exacto (¿que evento dispara el aviso? ¿tiempo antes de la hora de llegada estimada, o basado en ubicacion GPS real -- que hoy casi ninguna unidad tiene conectado, ver item 16?).
+
+33. Notificacion automatica pidiendo calificacion al terminar el viaje -- **NUEVO, no existe.** La funcion de calificar ya existe (el pasajero puede hacerlo por su cuenta), pero no hay evidencia de que se le avise automaticamente para que lo haga. Extiende el mismo sistema de notificaciones -- tamaño real pequeño.
+
+34. Enlace a Airbnb (buscar hoteles en destino) -- **NUEVO, no existe, requiere decision de negocio del director ANTES de investigar tecnico.** ¿Es un simple link de afiliado (sin integracion real), o se espera una busqueda/integracion real con la API de Airbnb? El alcance tecnico cambia por completo segun la respuesta -- no investigar codigo hasta tener esta decision.
+
+35. Enlace a servicio de transporte/traslado (ej. casa del pasajero -> terminal) -- **NUEVO, no existe, requiere decision de negocio del director ANTES de investigar tecnico.** ¿Con que servicio se conecta (Uber, Cabify, uno local ecuatoriano, uno propio de Columbus)? Misma logica que el item 34 -- decision de negocio primero.
+
+**Principio confirmado por el director para estos 2 ultimos (items 34, 35) y cualquier integracion futura similar:** Columbus es SaaS multi-cooperativa por diseno desde el origen (no un sistema para una sola empresa que se hizo escalable despues) -- cualquier integracion nueva debe construirse generica, para que cualquier cooperativa que se registre la aproveche igual, sin trabajo adicional por cooperativa.
+
 ---
 
 ## 6. Regla de mantenimiento de este documento
