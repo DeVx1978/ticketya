@@ -531,8 +531,11 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 ---
 
 ### Fase 7 -- Funciones centrales de compra, nueva, 07-ago-2026 -- NO NEGOCIABLE, antes de cualquier otra cosa
-29. Compra multi-pasajero -- **EN INVESTIGACION DE ALCANCE TECNICO, prioridad maxima**
-30. Limite de asientos por compra -- se construye junto con el 29
+
+**Pieza previa (prioridad del director, insertada antes de construir el item 29) -- ~~portada con rutas disponibles reales + filtro de buscador de terminales~~ -- cerrada 07-ago-2026, verificada en produccion real (PR #57).** Endpoints nuevos `GET /rutas-disponibles` y `GET /estadisticas-publicas` -- datos 100% reales (tabla `rutas`, conteo de cooperativas con estado `aprobada`), decision explicita de mostrar "rutas disponibles" en vez de "populares" (no existen datos reales de demanda todavia en produccion). Filtro nuevo en `buscarPuntosOperacion` (`tieneRutaReal`, EXISTS contra la tabla `rutas`): el autocompletado de terminales ya no muestra puntos sin ninguna ruta real configurada -- hallazgo real confirmado con el codigo antes de corregirlo, evita que un pasajero elija una sugerencia valida y termine en "0 resultados" sin explicacion. Verificado con evidencia real: script directo contra el backend de produccion (ruta Quito-Guayaquil real, $12.00, 2 cooperativas activas) y codigo fuente real de `columbus-frontend-two.vercel.app` confirmando el HTML servido. Fotos reales y testimonios quedan **pendientes, fuera de este cierre** -- sin infraestructura de subida real de archivos ni licencia de fotos genericas resuelta, decision de negocio pendiente del director, no tarea de codigo simple.
+
+29. Compra multi-pasajero -- **alcance tecnico ya investigado y confirmado (07-ago-2026), construccion pendiente.** Hallazgo real: el backend ya esta listo de punta a punta (`checkout.service.ts`, `procesarCompra(pasajeros: PasajeroCheckout[], ...)` recibe un arreglo, el controlador lo pasa completo sin recortar) -- el trabajo real es de frontend (pantalla de asientos para elegir varios, checkout para pedir datos de cada uno). El bloqueo temporal de asientos (`bloquearAsiento`) ya soporta re-bloquear el propio asiento sin fallar, renovando su tiempo de expiracion -- resuelve el riesgo de que un asiento elegido primero expire mientras se llenan los datos de los demas, sin tocar el backend.
+30. Limite de asientos por compra -- se construye junto con el 29 (propuesta: 10, mismo limite ya usado en el campo "Pasajeros" del buscador)
 31. Ida y vuelta -- pendiente, investigar alcance tecnico despues del 29
 32. Compra como invitado -- pendiente, prioridad mas baja
 
