@@ -8,6 +8,21 @@
 
 ---
 
+## 0. Objetivo final del proyecto -- leer esto ANTES de cualquier decision (confirmado con el director, 07-ago-2026)
+
+**Columbus debe ser, sin excepcion, mejor que las plataformas de venta de pasajes mas usadas y populares del mundo -- no igual, mejor.** Esta es la instruccion mas importante de todo este documento, y debe guiar cada decision de construccion de aqui en adelante. Tiene 4 partes obligatorias, ninguna opcional:
+
+**1. Todas las funciones del flujo de compra que un pasajero esperaria de las mejores plataformas -- no solo lo basico.** Incluye, con evidencia real ya investigada:
+- Comprar para varias personas en una sola transaccion, e ida y vuelta (unificados, ver Fase 7, item 29 -- construccion pendiente).
+- Rastreo en vivo del bus, sistema de puntos/cashback tipo ClickBus, resenas de texto reales de otros pasajeros (hoy solo existe promedio numerico), programa de referidos -- ver la investigacion comparativa completa contra redBus, ClickBus, FlixBus, Busbud, Wanderu, Rome2Rio, CheckMyBus, Booking.com y Skyscanner (07-ago-2026), con brechas priorizadas en 3 categorias (esencial / ventaja competitiva / cosmetico) -- documento aparte, pendiente de retomar despues de cerrar la Fase 7.
+- Ningun item se marca "completo" sin responder primero "¿que le falta comparado con las mejores plataformas del mundo?" (regla no negociable, ver seccion 5).
+
+**2. Publicidad real y visible en la landing.** El sistema completo (banners, planes comerciales, leads de anunciantes) ya esta construido por dentro (ver 3.9) y las reglas visuales ya estan investigadas con fuentes reales (formato discreto tipo resultado organico, video flotante estilo YouTube, nunca invasivo, nunca dentro del flujo de compra). Falta conectarlo visualmente en la landing final -- pendiente, Fase 6 en adelante.
+
+**3. El mejor diseno y estilo posible en la landing.** Nueva identidad de marca Columbus (negro/amarillo/blanco, medida con precision real del logo oficial) ya cerrada y verificada en produccion (ver item 28). Pendiente: contenido visual real que llene la portada -- fotos reales de buses/rutas (bloqueado hoy por falta de infraestructura de subida real de archivos y de licencia de fotos genericas, decision de negocio del director) y testimonios reales de pasajeros (no existen datos reales todavia, no se deben inventar).
+
+**4. Todo lo que ya esta construido y funcionando de verdad se mantiene, y se sigue verificando con el mismo rigor -- no se toca solo por tocar.** Seguridad (2FA, permisos separados, RLS multi-tenant), pagos manuales completos, paneles de cooperativa y plataforma, cumplimiento legal ecuatoriano (LOPD, tarifas diferenciadas LOTTTSV Art. 79 -- confirmado que YA funciona), despliegue real en produccion, 170 pruebas automatizadas.
+
 ## 1. Visión y alcance del proyecto
 
 **Qué es:** una plataforma SaaS de venta de pasajes de bus interprovincial para Ecuador, donde cooperativas de transporte independientes se registran y venden sus propios pasajes, y la plataforma cobra un cargo fijo por boleto vendido (no un porcentaje de comisión).
