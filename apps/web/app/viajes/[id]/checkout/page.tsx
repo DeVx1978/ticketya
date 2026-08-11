@@ -22,6 +22,7 @@ const TARIFAS = [
  * transaccion.
  */
 interface DatosPasajero {
+  viajeId: string;
   numeroAsiento: string;
   nombreCompleto: string;
   documento: string;
@@ -32,8 +33,9 @@ interface DatosPasajero {
   adultoResponsableTelefono: string;
 }
 
-function datosPasajeroVacio(numeroAsiento: string): DatosPasajero {
+function datosPasajeroVacio(viajeId: string, numeroAsiento: string): DatosPasajero {
   return {
+    viajeId,
     numeroAsiento,
     nombreCompleto: "",
     documento: "",
@@ -61,8 +63,27 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
       ? [asientoSingularParam]
       : [];
 
+  // Fase 7-idayvuelta (11-ago-2026) -- si vienen idaViajeId +
+  // idaAsientos en la URL, esta compra combina 2 viajes distintos (ida
+  // y vuelta) -- cada pasajero de la lista lleva su propio viajeId, no
+  // se asume que todos son del mismo viaje de la ruta actual.
+  const idaViajeIdParam = searchParams.get("idaViajeId");
+  const idaAsientosParam = searchParams.get("idaAsientos");
+  const esIdaYVuelta = !!idaViajeIdParam && !!idaAsientosParam;
+
+  const paresAsiento: { viajeId: string; numeroAsiento: string; tramo: "ida" | "vuelta" | null }[] = esIdaYVuelta
+    ? [
+        ...idaAsientosParam!.split(",").filter(Boolean).map((n) => ({
+          viajeId: idaViajeIdParam!,
+          numeroAsiento: n,
+          tramo: "ida" as const,
+        })),
+        ...numerosAsiento.map((n) => ({ viajeId, numeroAsiento: n, tramo: "vuelta" as const })),
+      ]
+    : numerosAsiento.map((n) => ({ viajeId, numeroAsiento: n, tramo: null }));
+
   const [pasajerosData, setPasajerosData] = useState<DatosPasajero[]>(() =>
-    numerosAsiento.map((n) => datosPasajeroVacio(n)),
+    paresAsiento.map((p) => datosPasajeroVacio(p.viajeId, p.numeroAsiento)),
   );
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +136,12 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     e.preventDefault();
     const token = tokenValido();
     if (!token) {
-      const volver = `/viajes/${viajeId}/checkout?asientos=${encodeURIComponent(numerosAsiento.join(","))}`;
+      const paramsVolver = new URLSearchParams({ asientos: numerosAsiento.join(",") });
+      if (esIdaYVuelta && idaViajeIdParam && idaAsientosParam) {
+        paramsVolver.set("idaViajeId", idaViajeIdParam);
+        paramsVolver.set("idaAsientos", idaAsientosParam);
+      }
+      const volver = `/viajes/${viajeId}/checkout?${paramsVolver.toString()}`;
       router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
       return;
     }
@@ -134,7 +160,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     try {
       const idempotencyKey = crypto.randomUUID();
       const pasajeros: PasajeroCompraInput[] = pasajerosData.map((p) => ({
-        viajeId,
+        viajeId: p.viajeId,
         numeroAsiento: p.numeroAsiento,
         nombreCompleto: p.nombreCompleto,
         documento: p.documento,
@@ -326,7 +352,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     );
   }
 
-  if (numerosAsiento.length === 0) {
+  if (paresAsiento.length === 0) {
     return (
       <main className="mx-auto max-w-2xl flex-1 px-4 py-16 text-center">
         <p className="text-brand-dark">Falta elegir un asiento primero.</p>
@@ -342,9 +368,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
       <div className="mx-auto max-w-md">
         <h1 className="font-display text-xl font-bold text-brand-dark">Datos del pasajero</h1>
         <p className="mt-1 text-sm text-brand-dark/70">
-          {numerosAsiento.length === 1
-            ? `Asiento ${numerosAsiento[0]}`
-            : `${numerosAsiento.length} asientos: ${numerosAsiento.join(", ")}`}
+          {esIdaYVuelta
+            ? `Ida y vuelta -- ${paresAsiento.length} asientos en total`
+            : numerosAsiento.length === 1
+              ? `Asiento ${numerosAsiento[0]}`
+              : `${numerosAsiento.length} asientos: ${numerosAsiento.join(", ")}`}
         </p>
         <form onSubmit={pagar} className="mt-6 space-y-6">
           {pasajerosData.map((p, indice) => (
@@ -355,6 +383,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
               {pasajerosData.length > 1 && (
                 <p className="font-display text-sm font-bold text-brand-dark">
                   Pasajero {indice + 1} — Asiento {p.numeroAsiento}
+                  {esIdaYVuelta && (
+                    <span className="ml-2 rounded-full bg-brand-light px-2 py-0.5 text-xs font-semibold text-brand">
+                      {paresAsiento[indice]?.tramo === "ida" ? "Ida" : "Vuelta"}
+                    </span>
+                  )}
                 </p>
               )}
               <div>

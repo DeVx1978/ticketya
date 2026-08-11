@@ -111,7 +111,7 @@ export default async function ResultadosBusquedaPage({
   // y idaAsiento llegan cuando ya se eligio el tramo de ida y se esta
   // viendo la busqueda del tramo de vuelta (ver TarjetaResultado, que
   // arma ese link al elegir "Elegir asiento" en el tramo de ida).
-  const { fechaVuelta, idaViajeId, idaAsiento } = sp;
+  const { fechaVuelta, idaViajeId, idaAsientos } = sp;
   const esIdaYVuelta = !!fechaVuelta;
 
   if (!origenId || !destinoId || !fecha) {
@@ -177,20 +177,29 @@ export default async function ResultadosBusquedaPage({
     if (!esIdaYVuelta) {
       return `/viajes/${viajeId}/asientos`;
     }
+    // Fase 7-idayvuelta (11-ago-2026) -- hallazgo real corregido: antes
+    // esto saltaba directo de vuelta a /buscar, SIN dejar elegir
+    // asiento de ida en absoluto. Ahora sí lleva al mapa de asientos
+    // real del tramo de ida, cargando los datos del tramo de vuelta en
+    // la URL (prefijo "vuelta_") para que esa pantalla sepa que, al
+    // terminar de elegir el asiento de ida, debe volver a /buscar por
+    // el tramo de vuelta -- no ir directo al checkout.
     const params = new URLSearchParams({
-      origenId: destinoId ?? "",
-      origenCiudad: destinoCiudad ?? "",
-      destinoId: origenId ?? "",
-      destinoCiudad: origenCiudad ?? "",
-      fecha: fechaVuelta ?? "",
+      vuelta_origenId: destinoId ?? "",
+      vuelta_origenCiudad: destinoCiudad ?? "",
+      vuelta_destinoId: origenId ?? "",
+      vuelta_destinoCiudad: origenCiudad ?? "",
+      vuelta_fecha: fechaVuelta ?? "",
       pasajeros: pasajeros ?? "1",
-      idaViajeId: viajeId,
     });
-    return `/buscar?${params.toString()}`;
+    return `/viajes/${viajeId}/asientos?${params.toString()}`;
   }
 
   function hrefParaVuelta(viajeId: string): string {
-    const params = new URLSearchParams({ idaViajeId: idaViajeId ?? "", vueltaViajeId: viajeId });
+    const params = new URLSearchParams({
+      idaViajeId: idaViajeId ?? "",
+      idaAsientos: idaAsientos ?? "",
+    });
     return `/viajes/${viajeId}/asientos?${params.toString()}`;
   }
 

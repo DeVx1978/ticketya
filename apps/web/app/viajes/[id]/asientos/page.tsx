@@ -32,20 +32,12 @@ import { tokenValido } from "@/lib/auth";
  * podían desincronizarse -- ver hallazgo real corregido en
  * distribucion-asientos.util.ts).
  */
-
 export default function SeleccionAsientosPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: viajeId } = usePromise(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const [mapa, setMapa] = useState<MapaAsientos | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Hallazgo real de auditoría (28-jul-2026): si el usuario elegía un
-  // asiento sin sesión iniciada, lo mandábamos a /ingresar y al volver
-  // este estado se perdía por completo (vivía solo en memoria del
-  // componente) — tenía que elegir el asiento otra vez. Ahora, si
-  // volvemos de login con `?preseleccionado=8A` en la URL (ver
-  // `continuar()` más abajo), lo restauramos aquí.
   // Fase 7-item29 (07-ago-2026) -- multi-pasajero: de un solo asiento a
   // un arreglo. Limite de 10, mismo tope ya usado en el campo
   // "Pasajeros" del buscador (BuscadorForm.tsx, max={10}).
@@ -55,6 +47,24 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
     () => (preseleccionadoInicial ? preseleccionadoInicial.split(",") : []),
   );
   const [bloqueando, setBloqueando] = useState(false);
+
+  // Fase 7-idayvuelta (11-ago-2026) -- si "vuelta_fecha" viene en la
+  // URL, este es el tramo de IDA de un viaje de ida y vuelta -- al
+  // terminar de elegir asiento aqui, no se va al checkout, se vuelve a
+  // /buscar por el tramo de vuelta. Si en cambio vienen "idaViajeId" +
+  // "idaAsientos", este es el tramo de VUELTA -- al terminar, se
+  // combinan ambos tramos en un solo checkout.
+  const vueltaOrigenId = searchParams.get("vuelta_origenId");
+  const vueltaDestinoId = searchParams.get("vuelta_destinoId");
+  const vueltaOrigenCiudad = searchParams.get("vuelta_origenCiudad");
+  const vueltaDestinoCiudad = searchParams.get("vuelta_destinoCiudad");
+  const vueltaFecha = searchParams.get("vuelta_fecha");
+  const pasajerosParam = searchParams.get("pasajeros");
+  const esTramoIda = !!vueltaFecha;
+
+  const idaViajeId = searchParams.get("idaViajeId");
+  const idaAsientosParam = searchParams.get("idaAsientos");
+  const esTramoVuelta = !!idaViajeId && !!idaAsientosParam;
 
   function alternarAsiento(numero: string) {
     setSeleccionados((actual) => {
@@ -67,7 +77,6 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
       return [...actual, numero];
     });
   }
-
   useEffect(() => {
     obtenerMapaAsientos(viajeId)
       .then(setMapa)
@@ -112,7 +121,10 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
     if (seleccionados.length === 0) return;
     const token = tokenValido();
     if (!token) {
-      const volver = `/viajes/${viajeId}/asientos?preseleccionado=${encodeURIComponent(seleccionados.join(","))}`;
+      const volver = `${window.location.pathname}?${new URLSearchParams({
+        ...Object.fromEntries(searchParams.entries()),
+        preseleccionado: seleccionados.join(","),
+      }).toString()}`;
       router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
       return;
     }
@@ -130,6 +142,43 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
       for (const numero of seleccionados) {
         await bloquearAsiento(viajeId, numero, token);
       }
+
+      if (esTramoIda) {
+        // Fase 7-idayvuelta (11-ago-2026) -- tramo de ida: se vuelve a
+        // /buscar por el tramo de vuelta, llevando consigo el viaje y
+        // los asientos de ida ya elegidos y bloqueados.
+        const params = new URLSearchParams({
+          origenId: vueltaOrigenId ?? "",
+          origenCiudad: vueltaOrigenCiudad ?? "",
+          destinoId: vueltaDestinoId ?? "",
+          destinoCiudad: vueltaDestinoCiudad ?? "",
+          fecha: vueltaFecha ?? "",
+          pasajeros: pasajerosParam ?? "1",
+          idaViajeId: viajeId,
+          idaAsientos: seleccionados.join(","),
+        });
+        router.push(`/buscar?${params.toString()}`);
+        return;
+      }
+
+      if (esTramoVuelta && idaViajeId && idaAsientosParam) {
+        // Fase 7-idayvuelta (11-ago-2026) -- tramo de vuelta: se
+        // re-bloquean TAMBIEN los asientos de ida (renueva su tiempo de
+        // expiracion, por si paso rato buscando el tramo de vuelta), y
+        // se va a un checkout que combina los 2 viajes.
+        for (const numero of idaAsientosParam.split(",")) {
+          await bloquearAsiento(idaViajeId, numero, token);
+        }
+        const params = new URLSearchParams({
+          asientos: seleccionados.join(","),
+          idaViajeId,
+          idaAsientos: idaAsientosParam,
+        });
+        router.push(`/viajes/${viajeId}/checkout?${params.toString()}`);
+        return;
+      }
+
+      // Caso normal, sin ida y vuelta.
       router.push(
         `/viajes/${viajeId}/checkout?asientos=${encodeURIComponent(seleccionados.join(","))}`,
       );
@@ -161,7 +210,6 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
           <span className="text-brand-dark/30">·</span>
           <span>{mapa.capacidadTotal} en total</span>
         </p>
-
         {(!mapa.permiteCancelacion || !mapa.permiteReprogramacion) && (
           <div className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
             <p className="font-semibold">Antes de comprar, lee esto:</p>
@@ -178,7 +226,6 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
             )}
           </div>
         )}
-
         {hayEtiquetas && (
           <div className="mt-4 flex items-center justify-center gap-4 text-xs text-brand-dark/70">
             <span className="flex items-center gap-1.5">
@@ -189,7 +236,6 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
             </span>
           </div>
         )}
-
         <div className="mt-6 space-y-4">
           {pisos.map((piso, pisoIdx) => (
             <div key={pisoIdx} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
@@ -217,7 +263,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
                       const esSeleccionado = seleccionados.includes(numero);
                       return (
                         <div key={numero} className="relative">
-                        <button
+                          <button
                             type="button"
                             disabled={noDisponible}
                             onClick={() => alternarAsiento(numero)}
@@ -257,9 +303,12 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
             </div>
           ))}
         </div>
-
+        {(esTramoIda || esTramoVuelta) && (
+          <p className="mt-3 text-center text-sm font-semibold text-brand">
+            {esTramoIda ? "Tramo 1 de 2: Ida" : "Tramo 2 de 2: Vuelta"}
+          </p>
+        )}
         {error && <p className="mt-4 text-sm font-medium text-red-600">{error}</p>}
-
         <button
           type="button"
           disabled={seleccionados.length === 0 || bloqueando}
@@ -270,9 +319,11 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
             ? "Reservando..."
             : seleccionados.length === 0
               ? "Elige un asiento"
-              : seleccionados.length === 1
-                ? `Continuar con el asiento ${seleccionados[0]}`
-                : `Continuar con ${seleccionados.length} asientos`}
+              : esTramoIda
+                ? "Continuar y buscar la vuelta"
+                : seleccionados.length === 1
+                  ? `Continuar con el asiento ${seleccionados[0]}`
+                  : `Continuar con ${seleccionados.length} asientos`}
         </button>
       </div>
     </main>
