@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { crearCompra, listarMisCreditos, obtenerMapaAsientos, iniciarPagoManual, subirComprobantePago, listarMetodosPagoPorViaje, type ResultadoCompra, type MiCredito, type MapaAsientos, type MetodoPagoDisponible, type TipoMetodoPago } from "@/lib/api";
+import { crearCompra, listarMisCreditos, obtenerMapaAsientos, iniciarPagoManual, subirComprobantePago, listarMetodosPagoPorViaje, type ResultadoCompra, type MiCredito, type MapaAsientos, type MetodoPagoDisponible, type TipoMetodoPago, type PasajeroCompraInput } from "@/lib/api";
 import { tokenValido } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
@@ -14,18 +14,56 @@ const TARIFAS = [
   { valor: "discapacidad", etiqueta: "Discapacidad (descuento según carnet CONADIS)" },
 ] as const;
 
+/**
+ * Fase 7-item29 (07-ago-2026) -- datos de UN pasajero dentro de la
+ * compra. Antes esto vivia como 6 useState sueltos a nivel de toda la
+ * pantalla (un solo pasajero por compra) -- ahora es un arreglo, uno
+ * por cada asiento elegido, para soportar varios pasajeros en una sola
+ * transaccion.
+ */
+interface DatosPasajero {
+  numeroAsiento: string;
+  nombreCompleto: string;
+  documento: string;
+  tipoTarifa: (typeof TARIFAS)[number]["valor"];
+  fechaNacimiento: string;
+  adultoResponsableNombre: string;
+  adultoResponsableDocumento: string;
+  adultoResponsableTelefono: string;
+}
+
+function datosPasajeroVacio(numeroAsiento: string): DatosPasajero {
+  return {
+    numeroAsiento,
+    nombreCompleto: "",
+    documento: "",
+    tipoTarifa: "adulto",
+    fechaNacimiento: "",
+    adultoResponsableNombre: "",
+    adultoResponsableDocumento: "",
+    adultoResponsableTelefono: "",
+  };
+}
+
 function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const numeroAsiento = searchParams.get("asiento") ?? "";
 
-  const [nombreCompleto, setNombreCompleto] = useState("");
-  const [documento, setDocumento] = useState("");
-  const [tipoTarifa, setTipoTarifa] = useState<(typeof TARIFAS)[number]["valor"]>("adulto");
-  const [fechaNacimiento, setFechaNacimiento] = useState("");
-  const [adultoResponsableNombre, setAdultoResponsableNombre] = useState("");
-  const [adultoResponsableDocumento, setAdultoResponsableDocumento] = useState("");
-  const [adultoResponsableTelefono, setAdultoResponsableTelefono] = useState("");
+  // Fase 7-item29 (07-ago-2026) -- "asientos" (plural, separados por
+  // coma) es el formato nuevo, generado por la pantalla de seleccion.
+  // "asiento" (singular) se mantiene como respaldo por si queda algun
+  // enlace viejo guardado -- se envuelve en un arreglo de 1.
+  const asientosParam = searchParams.get("asientos");
+  const asientoSingularParam = searchParams.get("asiento");
+  const numerosAsiento = asientosParam
+    ? asientosParam.split(",").filter(Boolean)
+    : asientoSingularParam
+      ? [asientoSingularParam]
+      : [];
+
+  const [pasajerosData, setPasajerosData] = useState<DatosPasajero[]>(() =>
+    numerosAsiento.map((n) => datosPasajeroVacio(n)),
+  );
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoCompra | null>(null);
@@ -67,41 +105,53 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
       });
   }, []);
 
+  function actualizarPasajero(indice: number, cambios: Partial<DatosPasajero>) {
+    setPasajerosData((actual) =>
+      actual.map((p, i) => (i === indice ? { ...p, ...cambios } : p)),
+    );
+  }
+
   async function pagar(e: React.FormEvent) {
     e.preventDefault();
     const token = tokenValido();
     if (!token) {
-      router.push(`/ingresar?volverA=${encodeURIComponent(`/viajes/${viajeId}/checkout?asiento=${numeroAsiento}`)}`);
+      const volver = `/viajes/${viajeId}/checkout?asientos=${encodeURIComponent(numerosAsiento.join(","))}`;
+      router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
       return;
     }
-    if (tipoTarifa === "nino" && (!adultoResponsableNombre.trim() || !adultoResponsableDocumento.trim())) {
-      setError("Para un pasajero niño, indica el nombre y documento del adulto responsable.");
-      return;
+    // Fase 7-item29 (07-ago-2026) -- validacion de menor de edad, ahora
+    // por cada pasajero del arreglo, no solo uno.
+    for (const p of pasajerosData) {
+      if (p.tipoTarifa === "nino" && (!p.adultoResponsableNombre.trim() || !p.adultoResponsableDocumento.trim())) {
+        setError(
+          `Para el pasajero del asiento ${p.numeroAsiento} (niño), indica el nombre y documento del adulto responsable.`,
+        );
+        return;
+      }
     }
     setProcesando(true);
     setError(null);
     try {
       const idempotencyKey = crypto.randomUUID();
-      const pasajero = {
+      const pasajeros: PasajeroCompraInput[] = pasajerosData.map((p) => ({
         viajeId,
-        numeroAsiento,
-        nombreCompleto,
-        documento,
-        tipoTarifa,
-        fechaNacimiento: fechaNacimiento || undefined,
+        numeroAsiento: p.numeroAsiento,
+        nombreCompleto: p.nombreCompleto,
+        documento: p.documento,
+        tipoTarifa: p.tipoTarifa,
+        fechaNacimiento: p.fechaNacimiento || undefined,
         autorizacionMenor:
-          tipoTarifa === "nino"
+          p.tipoTarifa === "nino"
             ? {
                 tipoAcompanamiento: "con_autorizacion" as const,
-                adultoResponsableNombre: adultoResponsableNombre.trim(),
-                adultoResponsableDocumento: adultoResponsableDocumento.trim(),
-                adultoResponsableTelefono: adultoResponsableTelefono.trim() || undefined,
+                adultoResponsableNombre: p.adultoResponsableNombre.trim(),
+                adultoResponsableDocumento: p.adultoResponsableDocumento.trim(),
+                adultoResponsableTelefono: p.adultoResponsableTelefono.trim() || undefined,
               }
             : undefined,
-      };
-
+      }));
       if (metodoElegido === "tarjeta") {
-        const resp = await crearCompra([pasajero], token, idempotencyKey, creditoElegidoId || undefined);
+        const resp = await crearCompra(pasajeros, token, idempotencyKey, creditoElegidoId || undefined);
         setResultado(resp);
         if (resp.estado === "rechazado") {
           setError(resp.motivo ?? "El pago fue rechazado.");
@@ -110,7 +160,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
         // Métodos de pago manuales (29-jul-2026) -- el asiento queda
         // reservado esperando el comprobante y la confirmación de la
         // cooperativa, no se emite el boleto todavía.
-        const resp = await iniciarPagoManual(token, [pasajero], metodoElegido, idempotencyKey);
+        const resp = await iniciarPagoManual(token, pasajeros, metodoElegido, idempotencyKey);
         setPagoManual({ compraId: resp.compraId });
       }
     } catch (err) {
@@ -148,8 +198,9 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 ¡Comprobante recibido!
               </h1>
               <p className="mt-2 text-sm text-brand-dark/70">
-                Tu asiento queda reservado mientras la cooperativa confirma tu pago. Te avisaremos
-                cuando esté listo — revisa tu cuenta en "Mis boletos".
+                Tu{pasajerosData.length > 1 ? "s asientos quedan" : " asiento queda"} reservado
+                {pasajerosData.length > 1 ? "s" : ""} mientras la cooperativa confirma tu pago. Te
+                avisaremos cuando esté listo — revisa tu cuenta en "Mis boletos".
               </p>
               <Link
                 href="/perfil?tab=boletos"
@@ -200,57 +251,65 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     );
   }
 
-  // Boleto emitido con éxito — pantalla de confirmación.
-  if (resultado?.estado === "aprobado" && resultado.boletos?.[0]) {
-    const boleto = resultado.boletos[0];
+  // Boletos emitidos con éxito -- pantalla de confirmación. Fase
+  // 7-item29 (07-ago-2026) -- ahora recorre TODOS los boletos
+  // devueltos, no solo el primero.
+  if (resultado?.estado === "aprobado" && resultado.boletos && resultado.boletos.length > 0) {
     return (
       <main className="flex flex-1 items-center justify-center bg-brand-light/40 px-4 py-16">
         <div className="w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-lg ring-1 ring-black/5">
-          <p className="font-display text-lg font-bold text-brand-dark">¡Boleto confirmado!</p>
-          <p className="mt-1 text-sm text-brand-dark/70">Asiento {numeroAsiento}</p>
-
+          <p className="font-display text-lg font-bold text-brand-dark">
+            {resultado.boletos.length > 1 ? "¡Boletos confirmados!" : "¡Boleto confirmado!"}
+          </p>
+          <div className="mt-4 space-y-6">
+            {resultado.boletos.map((boleto) => (
+              <div key={boleto.codigoQr} className="border-t border-brand-dark/10 pt-4 first:border-t-0 first:pt-0">
+                <p className="text-sm text-brand-dark/70">Asiento {boleto.numeroAsiento}</p>
+                <div className="mt-2 space-y-1 rounded-lg bg-brand-light/30 px-4 py-3 text-left text-sm">
+                  <div className="flex justify-between text-brand-dark/70">
+                    <span>Tarifa</span>
+                    <span>${boleto.precioPagado.toFixed(2)}</span>
+                  </div>
+                  {boleto.tasaTerminal > 0 && (
+                    <div className="flex justify-between text-brand-dark/70">
+                      <span>Tasa de terminal</span>
+                      <span>${boleto.tasaTerminal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {boleto.cargoPlataforma > 0 && (
+                    <div className="flex justify-between text-brand-dark/70">
+                      <span>Cargo de plataforma</span>
+                      <span>${boleto.cargoPlataforma.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {resultado.ivaVisible && boleto.ivaMonto > 0 && (
+                    <div className="flex justify-between text-xs text-brand-dark/40">
+                      <span>IVA incluido en la tarifa</span>
+                      <span>${boleto.ivaMonto.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3">
+                  <CodigoQr valor={boleto.codigoQr} />
+                </div>
+              </div>
+            ))}
+          </div>
           <div className="mt-4 space-y-1 rounded-lg bg-brand-light/30 px-4 py-3 text-left text-sm">
-            <div className="flex justify-between text-brand-dark/70">
-              <span>Tarifa</span>
-              <span>${boleto.precioPagado.toFixed(2)}</span>
-            </div>
-            {boleto.tasaTerminal > 0 && (
-              <div className="flex justify-between text-brand-dark/70">
-                <span>Tasa de terminal</span>
-                <span>${boleto.tasaTerminal.toFixed(2)}</span>
-              </div>
-            )}
-            {boleto.cargoPlataforma > 0 && (
-              <div className="flex justify-between text-brand-dark/70">
-                <span>Cargo de plataforma</span>
-                <span>${boleto.cargoPlataforma.toFixed(2)}</span>
-              </div>
-            )}
-            {resultado.ivaVisible && boleto.ivaMonto > 0 && (
-              <div className="flex justify-between text-xs text-brand-dark/40">
-                <span>IVA incluido en la tarifa</span>
-                <span>${boleto.ivaMonto.toFixed(2)}</span>
-              </div>
-            )}
             {!!resultado.creditoAplicado && resultado.creditoAplicado > 0 && (
               <div className="flex justify-between text-green-700">
                 <span>Crédito aplicado</span>
                 <span>-${resultado.creditoAplicado.toFixed(2)}</span>
               </div>
             )}
-            <div className="mt-1 flex justify-between border-t border-brand-dark/10 pt-1 font-semibold text-brand-dark">
+            <div className="flex justify-between font-semibold text-brand-dark">
               <span>{resultado.creditoAplicado ? "Pagaste" : "Total"}</span>
               <span>${(resultado.montoPagado ?? resultado.montoTotal)?.toFixed(2)}</span>
             </div>
           </div>
-
-          <div className="mt-5">
-            <CodigoQr valor={boleto.codigoQr} />
-          </div>
           <p className="mt-4 text-xs text-brand-dark/50">
-            Muestra este código al abordar. También puedes tomarle una captura de pantalla.
+            Muestra estos códigos al abordar. También puedes tomarles una captura de pantalla.
           </p>
-
           <div className="mt-6 flex flex-col gap-2">
             <Link
               href="/perfil?tab=boletos"
@@ -267,7 +326,7 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     );
   }
 
-  if (!numeroAsiento) {
+  if (numerosAsiento.length === 0) {
     return (
       <main className="mx-auto max-w-2xl flex-1 px-4 py-16 text-center">
         <p className="text-brand-dark">Falta elegir un asiento primero.</p>
@@ -282,208 +341,220 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
     <main className="flex-1 bg-brand-light/40 px-4 py-10">
       <div className="mx-auto max-w-md">
         <h1 className="font-display text-xl font-bold text-brand-dark">Datos del pasajero</h1>
-        <p className="mt-1 text-sm text-brand-dark/70">Asiento {numeroAsiento}</p>
-
-        <form onSubmit={pagar} className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <div>
-            <label htmlFor="checkout-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-              Nombre completo
-            </label>
-            <input
-id="checkout-nombre"
-              type="text"
-              required
-              minLength={3}
-              value={nombreCompleto}
-              onChange={(e) => setNombreCompleto(e.target.value)}
-              className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-            />
-          </div>
-          <div>
-            <label htmlFor="checkout-documento" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-              Cédula / documento
-            </label>
-            <input
-id="checkout-documento"
-              type="text"
-              required
-              minLength={5}
-              value={documento}
-              onChange={(e) => setDocumento(e.target.value)}
-              className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-            />
-          </div>
-          <div>
-            <label htmlFor="checkout-tipo-tarifa" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-              Tipo de tarifa
-            </label>
-            <select
-id="checkout-tipo-tarifa"
-              value={tipoTarifa}
-              onChange={(e) => setTipoTarifa(e.target.value as typeof tipoTarifa)}
-              className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+        <p className="mt-1 text-sm text-brand-dark/70">
+          {numerosAsiento.length === 1
+            ? `Asiento ${numerosAsiento[0]}`
+            : `${numerosAsiento.length} asientos: ${numerosAsiento.join(", ")}`}
+        </p>
+        <form onSubmit={pagar} className="mt-6 space-y-6">
+          {pasajerosData.map((p, indice) => (
+            <div
+              key={p.numeroAsiento}
+              className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
             >
-              {TARIFAS.map((t) => (
-                <option key={t.valor} value={t.valor}>
-                  {t.etiqueta}
-                </option>
-              ))}
-            </select>
-          </div>
-          {tipoTarifa === "nino" && (
-            <div>
-              <label htmlFor="checkout-fecha-nacimiento" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                Fecha de nacimiento
-              </label>
-              <input
-id="checkout-fecha-nacimiento"
-                type="date"
-                value={fechaNacimiento}
-                onChange={(e) => setFechaNacimiento(e.target.value)}
-                className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-              />
-            </div>
-          )}
-
-          {tipoTarifa === "nino" && (
-            <div className="rounded-lg bg-brand-light/30 p-4">
-              <p className="text-sm font-semibold text-brand-dark">Autorización de viaje (RF-MENOR)</p>
-              <p className="mt-1 text-xs text-brand-dark/70">
-                Por ser un pasajero menor de edad, indica el adulto responsable que autoriza el viaje.
-              </p>
-              <div className="mt-3 space-y-3">
-                <div>
-                  <label htmlFor="checkout-adulto-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                    Nombre del adulto responsable
-                  </label>
-                  <input
-id="checkout-adulto-nombre"
-                    type="text"
-                    value={adultoResponsableNombre}
-                    onChange={(e) => setAdultoResponsableNombre(e.target.value)}
-                    className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="checkout-adulto-documento" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                    Documento del adulto responsable
-                  </label>
-                  <input
-id="checkout-adulto-documento"
-                    type="text"
-                    value={adultoResponsableDocumento}
-                    onChange={(e) => setAdultoResponsableDocumento(e.target.value)}
-                    className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="checkout-adulto-telefono" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                    Teléfono del adulto responsable (opcional)
-                  </label>
-                  <input
-id="checkout-adulto-telefono"
-                    type="text"
-                    value={adultoResponsableTelefono}
-                    onChange={(e) => setAdultoResponsableTelefono(e.target.value)}
-                    className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-                  />
-                </div>
+              {pasajerosData.length > 1 && (
+                <p className="font-display text-sm font-bold text-brand-dark">
+                  Pasajero {indice + 1} — Asiento {p.numeroAsiento}
+                </p>
+              )}
+              <div>
+                <label htmlFor={`checkout-nombre-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  Nombre completo
+                </label>
+                <input
+                  id={`checkout-nombre-${indice}`}
+                  type="text"
+                  required
+                  minLength={3}
+                  value={p.nombreCompleto}
+                  onChange={(e) => actualizarPasajero(indice, { nombreCompleto: e.target.value })}
+                  className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                />
               </div>
-            </div>
-          )}
-
-          {mapa && (!mapa.permiteCancelacion || !mapa.permiteReprogramacion) && (
-            <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
-              <p className="font-semibold">Antes de confirmar el pago, lee esto:</p>
-              {!mapa.permiteCancelacion && !mapa.permiteReprogramacion ? (
-                <p className="mt-1">
-                  Esta cooperativa no permite cambios ni devoluciones — si no viajas, pierdes el
-                  boleto completo.
-                </p>
-              ) : (
-                <ul className="mt-1 list-inside list-disc space-y-0.5">
-                  {!mapa.permiteCancelacion && <li>No podrás cancelar este boleto.</li>}
-                  {!mapa.permiteReprogramacion && <li>No podrás reprogramar este boleto.</li>}
-                </ul>
+              <div>
+                <label htmlFor={`checkout-documento-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  Cédula / documento
+                </label>
+                <input
+                  id={`checkout-documento-${indice}`}
+                  type="text"
+                  required
+                  minLength={5}
+                  value={p.documento}
+                  onChange={(e) => actualizarPasajero(indice, { documento: e.target.value })}
+                  className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                />
+              </div>
+              <div>
+                <label htmlFor={`checkout-tipo-tarifa-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  Tipo de tarifa
+                </label>
+                <select
+                  id={`checkout-tipo-tarifa-${indice}`}
+                  value={p.tipoTarifa}
+                  onChange={(e) => actualizarPasajero(indice, { tipoTarifa: e.target.value as DatosPasajero["tipoTarifa"] })}
+                  className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                >
+                  {TARIFAS.map((t) => (
+                    <option key={t.valor} value={t.valor}>
+                      {t.etiqueta}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {p.tipoTarifa === "nino" && (
+                <div>
+                  <label htmlFor={`checkout-fecha-nacimiento-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                    Fecha de nacimiento
+                  </label>
+                  <input
+                    id={`checkout-fecha-nacimiento-${indice}`}
+                    type="date"
+                    value={p.fechaNacimiento}
+                    onChange={(e) => actualizarPasajero(indice, { fechaNacimiento: e.target.value })}
+                    className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                  />
+                </div>
+              )}
+              {p.tipoTarifa === "nino" && (
+                <div className="rounded-lg bg-brand-light/30 p-4">
+                  <p className="text-sm font-semibold text-brand-dark">Autorización de viaje (RF-MENOR)</p>
+                  <p className="mt-1 text-xs text-brand-dark/70">
+                    Por ser un pasajero menor de edad, indica el adulto responsable que autoriza el viaje.
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <label htmlFor={`checkout-adulto-nombre-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                        Nombre del adulto responsable
+                      </label>
+                      <input
+                        id={`checkout-adulto-nombre-${indice}`}
+                        type="text"
+                        value={p.adultoResponsableNombre}
+                        onChange={(e) => actualizarPasajero(indice, { adultoResponsableNombre: e.target.value })}
+                        className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`checkout-adulto-documento-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                        Documento del adulto responsable
+                      </label>
+                      <input
+                        id={`checkout-adulto-documento-${indice}`}
+                        type="text"
+                        value={p.adultoResponsableDocumento}
+                        onChange={(e) => actualizarPasajero(indice, { adultoResponsableDocumento: e.target.value })}
+                        className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`checkout-adulto-telefono-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                        Teléfono del adulto responsable (opcional)
+                      </label>
+                      <input
+                        id={`checkout-adulto-telefono-${indice}`}
+                        type="text"
+                        value={p.adultoResponsableTelefono}
+                        onChange={(e) => actualizarPasajero(indice, { adultoResponsableTelefono: e.target.value })}
+                        className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-          )}
+          ))}
 
-          {metodosDisponibles.length > 0 && (
-            <div>
-              <label htmlFor="checkout-metodo-pago" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                Cómo quieres pagar
-              </label>
-              <select
-id="checkout-metodo-pago"
-                value={metodoElegido}
-                onChange={(e) => setMetodoElegido(e.target.value as typeof metodoElegido)}
-                className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-              >
-                <option value="tarjeta">Tarjeta</option>
-                {metodosDisponibles.map((m) => (
-                  <option key={m.tipo} value={m.tipo}>
-                    {
+          <div className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+            {mapa && (!mapa.permiteCancelacion || !mapa.permiteReprogramacion) && (
+              <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+                <p className="font-semibold">Antes de confirmar el pago, lee esto:</p>
+                {!mapa.permiteCancelacion && !mapa.permiteReprogramacion ? (
+                  <p className="mt-1">
+                    Esta cooperativa no permite cambios ni devoluciones — si no viajas, pierdes el
+                    boleto completo.
+                  </p>
+                ) : (
+                  <ul className="mt-1 list-inside list-disc space-y-0.5">
+                    {!mapa.permiteCancelacion && <li>No podrás cancelar este boleto.</li>}
+                    {!mapa.permiteReprogramacion && <li>No podrás reprogramar este boleto.</li>}
+                  </ul>
+                )}
+              </div>
+            )}
+            {metodosDisponibles.length > 0 && (
+              <div>
+                <label htmlFor="checkout-metodo-pago" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  Cómo quieres pagar
+                </label>
+                <select
+                  id="checkout-metodo-pago"
+                  value={metodoElegido}
+                  onChange={(e) => setMetodoElegido(e.target.value as typeof metodoElegido)}
+                  className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                >
+                  <option value="tarjeta">Tarjeta</option>
+                  {metodosDisponibles.map((m) => (
+                    <option key={m.tipo} value={m.tipo}>
                       {
-                        transferencia_bancaria: "Transferencia bancaria",
-                        efectivo: "Efectivo",
-                        deuna: "DeUna",
-                        payphone: "PayPhone (billetera)",
-                        tarjeta_pasarela: "Tarjeta",
-                      }[m.tipo]
-                    }
-                  </option>
-                ))}
-              </select>
-              {metodoElegido !== "tarjeta" && (
+                        {
+                          transferencia_bancaria: "Transferencia bancaria",
+                          efectivo: "Efectivo",
+                          deuna: "DeUna",
+                          payphone: "PayPhone (billetera)",
+                          tarjeta_pasarela: "Tarjeta",
+                        }[m.tipo]
+                      }
+                    </option>
+                  ))}
+                </select>
+                {metodoElegido !== "tarjeta" && (
+                  <p className="mt-1 text-xs text-brand-dark/50">
+                    Pagas por fuera de la plataforma y subes tu comprobante — la cooperativa confirma
+                    tu{pasajerosData.length > 1 ? "s boletos" : " boleto"} después.
+                  </p>
+                )}
+              </div>
+            )}
+            {creditos.length > 0 && (
+              <div>
+                <label htmlFor="checkout-credito" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  Usar un crédito disponible (opcional)
+                </label>
+                <select
+                  id="checkout-credito"
+                  value={creditoElegidoId}
+                  onChange={(e) => setCreditoElegidoId(e.target.value)}
+                  className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                >
+                  <option value="">No usar crédito</option>
+                  {creditos.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      ${c.monto.toFixed(2)} — {c.cooperativaNombre}
+                    </option>
+                  ))}
+                </select>
                 <p className="mt-1 text-xs text-brand-dark/50">
-                  Pagas por fuera de la plataforma y subes tu comprobante — la cooperativa confirma
-                  tu boleto después.
+                  Solo se aplica si el crédito es de la misma cooperativa que este viaje.
                 </p>
-              )}
-            </div>
-          )}
-
-          {creditos.length > 0 && (
-            <div>
-              <label htmlFor="checkout-credito" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                Usar un crédito disponible (opcional)
-              </label>
-              <select
-id="checkout-credito"
-                value={creditoElegidoId}
-                onChange={(e) => setCreditoElegidoId(e.target.value)}
-                className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-              >
-                <option value="">No usar crédito</option>
-                {creditos.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    ${c.monto.toFixed(2)} — {c.cooperativaNombre}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-brand-dark/50">
-                Solo se aplica si el crédito es de la misma cooperativa que este viaje.
-              </p>
-            </div>
-          )}
-
-          {error && <p className="text-sm font-medium text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={procesando}
-            className="w-full rounded-lg bg-brand-amber px-6 py-3 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
-          >
-            {procesando
-              ? "Procesando..."
-              : metodoElegido === "tarjeta"
-                ? "Pagar y confirmar"
-                : "Continuar"}
-          </button>
-          <p className="text-center text-xs text-brand-dark/40">
-            Pago de prueba — todavía no está conectada una pasarela real.
-          </p>
+              </div>
+            )}
+            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+            <button
+              type="submit"
+              disabled={procesando}
+              className="w-full rounded-lg bg-brand-amber px-6 py-3 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
+            >
+              {procesando
+                ? "Procesando..."
+                : metodoElegido === "tarjeta"
+                  ? "Pagar y confirmar"
+                  : "Continuar"}
+            </button>
+            <p className="text-center text-xs text-brand-dark/40">
+              Pago de prueba — todavía no está conectada una pasarela real.
+            </p>
+          </div>
         </form>
       </div>
     </main>
