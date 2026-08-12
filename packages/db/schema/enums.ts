@@ -134,6 +134,8 @@ export const tipoNotificacionEnum = pgEnum('tipo_notificacion', [
   'confirmacion_compra',
   'recordatorio_viaje',
   'cambio_operativo',
+  'aviso_llegada',
+  'solicitud_calificacion',
 ]);
 
 /** RF-ADMIN-005 — auditoría de acciones administrativas críticas. */

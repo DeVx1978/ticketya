@@ -268,6 +268,18 @@ export interface NotificadorWhatsApp {
     telefono: string,
     detalle: { viajeId: string; motivo: string },
   ): Promise<void>;
+
+  /** Fase 8, item 32 (11-ago-2026) -- aviso al llegar a destino. */
+  enviarAvisoLlegada(
+    telefono: string,
+    detalle: { viajeId: string; destinoCiudad: string },
+  ): Promise<void>;
+
+  /** Fase 8, item 33 (11-ago-2026) -- solicitud de calificación post-viaje. */
+  enviarSolicitudCalificacion(
+    telefono: string,
+    detalle: { viajeId: string; destinoCiudad: string },
+  ): Promise<void>;
 }
 
 /**
