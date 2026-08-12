@@ -38,4 +38,26 @@ export class SimuladorNotificadorWhatsApp implements NotificadorWhatsApp {
       `[SIMULADO WHATSAPP] Aviso de cambio operativo para ${telefono} -> viaje ${detalle.viajeId}: ${detalle.motivo}`,
     );
   }
+
+  /** Fase 8, item 32 (11-ago-2026) -- aviso al llegar a destino. */
+  async enviarAvisoLlegada(
+    telefono: string,
+    detalle: { viajeId: string; destinoCiudad: string },
+  ): Promise<void> {
+    this.logger.log(
+      `[SIMULADO WHATSAPP] Aviso de llegada para ${telefono} -> viaje ${detalle.viajeId}, ` +
+        `llegando a ${detalle.destinoCiudad}. No olvides tus pertenencias.`,
+    );
+  }
+
+  /** Fase 8, item 33 (11-ago-2026) -- solicitud de calificación post-viaje. */
+  async enviarSolicitudCalificacion(
+    telefono: string,
+    detalle: { viajeId: string; destinoCiudad: string },
+  ): Promise<void> {
+    this.logger.log(
+      `[SIMULADO WHATSAPP] Solicitud de calificación para ${telefono} -> viaje ${detalle.viajeId}, ` +
+        `llegada a ${detalle.destinoCiudad}. ¿Cómo estuvo tu viaje?`,
+    );
+  }
 }

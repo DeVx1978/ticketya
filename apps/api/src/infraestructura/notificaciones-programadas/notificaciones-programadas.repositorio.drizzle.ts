@@ -7,6 +7,8 @@ import type {
   NotificacionesProgramadasRepositorio,
   RecordatorioPendiente,
   CompraAfectadaPorViaje,
+  AvisoLlegadaPendiente,
+  SolicitudCalificacionPendiente,
 } from '../../dominio/notificaciones-programadas/notificaciones-programadas.ports';
 
 /**
@@ -15,7 +17,8 @@ import type {
  * cooperativas a la vez, mismo criterio que WebhooksRepositorioDrizzle.
  * Las operaciones scopeadas a una cooperativa conocida (aviso de cambio
  * operativo, disparado desde el panel de una cooperativa específica) sí
- * usan ejecutarComoCooperativa.
+ * usan ejecutarComoCooperativa. Mismo criterio para los 2 crons nuevos
+ * de la Fase 8 -- revisan todas las cooperativas a la vez.
  */
 @Injectable()
 export class NotificacionesProgramadasRepositorioDrizzle
@@ -107,6 +110,120 @@ export class NotificacionesProgramadasRepositorioDrizzle
     const resultado = await this.db.execute(sql`
       INSERT INTO notificaciones (tipo, canal, compra_id, viaje_id, telefono_destino, estado_envio)
       VALUES ('cambio_operativo', 'whatsapp', ${compraId}, ${viajeId}, ${telefono}, 'pendiente')
+      RETURNING id
+    `);
+    return { id: (resultado.rows[0] as { id: string }).id };
+  }
+
+  /**
+   * Fase 8, item 32 (11-ago-2026) -- viajes cuya hora_llegada_estimada
+   * cae dentro de los proximos `minutosAntes` minutos. Solo boletos
+   * 'usado' (el pasajero abordo de verdad, no basta con tener un
+   * boleto vigente sin usar) -- evita avisar a alguien que nunca subio
+   * al bus. hora_llegada_estimada IS NOT NULL porque varios viajes
+   * viejos no la tienen cargada.
+   */
+  async listarAvisosLlegadaPendientes(minutosAntes: number): Promise<AvisoLlegadaPendiente[]> {
+    const resultado = await this.db.execute(sql`
+      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, u.telefono,
+             dest.ciudad AS destino_ciudad
+      FROM viajes v
+      JOIN rutas r ON r.id = v.ruta_id
+      JOIN puntos_operacion dest ON dest.id = r.destino_punto_operacion_id
+      JOIN viaje_asientos va ON va.viaje_id = v.id
+      JOIN boletos b ON b.viaje_asiento_id = va.id AND b.estado = 'usado'
+      JOIN compras c ON c.id = b.compra_id
+      JOIN usuarios u ON u.id = c.comprador_usuario_id
+      WHERE v.estado != 'cancelado'
+        AND v.hora_llegada_estimada IS NOT NULL
+        AND v.hora_llegada_estimada
+            BETWEEN now() AND now() + (${minutosAntes} || ' minutes')::interval
+        AND NOT EXISTS (
+          SELECT 1 FROM notificaciones n
+          WHERE n.tipo = 'aviso_llegada' AND n.viaje_id = v.id AND n.compra_id = c.id
+        )
+    `);
+    return resultado.rows.map((fila) => {
+      const f = fila as {
+        viaje_id: string;
+        compra_id: string;
+        telefono: string | null;
+        destino_ciudad: string;
+      };
+      return {
+        viajeId: f.viaje_id,
+        compraId: f.compra_id,
+        telefono: f.telefono,
+        destinoCiudad: f.destino_ciudad,
+      };
+    });
+  }
+
+  async registrarAvisoLlegada(
+    viajeId: string,
+    compraId: string,
+    telefono: string | null,
+  ): Promise<{ id: string }> {
+    const resultado = await this.db.execute(sql`
+      INSERT INTO notificaciones (tipo, canal, compra_id, viaje_id, telefono_destino, estado_envio)
+      VALUES ('aviso_llegada', 'whatsapp', ${compraId}, ${viajeId}, ${telefono}, 'pendiente')
+      RETURNING id
+    `);
+    return { id: (resultado.rows[0] as { id: string }).id };
+  }
+
+  /**
+   * Fase 8, item 33 (11-ago-2026) -- viajes 'finalizado' cuya
+   * hora_llegada_estimada ya paso hace al menos
+   * `minutosDespuesDeLlegada` minutos. Mismo criterio de boletos
+   * 'usado' que el aviso de llegada -- no se le pide calificar a
+   * alguien que nunca abordo.
+   */
+  async listarViajesCompletadosPendientesDeCalificacion(
+    minutosDespuesDeLlegada: number,
+  ): Promise<SolicitudCalificacionPendiente[]> {
+    const resultado = await this.db.execute(sql`
+      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, u.telefono,
+             dest.ciudad AS destino_ciudad
+      FROM viajes v
+      JOIN rutas r ON r.id = v.ruta_id
+      JOIN puntos_operacion dest ON dest.id = r.destino_punto_operacion_id
+      JOIN viaje_asientos va ON va.viaje_id = v.id
+      JOIN boletos b ON b.viaje_asiento_id = va.id AND b.estado = 'usado'
+      JOIN compras c ON c.id = b.compra_id
+      JOIN usuarios u ON u.id = c.comprador_usuario_id
+      WHERE v.estado = 'finalizado'
+        AND v.hora_llegada_estimada IS NOT NULL
+        AND v.hora_llegada_estimada <= now() - (${minutosDespuesDeLlegada} || ' minutes')::interval
+        AND NOT EXISTS (
+          SELECT 1 FROM notificaciones n
+          WHERE n.tipo = 'solicitud_calificacion' AND n.viaje_id = v.id AND n.compra_id = c.id
+        )
+    `);
+    return resultado.rows.map((fila) => {
+      const f = fila as {
+        viaje_id: string;
+        compra_id: string;
+        telefono: string | null;
+        destino_ciudad: string;
+      };
+      return {
+        viajeId: f.viaje_id,
+        compraId: f.compra_id,
+        telefono: f.telefono,
+        destinoCiudad: f.destino_ciudad,
+      };
+    });
+  }
+
+  async registrarSolicitudCalificacion(
+    viajeId: string,
+    compraId: string,
+    telefono: string | null,
+  ): Promise<{ id: string }> {
+    const resultado = await this.db.execute(sql`
+      INSERT INTO notificaciones (tipo, canal, compra_id, viaje_id, telefono_destino, estado_envio)
+      VALUES ('solicitud_calificacion', 'whatsapp', ${compraId}, ${viajeId}, ${telefono}, 'pendiente')
       RETURNING id
     `);
     return { id: (resultado.rows[0] as { id: string }).id };
