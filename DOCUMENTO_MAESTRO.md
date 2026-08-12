@@ -23,6 +23,14 @@
 
 **4. Todo lo que ya esta construido y funcionando de verdad se mantiene, y se sigue verificando con el mismo rigor -- no se toca solo por tocar.** Seguridad (2FA, permisos separados, RLS multi-tenant), pagos manuales completos, paneles de cooperativa y plataforma, cumplimiento legal ecuatoriano (LOPD, tarifas diferenciadas LOTTTSV Art. 79 -- confirmado que YA funciona), despliegue real en produccion, 170 pruebas automatizadas.
 
+## 0.1 Estrategia de desarrollo confirmada (director, 11-ago-2026): backend primero, frontend despues
+
+**Orden de prioridad confirmado:** de aqui en adelante, se prioriza terminar el backend por completo antes de retomar trabajo grande de frontend/diseno. El frontend se construira despues, sobre un backend ya terminado y estable -- no en paralelo.
+
+**Sobre el diseno visual (referencia, no decision final todavia):** el director comparto una maqueta de referencia para el hero de la portada (fondo de foto a pantalla completa, buscador incrustado directo sobre la foto, etiqueta de "proxima salida" con punto pulsante, paleta negro/amarillo ya confirmada). Se guarda como **referencia visual de estilo**, no como decision cerrada -- el director aun no tiene definido que secciones exactas llevara la portada completa, y prefiere no forzar esa decision todavia. **Tipografia: se mantiene la ya usada en el proyecto, NO se adoptan las 3 fuentes nuevas de la maqueta (Sora/Inter/IBM Plex Mono).**
+
+**Que significa esto en la practica:** los proximos items a construir deben ser de backend (Fase 8 items 32-33 ya autorizados si faltara algo, item 31 -- compra como invitado, o cualquier otro hueco de backend documentado). El trabajo de portada/diseno visual queda pausado hasta que el backend este completo.
+
 ## 1. Visión y alcance del proyecto
 
 **Qué es:** una plataforma SaaS de venta de pasajes de bus interprovincial para Ecuador, donde cooperativas de transporte independientes se registran y venden sus propios pasajes, y la plataforma cobra un cargo fijo por boleto vendido (no un porcentaje de comisión).
