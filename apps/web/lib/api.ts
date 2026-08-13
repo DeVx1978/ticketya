@@ -16,6 +16,9 @@ export interface PuntoOperacion {
 
 export interface ResultadoViaje {
   viajeId: string;
+  // Reseñas de texto reales (13-ago-2026) -- faltaba para poder pedir
+  // las reseñas de esta cooperativa; antes solo llegaban nombre/logo.
+  cooperativaId: string;
   cooperativaNombre: string;
   cooperativaLogoUrl: string | null;
   cooperativaCalificacionPromedio: number | null;
@@ -113,6 +116,45 @@ export async function buscarViajes(params: {
   const res = await fetch(`${API_URL}/viajes/buscar?${query.toString()}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error("No se pudo completar la búsqueda. Intenta de nuevo en un momento.");
+  }
+  return res.json();
+}
+
+/**
+ * Reseñas de texto reales (13-ago-2026) -- el campo `comentario` ya se
+ * guardaba desde el 22-jul-2026, pero ningún endpoint lo devolvía.
+ * Pública, sin autenticación (mismo criterio que el promedio numérico
+ * que ya se muestra en resultados). El backend aplica el mismo umbral
+ * mínimo de 5 calificaciones ya usado para el promedio -- por debajo
+ * de eso, devuelve la lista vacía, no un error.
+ */
+export interface Resena {
+  id: string;
+  puntuacion: number;
+  comentario: string;
+  nombreAutor: string;
+  creadoEn: string;
+}
+
+export interface ResenasPaginadas {
+  resenas: Resena[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+}
+
+export async function listarResenasCooperativa(
+  cooperativaId: string,
+  pagina: number = 1,
+  porPagina: number = 10,
+): Promise<ResenasPaginadas> {
+  const query = new URLSearchParams({ pagina: String(pagina), porPagina: String(porPagina) });
+  const res = await fetch(
+    `${API_URL}/calificaciones/cooperativa/${cooperativaId}/resenas?${query.toString()}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) {
+    throw new Error("No se pudieron cargar las reseñas.");
   }
   return res.json();
 }

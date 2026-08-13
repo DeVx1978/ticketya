@@ -96,6 +96,71 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
     };
   }
 
+  /**
+   * Reseñas de texto reales (13-ago-2026) -- une calificaciones con
+   * boletos (para llegar a pasajero_compra_id) y pasajeros_compra
+   * (para el primer nombre real, campo `nombres` desde el ítem 31.1).
+   * Solo filas con comentario no vacío -- una calificación sin texto
+   * no cuenta como "reseña".
+   *
+   * El total se cuenta en una consulta aparte, NUNCA con
+   * `COUNT(*) OVER()` en la misma consulta paginada -- bug real
+   * encontrado por la prueba e2e propia de este mismo cambio: cuando
+   * la página pedida no tiene ninguna fila (ej. página 2 de una lista
+   * con 1 sola reseña), la consulta paginada no devuelve ninguna fila,
+   * y con eso la función de ventana tampoco devuelve ningún total —
+   * `total` volvía 0 en vez del valor real.
+   */
+  async listarResenasPorCooperativa(
+    cooperativaId: string,
+    pagina: number,
+    porPagina: number,
+  ): Promise<{
+    resenas: {
+      id: string;
+      puntuacion: number;
+      comentario: string;
+      nombreAutor: string;
+      creadoEn: Date;
+    }[];
+    total: number;
+  }> {
+    const condicion = sql`${calificaciones.cooperativaId} = ${cooperativaId} AND ${calificaciones.comentario} IS NOT NULL AND ${calificaciones.comentario} != ''`;
+
+    const [{ total }] = await this.db
+      .select({ total: sql<number>`COUNT(*)::int` })
+      .from(calificaciones)
+      .where(condicion);
+
+    const offset = (pagina - 1) * porPagina;
+    const filas = await this.db
+      .select({
+        id: calificaciones.id,
+        puntuacion: calificaciones.puntuacion,
+        comentario: calificaciones.comentario,
+        nombreAutor: pasajerosCompra.nombres,
+        creadoEn: calificaciones.creadoEn,
+      })
+      .from(calificaciones)
+      .innerJoin(boletos, eq(calificaciones.boletoId, boletos.id))
+      .innerJoin(pasajerosCompra, eq(boletos.pasajeroCompraId, pasajerosCompra.id))
+      .where(condicion)
+      .orderBy(desc(calificaciones.creadoEn))
+      .limit(porPagina)
+      .offset(offset);
+
+    return {
+      resenas: filas.map((f) => ({
+        id: f.id,
+        puntuacion: f.puntuacion,
+        comentario: f.comentario as string,
+        nombreAutor: f.nombreAutor,
+        creadoEn: f.creadoEn,
+      })),
+      total,
+    };
+  }
+
   async listarBoletosDePasajero(usuarioId: string): Promise<
     {
       boletoId: string;

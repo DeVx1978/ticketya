@@ -16,6 +16,7 @@ describe('Calificaciones de viaje (e2e)', () => {
   const sufijo = Date.now();
 
   let viajeId: string;
+  let cooperativaId: string;
   let tokenPasajero: string;
   let tokenOtroPasajero: string;
   let tokenCoop: string;
@@ -57,7 +58,7 @@ describe('Calificaciones de viaje (e2e)', () => {
     const tokenAdmin = loginDirector.body.accessToken;
 
     const ruc = `07${sufijo}`.slice(0, 13);
-    await request(app.getHttpServer())
+    const cooperativa = await request(app.getHttpServer())
       .post('/admin/cooperativas')
       .set('Authorization', `Bearer ${tokenAdmin}`)
       .send({
@@ -73,6 +74,7 @@ describe('Calificaciones de viaje (e2e)', () => {
           nombreCompleto: 'Admin Calificaciones E2E',
         },
       });
+    cooperativaId = cooperativa.body.cooperativaId;
 
     const loginCoop = await request(app.getHttpServer())
       .post('/auth/login')
@@ -306,6 +308,23 @@ describe('Calificaciones de viaje (e2e)', () => {
   });
 
   /**
+   * Reseñas de texto reales (13-ago-2026) -- mismo umbral que el
+   * promedio (item 12): en este punto solo existe 1 calificación (con
+   * comentario), por debajo del mínimo de 5 -- el endpoint debe
+   * devolver la lista vacía, no un error, y nunca revelar el
+   * comentario real todavía (mismo criterio de confianza que el
+   * promedio: no exponer nada hasta tener suficientes datos).
+   */
+  it('con menos de 5 calificaciones, las reseñas de texto tampoco aparecen -- mismo umbral que el promedio', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/calificaciones/cooperativa/${cooperativaId}/resenas`)
+      .expect(200);
+
+    expect(res.body.resenas).toEqual([]);
+    expect(res.body.total).toBe(0);
+  });
+
+  /**
    * Sube la cooperativa a exactamente 5 calificaciones (el mínimo) --
    * 4 viajes nuevos, cada uno con su propio boleto y su propia
    * calificación de 5 estrellas, sumados a la que ya existe desde la
@@ -376,6 +395,41 @@ describe('Calificaciones de viaje (e2e)', () => {
 
     expect(res.body[0].cooperativaCalificacionPromedio).toBe(5);
     expect(res.body[0].cooperativaCalificacionCantidad).toBe(5);
+  });
+
+  /**
+   * Reseñas de texto reales (13-ago-2026), camino feliz -- con el
+   * umbral ya alcanzado (5 calificaciones), pero solo 1 de ellas tiene
+   * comentario (las otras 4, creadas en el bucle de arriba, no lo
+   * llevan) -- confirma que el filtro "solo con comentario" funciona
+   * de verdad, no solo el umbral.
+   */
+  it('con el umbral alcanzado, las reseñas de texto reales aparecen -- solo con comentario, solo el primer nombre del autor', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/calificaciones/cooperativa/${cooperativaId}/resenas`)
+      .expect(200);
+
+    expect(res.body.total).toBe(1); // solo 1 de las 5 calificaciones tiene comentario
+    expect(res.body.pagina).toBe(1);
+    expect(res.body.porPagina).toBe(10);
+    expect(res.body.resenas).toHaveLength(1);
+    expect(res.body.resenas[0].comentario).toBe('Excelente viaje, muy puntual.');
+    expect(res.body.resenas[0].puntuacion).toBe(5);
+    // Item 31.1 puso 'Pasajero' en nombres y 'Calificaciones E2E' en
+    // apellidos -- solo el primer nombre debe llegar, nunca el apellido.
+    expect(res.body.resenas[0].nombreAutor).toBe('Pasajero');
+  });
+
+  it('la paginación de reseñas respeta porPagina, y una página vacía no da error', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/calificaciones/cooperativa/${cooperativaId}/resenas`)
+      .query({ pagina: 2, porPagina: 10 })
+      .expect(200);
+
+    // Solo hay 1 reseña real con comentario -- la página 2 debe venir vacía, no fallar.
+    expect(res.body.resenas).toEqual([]);
+    expect(res.body.total).toBe(1);
+    expect(res.body.pagina).toBe(2);
   });
 
   it('"mis boletos" refleja correctamente cuándo sí se puede calificar, y trae el código QR de cada boleto — hallazgo real cerrado 22-jul-2026 (antes no venía, sin forma de recuperar el QR si se cerraba la pantalla de compra)', async () => {

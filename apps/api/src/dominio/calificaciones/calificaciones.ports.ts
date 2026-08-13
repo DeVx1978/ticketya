@@ -37,6 +37,31 @@ export interface CalificacionesRepositorio {
     cooperativaId: string,
   ): Promise<{ promedio: number | null; cantidad: number }>;
 
+  /**
+   * Reseñas de texto reales -- el campo `comentario` ya se guardaba
+   * desde el 22-jul-2026, pero ningún endpoint lo devolvía nunca
+   * (hallazgo real, 13-ago-2026). Solo trae calificaciones que sí
+   * tienen comentario -- una calificación sin texto no es una "reseña"
+   * que valga la pena listar. `nombreAutor` viene de
+   * pasajeros_compra.nombres (primer nombre real del pasajero que
+   * compró ese boleto, separado desde el ítem 31.1) -- nunca
+   * apellidos, mismo criterio de privacidad que confirma Airbnb.
+   */
+  listarResenasPorCooperativa(
+    cooperativaId: string,
+    pagina: number,
+    porPagina: number,
+  ): Promise<{
+    resenas: {
+      id: string;
+      puntuacion: number;
+      comentario: string;
+      nombreAutor: string;
+      creadoEn: Date;
+    }[];
+    total: number;
+  }>;
+
   /** "Mis boletos" — historial de compras del pasajero, con si ya puede calificar cada uno. */
   listarBoletosDePasajero(usuarioId: string): Promise<
     {

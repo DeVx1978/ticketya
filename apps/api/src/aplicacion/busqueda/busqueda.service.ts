@@ -170,6 +170,10 @@ export class BusquedaService {
     const resultados = await this.db
       .select({
         viajeId: viajes.id,
+        // Reseñas de texto reales (13-ago-2026) -- faltaba para poder
+        // pedir las reseñas de esta cooperativa desde el frontend; solo
+        // se mostraba el nombre/logo, nunca el id real.
+        cooperativaId: cooperativas.id,
         cooperativaNombre: cooperativas.nombreComercial,
         cooperativaLogoUrl: cooperativas.logoUrl,
         cooperativaCalificacionPromedio: calificacionPromedio.as(
