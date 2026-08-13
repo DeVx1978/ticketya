@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
   CompraRepositorio,
@@ -33,12 +33,23 @@ export class CheckoutService {
    * (deja el hold expirar solo, RF-CHECK-004: "sin bloquear el asiento
    * indefinidamente").
    */
+  // Item 31, Fase 7 (11-ago-2026) -- compra como invitado. Al menos
+  // uno de usuarioId/telefonoContacto/correoContacto debe traer valor
+  // (validado abajo).
   async procesarCompra(
     pasajeros: PasajeroCheckout[],
-    usuarioId: string,
+    usuarioId: string | null,
     idempotencyKeyCliente?: string,
     creditoIdAUsar?: string,
+    telefonoContacto?: string,
+    correoContacto?: string,
+    sesionInvitadoId?: string,
   ) {
+    if (!usuarioId && !telefonoContacto && !correoContacto) {
+      throw new BadRequestException(
+        'Falta un telefono o correo de contacto -- sin cuenta ni contacto no hay forma de entregar el boleto.',
+      );
+    }
     const idempotencyKey = idempotencyKeyCliente ?? randomUUID();
 
     // RF-CHECK-005 -- si esta misma clave ya se proceso antes (reintento
@@ -98,6 +109,7 @@ export class CheckoutService {
     const desglose = await this.compras.validarYCalcularAsientos(
       pasajeros,
       usuarioId,
+      sesionInvitadoId ?? null,
     );
     const montoTotal = desglose.reduce(
       (acc, d) => acc + d.precioPagado + d.tasaTerminal + d.cargoPlataforma,
@@ -112,6 +124,14 @@ export class CheckoutService {
     let montoAPagar = montoTotal;
     let creditoAplicado = 0;
     if (creditoIdAUsar) {
+      // Item 31, Fase 7 (11-ago-2026) -- un credito de reprogramacion
+      // pertenece a una cuenta real -- un invitado no puede tener
+      // ninguno que gastar.
+      if (!usuarioId) {
+        throw new BadRequestException(
+          'No se puede usar un credito de reprogramacion sin una cuenta.',
+        );
+      }
       const cooperativasEnCompra = new Set(desglose.map((d) => d.cooperativaId));
       if (cooperativasEnCompra.size !== 1) {
         throw new BadRequestException(
@@ -138,6 +158,9 @@ export class CheckoutService {
       pasajeros,
       desglose,
       idempotencyKey,
+      undefined,
+      telefonoContacto,
+      correoContacto,
     );
 
     const resultadoPago = await this.pasarela.procesar(
@@ -310,6 +333,7 @@ export class CheckoutService {
         },
       ],
       usuarioId,
+      null,
     );
 
     if (desgloseNuevo.cooperativaId !== viejo.cooperativaId) {
@@ -413,7 +437,7 @@ export class CheckoutService {
     tipoMetodoPago: string,
     idempotencyKeyCliente?: string,
   ) {
-    const desglose = await this.compras.validarYCalcularAsientos(pasajeros, usuarioId);
+    const desglose = await this.compras.validarYCalcularAsientos(pasajeros, usuarioId, null);
 
     const cooperativasEnCompra = new Set(desglose.map((d) => d.cooperativaId));
     if (cooperativasEnCompra.size !== 1) {

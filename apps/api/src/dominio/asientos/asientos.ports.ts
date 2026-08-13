@@ -32,10 +32,16 @@ export interface AsientoRepositorio {
   obtenerMapa(viajeId: string): Promise<MapaAsientosViaje | null>;
   /** Necesario para saber bajo qué cooperativa abrir la transacción de escritura. */
   obtenerCooperativaDelViaje(viajeId: string): Promise<string | null>;
+  /**
+   * Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
+   * Exactamente uno de usuarioId/sesionInvitadoId debe venir con valor
+   * -- el servicio ya valida esto antes de llegar aqui.
+   */
   bloquear(
     viajeId: string,
     numeroAsiento: string,
-    usuarioId: string,
+    usuarioId: string | null,
+    sesionInvitadoId: string | null,
     cooperativaId: string,
   ): Promise<ResultadoBloqueo>;
 }

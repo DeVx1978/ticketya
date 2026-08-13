@@ -175,10 +175,23 @@ describe('Selección de asientos (e2e)', () => {
       .expect(404);
   });
 
-  it('bloquear un asiento requiere estar logueado (401 sin token)', async () => {
+  // Item 31, Fase 7 (11-ago-2026) -- compra como invitado: ya NO se
+  // exige estar logueado para bloquear, a proposito. Lo que sigue
+  // siendo obligatorio es identificar quien hace el bloqueo -- con
+  // token (cuenta real) O con sesionInvitadoId (invitado), nunca
+  // ninguno de los 2.
+  it('bloquear sin token y sin sesionInvitadoId se rechaza (400) -- hace falta identificar quien bloquea', async () => {
     await request(app.getHttpServer())
       .post(`/viajes/${viajeId}/asientos/1A/bloquear`)
-      .expect(401);
+      .expect(400);
+  });
+
+  it('un invitado sin cuenta SÍ puede bloquear un asiento, con sesionInvitadoId en el cuerpo (item 31, Fase 7)', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/viajes/${viajeId}/asientos/2B/bloquear`)
+      .send({ sesionInvitadoId: 'invitado-uuid-de-prueba' })
+      .expect(201);
+    expect(res.body.estado).toBe('bloqueado_temporal');
   });
 
   it('un pasajero puede bloquear un asiento disponible (RF-SEAT-004)', async () => {

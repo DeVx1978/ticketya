@@ -220,10 +220,15 @@ export async function obtenerMapaAsientos(viajeId: string): Promise<MapaAsientos
   return res.json();
 }
 
-export async function bloquearAsiento(viajeId: string, numeroAsiento: string, token: string) {
+/** Item 31, Fase 7 (11-ago-2026) -- compra como invitado: token puede ser null, en cuyo caso sesionInvitadoId identifica el bloqueo. */
+export async function bloquearAsiento(viajeId: string, numeroAsiento: string, token: string | null, sesionInvitadoId?: string) {
   const res = await fetch(`${API_URL}/viajes/${viajeId}/asientos/${numeroAsiento}/bloquear`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ sesionInvitadoId }),
   });
   const cuerpo = await res.json();
   if (!res.ok) {
@@ -964,16 +969,30 @@ export interface ResultadoCompra {
   ivaVisible?: boolean;
 }
 
+/** Item 31, Fase 7 (11-ago-2026) -- compra como invitado: token puede ser null, y entonces se exige telefonoContacto o correoContacto. */
 export async function crearCompra(
   pasajeros: PasajeroCompraInput[],
-  token: string,
+  token: string | null,
   idempotencyKey: string,
   creditoIdAUsar?: string,
+  telefonoContacto?: string,
+  correoContacto?: string,
+  sesionInvitadoId?: string,
 ): Promise<ResultadoCompra> {
   const res = await fetch(`${API_URL}/compras`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ pasajeros, idempotencyKey, creditoIdAUsar }),
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      pasajeros,
+      idempotencyKey,
+      creditoIdAUsar,
+      telefonoContacto,
+      correoContacto,
+      sesionInvitadoId,
+    }),
   });
   const cuerpo = await res.json();
   if (!res.ok) {

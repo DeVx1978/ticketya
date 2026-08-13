@@ -10,7 +10,7 @@ import {
   obtenerPisosDeDistribucion,
   type MapaAsientos,
 } from "@/lib/api";
-import { tokenValido } from "@/lib/auth";
+import { tokenValido, obtenerOCrearSesionInvitado } from "@/lib/auth";
 
 /**
  * Vacío real de diseño encontrado el 29-jul-2026: hasta ahora esta
@@ -119,15 +119,11 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
 
   async function continuar() {
     if (seleccionados.length === 0) return;
+    // Item 31, Fase 7 (11-ago-2026) -- compra como invitado: ya NO se
+    // exige iniciar sesion para seleccionar asiento. Sin token, se usa
+    // la sesionInvitadoId del navegador para identificar el bloqueo.
     const token = tokenValido();
-    if (!token) {
-      const volver = `${window.location.pathname}?${new URLSearchParams({
-        ...Object.fromEntries(searchParams.entries()),
-        preseleccionado: seleccionados.join(","),
-      }).toString()}`;
-      router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
-      return;
-    }
+    const sesionInvitadoId = token ? undefined : obtenerOCrearSesionInvitado();
     setBloqueando(true);
     setError(null);
     try {
@@ -140,7 +136,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
       // asientos del grupo, para que el primero elegido no expire
       // mientras se llenan los datos de los demas en el checkout.
       for (const numero of seleccionados) {
-        await bloquearAsiento(viajeId, numero, token);
+        await bloquearAsiento(viajeId, numero, token, sesionInvitadoId);
       }
 
       if (esTramoIda) {
@@ -167,7 +163,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
         // expiracion, por si paso rato buscando el tramo de vuelta), y
         // se va a un checkout que combina los 2 viajes.
         for (const numero of idaAsientosParam.split(",")) {
-          await bloquearAsiento(idaViajeId, numero, token);
+          await bloquearAsiento(idaViajeId, numero, token, sesionInvitadoId);
         }
         const params = new URLSearchParams({
           asientos: seleccionados.join(","),

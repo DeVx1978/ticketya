@@ -28,7 +28,7 @@ export class NotificacionesProgramadasRepositorioDrizzle
 
   async listarRecordatoriosPendientes(horasAntes: number): Promise<RecordatorioPendiente[]> {
     const resultado = await this.db.execute(sql`
-      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, u.telefono,
+      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, COALESCE(u.telefono, c.telefono_contacto) AS telefono,
              ori.ciudad AS origen_ciudad, dest.ciudad AS destino_ciudad,
              v.fecha_salida, v.hora_salida_programada
       FROM viajes v
@@ -38,7 +38,7 @@ export class NotificacionesProgramadasRepositorioDrizzle
       JOIN viaje_asientos va ON va.viaje_id = v.id
       JOIN boletos b ON b.viaje_asiento_id = va.id AND b.estado != 'cancelado'
       JOIN compras c ON c.id = b.compra_id
-      JOIN usuarios u ON u.id = c.comprador_usuario_id
+      LEFT JOIN usuarios u ON u.id = c.comprador_usuario_id
       WHERE v.estado = 'programado'
         AND (v.fecha_salida + v.hora_salida_programada)
             BETWEEN now() AND now() + (${horasAntes} || ' hours')::interval
@@ -88,11 +88,11 @@ export class NotificacionesProgramadasRepositorioDrizzle
   ): Promise<CompraAfectadaPorViaje[]> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
-        SELECT DISTINCT c.id AS compra_id, u.telefono
+        SELECT DISTINCT c.id AS compra_id, COALESCE(u.telefono, c.telefono_contacto) AS telefono
         FROM viaje_asientos va
         JOIN boletos b ON b.viaje_asiento_id = va.id AND b.estado != 'cancelado'
         JOIN compras c ON c.id = b.compra_id
-        JOIN usuarios u ON u.id = c.comprador_usuario_id
+        LEFT JOIN usuarios u ON u.id = c.comprador_usuario_id
         WHERE va.viaje_id = ${viajeId}
       `);
       return resultado.rows.map((fila) => {
@@ -125,7 +125,7 @@ export class NotificacionesProgramadasRepositorioDrizzle
    */
   async listarAvisosLlegadaPendientes(minutosAntes: number): Promise<AvisoLlegadaPendiente[]> {
     const resultado = await this.db.execute(sql`
-      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, u.telefono,
+      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, COALESCE(u.telefono, c.telefono_contacto) AS telefono,
              dest.ciudad AS destino_ciudad
       FROM viajes v
       JOIN rutas r ON r.id = v.ruta_id
@@ -133,7 +133,7 @@ export class NotificacionesProgramadasRepositorioDrizzle
       JOIN viaje_asientos va ON va.viaje_id = v.id
       JOIN boletos b ON b.viaje_asiento_id = va.id AND b.estado = 'usado'
       JOIN compras c ON c.id = b.compra_id
-      JOIN usuarios u ON u.id = c.comprador_usuario_id
+      LEFT JOIN usuarios u ON u.id = c.comprador_usuario_id
       WHERE v.estado != 'cancelado'
         AND v.hora_llegada_estimada IS NOT NULL
         AND v.hora_llegada_estimada
@@ -183,7 +183,7 @@ export class NotificacionesProgramadasRepositorioDrizzle
     minutosDespuesDeLlegada: number,
   ): Promise<SolicitudCalificacionPendiente[]> {
     const resultado = await this.db.execute(sql`
-      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, u.telefono,
+      SELECT DISTINCT v.id AS viaje_id, c.id AS compra_id, COALESCE(u.telefono, c.telefono_contacto) AS telefono,
              dest.ciudad AS destino_ciudad
       FROM viajes v
       JOIN rutas r ON r.id = v.ruta_id
@@ -191,7 +191,7 @@ export class NotificacionesProgramadasRepositorioDrizzle
       JOIN viaje_asientos va ON va.viaje_id = v.id
       JOIN boletos b ON b.viaje_asiento_id = va.id AND b.estado = 'usado'
       JOIN compras c ON c.id = b.compra_id
-      JOIN usuarios u ON u.id = c.comprador_usuario_id
+      LEFT JOIN usuarios u ON u.id = c.comprador_usuario_id
       WHERE v.estado = 'finalizado'
         AND v.hora_llegada_estimada IS NOT NULL
         AND v.hora_llegada_estimada <= now() - (${minutosDespuesDeLlegada} || ' minutes')::interval

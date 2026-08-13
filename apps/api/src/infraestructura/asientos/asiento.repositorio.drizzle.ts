@@ -82,10 +82,14 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
    * hasta que la primera termine, y para entonces ya ve el estado
    * actualizado, no el viejo.
    */
+  // Item 31, Fase 7 (11-ago-2026) -- compra como invitado. Exactamente
+  // uno de usuarioId/sesionInvitadoId trae valor, nunca los 2 -- el
+  // servicio ya valida esto antes de llegar aqui.
   async bloquear(
     viajeId: string,
     numeroAsiento: string,
-    usuarioId: string,
+    usuarioId: string | null,
+    sesionInvitadoId: string | null,
     cooperativaId: string,
   ): Promise<ResultadoBloqueo> {
     return ejecutarComoCooperativa(this.dbApp, cooperativaId, async (tx) => {
@@ -94,7 +98,7 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
       );
 
       const existente = await tx.execute(
-        sql`SELECT id, estado, hold_expira_en, hold_usuario_id FROM viaje_asientos
+        sql`SELECT id, estado, hold_expira_en, hold_usuario_id, hold_sesion_invitado_id FROM viaje_asientos
             WHERE viaje_id = ${viajeId} AND numero_asiento = ${numeroAsiento}
             FOR UPDATE`,
       );
@@ -107,8 +111,8 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
         // carrera", que es exactamente el comportamiento correcto.
         try {
           await tx.execute(
-            sql`INSERT INTO viaje_asientos (viaje_id, numero_asiento, estado, hold_expira_en, hold_usuario_id)
-                VALUES (${viajeId}, ${numeroAsiento}, 'bloqueado_temporal', ${expiraEn}, ${usuarioId})`,
+            sql`INSERT INTO viaje_asientos (viaje_id, numero_asiento, estado, hold_expira_en, hold_usuario_id, hold_sesion_invitado_id)
+                VALUES (${viajeId}, ${numeroAsiento}, 'bloqueado_temporal', ${expiraEn}, ${usuarioId}, ${sesionInvitadoId})`,
           );
           return { exito: true, expiraEn };
         } catch {
@@ -120,6 +124,7 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
         estado: string;
         hold_expira_en: Date | null;
         hold_usuario_id: string | null;
+        hold_sesion_invitado_id: string | null;
       };
 
       if (fila.estado === 'ocupado') {
@@ -129,7 +134,13 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
       const holdVigente =
         fila.hold_expira_en &&
         new Date(fila.hold_expira_en).getTime() > Date.now();
-      const esOtroUsuario = fila.hold_usuario_id !== usuarioId;
+      // El dueno del hold es el mismo si coincide su usuarioId (cuenta
+      // real) O su sesionInvitadoId (invitado) -- nunca los 2 juntos.
+      const esElMismoDueno =
+        (usuarioId !== null && fila.hold_usuario_id === usuarioId) ||
+        (sesionInvitadoId !== null &&
+          fila.hold_sesion_invitado_id === sesionInvitadoId);
+      const esOtroUsuario = !esElMismoDueno;
 
       if (
         fila.estado === 'bloqueado_temporal' &&
@@ -143,7 +154,7 @@ export class AsientoRepositorioDrizzle implements AsientoRepositorio {
       // seleccionando su propio asiento — se (re)bloquea.
       await tx.execute(
         sql`UPDATE viaje_asientos
-            SET estado = 'bloqueado_temporal', hold_expira_en = ${expiraEn}, hold_usuario_id = ${usuarioId}
+            SET estado = 'bloqueado_temporal', hold_expira_en = ${expiraEn}, hold_usuario_id = ${usuarioId}, hold_sesion_invitado_id = ${sesionInvitadoId}
             WHERE viaje_id = ${viajeId} AND numero_asiento = ${numeroAsiento}`,
       );
       return { exito: true, expiraEn };

@@ -72,3 +72,22 @@ export function tokenValido(): string | null {
   if (!payload || tokenExpirado(payload)) return null;
   return token;
 }
+
+const CLAVE_SESION_INVITADO = "ticketya_sesion_invitado";
+
+/**
+ * Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
+ * Mismo patron de guardado simple que el token, pero esto NUNCA
+ * identifica a una cuenta real -- solo enlaza el bloqueo del asiento
+ * con la compra final del mismo invitado, dentro del mismo navegador.
+ * Si ya existe una guardada, se reutiliza (mismo invitado siguiendo su
+ * propio flujo); si no, se genera una nueva.
+ */
+export function obtenerOCrearSesionInvitado(): string {
+  if (typeof window === "undefined") return "";
+  const existente = window.localStorage.getItem(CLAVE_SESION_INVITADO);
+  if (existente) return existente;
+  const nueva = crypto.randomUUID();
+  window.localStorage.setItem(CLAVE_SESION_INVITADO, nueva);
+  return nueva;
+}

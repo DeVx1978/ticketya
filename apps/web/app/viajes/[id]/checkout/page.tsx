@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, use as usePromise } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { crearCompra, listarMisCreditos, obtenerMapaAsientos, iniciarPagoManual, subirComprobantePago, listarMetodosPagoPorViaje, type ResultadoCompra, type MiCredito, type MapaAsientos, type MetodoPagoDisponible, type TipoMetodoPago, type PasajeroCompraInput } from "@/lib/api";
-import { tokenValido } from "@/lib/auth";
+import { tokenValido, obtenerOCrearSesionInvitado } from "@/lib/auth";
 import { CodigoQr } from "@/components/CodigoQr";
 
 const TARIFAS = [
@@ -97,6 +97,9 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
   const [comprobanteArchivo, setComprobanteArchivo] = useState<File | null>(null);
   const [subiendoComprobante, setSubiendoComprobante] = useState(false);
   const [comprobanteSubido, setComprobanteSubido] = useState(false);
+  // Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
+  const [telefonoContacto, setTelefonoContacto] = useState("");
+  const [correoContacto, setCorreoContacto] = useState("");
 
   useEffect(() => {
     const token = tokenValido();
@@ -134,15 +137,18 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
 
   async function pagar(e: React.FormEvent) {
     e.preventDefault();
+    // Item 31, Fase 7 (11-ago-2026) -- compra como invitado: ya NO se
+    // exige iniciar sesion para pagar. Sin token, hace falta al menos
+    // un telefono o correo de contacto (el backend tambien lo valida,
+    // esto solo evita el viaje redondo al servidor para avisarlo antes).
     const token = tokenValido();
-    if (!token) {
-      const paramsVolver = new URLSearchParams({ asientos: numerosAsiento.join(",") });
-      if (esIdaYVuelta && idaViajeIdParam && idaAsientosParam) {
-        paramsVolver.set("idaViajeId", idaViajeIdParam);
-        paramsVolver.set("idaAsientos", idaAsientosParam);
-      }
-      const volver = `/viajes/${viajeId}/checkout?${paramsVolver.toString()}`;
-      router.push(`/ingresar?volverA=${encodeURIComponent(volver)}`);
+    if (!token && !telefonoContacto.trim() && !correoContacto.trim()) {
+      setError("Ingresa un telefono o correo de contacto para recibir tu boleto.");
+      return;
+    }
+    const sesionInvitadoId = token ? undefined : obtenerOCrearSesionInvitado();
+    if (!token && metodoElegido !== "tarjeta") {
+      setError("Los metodos de pago manuales todavia requieren una cuenta -- crea una gratis o paga con tarjeta.");
       return;
     }
     // Fase 7-item29 (07-ago-2026) -- validacion de menor de edad, ahora
@@ -177,7 +183,15 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
             : undefined,
       }));
       if (metodoElegido === "tarjeta") {
-        const resp = await crearCompra(pasajeros, token, idempotencyKey, creditoElegidoId || undefined);
+        const resp = await crearCompra(
+          pasajeros,
+          token,
+          idempotencyKey,
+          creditoElegidoId || undefined,
+          token ? undefined : telefonoContacto.trim() || undefined,
+          token ? undefined : correoContacto.trim() || undefined,
+          sesionInvitadoId,
+        );
         setResultado(resp);
         if (resp.estado === "rechazado") {
           setError(resp.motivo ?? "El pago fue rechazado.");
@@ -186,7 +200,10 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
         // Métodos de pago manuales (29-jul-2026) -- el asiento queda
         // reservado esperando el comprobante y la confirmación de la
         // cooperativa, no se emite el boleto todavía.
-        const resp = await iniciarPagoManual(token, pasajeros, metodoElegido, idempotencyKey);
+        // El "!" es seguro: la guardia de arriba ya garantiza que si
+        // llegamos a esta rama (metodo distinto de tarjeta), token no
+        // puede ser null -- ese caso ya se rechazo antes con setError.
+        const resp = await iniciarPagoManual(token!, pasajeros, metodoElegido, idempotencyKey);
         setPagoManual({ compraId: resp.compraId });
       }
     } catch (err) {
@@ -570,6 +587,37 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 <p className="mt-1 text-xs text-brand-dark/50">
                   Solo se aplica si el crédito es de la misma cooperativa que este viaje.
                 </p>
+              </div>
+            )}
+            {!tokenValido() && (
+              <div className="space-y-3 rounded-lg border border-brand-dark/10 bg-brand-light/30 p-4">
+                <p className="text-sm font-semibold text-brand-dark">
+                  Compras sin crear cuenta -- solo necesitamos donde enviarte tu boleto
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/70">
+                    Telefono (para WhatsApp)
+                  </label>
+                  <input
+                    type="tel"
+                    value={telefonoContacto}
+                    onChange={(e) => setTelefonoContacto(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-brand-dark/20 px-3 py-2 text-sm"
+                    placeholder="0991234567"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-brand-dark/70">
+                    Correo (opcional si ya diste telefono)
+                  </label>
+                  <input
+                    type="email"
+                    value={correoContacto}
+                    onChange={(e) => setCorreoContacto(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-brand-dark/20 px-3 py-2 text-sm"
+                    placeholder="tu@correo.com"
+                  />
+                </div>
               </div>
             )}
             {error && <p className="text-sm font-medium text-red-600">{error}</p>}
