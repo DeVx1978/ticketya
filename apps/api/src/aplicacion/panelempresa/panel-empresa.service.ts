@@ -3,6 +3,7 @@ import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
 import { GeneradorViajesService } from '../generador-viajes/generador-viajes.service';
+import { WalletService } from '../wallet/wallet.service';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
@@ -35,6 +36,7 @@ export class PanelEmpresaService {
     private readonly almacenamiento: AlmacenamientoArchivos,
     private readonly notificaciones: NotificacionesProgramadasService,
     private readonly generadorViajes: GeneradorViajesService,
+    private readonly wallet: WalletService,
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
@@ -386,16 +388,40 @@ export class PanelEmpresaService {
     return this.panel.actualizarWebhookCredencialApi(cooperativaId, credencialId, webhookUrl);
   }
 
-  validarBoletoPorQr(
+  /**
+   * Wallet/cashback Fase 1 (13-ago-2026) -- justo después de que el
+   * boleto pasa a 'usado' de verdad, se intenta acreditar cashback
+   * (WalletService nunca lanza -- ver comentario ahí). Los 3 campos
+   * internos que el repositorio agrega para esto (compraId,
+   * precioPagado, compradorUsuarioId) se consumen aquí y NUNCA se
+   * devuelven en la respuesta HTTP -- el vendedor en la terminal no
+   * necesita ver el precio pagado ni el id del comprador, solo si el
+   * boleto es válido.
+   */
+  async validarBoletoPorQr(
     cooperativaId: string,
     codigoQr: string,
     validadoPorUsuarioId: string,
   ) {
-    return this.panel.validarBoletoPorQr(
+    const resultado = await this.panel.validarBoletoPorQr(
       cooperativaId,
       codigoQr,
       validadoPorUsuarioId,
     );
+
+    if (resultado.valido && resultado.compraId && resultado.precioPagado !== undefined) {
+      await this.wallet.acreditarCashbackPorValidacion({
+        compradorUsuarioId: resultado.compradorUsuarioId ?? null,
+        compraId: resultado.compraId,
+        precioPagado: resultado.precioPagado,
+      });
+    }
+
+    const { compraId, precioPagado, compradorUsuarioId, ...respuestaPublica } = resultado;
+    void compraId;
+    void precioPagado;
+    void compradorUsuarioId;
+    return respuestaPublica;
   }
 
   verificarMenor(

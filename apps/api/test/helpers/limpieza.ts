@@ -87,6 +87,12 @@ export async function limpiarCooperativasDePrueba(
     await pg.query(
       `DELETE FROM notificaciones WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,
     );
+    // 13-ago-2026 -- mismo patrón recurrente de siempre (wallet/cashback
+    // Fase 1): wallet_movimientos referencia compra_id, hay que borrarlo
+    // antes que compras, o la llave foránea bloquea el DELETE de abajo.
+    await pg.query(
+      `DELETE FROM wallet_movimientos WHERE compra_id IN (SELECT compra_id FROM _boletos_test)`,
+    );
     await pg.query(
       `DELETE FROM compras WHERE id IN (SELECT compra_id FROM _boletos_test)`,
     );

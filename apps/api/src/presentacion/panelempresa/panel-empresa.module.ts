@@ -11,6 +11,7 @@ import { VentasModule } from '../ventas/ventas.module';
 import { LiquidacionesModule } from '../liquidaciones/liquidaciones.module';
 import { NotificacionesProgramadasModule } from '../notificaciones-programadas/notificaciones-programadas.module';
 import { GeneradorViajesModule } from '../generador-viajes/generador-viajes.module';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { GeneradorViajesModule } from '../generador-viajes/generador-viajes.modu
     LiquidacionesModule,
     NotificacionesProgramadasModule,
     GeneradorViajesModule,
+    WalletModule,
   ],
   controllers: [PanelEmpresaController],
   providers: [

@@ -51,6 +51,17 @@ export const configuracionPlataforma = pgTable(
       scale: 2,
     }),
 
+    // Cashback/wallet, Fase 1 (13-ago-2026) -- decision del director,
+    // investigada contra ClickBus (CashBus), la referencia real de la
+    // industria. Nullable a proposito, mismo patron exacto que
+    // cargoPlataformaPorPasajeroDefault arriba: si esta en null, la capa
+    // de aplicacion lo trata como 0% -- no se asume un numero real hasta
+    // que el director lo decida.
+    cashbackPorcentajeDefault: numeric('cashback_porcentaje_default', {
+      precision: 5,
+      scale: 2,
+    }),
+
     // RN-004 -- decision pendiente: duracion exacta de la ventana de bloqueo
     // temporal de asiento (referencia de industria: 5-10 min, no asumida
     // como definitiva).
