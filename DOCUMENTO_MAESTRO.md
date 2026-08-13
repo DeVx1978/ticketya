@@ -484,9 +484,33 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 
 **Verificado:** migración `0031_wallet_cashback_fase1.sql` aplicada desde cero (32 migraciones en total), `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **180/180 pruebas e2e** (174 previas + 6 nuevas: saldo en 0 al inicio, invitado no gana nada, pasajero con cuenta sí gana el monto exacto, no se acredita dos veces por el mismo boleto, un movimiento de más de 180 días no cuenta, y solo `super_admin` puede cambiar el porcentaje).
 
-**Fuera de alcance a propósito, Fase 2 (no construida todavía):** gastar el saldo en una compra nueva -- se integra con el checkout, es más complejo, decisión del director de dejarlo para después.
+**Fuera de alcance a propósito en la Fase 1:** gastar el saldo en una compra nueva -- se integra con el checkout, es más complejo. Ver Fase 2, justo abajo, cerrada el mismo día.
 
 ---
+
+### 3.14.1 Wallet / Cashback -- Fase 2: gastar el saldo en una compra -- CERRADO (13-ago-2026)
+
+**Diseño investigado y decidido por el director, con evidencia real de los Términos de Uso oficiales de ClickBus (sección 5.7.5.1):** *"El uso de la Wallet no es acumulable con otra forma de descuento... el cliente debe optar por una de las 2 formas de descuento."* -- el saldo del wallet y el crédito de reprogramación son excluyentes, uno u otro por compra, nunca los 2 juntos.
+
+**Construido:**
+- `CrearCompraDto`: campo nuevo `usarSaldoWallet?: boolean`. Si viene junto con `creditoIdAUsar` en la misma petición, `checkout.service.ts` rechaza con 400 antes de tocar la base de datos: *"No se puede usar saldo de wallet junto con un crédito de reprogramación en la misma compra -- elige uno."*
+- Mismo patrón exacto que ya usaba `creditoIdAUsar` (revisado en el código real antes de tocar nada, líneas ~124-153): `saldoWalletAplicado = Math.min(saldoDisponible, montoTotal)`, `montoAPagar = montoTotal - saldoWalletAplicado`. Solo aplica si hay `usuarioId` real.
+- **Decisión de diseño, reportada tal como pidió la orden:** un invitado con `usarSaldoWallet: true` se **ignora en silencio**, no se rechaza con error -- mismo criterio que ganar cashback (`acreditarCashbackPorValidacion` tampoco lanza error para un invitado, simplemente no hace nada). No tiene sentido bloquear toda una compra de invitado por un campo que el frontend, de por sí, no debería mostrarle a alguien sin sesión.
+- Nuevo movimiento `tipo: 'debito_compra'` al confirmar la compra (pago aprobado) -- mismo momento exacto donde ya se marca usado el crédito de reprogramación, si aplicara. Si el pago se rechaza, el código ya salió con `return` antes de llegar a ese bloque -- el saldo del wallet queda intacto, confirmado con prueba real, no solo revisado en el código.
+- `WalletRepositorio.crearMovimientoCredito()` renombrado a `crearMovimiento()` -- ya era genérico desde la Fase 1 (el parámetro `tipo` siempre fue libre), el nombre viejo mentía ahora que también se usa para débitos. No cambia ningún comportamiento.
+- Consulta de saldo actualizada: créditos vigentes (dentro de 180 días) **menos** todos los débitos, sin importar su antigüedad -- un débito representa saldo ya gastado de verdad, nunca debe "volver a aparecer".
+
+**Decisión de riesgo, documentada explícitamente por tratarse de dinero real (no un efecto cosmético):** `WalletService.debitarPorCompra()` nunca lanza, igual que el crédito de cashback -- se consideró dejarlo lanzar, pero para cuando este método se llama la compra YA está confirmada (pago aprobado, boletos emitidos, pasajero notificado); revertir todo eso por un fallo al registrar el débito sería peor que el problema que se busca evitar. Se registra con un mensaje de error explícito que menciona que el saldo queda inflado, para que sea fácil de encontrar en los logs y corregir a mano si llegara a pasar.
+
+**Limitación real conocida, reportada y NO resuelta unilateralmente en esta fase:** si un crédito se gasta parcialmente y ese mismo crédito expira más tarde (pasa de los 180 días), el débito ya hecho sigue restando igual -- en un caso extremo el saldo podría quedar negativo. Resolverlo de verdad requiere un consumo tipo FIFO (marcar qué crédito específico cubrió cada débito), más complejo que la suma simple de esta fase y fuera del alcance que se pidió construir. Documentado en el código real (`wallet.repositorio.drizzle.ts`) y aquí, para que el director decida si vale la pena resolverlo en una fase futura.
+
+**Verificado con 5 pruebas e2e nuevas, con 2 hallazgos reales en el camino de la propia investigación de las pruebas (no bugs de producción, errores propios al escribir las pruebas, corregidos):**
+- Documentos de cédula inventados a mano para las pruebas nuevas no pasaban el algoritmo Módulo 10 real -- corregido reutilizando una cédula ya confirmada válida en pruebas anteriores.
+- El primer diseño de la prueba de "pago rechazado" usaba un monto (`1000499`) que excede el límite real de la columna `numeric(8,2)` (máximo `999999.99`) -- corregido con un monto dentro del límite (`999999.50`) y un saldo de wallet pequeño (`$0.50`) para que el monto a pagar diera exacto `999999` (el gatillo real del simulador de pago para forzar un rechazo).
+
+**Pruebas reales:** un pasajero con saldo lo usa y paga menos; rechaza con el mensaje exacto si se manda `usarSaldoWallet` y `creditoIdAUsar` juntos; un invitado lo ignora en silencio sin error; si el saldo no alcanza, cobra la diferencia normal; si el pago se rechaza, el saldo queda intacto (no se crea el débito) -- confirmado consultando el saldo real después del rechazo, no solo revisando el código.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **185/185 pruebas e2e** (180 previas + 5 nuevas).
 
 ## 4. Requerimientos no funcionales
 
