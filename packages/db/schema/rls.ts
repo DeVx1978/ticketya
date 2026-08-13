@@ -43,7 +43,7 @@ export const platformAdminRole = pgRole('ticketya_platform_admin', { inherit: tr
  * sin cooperativa_id seteado simplemente no ve ninguna fila, en vez de
  * romper la query.
  */
-export const filtroCooperativaActual = sql`cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid`;
+export const filtroCooperativaActual = sql`(current_user = 'ticketya_platform_admin' OR cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`;
 
 /**
  * Variante para tablas que mezclan filas de tenant (ej. personal de una
@@ -65,5 +65,5 @@ export const filtroCooperativaActual = sql`cooperativa_id = NULLIF(current_setti
  * que hace RESET de la variable rompe con "invalid input syntax for type
  * uuid" en vez de simplemente no ver ninguna fila.
  */
-export const filtroCooperativaActualOGlobal = sql`(cooperativa_id IS NULL OR cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`;
+export const filtroCooperativaActualOGlobal = sql`(current_user = 'ticketya_platform_admin' OR cooperativa_id IS NULL OR cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`;
 

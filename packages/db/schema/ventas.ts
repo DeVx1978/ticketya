@@ -44,7 +44,7 @@ import { usuarios } from './usuarios';
 import { cooperativas } from './tenancy';
 import { viajeAsientos } from './asientos';
 import { tipoTarifaEnum, estadoPagoEnum, canalVentaEnum, estadoBoletoEnum } from './enums';
-import { appRole, filtroCooperativaActual } from './rls';
+import { appRole, platformAdminRole, filtroCooperativaActual } from './rls';
 
 export const compras = pgTable(
   'compras',
@@ -202,7 +202,7 @@ export const boletos = pgTable(
     index('idx_boletos_pasajero_compra').on(t.pasajeroCompraId),
     pgPolicy('aislamiento_cooperativa_boletos', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),

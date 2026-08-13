@@ -32,7 +32,7 @@ import {
 import { relations } from 'drizzle-orm';
 import { rolUsuarioEnum } from './enums';
 import { cooperativas } from './tenancy';
-import { appRole, filtroCooperativaActualOGlobal } from './rls';
+import { appRole, platformAdminRole, filtroCooperativaActualOGlobal } from './rls';
 
 export const usuarios = pgTable(
   'usuarios',
@@ -106,7 +106,7 @@ export const usuarios = pgTable(
     index('idx_usuarios_rol').on(t.rol),
     pgPolicy('aislamiento_cooperativa_usuarios', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActualOGlobal,
       withCheck: filtroCooperativaActualOGlobal,
     }),

@@ -26,7 +26,7 @@ import { relations, sql } from 'drizzle-orm';
 import { viajes } from './rutas';
 import { usuarios } from './usuarios';
 import { estadoAsientoEnum } from './enums';
-import { appRole } from './rls';
+import { appRole, platformAdminRole } from './rls';
 
 export const viajeAsientos = pgTable(
   'viaje_asientos',
@@ -76,7 +76,7 @@ export const viajeAsientos = pgTable(
     // subconsulta, porque RLS no es transitivo entre tablas por defecto.
     pgPolicy('aislamiento_cooperativa_viaje_asientos', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: sql`viaje_id IN (SELECT id FROM viajes WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
       withCheck: sql`viaje_id IN (SELECT id FROM viajes WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
     }),

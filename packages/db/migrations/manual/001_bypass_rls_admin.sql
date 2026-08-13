@@ -1,10 +1,13 @@
--- Migración manual (fuera de drizzle-kit): otorgar BYPASSRLS al rol del
--- Panel Admin de plataforma.
+-- OBSOLETO (12-ago-2026) -- este archivo intentaba ALTER ROLE ...
+-- BYPASSRLS, que nunca puede funcionar en un Postgres administrado
+-- (Render): solo un rol que YA tiene BYPASSRLS puede otorgarlo, y el
+-- usuario de conexion de la app nunca lo va a tener ahi. Reemplazado
+-- por completo por la migracion 0028_admin_plataforma_bypass_rls.sql,
+-- que logra el mismo resultado (el admin de plataforma ve todo) sin
+-- depender de ningun superusuario -- agrega la excepcion directo
+-- dentro de cada politica en vez de un atributo de rol.
 --
--- drizzle-orm 0.45.x no expone el atributo BYPASSRLS en la config de
--- pgRole() (solo createDb/createRole/inherit) — ver comentario en
--- packages/db/schema/rls.ts. Sin esto, RF-ADMIN-002 (dashboard nacional
--- agregado de todas las cooperativas) no puede funcionar, porque
--- ticketya_platform_admin quedaría sujeto a las mismas políticas RLS que
--- cualquier otra conexión.
-ALTER ROLE ticketya_platform_admin BYPASSRLS;
+-- Se deja este archivo como no-operacion (en vez de borrarlo) para
+-- que el historial de migraciones no cambie de numeracion, y para que
+-- quede documentado por que ya no hace nada.
+SELECT 1;
