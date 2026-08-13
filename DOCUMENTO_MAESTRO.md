@@ -590,6 +590,26 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **Confirmado, verificado con evidencia real (07-ago-2026): el selector de tipo de tarifa (adulto/nino/tercera edad -- 50% descuento/discapacidad -- descuento segun carnet CONADIS) YA esta construido y funcionando en el checkout real, con la logica de autorizacion de menores incluida -- NO es un hueco, cumple con la exigencia legal ecuatoriana (LOTTTSV Art. 79). Se verifico esto explicitamente porque el director lo pregunto directo, sin asumir nada -- mismo criterio de honestidad que rige el resto de este documento.**
 
+31.1 Validacion real de datos del pasajero en checkout -- **INVESTIGADO Y DECIDIDO (12-ago-2026), construccion pendiente para la proxima sesion.**
+
+**Pedido real del director:** validar el telefono (formato ecuatoriano exacto), separar nombre completo en nombres y apellidos reales, y validar el numero de documento con precision -- mas la pregunta abierta de como manejan las grandes plataformas a las mujeres embarazadas.
+
+**Investigado con evidencia real antes de decidir (mismo criterio de siempre):**
+- **Algoritmo oficial de la cedula ecuatoriana (Modulo 10), confirmado con multiples fuentes independientes coincidentes:** 10 digitos, los 2 primeros son el codigo de provincia (01-24), el tercero debe ser menor a 6 para persona natural, y el decimo digito es un verificador matematico real (coeficientes alternados 2,1,2,1,2,1,2,1,2 sobre los primeros 9 digitos, resta de 9 si el resultado de una multiplicacion es >= 10, suma total, verificador = 10 - (suma % 10), o 0 si la suma ya es multiplo de 10).
+- **FlixBus confirma explicitamente que acepta pasaporte, cedula/tarjeta de identidad, y licencia de conducir como identificacion valida** -- confirma que limitar el sistema solo a cedula ecuatoriana dejaria fuera a pasajeros extranjeros reales (rutas transfronterizas Ecuador-Colombia/Peru existen).
+- **LOTTTSV Articulo 48, texto legal real:** nombra explicitamente a "mujeres embarazadas" junto con discapacidad, adultos mayores de 65, y ninos/adolescentes, pero SOLO para "atencion preferente" -- el mismo articulo, en su propia siguiente frase, limita el "sistema de tarifas diferenciadas" (los descuentos reales) a ninos/adolescentes, discapacidad, y adultos mayores de 65 -- **las embarazadas quedan fuera de la lista de descuento de tarifa a proposito, es un derecho de prioridad/accesibilidad, no un descuento de precio.** Confirmar esto con precision evito un error legal real: mezclar "embarazada" dentro de tipoTarifa (que hoy determina el precio) habria sido incorrecto.
+
+**Decisiones confirmadas por el director:**
+- Documento: **selector explicito** (Cedula / Pasaporte) antes de escribir el numero -- no se intenta adivinar el tipo por el formato.
+- Cedula: validada con el algoritmo Modulo 10 real. Pasaporte: validacion mas ligera (formato/longitud razonable, sin checksum -- varia por pais).
+- Nombre completo: **se separa en 2 campos reales**, `nombres` y `apellidos` -- no un solo campo con validacion de palabras.
+- Telefono: formato movil ecuatoriano (10 digitos, empieza con 09) -- el mismo campo que ya se uso para telefonoContacto en el item 31 (compra como invitado).
+- Embarazada: **campo nuevo de atencion preferente, separado de tipoTarifa** -- no afecta el precio, es una marca de prioridad (asiento, atencion), consistente con el texto legal real.
+
+**Alcance real investigado antes de comprometerse a construir -- hallazgo importante que evito un error de tamano:** `nombreCompleto` se usa en **41 archivos reales** del repositorio, repartido en 3 esquemas distintos (`usuarios` -- cuenta del usuario, `flota` -- personal/conductores de la cooperativa, `ventas` -- pasajeros del checkout). Tocar los 3 de una vez habria convertido esto en una migracion completa del sistema, no en la mejora de validacion que se pidio. **Alcance confirmado por el director: limitado a los datos del pasajero en el checkout (`pasajeros_compra` + el formulario de compra) -- cuentas de usuario y personal de las cooperativas quedan sin tocar por ahora.**
+
+**Por que se documenta sin construir todavia:** el tamano real termino siendo comparable al item 31 (que ocupo la sesion completa) -- construirlo apurado al final de una sesion ya extraordinariamente larga (multi-pasajero, ida y vuelta, notificaciones, y compra como invitado, todo en el mismo dia) es exactamente cuando empiezan a colarse errores pequenos. Se prefirio cerrar la investigacion con precision y dejar la construccion para una sesion con la cabeza descansada, en vez de forzarla.
+
 ### Fase 8 -- Hallazgos nuevos del director, 11-ago-2026, pendientes de construir
 
 **Confirmado ya construido, verificado con evidencia real:** notificaciones de confirmacion de compra y recordatorio de viaje (WhatsApp, ver 3.12) -- SI existen. Limite real de esta verificacion: no se confirmo el detalle fino de cuantos avisos manda ni con que anticipacion exacta (ej. si manda uno la noche antes Y otro la manana del viaje, o solo uno) -- pendiente de revisar el codigo real antes de asumir cualquier cosa.
