@@ -14,7 +14,7 @@
 
 **1. Todas las funciones del flujo de compra que un pasajero esperaria de las mejores plataformas -- no solo lo basico.** Incluye, con evidencia real ya investigada:
 - ~~Comprar para varias personas en una sola transaccion, e ida y vuelta~~ -- cerrado 11-ago-2026 (ver Fase 7, item 29, PRs #58/#59).
-- Rastreo en vivo del bus, sistema de puntos/cashback tipo ClickBus, resenas de texto reales de otros pasajeros (hoy solo existe promedio numerico), programa de referidos -- ver la investigacion comparativa completa contra redBus, ClickBus, FlixBus, Busbud, Wanderu, Rome2Rio, CheckMyBus, Booking.com y Skyscanner (07-ago-2026), con brechas priorizadas en 3 categorias (esencial / ventaja competitiva / cosmetico) -- documento aparte, pendiente de retomar despues de cerrar la Fase 7.
+- ~~Reseñas de texto reales de otros pasajeros~~ -- **cerrado 13-ago-2026** (ver 3.2.1). Rastreo en vivo del bus, sistema de puntos/cashback tipo ClickBus, programa de referidos -- ver la investigacion comparativa completa contra redBus, ClickBus, FlixBus, Busbud, Wanderu, Rome2Rio, CheckMyBus, Booking.com y Skyscanner (07-ago-2026), con brechas priorizadas en 3 categorias (esencial / ventaja competitiva / cosmetico) -- documento aparte, pendiente de retomar despues de cerrar la Fase 7.
 - Ningun item se marca "completo" sin responder primero "¿que le falta comparado con las mejores plataformas del mundo?" (regla no negociable, ver seccion 5).
 
 **2. Publicidad real y visible en la landing.** El sistema completo (banners, planes comerciales, leads de anunciantes) ya esta construido por dentro (ver 3.9) y las reglas visuales ya estan investigadas con fuentes reales (formato discreto tipo resultado organico, video flotante estilo YouTube, nunca invasivo, nunca dentro del flujo de compra). Falta conectarlo visualmente en la landing final -- pendiente, Fase 6 en adelante.
@@ -163,6 +163,30 @@ Todas las fuentes coinciden en el mismo set de expectativas mínimas que hoy **n
 **"Ver trayecto en el mapa" -- cerrado 05-ago-2026 (PR #45).** Hallazgo real: las coordenadas ya llegaban en cada resultado de búsqueda desde el backend, pero el frontend las descartaba en silencio -- `ResultadoViaje` en `lib/api.ts` no las declaraba. Corregido con los 4 campos + un link estándar a Google Maps (`https://www.google.com/maps/dir/?api=1&origin=...&destination=...`), sin SDK ni API key, abierto en pestaña nueva desde cada tarjeta de resultado.
 
 **Falta:** endpoint + mapa en vivo para GPS (infraestructura genérica, sin esperar a ninguna cooperativa); cargar coordenadas reales exactas de cada terminal (tarea del dueño del proyecto, vía Google Maps); verificar nombres oficiales y provincias exactas de los 22 terminales cargados sin verificación individual.
+
+### 3.2.1 Reseñas de texto reales -- CERRADO (13-ago-2026)
+
+**Hallazgo real que originó esta tarea:** el campo `comentario` de cada calificación se guarda desde el 22-jul-2026 (ver 3.5, ciclo de vida del boleto), pero nunca existió ningún endpoint que lo devolviera -- `resumenPorCooperativa()` solo entregaba `{ promedio, cantidad }`. El comentario que un pasajero escribía quedaba invisible para siempre, sin que nadie -- ni otro pasajero, ni la propia cooperativa -- pudiera leerlo jamás.
+
+**Investigado antes de construir:**
+- **Airbnb** confirma explícitamente en su documentación que las reseñas muestran solo el primer nombre del autor, nunca el apellido -- el estándar más protector de privacidad entre las plataformas líderes revisadas.
+- **Amazon** usa 10 reseñas por página como su paginación estándar.
+- Decisión del director: primer nombre + 10 por página, ambos confirmados con la evidencia de arriba.
+
+**Decisión de alcance -- mismo umbral que el ítem 12, no uno nuevo inventado.** Antes de construir se revisó el valor real ya decidido para el promedio numérico (ítem 12, Fase 2, 05-ago-2026): 5 calificaciones mínimas antes de mostrar nada, mismo criterio que Google/Amazon. Las reseñas de texto usan el mismo umbral -- por debajo de 5 calificaciones totales de la cooperativa (no 5 con comentario, 5 en total), el endpoint devuelve la lista vacía, ni siquiera un aviso.
+
+**Construido:**
+- `GET /calificaciones/cooperativa/:cooperativaId/resenas` -- público, sin autenticación, mismo criterio que el promedio (es información que ayuda a decidir *antes* de comprar). Paginado (`pagina`, `porPagina`, 10 por defecto, máximo 50).
+- Solo devuelve calificaciones con `comentario` real (no vacío) -- una calificación sin texto no es una "reseña".
+- `nombreAutor` viene de `pasajeros_compra.nombres` (el campo separado desde el ítem 31.1) -- nunca `apellidos`.
+- **Hallazgo real encontrado en el camino, no anticipado:** `ResultadoViaje` (la respuesta de `/viajes/buscar`) nunca incluía `cooperativaId` -- no era un caso de "se descarta en silencio" como el de las coordenadas del ítem 15, el backend nunca lo seleccionaba en primer lugar. Sin esto, el frontend no tenía forma de pedir las reseñas de una cooperativa específica desde la lista de resultados. Agregado tanto en `busqueda.service.ts` como en la interfaz del frontend.
+- Frontend: componente `ResenasCooperativa.tsx`, plegado por defecto en cada tarjeta de resultado de `/buscar` -- se carga bajo demanda (nunca se piden las reseñas de las 10 cooperativas de una búsqueda de una sola vez, solo cuando el pasajero hace clic en "Ver reseñas"), con paginación real (Anterior/Siguiente).
+
+**Bug real encontrado por la propia prueba e2e de este mismo cambio, corregido antes de fusionar:** el primer diseño de la consulta usaba `COUNT(*) OVER()` para traer el total en la misma consulta paginada. Cuando la página pedida no tenía ninguna fila (ej. pedir la página 2 de una cooperativa con solo 1 reseña real), la consulta no devolvía ninguna fila -- y con eso, la función de ventana tampoco devolvía ningún total, así que `total` volvía 0 en vez del valor real. Corregido separando el conteo en su propia consulta, independiente de la paginación.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y 174/174 pruebas e2e (171 previas + 3 nuevas: umbral no alcanzado, camino feliz con filtro de comentario + primer nombre, y paginación con página vacía).
+
+**Falta:** nada de lo pedido. Pendiente para otra sesión, no parte de esta tarea: la investigación comparativa más amplia (cashback/fidelidad, programa de referidos) que sigue documentada como brecha en la sección 0.
 
 ---
 
