@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buscarViajes, AMENIDADES_CATALOGO, type Amenidad, type ResultadoViaje } from "@/lib/api";
 import { FiltrosBusqueda } from "./FiltrosBusqueda";
+import { ResenasCooperativa } from "./ResenasCooperativa";
 
 function formatearHora(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-EC", {
@@ -79,6 +80,15 @@ function TarjetaResultado({ r, hrefAsientos }: { r: ResultadoViaje; hrefAsientos
         >
           Ver trayecto en el mapa
         </a>
+        {/* Reseñas de texto reales (13-ago-2026) -- mismo umbral mínimo
+            de 5 calificaciones que ya gatea el promedio numérico de
+            arriba, así que se reutiliza esa misma condición. */}
+        {r.cooperativaCalificacionPromedio !== null && (
+          <ResenasCooperativa
+            cooperativaId={r.cooperativaId}
+            cantidadTotal={r.cooperativaCalificacionCantidad}
+          />
+        )}
       </div>
       <div className="flex items-center justify-between gap-6 md:justify-end">
         <div className="text-right">

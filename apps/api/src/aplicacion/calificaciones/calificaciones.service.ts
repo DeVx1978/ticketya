@@ -96,6 +96,28 @@ export class CalificacionesService {
     return this.calificaciones.resumenPorCooperativa(cooperativaId);
   }
 
+  /**
+   * Reseñas de texto reales (13-ago-2026). Mismo umbral mínimo de
+   * confianza ya decidido en el ítem 12, Fase 2 (05-ago-2026,
+   * DOCUMENTO_MAESTRO.md) para el promedio numérico -- 5 calificaciones
+   * mínimo antes de mostrar nada, mismo criterio que Google/Amazon.
+   * Se revisó el valor real en busqueda.service.ts (UMBRAL_MINIMO_CALIFICACIONES)
+   * en vez de asumirlo -- debe mantenerse igual a ese si cambia ahí.
+   */
+  async listarResenas(cooperativaId: string, pagina: number, porPagina: number) {
+    const UMBRAL_MINIMO_CALIFICACIONES = 5;
+    const resumen = await this.calificaciones.resumenPorCooperativa(cooperativaId);
+    if (resumen.cantidad < UMBRAL_MINIMO_CALIFICACIONES) {
+      return { resenas: [], total: 0, pagina, porPagina };
+    }
+    const { resenas, total } = await this.calificaciones.listarResenasPorCooperativa(
+      cooperativaId,
+      pagina,
+      porPagina,
+    );
+    return { resenas, total, pagina, porPagina };
+  }
+
   async listarMisBoletos(usuarioId: string) {
     const boletos =
       await this.calificaciones.listarBoletosDePasajero(usuarioId);
