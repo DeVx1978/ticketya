@@ -18,7 +18,7 @@ import { relations } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
 import { compras } from './ventas';
 import { estadoReservaApiEnum } from './enums';
-import { appRole, filtroCooperativaActual } from './rls';
+import { appRole, platformAdminRole, filtroCooperativaActual } from './rls';
 
 /**
  * RF-API-001 — autenticación de sistemas externos con alcance limitado a
@@ -64,7 +64,7 @@ export const credencialesApi = pgTable(
     uniqueIndex('uq_credenciales_api_prefix').on(t.apiKeyPrefix),
     pgPolicy('aislamiento_cooperativa_credenciales_api', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),
@@ -104,7 +104,7 @@ export const webhooksLog = pgTable(
     index('idx_webhooks_log_estado').on(t.estadoEntrega),
     pgPolicy('aislamiento_cooperativa_webhooks_log', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),
@@ -140,7 +140,7 @@ export const reservasApiExternas = pgTable(
     index('idx_reservas_api_externas_cooperativa').on(t.cooperativaId),
     pgPolicy('aislamiento_cooperativa_reservas_api_externas', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),

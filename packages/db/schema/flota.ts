@@ -14,7 +14,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
-import { appRole, filtroCooperativaActual } from './rls';
+import { appRole, platformAdminRole, filtroCooperativaActual } from './rls';
 import { categoriaVehiculoEnum, amenidadEnum } from './enums';
 
 /**
@@ -66,7 +66,7 @@ export const tiposVehiculo = pgTable(
     index('idx_tipos_vehiculo_cooperativa').on(t.cooperativaId),
     pgPolicy('aislamiento_cooperativa_tipos_vehiculo', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),
@@ -109,7 +109,7 @@ export const unidades = pgTable(
     index('idx_unidades_tipo_vehiculo').on(t.tipoVehiculoId),
     pgPolicy('aislamiento_cooperativa_unidades', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),
@@ -177,7 +177,7 @@ export const conductores = pgTable(
     index('idx_conductores_cooperativa').on(t.cooperativaId),
     pgPolicy('aislamiento_cooperativa_conductores', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),

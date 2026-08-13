@@ -26,7 +26,7 @@ import { cooperativas } from './tenancy';
 import { puntosOperacion } from './tenancy';
 import { unidades, conductores } from './flota';
 import { estadoViajeEnum } from './enums';
-import { appRole, filtroCooperativaActual } from './rls';
+import { appRole, platformAdminRole, filtroCooperativaActual } from './rls';
 
 export const rutas = pgTable(
   'rutas',
@@ -61,7 +61,7 @@ export const rutas = pgTable(
     index('idx_rutas_origen_destino').on(t.origenPuntoOperacionId, t.destinoPuntoOperacionId),
     pgPolicy('aislamiento_cooperativa_rutas', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),
@@ -171,7 +171,7 @@ export const viajes = pgTable(
     index('idx_viajes_unidad').on(t.unidadId),
     pgPolicy('aislamiento_cooperativa_viajes', {
       for: 'all',
-      to: appRole,
+      to: [appRole, platformAdminRole],
       using: filtroCooperativaActual,
       withCheck: filtroCooperativaActual,
     }),
