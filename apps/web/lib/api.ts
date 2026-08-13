@@ -937,13 +937,22 @@ export interface AutorizacionMenorInput {
   documentoAutorizacionUrl?: string;
 }
 
+/** Item 31.1, Fase 7 (13-ago-2026) -- nombreCompleto se reemplaza por
+ * nombres/apellidos separados, y se agrega el selector explícito de
+ * tipoDocumento (el backend valida distinto según cuál sea: cédula con
+ * el algoritmo real Módulo 10, pasaporte con formato más ligero).
+ * esEmbarazada es atención preferente (LOTTTSV Art. 48), no un
+ * descuento -- va separado de tipoTarifa. */
 export interface PasajeroCompraInput {
   viajeId: string;
   numeroAsiento: string;
-  nombreCompleto: string;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: "cedula" | "pasaporte";
   documento: string;
   tipoTarifa: "adulto" | "nino" | "tercera_edad" | "discapacidad";
   fechaNacimiento?: string;
+  esEmbarazada?: boolean;
   autorizacionMenor?: AutorizacionMenorInput;
 }
 
