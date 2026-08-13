@@ -175,9 +175,9 @@ export class CalificacionesService {
       // Encabezado -- marca visible, requisito 1 del director.
       doc
         .fontSize(24)
-        .fillColor('#1a3c6e')
+        .fillColor('#000000')
         .font('Helvetica-Bold')
-        .text('TicketYa', margenIzq, doc.y);
+        .text('Columbus', margenIzq, doc.y);
       doc
         .fontSize(10)
         .fillColor('#888888')
