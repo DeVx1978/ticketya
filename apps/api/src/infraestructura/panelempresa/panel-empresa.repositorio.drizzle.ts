@@ -1356,6 +1356,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         compraId: fila.compra_id,
         precioPagado: Number(fila.precio_pagado),
         compradorUsuarioId: fila.comprador_usuario_id,
+        // Programa de referidos (13-ago-2026) -- el id real del boleto,
+        // necesario para marcar la relación de referido como disparada.
+        boletoId: fila.id,
       };
     });
   }

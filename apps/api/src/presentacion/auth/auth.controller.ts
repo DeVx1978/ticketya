@@ -44,11 +44,14 @@ export class AuthController {
     // resto del sistema (boletos, comprobantes, recibos) ya depende de
     // un solo campo `nombreCompleto` en muchos lugares — se combinan
     // aquí, en el borde, sin propagar el cambio a todo lo demás.
-    const { nombres, apellidos, ...resto } = datos;
-    return this.authService.registrar({
-      ...resto,
-      nombreCompleto: `${nombres.trim()} ${apellidos.trim()}`,
-    });
+    const { nombres, apellidos, codigoReferido, ...resto } = datos;
+    return this.authService.registrar(
+      {
+        ...resto,
+        nombreCompleto: `${nombres.trim()} ${apellidos.trim()}`,
+      },
+      codigoReferido,
+    );
   }
 
   /** RF-AUTH-002 */

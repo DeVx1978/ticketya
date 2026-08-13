@@ -117,4 +117,24 @@ export class WalletService {
   async actualizarCashbackPorcentajeDefault(porcentaje: number, usuarioId: string): Promise<void> {
     await this.wallet.actualizarCashbackPorcentajeDefault(porcentaje, usuarioId);
   }
+
+  /**
+   * Programa de referidos (13-ago-2026) -- crédito al referidor,
+   * llamado desde ReferidosService.acreditarReferidorPorValidacion.
+   * A diferencia de los créditos/débitos anteriores, este no tiene una
+   * compra de origen propia del usuario que lo recibe (viene del viaje
+   * de su amigo referido) -- compraId queda sin enviar a propósito.
+   * No envuelve en try/catch aquí -- ReferidosService ya lo hace
+   * alrededor de toda la operación (crear el movimiento + marcar la
+   * relación), mismo criterio de "nunca lanza" pero manejado un nivel
+   * arriba para que ambos pasos se traten como una sola unidad.
+   */
+  async crearMovimientoDeReferido(datos: { usuarioId: string; monto: number }): Promise<void> {
+    if (datos.monto <= 0) return;
+    await this.wallet.crearMovimiento({
+      usuarioId: datos.usuarioId,
+      monto: datos.monto,
+      tipo: 'credito_referido',
+    });
+  }
 }

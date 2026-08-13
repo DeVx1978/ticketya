@@ -12,9 +12,10 @@ import { SimuladorFacturacionElectronica } from '../../infraestructura/facturaci
 import { AuthModule } from '../auth/auth.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { ReferidosModule } from '../referidos/referidos.module';
 
 @Module({
-  imports: [AuthModule, WebhooksModule, WalletModule],
+  imports: [AuthModule, WebhooksModule, WalletModule, ReferidosModule],
   controllers: [VentasController],
   providers: [
     CheckoutService,

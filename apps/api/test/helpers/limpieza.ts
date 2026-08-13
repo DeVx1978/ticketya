@@ -70,6 +70,14 @@ export async function limpiarCooperativasDePrueba(
     await pg.query(
       `DELETE FROM solicitudes_factura_cooperativa WHERE boleto_id IN (SELECT id FROM _boletos_test)`,
     );
+    // 13-ago-2026 -- mismo patrón recurrente de siempre (programa de
+    // referidos): referidos.boleto_que_disparo_credito_id apunta a un
+    // boleto real -- se desvincula (no se borra la relación completa,
+    // solo la referencia) antes de borrar los boletos, o la llave
+    // foránea bloquea el DELETE de abajo.
+    await pg.query(
+      `UPDATE referidos SET boleto_que_disparo_credito_id = NULL WHERE boleto_que_disparo_credito_id IN (SELECT id FROM _boletos_test)`,
+    );
     await pg.query(
       `DELETE FROM boletos WHERE id IN (SELECT id FROM _boletos_test)`,
     );

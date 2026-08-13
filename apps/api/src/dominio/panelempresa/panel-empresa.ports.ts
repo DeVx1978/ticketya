@@ -397,6 +397,8 @@ export interface ResultadoValidacionQr {
   compraId?: string;
   precioPagado?: number;
   compradorUsuarioId?: string | null;
+  /** Programa de referidos (13-ago-2026) -- id real del boleto validado. */
+  boletoId?: string;
 }
 
 export interface RutaResumen {
