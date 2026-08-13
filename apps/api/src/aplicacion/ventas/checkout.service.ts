@@ -10,6 +10,7 @@ import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import type { ProveedorFacturacionElectronica } from '../../dominio/facturacion/facturacion.ports';
 import { DespachadorWebhooksService } from '../webhooks/despachador-webhooks.service';
+import { WalletService } from '../wallet/wallet.service';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
@@ -23,6 +24,7 @@ export class CheckoutService {
     @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
     @Inject(PROVEEDOR_FACTURACION) private readonly facturacion: ProveedorFacturacionElectronica,
     private readonly webhooks: DespachadorWebhooksService,
+    private readonly wallet: WalletService,
   ) {}
 
   /**
@@ -44,12 +46,24 @@ export class CheckoutService {
     telefonoContacto?: string,
     correoContacto?: string,
     sesionInvitadoId?: string,
+    usarSaldoWallet?: boolean,
   ) {
     if (!usuarioId && !telefonoContacto && !correoContacto) {
       throw new BadRequestException(
         'Falta un telefono o correo de contacto -- sin cuenta ni contacto no hay forma de entregar el boleto.',
       );
     }
+
+    // Wallet/cashback Fase 2 (13-ago-2026) -- investigado en los
+    // Terminos de Uso reales de ClickBus (seccion 5.7.5.1): el saldo
+    // de wallet no es acumulable con otra forma de descuento, el
+    // cliente elige una de las 2.
+    if (usarSaldoWallet && creditoIdAUsar) {
+      throw new BadRequestException(
+        'No se puede usar saldo de wallet junto con un crédito de reprogramación en la misma compra -- elige uno.',
+      );
+    }
+
     const idempotencyKey = idempotencyKeyCliente ?? randomUUID();
 
     // RF-CHECK-005 -- si esta misma clave ya se proceso antes (reintento
@@ -153,6 +167,23 @@ export class CheckoutService {
       montoAPagar = Number((montoTotal - creditoAplicado).toFixed(2));
     }
 
+    // Wallet/cashback Fase 2 (13-ago-2026) -- excluyente con el crédito
+    // de arriba (ya validado al inicio del método). Un invitado no
+    // tiene wallet -- se ignora en silencio, mismo criterio que ganar
+    // cashback (WalletService.acreditarCashbackPorValidacion también
+    // simplemente no hace nada para un invitado, sin lanzar error).
+    // Decisión reportada: silencioso, no rechazo explícito, porque
+    // "usarSaldoWallet: true" en una compra de invitado no es un error
+    // del cliente -- el frontend simplemente no debería mostrar esa
+    // opción sin sesión, y si igual llega, no tiene sentido bloquear
+    // toda la compra por un campo que no aplica.
+    let saldoWalletAplicado = 0;
+    if (usarSaldoWallet && usuarioId) {
+      const saldoDisponible = await this.wallet.saldoDisponible(usuarioId);
+      saldoWalletAplicado = Math.min(saldoDisponible, montoTotal);
+      montoAPagar = Number((montoTotal - saldoWalletAplicado).toFixed(2));
+    }
+
     const { compraId, mapeo } = await this.compras.crearCompraPendiente(
       usuarioId,
       pasajeros,
@@ -194,6 +225,19 @@ export class CheckoutService {
     // disponible para intentarlo de nuevo.
     if (creditoIdAUsar && boletos[0]) {
       await this.compras.marcarCreditoUsado(creditoIdAUsar, boletos[0].id);
+    }
+
+    // Wallet/cashback Fase 2 (13-ago-2026) -- mismo criterio exacto que
+    // el crédito arriba: el débito se registra DESPUÉS de que el pago
+    // se aprobó. Si el pago se hubiera rechazado, este bloque nunca se
+    // ejecuta (el código ya salió con `return` en el bloque de rechazo,
+    // más arriba) -- el saldo del wallet queda intacto.
+    if (saldoWalletAplicado > 0 && usuarioId) {
+      await this.wallet.debitarPorCompra({
+        usuarioId,
+        monto: saldoWalletAplicado,
+        compraId,
+      });
     }
 
     const montoTotalNotif = mapeo.reduce(
@@ -251,6 +295,7 @@ export class CheckoutService {
       montoTotal,
       montoPagado: montoAPagar,
       creditoAplicado,
+      saldoWalletAplicado,
       ivaTotal: ivaTotalRespuesta,
       ivaVisible,
     };

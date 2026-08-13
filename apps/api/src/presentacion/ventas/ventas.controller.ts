@@ -48,6 +48,7 @@ export class VentasController {
       dto.telefonoContacto,
       dto.correoContacto,
       dto.sesionInvitadoId,
+      dto.usarSaldoWallet,
     );
   }
 

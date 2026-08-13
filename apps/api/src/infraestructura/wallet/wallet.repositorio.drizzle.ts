@@ -14,7 +14,7 @@ import type { WalletRepositorio } from '../../dominio/wallet/wallet.ports';
 export class WalletRepositorioDrizzle implements WalletRepositorio {
   constructor(@Inject(DRIZZLE_DB_PUBLICO) private readonly db: DrizzleDb) {}
 
-  async crearMovimientoCredito(datos: {
+  async crearMovimiento(datos: {
     usuarioId: string;
     monto: number;
     tipo: string;
@@ -30,19 +30,33 @@ export class WalletRepositorioDrizzle implements WalletRepositorio {
   }
 
   /**
-   * Fase 1 -- solo créditos (no hay débitos todavía, eso es Fase 2).
-   * `creado_en >= now() - diasVigencia días` calculado directo en la
-   * consulta -- un movimiento de más de `diasVigencia` días
-   * simplemente deja de sumar al saldo, sin necesitar ningún cron de
-   * expiración ni marca explícita de "vencido" en esta fase.
+   * Fase 2 -- créditos vigentes (dentro de `diasVigencia` días) MENOS
+   * todos los débitos, sin importar su antigüedad. `monto` siempre se
+   * guarda como magnitud positiva en ambos tipos -- el signo se decide
+   * aquí en la consulta, no al insertar, para que la tabla sea un
+   * historial legible por sí mismo (un débito de $5 dice "5", no "-5").
+   *
+   * ⚠ Limitación real conocida, NO resuelta en esta fase (reportada,
+   * no resuelta unilateralmente): si un crédito se gasta parcialmente
+   * y ese mismo crédito expira más tarde (pasa de los 180 días), el
+   * débito ya hecho sigue restando igual -- en un caso extremo el
+   * saldo podría quedar negativo. Resolverlo de verdad requiere un
+   * consumo tipo FIFO (marcar qué crédito específico cubrió cada
+   * débito), que es más complejo que la suma simple de esta fase y no
+   * estaba en el alcance pedido. Documentado también en
+   * DOCUMENTO_MAESTRO.md.
    */
   async saldoDeUsuario(usuarioId: string, diasVigencia: number): Promise<number> {
     const resultado = await this.db.execute(sql`
-      SELECT COALESCE(SUM(monto), 0) AS saldo
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN tipo = 'credito_cashback' AND creado_en >= now() - (${diasVigencia} || ' days')::interval THEN monto
+          WHEN tipo = 'debito_compra' THEN -monto
+          ELSE 0
+        END
+      ), 0) AS saldo
       FROM wallet_movimientos
       WHERE usuario_id = ${usuarioId}
-        AND tipo = 'credito_cashback'
-        AND creado_en >= now() - (${diasVigencia} || ' days')::interval
     `);
     const fila = resultado.rows[0] as { saldo: string } | undefined;
     return fila?.saldo ? Number(fila.saldo) : 0;

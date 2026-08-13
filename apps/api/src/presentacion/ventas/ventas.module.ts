@@ -11,9 +11,10 @@ import { SimuladorPasarelaPago } from '../../infraestructura/pagos/simulador.pas
 import { SimuladorFacturacionElectronica } from '../../infraestructura/facturacion/simulador.facturacion';
 import { AuthModule } from '../auth/auth.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { WalletModule } from '../wallet/wallet.module';
 
 @Module({
-  imports: [AuthModule, WebhooksModule],
+  imports: [AuthModule, WebhooksModule, WalletModule],
   controllers: [VentasController],
   providers: [
     CheckoutService,

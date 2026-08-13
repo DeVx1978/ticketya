@@ -1,19 +1,20 @@
 /**
- * Wallet / cashback, Fase 1 (13-ago-2026) -- ganar y consultar saldo.
- * Ver comentario de diseño completo en packages/db/schema/wallet.ts
- * sobre por qué es un historial de movimientos y no un solo saldo
- * acumulado, y por qué no tiene política RLS.
- *
- * Fuera de alcance en esta fase, a propósito: gastar el saldo en una
- * compra nueva (Fase 2) -- este puerto solo cubre ganar y consultar.
+ * Wallet / cashback -- Fase 1 (13-ago-2026): ganar y consultar saldo.
+ * Fase 2 (13-ago-2026): gastar el saldo en una compra. Ver comentario
+ * de diseño completo en packages/db/schema/wallet.ts sobre por qué es
+ * un historial de movimientos y no un solo saldo acumulado, y por qué
+ * no tiene política RLS.
  */
 export interface WalletRepositorio {
   /**
-   * Crea el movimiento de crédito. No valida aquí si el usuario tiene
-   * cuenta real (compradorUsuarioId no nulo) -- esa decisión vive en la
-   * capa de aplicación, antes de siquiera llamar a este método.
+   * Crea un movimiento -- crédito o débito, según `tipo`. Ya era
+   * genérico desde la Fase 1 (el parámetro `tipo` siempre fue libre),
+   * pero se renombra de `crearMovimientoCredito` a `crearMovimiento`
+   * en la Fase 2 para que el nombre no mienta ahora que también se usa
+   * para 'debito_compra' -- no cambia ningún comportamiento, solo el
+   * nombre.
    */
-  crearMovimientoCredito(datos: {
+  crearMovimiento(datos: {
     usuarioId: string;
     monto: number;
     tipo: string;
@@ -21,11 +22,12 @@ export interface WalletRepositorio {
   }): Promise<{ id: string }>;
 
   /**
-   * Saldo real = suma de movimientos de crédito de los últimos 180
-   * días, calculado directo en la consulta (sin cron de expiración
-   * necesario) -- un movimiento con más de 180 días simplemente deja
-   * de sumar, nunca se borra ni se marca como "expirado" explícitamente
-   * en esta fase.
+   * Saldo real, Fase 2 -- ahora resta los débitos (gastos de wallet en
+   * una compra), no solo suma créditos. Los créditos siguen expirando
+   * a los `diasVigencia` días (180, ClickBus, calculado directo en la
+   * consulta); los débitos NUNCA expiran -- un débito representa saldo
+   * ya gastado de verdad, no debe "volver a aparecer" solo porque pasó
+   * tiempo.
    */
   saldoDeUsuario(usuarioId: string, diasVigencia: number): Promise<number>;
 
