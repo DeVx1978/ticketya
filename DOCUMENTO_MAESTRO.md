@@ -463,6 +463,31 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 ---
 
+### 3.14 Wallet / Cashback -- Fase 1: ganar y consultar saldo -- CERRADO (13-ago-2026)
+
+**Diseño investigado y decidido por el director, contra ClickBus (CashBus), la referencia real de la industria:**
+- Solo usuarios con cuenta ganan cashback -- nunca invitados. Confirmado con el criterio ya establecido en el ítem 31 (compra como invitado).
+- Se acredita cuando el boleto pasa a `usado` (QR validado en la terminal), nunca al pagar -- evita el fraude real de comprar, recibir cashback, cancelar, y quedarse con reembolso Y cashback a la vez.
+- Porcentaje configurable por el admin, default `0` hasta que el director decida el número real -- mismo patrón exacto que `cargo_plataforma_por_pasajero_default`.
+- Vence a los 180 días sin usar -- mismo plazo real de ClickBus.
+
+**Construido:**
+- Esquema: columna `cashback_porcentaje_default` (numeric, nullable) en `configuracion_plataforma`; tabla nueva `wallet_movimientos` (`id`, `usuario_id`, `monto`, `tipo`, `compra_id`, `creado_en`) -- historial real de movimientos, no un solo saldo acumulado, para poder auditar cada crédito y calcular vencimiento por movimiento individual. **Deliberadamente sin política RLS**, mismo criterio exacto que `creditos_pasajero` (migración 0010) y `calificaciones`: el wallet es del usuario, cruza cooperativas por diseño -- se accede siempre con la conexión pública (bypass RLS).
+- Disparador real: `validarBoletoPorQr()` (`panel-empresa.repositorio.drizzle.ts`) -- el único lugar real en todo el backend que cambia un boleto a `usado`, confirmado antes de tocar nada. Ahora también trae `compraId`, `precioPagado`, y `compradorUsuarioId` (null si es invitado). `PanelEmpresaService.validarBoletoPorQr()` llama a `WalletService.acreditarCashbackPorValidacion()` justo después de una validación exitosa -- nunca lanza, mismo criterio que el despachador de webhooks y las notificaciones (un fallo al acreditar no debe revertir ni bloquear el abordaje, que ya ocurrió de verdad). Los 3 campos internos se consumen ahí y nunca llegan a la respuesta HTTP -- el vendedor en la terminal no necesita ver el precio pagado ni el id del comprador.
+- Endpoint de consulta: `GET /wallet/saldo` (autenticado, cada quien ve su propio saldo) -- suma de movimientos de crédito de los últimos 180 días, calculado directo en la consulta (`creado_en >= now() - interval`), sin necesitar ningún cron de expiración.
+- Extensión mínima, fuera de la lista explícita de 4 tareas pero necesaria para que "configurable por el admin" sea real: `GET/PATCH /wallet/cashback-porcentaje`, exclusivo `super_admin` (mismo nivel de acceso que `cargo-plataforma`, matriz sección 3.8) -- sin esto, el porcentaje nunca podría cambiar de 0.
+- Valor nuevo de enum `cambio_cashback_porcentaje` en `accion_auditoria` -- ningún valor existente sin usar le quedaba bien (revisado antes de agregar uno nuevo, mismo criterio que el ítem 9).
+
+**1 bug real encontrado por las propias pruebas e2e de este cambio, corregido antes de fusionar** (un segundo problema en el camino fue un error propio al escribir la prueba -- el bloqueo de asiento como invitado necesita `sesionInvitadoId` en el cuerpo, no alcanza con omitir el token; corregido en la prueba, no era un bug del código real):
+
+El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) no borraba `wallet_movimientos` antes de `compras` -- mismo tipo de omisión recurrente que el propio archivo ya documenta varias veces para otras tablas (créditos, liquidaciones, métodos de pago). Sin esto, correr las pruebas de wallet repetidamente habría bloqueado la limpieza de cualquier archivo de prueba que comparta este helper. Corregido con un `DELETE FROM wallet_movimientos` antes del `DELETE FROM compras`, mismo patrón exacto ya usado ahí.
+
+**Verificado:** migración `0031_wallet_cashback_fase1.sql` aplicada desde cero (32 migraciones en total), `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **180/180 pruebas e2e** (174 previas + 6 nuevas: saldo en 0 al inicio, invitado no gana nada, pasajero con cuenta sí gana el monto exacto, no se acredita dos veces por el mismo boleto, un movimiento de más de 180 días no cuenta, y solo `super_admin` puede cambiar el porcentaje).
+
+**Fuera de alcance a propósito, Fase 2 (no construida todavía):** gastar el saldo en una compra nueva -- se integra con el checkout, es más complejo, decisión del director de dejarlo para después.
+
+---
+
 ## 4. Requerimientos no funcionales
 
 | Área | Estado |
