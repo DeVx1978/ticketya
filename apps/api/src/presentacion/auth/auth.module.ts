@@ -20,6 +20,7 @@ import { SimuladorNotificador } from '../../infraestructura/notificaciones/simul
 import { SimuladorAlmacenamiento } from '../../infraestructura/almacenamiento/simulador.almacenamiento';
 import { JwtStrategy } from './guards/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
+import { ReferidosModule } from '../referidos/referidos.module';
 
 /**
  * Este módulo es el único lugar donde se decide QUÉ implementación
@@ -33,6 +34,7 @@ import { RolesGuard } from './guards/roles.guard';
   imports: [
     ConfigModule,
     PassportModule,
+    ReferidosModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

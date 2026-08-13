@@ -152,6 +152,8 @@ export const accionAuditoriaEnum = pgEnum('accion_auditoria', [
   'cambio_modo_iva_boleto',
   // 13-ago-2026, wallet/cashback Fase 1 -- sin equivalente existente que reutilizar.
   'cambio_cashback_porcentaje',
+  // 13-ago-2026, programa de referidos -- sin equivalente existente que reutilizar.
+  'cambio_config_referidos',
 ]);
 
 /** RF-COMM-002 — planes comerciales diferenciados. */

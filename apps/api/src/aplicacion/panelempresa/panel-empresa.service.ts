@@ -4,6 +4,7 @@ import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
 import { GeneradorViajesService } from '../generador-viajes/generador-viajes.service';
 import { WalletService } from '../wallet/wallet.service';
+import { ReferidosService } from '../referidos/referidos.service';
 import type {
   PanelEmpresaRepositorio,
   DatosNuevoTipoVehiculo,
@@ -37,6 +38,7 @@ export class PanelEmpresaService {
     private readonly notificaciones: NotificacionesProgramadasService,
     private readonly generadorViajes: GeneradorViajesService,
     private readonly wallet: WalletService,
+    private readonly referidos: ReferidosService,
   ) {}
 
   crearTipoVehiculo(cooperativaId: string, datos: DatosNuevoTipoVehiculo) {
@@ -417,10 +419,23 @@ export class PanelEmpresaService {
       });
     }
 
-    const { compraId, precioPagado, compradorUsuarioId, ...respuestaPublica } = resultado;
+    // Programa de referidos (13-ago-2026) -- mismo punto exacto y
+    // mismo criterio que el cashback de arriba: justo después de que
+    // el boleto pasa a 'usado' de verdad. Si este boleto es el primer
+    // viaje real de alguien que fue referido, el referidor gana su
+    // crédito aquí -- nunca antes.
+    if (resultado.valido && resultado.boletoId) {
+      await this.referidos.acreditarReferidorPorValidacion({
+        usuarioReferidoId: resultado.compradorUsuarioId ?? null,
+        boletoId: resultado.boletoId,
+      });
+    }
+
+    const { compraId, precioPagado, compradorUsuarioId, boletoId, ...respuestaPublica } = resultado;
     void compraId;
     void precioPagado;
     void compradorUsuarioId;
+    void boletoId;
     return respuestaPublica;
   }
 

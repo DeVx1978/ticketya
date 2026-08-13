@@ -18,7 +18,12 @@ export interface WalletRepositorio {
     usuarioId: string;
     monto: number;
     tipo: string;
-    compraId: string;
+    // Programa de referidos (13-ago-2026) -- el crédito del referidor
+    // no viene de una compra propia (viene del viaje de su amigo), así
+    // que compraId pasa a ser opcional -- antes era obligatorio porque
+    // los únicos 2 tipos que existían (cashback, débito de compra)
+    // siempre tenían una compra de origen real.
+    compraId?: string;
   }): Promise<{ id: string }>;
 
   /**

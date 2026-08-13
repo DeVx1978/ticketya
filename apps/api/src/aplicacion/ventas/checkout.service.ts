@@ -11,6 +11,7 @@ import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import type { ProveedorFacturacionElectronica } from '../../dominio/facturacion/facturacion.ports';
 import { DespachadorWebhooksService } from '../webhooks/despachador-webhooks.service';
 import { WalletService } from '../wallet/wallet.service';
+import { ReferidosService } from '../referidos/referidos.service';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
@@ -25,6 +26,7 @@ export class CheckoutService {
     @Inject(PROVEEDOR_FACTURACION) private readonly facturacion: ProveedorFacturacionElectronica,
     private readonly webhooks: DespachadorWebhooksService,
     private readonly wallet: WalletService,
+    private readonly referidos: ReferidosService,
   ) {}
 
   /**
@@ -184,6 +186,31 @@ export class CheckoutService {
       montoAPagar = Number((montoTotal - saldoWalletAplicado).toFixed(2));
     }
 
+    // Programa de referidos (13-ago-2026) -- descuento de bienvenida en
+    // la PRIMERA compra del referido. Decisión de diseño, investigada y
+    // reportada (la orden pedía decidir esto, no asumirlo): se trata
+    // como la prioridad más baja de los 3 mecanismos de descuento, no
+    // como un cuarto campo que el pasajero elige. Si ya pidió
+    // explícitamente crédito de reprogramación o saldo de wallet, esa
+    // elección explícita gana y el descuento de referido NO se aplica
+    // en esa compra (sigue disponible para la próxima, nunca se marca
+    // como consumido si no llegó a usarse). Si no pidió ninguno de los
+    // 2, y es su primera compra como referido, se aplica solo -- nunca
+    // se rechaza la compra con un 400 por esto, a diferencia de
+    // wallet+crédito juntos, porque aquí no hay 2 elecciones explícitas
+    // chocando, solo una elección explícita compitiendo con un
+    // beneficio automático.
+    let descuentoReferidoAplicado = 0;
+    let relacionReferidoAAplicar: string | null = null;
+    if (!creditoIdAUsar && !usarSaldoWallet && usuarioId) {
+      const descuento = await this.referidos.descuentoDisponible(usuarioId);
+      if (descuento) {
+        descuentoReferidoAplicado = Math.min(descuento.monto, montoTotal);
+        montoAPagar = Number((montoTotal - descuentoReferidoAplicado).toFixed(2));
+        relacionReferidoAAplicar = descuento.relacionId;
+      }
+    }
+
     const { compraId, mapeo } = await this.compras.crearCompraPendiente(
       usuarioId,
       pasajeros,
@@ -238,6 +265,14 @@ export class CheckoutService {
         monto: saldoWalletAplicado,
         compraId,
       });
+    }
+
+    // Programa de referidos -- mismo criterio exacto que el crédito y
+    // el débito de wallet: se marca consumido DESPUÉS de que el pago
+    // se aprobó. Si el pago se hubiera rechazado, este bloque nunca se
+    // ejecuta -- la relación sigue disponible para un intento futuro.
+    if (relacionReferidoAAplicar) {
+      await this.referidos.marcarDescuentoConsumido(relacionReferidoAAplicar);
     }
 
     const montoTotalNotif = mapeo.reduce(
@@ -296,6 +331,7 @@ export class CheckoutService {
       montoPagado: montoAPagar,
       creditoAplicado,
       saldoWalletAplicado,
+      descuentoReferidoAplicado,
       ivaTotal: ivaTotalRespuesta,
       ivaVisible,
     };

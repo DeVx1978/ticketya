@@ -28,6 +28,7 @@ import {
   verificarCodigoTotp,
   generarUriTotp,
 } from '../../dominio/auth/auth.ports';
+import { ReferidosService } from '../referidos/referidos.service';
 
 export const USUARIO_REPOSITORIO = 'USUARIO_REPOSITORIO';
 export const HASHER_CONTRASENA = 'HASHER_CONTRASENA';
@@ -71,10 +72,11 @@ export class AuthService {
     @Inject(NOTIFICADOR_EMAIL) private readonly email: NotificadorEmail,
     @Inject(ALMACENAMIENTO_ARCHIVOS) private readonly almacenamiento: AlmacenamientoArchivos,
     @Inject(CIFRADOR_TOTP) private readonly cifradorTotp: CifradorTotp,
+    private readonly referidos: ReferidosService,
   ) {}
 
   /** RF-AUTH-001 — registro de pasajero. */
-  async registrar(datos: DatosRegistro) {
+  async registrar(datos: DatosRegistro, codigoReferido?: string) {
     const existente = await this.usuarios.buscarPorCorreo(datos.correo);
     if (existente) {
       throw new ConflictException('Ya existe una cuenta con ese correo.');
@@ -85,6 +87,29 @@ export class AuthService {
       ...datos,
       password: passwordHash,
     });
+
+    // Programa de referidos (13-ago-2026) -- se genera el código de
+    // pasajero de forma ANTICIPADA (antes era perezoso, solo al pedir
+    // el perfil) para que la cuenta recién creada ya tenga un código
+    // compartible de inmediato, sin depender de que el usuario visite
+    // su perfil primero. Nunca lanza (ver acreditarReferidoPorRegistro,
+    // abajo, mismo criterio de no bloquear el registro por esto).
+    try {
+      await this.usuarios.asegurarCodigoPasajero(usuario.id);
+    } catch (error) {
+      // No se registra con this.logger porque AuthService no tiene uno
+      // propio hoy -- no vale la pena agregarlo solo para este caso,
+      // el registro continúa de todas formas.
+      void error;
+    }
+
+    if (codigoReferido) {
+      await this.referidos.registrarReferido({
+        codigoReferido,
+        usuarioReferidoId: usuario.id,
+        cedulaReferido: datos.cedula ?? null,
+      });
+    }
 
     // 27-jul-2026 -- RF-AUTH-001 "recibe confirmacion por correo",
     // cerrado: token real, expira en 24h.

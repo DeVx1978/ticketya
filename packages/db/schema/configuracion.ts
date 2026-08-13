@@ -62,6 +62,19 @@ export const configuracionPlataforma = pgTable(
       scale: 2,
     }),
 
+    // Programa de referidos "Invita y Gana" (13-ago-2026) -- mismo
+    // patrón exacto que cashbackPorcentajeDefault arriba: nullable,
+    // default 0 en la capa de aplicación hasta que el director decida
+    // los números reales.
+    referidoCreditoReferidorDefault: numeric('referido_credito_referidor_default', {
+      precision: 8,
+      scale: 2,
+    }),
+    referidoDescuentoReferidoDefault: numeric('referido_descuento_referido_default', {
+      precision: 8,
+      scale: 2,
+    }),
+
     // RN-004 -- decision pendiente: duracion exacta de la ventana de bloqueo
     // temporal de asiento (referencia de industria: 5-10 min, no asumida
     // como definitiva).

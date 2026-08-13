@@ -18,11 +18,11 @@ export class WalletRepositorioDrizzle implements WalletRepositorio {
     usuarioId: string;
     monto: number;
     tipo: string;
-    compraId: string;
+    compraId?: string;
   }): Promise<{ id: string }> {
     const resultado = await this.db.execute(sql`
       INSERT INTO wallet_movimientos (usuario_id, monto, tipo, compra_id)
-      VALUES (${datos.usuarioId}, ${datos.monto}, ${datos.tipo}, ${datos.compraId})
+      VALUES (${datos.usuarioId}, ${datos.monto}, ${datos.tipo}, ${datos.compraId ?? null})
       RETURNING id
     `);
     const fila = resultado.rows[0] as { id: string };
@@ -35,6 +35,11 @@ export class WalletRepositorioDrizzle implements WalletRepositorio {
    * guarda como magnitud positiva en ambos tipos -- el signo se decide
    * aquí en la consulta, no al insertar, para que la tabla sea un
    * historial legible por sí mismo (un débito de $5 dice "5", no "-5").
+   *
+   * Programa de referidos (13-ago-2026) -- 'credito_referido' se suma
+   * igual que 'credito_cashback', mismo plazo de vigencia de 180 días
+   * (el proyecto no definió un plazo distinto para este tipo, se
+   * asume el mismo criterio general).
    *
    * ⚠ Limitación real conocida, NO resuelta en esta fase (reportada,
    * no resuelta unilateralmente): si un crédito se gasta parcialmente
@@ -50,7 +55,7 @@ export class WalletRepositorioDrizzle implements WalletRepositorio {
     const resultado = await this.db.execute(sql`
       SELECT COALESCE(SUM(
         CASE
-          WHEN tipo = 'credito_cashback' AND creado_en >= now() - (${diasVigencia} || ' days')::interval THEN monto
+          WHEN tipo IN ('credito_cashback', 'credito_referido') AND creado_en >= now() - (${diasVigencia} || ' days')::interval THEN monto
           WHEN tipo = 'debito_compra' THEN -monto
           ELSE 0
         END

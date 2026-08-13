@@ -32,4 +32,13 @@ export class RegistroDto {
   @IsOptional()
   @Matches(/^\d{10}$/, { message: 'El WhatsApp debe tener exactamente 10 dígitos.' })
   telefono?: string;
+
+  /**
+   * Programa de referidos "Invita y Gana" (13-ago-2026) -- reutiliza
+   * el código de pasajero existente (`COL-XXXXXX`) como código de
+   * referido, no crea un sistema de códigos aparte.
+   */
+  @IsOptional()
+  @IsString()
+  codigoReferido?: string;
 }
