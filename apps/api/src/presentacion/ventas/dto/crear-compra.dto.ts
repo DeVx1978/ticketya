@@ -162,4 +162,15 @@ export class CrearCompraDto {
   @IsOptional()
   @IsString()
   sesionInvitadoId?: string;
+
+  /**
+   * Wallet/cashback Fase 2 (13-ago-2026) -- gastar el saldo. Excluyente
+   * con creditoIdAUsar (investigado en los Términos de Uso reales de
+   * ClickBus, sección 5.7.5.1: el wallet no es acumulable con otra
+   * forma de descuento) -- se valida en checkout.service.ts, no aquí,
+   * porque necesita comparar los 2 campos juntos.
+   */
+  @IsOptional()
+  @IsBoolean()
+  usarSaldoWallet?: boolean;
 }
