@@ -1256,9 +1256,11 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<ResultadoValidacionQr> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
-        SELECT b.id, b.estado, pc.id AS pasajero_compra_id, pc.nombres || ' ' || pc.apellidos AS nombre_completo, pc.es_menor_edad
+        SELECT b.id, b.estado, b.compra_id, b.precio_pagado, c.comprador_usuario_id,
+               pc.id AS pasajero_compra_id, pc.nombres || ' ' || pc.apellidos AS nombre_completo, pc.es_menor_edad
         FROM boletos b
         JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
+        JOIN compras c ON c.id = b.compra_id
         WHERE b.codigo_qr = ${codigoQr}
       `);
 
@@ -1274,6 +1276,9 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
       const fila = filas.rows[0] as {
         id: string;
         estado: string;
+        compra_id: string;
+        precio_pagado: string;
+        comprador_usuario_id: string | null;
         pasajero_compra_id: string;
         nombre_completo: string;
         es_menor_edad: boolean;
@@ -1345,6 +1350,12 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         mensaje: 'Boleto válido. Abordaje confirmado.',
         pasajeroNombre: fila.nombre_completo,
         menor,
+        // Wallet/cashback Fase 1 (13-ago-2026) -- datos que
+        // PanelEmpresaService necesita para acreditar cashback justo
+        // después de esta validación, sin tener que volver a consultar.
+        compraId: fila.compra_id,
+        precioPagado: Number(fila.precio_pagado),
+        compradorUsuarioId: fila.comprador_usuario_id,
       };
     });
   }

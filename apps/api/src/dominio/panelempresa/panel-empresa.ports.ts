@@ -389,6 +389,14 @@ export interface ResultadoValidacionQr {
     documentoAutorizacionUrl: string | null;
     yaVerificado: boolean;
   };
+  /**
+   * Wallet/cashback Fase 1 (13-ago-2026) -- presentes solo si valido es
+   * true. compradorUsuarioId es null para una compra de invitado (el
+   * invitado no participa de cashback, mismo criterio que ClickBus).
+   */
+  compraId?: string;
+  precioPagado?: number;
+  compradorUsuarioId?: string | null;
 }
 
 export interface RutaResumen {
