@@ -54,10 +54,15 @@ export interface AutorizacionMenor {
 export interface PasajeroCheckout {
   viajeId: string;
   numeroAsiento: string;
-  nombreCompleto: string;
+  /** Item 31.1, Fase 7 (13-ago-2026) -- separado en 2 campos reales, ver validadores-documento.ts. */
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: 'cedula' | 'pasaporte';
   documento: string;
   tipoTarifa: TipoTarifa;
   fechaNacimiento?: string;
+  /** LOTTTSV Art. 48 -- atencion preferente, NO afecta tipoTarifa ni el precio. */
+  esEmbarazada?: boolean;
   autorizacionMenor?: AutorizacionMenor;
 }
 
@@ -282,7 +287,9 @@ export interface CompraRepositorio {
     precioPagado: number;
     tasaTerminal: number;
     pasajeroCompraId: string;
-    nombreCompleto: string;
+    nombres: string;
+    apellidos: string;
+    tipoDocumento: 'cedula' | 'pasaporte';
     documento: string;
     tipoTarifa: TipoTarifa;
     fechaNacimiento: string | null;

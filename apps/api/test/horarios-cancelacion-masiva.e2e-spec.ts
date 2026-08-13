@@ -344,8 +344,10 @@ describe('Horarios recurrentes y cancelación masiva (e2e)', () => {
             {
               viajeId,
               numeroAsiento: '1A',
-              nombreCompleto: 'Pasajero Credito E2E',
-              documento: '0999999996',
+              nombres: 'Pasajero',
+              apellidos: 'Credito E2E',
+              tipoDocumento: 'cedula',
+              documento: '1701005488',
               tipoTarifa: 'adulto',
             },
           ],

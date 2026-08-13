@@ -187,7 +187,8 @@ export class CalificacionesRepositorioDrizzle implements CalificacionesRepositor
         codigoQr: boletos.codigoQr,
         estado: boletos.estado,
         precioPagado: boletos.precioPagado,
-        pasajeroNombre: pasajerosCompra.nombreCompleto,
+        // Item 31.1, Fase 7 (13-ago-2026) -- nombreCompleto se separo en 2 campos reales; se reconstruye solo para mostrar.
+        pasajeroNombre: sql<string>`${pasajerosCompra.nombres} || ' ' || ${pasajerosCompra.apellidos}`,
         numeroAsiento: viajeAsientos.numeroAsiento,
         cooperativaNombre: cooperativas.nombreComercial,
         origenCiudad: puntosOrigenPdf.ciudad,

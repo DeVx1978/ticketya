@@ -78,7 +78,7 @@ export class CheckoutService {
       const auth = p.autorizacionMenor;
       if (!auth) {
         throw new BadRequestException(
-          `El pasajero "${p.nombreCompleto}" es menor de edad -- falta indicar como viaja acompanado (autorizacionMenor).`,
+          `El pasajero "${p.nombres} ${p.apellidos}" es menor de edad -- falta indicar como viaja acompanado (autorizacionMenor).`,
         );
       }
       if (auth.tipoAcompanamiento === 'con_padre_madre_tutor') {
@@ -88,19 +88,19 @@ export class CheckoutService {
           !pasajeros[auth.adultoAcompananteIndice]
         ) {
           throw new BadRequestException(
-            `El pasajero "${p.nombreCompleto}" debe indicar el indice de un adulto acompanante distinto, dentro de la misma compra.`,
+            `El pasajero "${p.nombres} ${p.apellidos}" debe indicar el indice de un adulto acompanante distinto, dentro de la misma compra.`,
           );
         }
         const adulto = pasajeros[auth.adultoAcompananteIndice];
         if (esMenorDeEdad(adulto.tipoTarifa, adulto.fechaNacimiento)) {
           throw new BadRequestException(
-            `El acompanante indicado para "${p.nombreCompleto}" tambien es menor de edad -- debe ser un adulto.`,
+            `El acompanante indicado para "${p.nombres} ${p.apellidos}" tambien es menor de edad -- debe ser un adulto.`,
           );
         }
       } else if (auth.tipoAcompanamiento === 'con_autorizacion') {
         if (!auth.adultoResponsableNombre || !auth.adultoResponsableDocumento) {
           throw new BadRequestException(
-            `El pasajero "${p.nombreCompleto}" viaja con autorizacion -- falta el nombre y documento del adulto responsable.`,
+            `El pasajero "${p.nombres} ${p.apellidos}" viaja con autorizacion -- falta el nombre y documento del adulto responsable.`,
           );
         }
       }
@@ -326,7 +326,9 @@ export class CheckoutService {
         {
           viajeId: nuevoViajeId,
           numeroAsiento: nuevoNumeroAsiento,
-          nombreCompleto: viejo.nombreCompleto,
+          nombres: viejo.nombres,
+          apellidos: viejo.apellidos,
+          tipoDocumento: viejo.tipoDocumento,
           documento: viejo.documento,
           tipoTarifa: viejo.tipoTarifa,
           fechaNacimiento: viejo.fechaNacimiento ?? undefined,
@@ -373,7 +375,9 @@ export class CheckoutService {
         {
           viajeId: nuevoViajeId,
           numeroAsiento: nuevoNumeroAsiento,
-          nombreCompleto: viejo.nombreCompleto,
+          nombres: viejo.nombres,
+          apellidos: viejo.apellidos,
+          tipoDocumento: viejo.tipoDocumento,
           documento: viejo.documento,
           tipoTarifa: viejo.tipoTarifa,
           fechaNacimiento: viejo.fechaNacimiento ?? undefined,

@@ -43,7 +43,7 @@ import { relations } from 'drizzle-orm';
 import { usuarios } from './usuarios';
 import { cooperativas } from './tenancy';
 import { viajeAsientos } from './asientos';
-import { tipoTarifaEnum, estadoPagoEnum, canalVentaEnum, estadoBoletoEnum } from './enums';
+import { tipoTarifaEnum, estadoPagoEnum, canalVentaEnum, estadoBoletoEnum, tipoDocumentoEnum } from './enums';
 import { appRole, platformAdminRole, filtroCooperativaActual } from './rls';
 
 export const compras = pgTable(
@@ -105,10 +105,25 @@ export const pasajerosCompra = pgTable(
       .references(() => compras.id)
       .notNull(),
 
-    nombreCompleto: varchar('nombre_completo', { length: 200 }).notNull(),
+    // Item 31.1, Fase 7 (13-ago-2026) -- separado en 2 campos reales
+    // (antes un solo nombreCompleto), decision del director: nombres
+    // y apellidos distintos, no un campo con validacion de palabras.
+    nombres: varchar('nombres', { length: 100 }).notNull(),
+    apellidos: varchar('apellidos', { length: 100 }).notNull(),
+
+    // Item 31.1 -- selector explicito de tipo de documento, validado
+    // con precision segun el tipo (ver dominio/ventas/validadores-documento.ts).
+    tipoDocumento: tipoDocumentoEnum('tipo_documento').notNull().default('cedula'),
     documento: varchar('documento', { length: 20 }).notNull(),
     tipoTarifa: tipoTarifaEnum('tipo_tarifa').notNull(),
     fechaNacimiento: date('fecha_nacimiento'),
+
+    // Item 31.1 -- LOTTTSV Art. 48: atencion preferente para mujeres
+    // embarazadas, confirmado que es un derecho de prioridad/accesibilidad,
+    // NO un descuento de tarifa (esa lista, en el mismo articulo, solo
+    // incluye ninos/adolescentes, discapacidad, y adultos mayores de 65).
+    // Por eso vive separado de tipoTarifa -- no afecta el precio.
+    esEmbarazada: boolean('es_embarazada').default(false).notNull(),
 
     // RF-MENOR-001 — calculado/confirmado en la capa de aplicación al
     // momento del checkout (a partir de tipoTarifa='nino' o edad < 18

@@ -246,9 +246,12 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         .insert(pasajerosCompra)
         .values({
           compraId: compra.id,
-          nombreCompleto: p.nombreCompleto,
+          nombres: p.nombres,
+          apellidos: p.apellidos,
+          tipoDocumento: p.tipoDocumento,
           documento: p.documento,
           tipoTarifa: p.tipoTarifa,
+          esEmbarazada: p.esEmbarazada ?? false,
           fechaNacimiento: p.fechaNacimiento,
           esMenorEdad: esMenorDeEdad(p.tipoTarifa, p.fechaNacimiento),
           viajeAsientoId,
@@ -737,7 +740,9 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         cooperativaId: viajes.cooperativaId,
         precioPagado: boletos.precioPagado,
         pasajeroCompraId: boletos.pasajeroCompraId,
-        nombreCompleto: pasajerosCompra.nombreCompleto,
+        nombres: pasajerosCompra.nombres,
+        apellidos: pasajerosCompra.apellidos,
+        tipoDocumento: pasajerosCompra.tipoDocumento,
         documento: pasajerosCompra.documento,
         tipoTarifa: pasajerosCompra.tipoTarifa,
         fechaNacimiento: pasajerosCompra.fechaNacimiento,
@@ -926,7 +931,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
   async listarSolicitudesFactura(cooperativaId: string): Promise<SolicitudFactura[]> {
     const resultado = await this.dbPublico.execute(sql`
       SELECT sf.id, sf.boleto_id, sf.estado, sf.datos_tributarios, sf.url_factura,
-             sf.creado_en, pc.nombre_completo AS pasajero_nombre
+             sf.creado_en, pc.nombres || ' ' || pc.apellidos AS pasajero_nombre
       FROM solicitudes_factura_cooperativa sf
       INNER JOIN boletos b ON b.id = sf.boleto_id
       INNER JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
@@ -1056,7 +1061,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         numeroAsiento: viajeAsientos.numeroAsiento,
         precioPagado: boletos.precioPagado,
         estado: boletos.estado,
-        pasajeroNombre: pasajerosCompra.nombreCompleto,
+        // Item 31.1, Fase 7 (13-ago-2026) -- nombreCompleto se separo en 2 campos reales; se reconstruye solo para mostrar.
+        pasajeroNombre: sql<string>`${pasajerosCompra.nombres} || ' ' || ${pasajerosCompra.apellidos}`,
         pasajeroDocumento: pasajerosCompra.documento,
         cooperativaNombre: cooperativas.nombreComercial,
         rutaOrigenCiudad: origen.ciudad,

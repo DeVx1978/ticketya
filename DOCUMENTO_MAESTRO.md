@@ -590,7 +590,7 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 
 **Confirmado, verificado con evidencia real (07-ago-2026): el selector de tipo de tarifa (adulto/nino/tercera edad -- 50% descuento/discapacidad -- descuento segun carnet CONADIS) YA esta construido y funcionando en el checkout real, con la logica de autorizacion de menores incluida -- NO es un hueco, cumple con la exigencia legal ecuatoriana (LOTTTSV Art. 79). Se verifico esto explicitamente porque el director lo pregunto directo, sin asumir nada -- mismo criterio de honestidad que rige el resto de este documento.**
 
-31.1 Validacion real de datos del pasajero en checkout -- **INVESTIGADO Y DECIDIDO (12-ago-2026), construccion pendiente para la proxima sesion.**
+31.1 Validacion real de datos del pasajero en checkout -- **CERRADO (13-ago-2026, PR pendiente de fusionar).**
 
 **Pedido real del director:** validar el telefono (formato ecuatoriano exacto), separar nombre completo en nombres y apellidos reales, y validar el numero de documento con precision -- mas la pregunta abierta de como manejan las grandes plataformas a las mujeres embarazadas.
 
@@ -627,6 +627,20 @@ Al revisar el esquema `api_externa.ts` a fondo antes de construir el service/con
 **Verificado con certeza:** 171/171 pruebas e2e en verde (4 fallaron en la primera corrida por datos sobrantes de una prueba anterior en la base local -- `cargo_plataforma_por_pasajero_default` en `0.55` en vez de `0` -- confirmado que no tenia relacion con este cambio, corregido, vuelto a correr limpio), `tsc --noEmit` limpio, `nest build` y `next build` (29 paginas) limpios en el build completo del monorepo.
 
 **Error real propio, encontrado por CI, corregido con urgencia (12-ago-2026):** el `DROP POLICY` de `calificaciones` en la migracion 0028 dejo esa tabla con RLS activo y CERO politicas -- en Postgres eso significa "nadie entra" (excepto el dueno o BYPASSRLS), no "sin restriccion". CI lo detecto de inmediato (una prueba real de calificar un viaje empezo a fallar con "new row violates row-level security policy"), y se confirmo que **esto ya estaba roto en produccion en vivo** antes de fusionar nada -- ninguna calificacion nueva se podia guardar. Corregido con la migracion `0029_fix_calificaciones_sin_rls.sql` (`ALTER TABLE calificaciones DISABLE ROW LEVEL SECURITY`, la forma correcta de expresar "sin aislamiento" en vez de dejar RLS activo sin ninguna politica), aplicada de inmediato a produccion y verificada con una consulta directa antes de continuar. Es exactamente el tipo de error que CI existe para atrapar -- se dejo pasar por las pruebas locales porque la prueba de calificaciones habia pasado ANTES del `DROP POLICY` en una corrida separada, no despues del cambio completo junto.
+
+**Construido y verificado (13-ago-2026):**
+
+**Backend:**
+- Nuevo enum `tipo_documento` (cedula/pasaporte) y archivo `dominio/ventas/validadores-documento.ts` con las funciones puras reales: `esCedulaEcuatorianaValida` (algoritmo Modulo 10 completo), `esPasaporteValido` (formato ligero), `esTelefonoEcuadorMovilValido` (10 digitos, empieza con 09).
+- `pasajeros_compra`: `nombreCompleto` separado en `nombres` + `apellidos` reales, mas `tipoDocumento` y `esEmbarazada` -- migracion `0030_item31_1_validacion_pasajero.sql`, con relleno seguro de filas existentes (heuristica de division de nombre) antes de volver las columnas obligatorias. Aplicada y verificada en produccion (tabla vacia, migracion trivial) y en la base local de pruebas (127 filas reales, todas migradas sin nulos).
+- `PasajeroCheckoutDto`: validador de clase `EsDocumentoValidoSegunTipoConstraint` que aplica el algoritmo correcto segun `tipoDocumento` declarado explicitamente por el pasajero -- nunca se adivina el tipo por el formato.
+- Telefono (`telefonoContacto` del item 31, y `adultoResponsableTelefono` de autorizacion de menor) validados con el formato movil ecuatoriano real.
+- Actualizados todos los consumidores reales dentro del alcance (`checkout.service.ts`, `compra.repositorio.drizzle.ts` incluida reprogramacion, `calificaciones.repositorio.drizzle.ts`, `panel-empresa.repositorio.drizzle.ts` con 2 consultas SQL crudas corregidas) -- los que solo MUESTRAN el nombre reconstruyen `nombres || ' ' || apellidos` al leer, sin cambiar lo que esos endpoints devuelven hacia afuera.
+- **Alcance confirmado, sin tocar:** cuentas de usuario y personal de cooperativas -- ambos siguen usando su propio `nombreCompleto`, intencionalmente, tal como se decidio antes de construir.
+
+**Pendiente real, no resuelto en esta pieza -- coordinacion necesaria:** el formulario de compra del frontend (construido en el item 31) todavia envia `nombreCompleto` como un solo campo -- con este cambio, el backend ya no lo acepta. Es un cambio que rompe el flujo de compra real hasta que el frontend se actualice para enviar `nombres`, `apellidos`, `tipoDocumento`, y opcionalmente `esEmbarazada`. Reportado explicitamente a la conversacion de frontend al cerrar esta pieza.
+
+**Verificado con certeza:** 171/171 pruebas e2e en verde (32 registros de pasajero en 6 archivos de prueba reales actualizados al nuevo formato, con cedulas de prueba reales generadas y verificadas con el mismo algoritmo Modulo 10), `tsc --noEmit` limpio, `nest build` y `next build` (29 paginas) limpios en el build completo del monorepo, migracion aplicada y verificada con consulta directa en produccion.
 
 ### Fase 8 -- Hallazgos nuevos del director, 11-ago-2026, pendientes de construir
 

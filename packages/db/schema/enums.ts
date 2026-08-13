@@ -269,3 +269,14 @@ export const estadoSolicitudFacturaEnum = pgEnum('estado_solicitud_factura', [
   'pendiente',
   'emitida',
 ]);
+
+/**
+ * Item 31.1, Fase 7 (13-ago-2026) -- validacion real de datos del
+ * pasajero en checkout. Selector explicito en vez de adivinar el tipo
+ * por el formato -- confirmado con evidencia real que FlixBus acepta
+ * cedula/tarjeta de identidad Y pasaporte, no solo uno. Cedula se
+ * valida con el algoritmo real Modulo 10 (ver
+ * dominio/ventas/validadores-documento.ts); pasaporte con una
+ * validacion mas ligera, sin checksum -- el formato varia por pais.
+ */
+export const tipoDocumentoEnum = pgEnum('tipo_documento', ['cedula', 'pasaporte']);
