@@ -512,6 +512,32 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 
 **Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **185/185 pruebas e2e** (180 previas + 5 nuevas).
 
+---
+
+### 3.15 Programa de referidos "Invita y Gana" -- CERRADO (13-ago-2026)
+
+**Diseño investigado y decidido por el director, contra ClickBus ("Indique e Ganhe"), la referencia real de la industria:** el amigo referido recibe un descuento en su primera compra; quien refiere gana un crédito solo después de que el amigo REALMENTE viaja (boleto validado en la terminal) -- mismo patrón anti-fraude que el cashback, evita referir + cobrar + que el amigo cancele. Reutiliza el wallet ya construido (Fases 1 y 2) -- el crédito del referidor es un movimiento más en `wallet_movimientos` (`tipo: 'credito_referido'`), no un sistema de saldo nuevo.
+
+**Decisión de implementación: el código de referido reutiliza el código de pasajero ya existente** (`COL-XXXXXX`, ítem 3.1.1), no se creó un sistema de códigos aparte -- ya es único por usuario, ya es fácil de compartir, y ya vive en el perfil. Se cambió de generación perezosa (solo al pedir el perfil) a generación anticipada al registrarse, para que una cuenta recién creada ya tenga un código compartible de inmediato.
+
+**Decisión de diseño reportada, tal como pedía la orden -- ¿excluyente con wallet/crédito o categoría aparte?** Se investigó y se decidió: el descuento de referido es la prioridad MÁS BAJA entre los 3 mecanismos de descuento (crédito de reprogramación, saldo de wallet, descuento de bienvenida). Si el pasajero ya pidió explícitamente `creditoIdAUsar` o `usarSaldoWallet`, esa elección gana y el descuento de referido NO se aplica en esa compra (sigue disponible para la próxima, nunca se marca como consumido si no se usó). A diferencia de wallet+crédito juntos (que sí rechazan con 400), aquí nunca se rechaza la compra -- no son 2 elecciones explícitas chocando, es una elección explícita compitiendo con un beneficio automático, y forzar un error por eso sería mala experiencia para alguien que solo quiere comprar un pasaje.
+
+**Construido:**
+- Esquema: tabla `referidos` (`id`, `usuario_referidor_id`, `usuario_referido_id` -- único, una persona solo puede haber sido referida una vez --, `boleto_que_disparo_credito_id` nullable, `creado_en`), más **una columna agregada más allá del esquema pedido explícitamente**: `descuento_aplicado_en` (nullable) -- sin ella no había forma real de saber si el descuento ya se había usado antes, y el propio alcance pedido decía "primera compra del referido", no "cada compra". 2 columnas nuevas en `configuracion_plataforma` (`referido_credito_referidor_default`, `referido_descuento_referido_default`), ambas nullable/default 0 hasta que el director decida los números reales -- mismo patrón que `cashback_porcentaje_default`.
+- Registro con código: `RegistroDto.codigoReferido` opcional. `AuthService.registrar()` nunca lanza por esto -- un código inválido o fraudulento no debe impedir que alguien se registre, que es la acción principal.
+- **Anti-fraude real, con 2 capas:** por id (defensivo) y **por cédula coincidente** -- el caso real de fraude no es que alguien use su propio id (imposible, la cuenta referida es nueva), es que la misma persona cree una segunda cuenta con otro correo para autorreferirse. Si la cédula del nuevo registro coincide con la del referidor, la relación simplemente no se crea -- el registro en sí nunca falla por esto (decisión reportada: bloquear la creación de una cuenta completa por un intento de fraude en un campo aparte sería desproporcionado).
+- Descuento en la primera compra: mismo patrón exacto que `creditoIdAUsar` y `usarSaldoWallet` en `checkout.service.ts` (`Math.min(descuento, montoTotal)`), consumido (marcado) solo después de que el pago se aprueba.
+- Disparador del crédito al referidor: mismo punto exacto donde ya se dispara el cashback (`PanelEmpresaService.validarBoletoPorQr`) -- nunca lanza, mismo criterio que `WalletService.acreditarCashbackPorValidacion`. Idempotente de verdad: `obtenerRelacionPendienteDeCredito` solo encuentra relaciones con `boleto_que_disparo_credito_id IS NULL`, así que el amigo puede viajar 10 veces más sin que el crédito se repita.
+- Endpoint admin `GET/PATCH /referidos/configuracion`, exclusivo `super_admin`, mismo patrón que `/wallet/cashback-porcentaje`.
+
+**2 hallazgos reales encontrados en el camino, corregidos antes de fusionar:**
+1. La consulta de saldo de wallet (Fase 1/2) solo sumaba `tipo = 'credito_cashback'` -- un crédito `credito_referido` habría quedado invisible en el saldo. Corregido antes de que se convirtiera en un bug real, ampliando la condición a ambos tipos de crédito.
+2. El helper compartido `limpiarCooperativasDePrueba` no desvinculaba `referidos.boleto_que_disparo_credito_id` antes de borrar boletos -- mismo tipo de omisión recurrente que el propio archivo ya documenta varias veces para otras tablas. Corregido con un `UPDATE ... SET boleto_que_disparo_credito_id = NULL` antes del `DELETE FROM boletos` (se desvincula la referencia, no se borra la relación completa -- no hace falta).
+
+**Pruebas reales (8):** el código de referido ya viene generado desde el registro; un código válido crea la relación real; autorreferido por cédula coincidente NO crea la relación (el registro en sí no falla); el descuento se aplica en la primera compra; el crédito NO se acredita al comprar, solo al validar el boleto; el crédito se acredita correctamente al validar; el crédito no se duplica en un segundo viaje del mismo referido; solo `super_admin` puede cambiar la configuración.
+
+**Verificado:** migración `0032_referidos.sql` aplicada (33 migraciones en total), `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **193/193 pruebas e2e** (185 previas + 8 nuevas).
+
 ## 4. Requerimientos no funcionales
 
 | Área | Estado |
