@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import type { AsientoRepositorio } from '../../dominio/asientos/asientos.ports';
 import { extraerNumerosValidos } from '../../dominio/asientos/distribucion-asientos.util';
@@ -34,11 +35,19 @@ export class AsientosService {
    * concurrencia real.
    */
 
+  // Item 31, Fase 7 (11-ago-2026) -- compra como invitado. Exactamente
+  // uno de usuarioId/sesionInvitadoId trae valor, nunca los 2.
   async bloquearAsiento(
     viajeId: string,
     numeroAsiento: string,
-    usuarioId: string,
+    usuarioId: string | null,
+    sesionInvitadoId: string | null,
   ) {
+    if (!usuarioId && !sesionInvitadoId) {
+      throw new BadRequestException(
+        'Falta identificar quien bloquea este asiento -- token de sesion o de invitado.',
+      );
+    }
     const [cooperativaId, mapa] = await Promise.all([
       this.asientos.obtenerCooperativaDelViaje(viajeId),
       this.asientos.obtenerMapa(viajeId),
@@ -71,6 +80,7 @@ export class AsientosService {
       viajeId,
       numeroAsiento,
       usuarioId,
+      sesionInvitadoId,
       cooperativaId,
     );
 

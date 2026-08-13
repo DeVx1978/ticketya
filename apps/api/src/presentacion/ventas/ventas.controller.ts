@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Post,
@@ -19,24 +19,35 @@ import { ReprogramarBoletoDto } from './dto/reprogramar-boleto.dto';
 import { IniciarPagoManualDto } from './dto/pago-manual.dto';
 import { SolicitarFacturaDto } from './dto/solicitar-factura.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
 @Controller('compras')
 export class VentasController {
   constructor(private readonly checkout: CheckoutService) {}
 
-  /** RF-CHECK completo — requiere estar logueado (el comprador es el usuario del token). */
-  @UseGuards(JwtAuthGuard)
+  /**
+   * RF-CHECK completo. Item 31, Fase 7 (11-ago-2026) -- compra como
+   * invitado (sin cuenta): OptionalJwtAuthGuard nunca bloquea la
+   * peticion -- si hay token valido, req.user queda poblado (compra
+   * con cuenta, comportamiento identico a siempre); si no hay token,
+   * req.user es null (compra como invitado). El servicio decide si
+   * eso es valido segun tenga o no datos de contacto.
+   */
+  @UseGuards(OptionalJwtAuthGuard)
   @Post()
   async crearCompra(
     @Body() dto: CrearCompraDto,
-    @Request() req: { user: PayloadToken },
+    @Request() req: { user: PayloadToken | null },
   ) {
     return this.checkout.procesarCompra(
       dto.pasajeros,
-      req.user.sub,
+      req.user?.sub ?? null,
       dto.idempotencyKey,
       dto.creditoIdAUsar,
+      dto.telefonoContacto,
+      dto.correoContacto,
+      dto.sesionInvitadoId,
     );
   }
 

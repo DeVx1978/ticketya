@@ -71,6 +71,14 @@ export const compras = pgTable(
     montoTasaTerminal: numeric('monto_tasa_terminal', { precision: 10, scale: 2 }).notNull(),
     montoImpuestos: numeric('monto_impuestos', { precision: 10, scale: 2 }).notNull(),
 
+    // Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
+    // Solo se llenan cuando compradorUsuarioId es null -- es el unico
+    // lugar donde se puede contactar a alguien que compro sin cuenta,
+    // ya que las notificaciones hoy solo sabian buscar el telefono en
+    // la tabla usuarios via compradorUsuarioId.
+    telefonoContacto: varchar('telefono_contacto', { length: 20 }),
+    correoContacto: varchar('correo_contacto', { length: 200 }),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },

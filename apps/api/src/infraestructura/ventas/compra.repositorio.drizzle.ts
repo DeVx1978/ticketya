@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { eq, and, sql, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { NotificadorEmail } from '../../dominio/auth/auth.ports';
@@ -92,7 +92,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
 
   async validarYCalcularAsientos(
     asientos: PasajeroCheckout[],
-    usuarioId: string,
+    usuarioId: string | null,
+    sesionInvitadoId: string | null,
   ): Promise<DesgloseAsiento[]> {
     const configuracion =
       await this.dbPublico.query.configuracionPlataforma.findFirst();
@@ -109,6 +110,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           precioBase: viajes.precioBase,
           estadoAsiento: viajeAsientos.estado,
           holdUsuarioId: viajeAsientos.holdUsuarioId,
+          holdSesionInvitadoId: viajeAsientos.holdSesionInvitadoId,
           holdExpiraEn: viajeAsientos.holdExpiraEn,
           tasaTerminal: puntosOperacion.tasaMonto,
           ivaPorcentaje: cooperativas.ivaPorcentaje,
@@ -140,9 +142,15 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       const holdVigente =
         f.holdExpiraEn && new Date(f.holdExpiraEn).getTime() > Date.now();
 
+      // Item 31, Fase 7 (11-ago-2026) -- mismo criterio de dueno que
+      // asiento.repositorio.drizzle.ts::bloquear().
+      const esElMismoDueno =
+        (usuarioId !== null && f.holdUsuarioId === usuarioId) ||
+        (sesionInvitadoId !== null &&
+          f.holdSesionInvitadoId === sesionInvitadoId);
       if (
         f.estadoAsiento !== 'bloqueado_temporal' ||
-        f.holdUsuarioId !== usuarioId ||
+        !esElMismoDueno ||
         !holdVigente
       ) {
         throw new BadRequestException(
@@ -177,11 +185,13 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
   }
 
   async crearCompraPendiente(
-    usuarioId: string,
+    usuarioId: string | null,
     pasajeros: PasajeroCheckout[],
     desglose: DesgloseAsiento[],
     idempotencyKey: string,
     proveedor: string = 'simulado',
+    telefonoContacto?: string,
+    correoContacto?: string,
   ): Promise<{ compraId: string; mapeo: MapeoAsientoPasajero[] }> {
     const montoTarifasCooperativa = desglose.reduce(
       (a, d) => a + d.precioPagado,
@@ -204,6 +214,9 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .insert(compras)
       .values({
         compradorUsuarioId: usuarioId,
+        // Item 31, Fase 7 (11-ago-2026) -- compra como invitado.
+        telefonoContacto: telefonoContacto ?? null,
+        correoContacto: correoContacto ?? null,
         canal: 'en_linea',
         montoTotal: montoTotal.toFixed(2),
         montoTarifasCooperativa: montoTarifasCooperativa.toFixed(2),

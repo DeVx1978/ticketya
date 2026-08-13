@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Dominio de ventas — RF-CHECK, RN-001, RN-002.
  */
 
@@ -159,19 +159,31 @@ export interface CompraRepositorio {
    * no haya expirado, y devuelve el desglose de precio de cada uno.
    * Lanza si algún asiento no es válido para este checkout.
    */
+  /**
+   * Item 31, Fase 7 (11-ago-2026) -- compra como invitado. usuarioId es
+   * null para un invitado -- el dueno del hold se reconoce entonces por
+   * sesionInvitadoId en su lugar.
+   */
   validarYCalcularAsientos(
     asientos: PasajeroCheckout[],
-    usuarioId: string,
+    usuarioId: string | null,
+    sesionInvitadoId: string | null,
   ): Promise<DesgloseAsiento[]>;
 
-  /** Crea compra + pasajeros_compra + fila de pago en estado 'pendiente'. */
+  /**
+   * Crea compra + pasajeros_compra + fila de pago en estado 'pendiente'.
+   * Item 31, Fase 7 (11-ago-2026) -- telefonoContacto/correoContacto
+   * solo se usan cuando usuarioId es null (compra como invitado).
+   */
   crearCompraPendiente(
-    usuarioId: string,
+    usuarioId: string | null,
     pasajeros: PasajeroCheckout[],
     desglose: DesgloseAsiento[],
     idempotencyKey: string,
     /** Métodos de pago manuales (29-jul-2026) -- default 'simulado' para no romper el checkout con tarjeta ya existente. */
     proveedor?: string,
+    telefonoContacto?: string,
+    correoContacto?: string,
   ): Promise<{ compraId: string; mapeo: MapeoAsientoPasajero[] }>;
 
   /**

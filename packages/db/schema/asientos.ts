@@ -50,6 +50,14 @@ export const viajeAsientos = pgTable(
     holdExpiraEn: timestamp('hold_expira_en', { withTimezone: true }),
     holdUsuarioId: uuid('hold_usuario_id').references(() => usuarios.id),
 
+    // Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
+    // Un invitado no tiene usuarioId real para holdUsuarioId (es FK a
+    // usuarios), asi que el bloqueo de un invitado se identifica por
+    // este UUID generado en el navegador (mismo patron que
+    // idempotencyKey) en vez de una cuenta real. Nunca se llenan los 2
+    // a la vez -- un hold es de un usuario logueado O de un invitado.
+    holdSesionInvitadoId: varchar('hold_sesion_invitado_id', { length: 100 }),
+
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

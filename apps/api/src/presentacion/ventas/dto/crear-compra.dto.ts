@@ -90,4 +90,28 @@ export class CrearCompraDto {
   @IsOptional()
   @IsUUID()
   creditoIdAUsar?: string;
+
+  /**
+   * Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
+   * Solo se usan cuando la peticion no trae token (comprador sin
+   * cuenta) -- el servicio valida que al menos uno de los 2 este
+   * presente en ese caso, porque sin ninguno no hay forma real de
+   * contactar al pasajero.
+   */
+  @IsOptional()
+  @IsString()
+  telefonoContacto?: string;
+
+  @IsOptional()
+  @IsString()
+  correoContacto?: string;
+
+  /**
+   * Item 31, Fase 7 (11-ago-2026) -- compra como invitado. Debe
+   * coincidir con la sesionInvitadoId usada al bloquear los asientos
+   * -- si no coincide, el bloqueo no se reconoce como propio.
+   */
+  @IsOptional()
+  @IsString()
+  sesionInvitadoId?: string;
 }
