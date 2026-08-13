@@ -540,7 +540,7 @@ export class CheckoutService {
       const { ruc } = await this.compras.obtenerDatosFiscalesPlataforma();
       const resultadoFactura = await this.facturacion.emitirComprobante({
         montoTotal: montoCargoPlataforma,
-        descripcion: 'Cargo por servicio de plataforma TicketYa',
+        descripcion: 'Cargo por servicio de plataforma Columbus',
       });
       await this.compras.crearComprobantePlataforma(
         compraId,

@@ -228,7 +228,7 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     if (filaExistente.rows.length === 0) {
       const creada = await this.db.execute(sql`
         INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, iva_porcentaje_nacional)
-        VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${nuevoPorcentaje})
+        VALUES ('9999999999001', 'Columbus (pendiente RUC real)', ${nuevoPorcentaje})
         RETURNING id
       `);
       configuracionId = (creada.rows[0] as { id: string }).id;
@@ -284,7 +284,7 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     if (filaExistente.rows.length === 0) {
       const creada = await this.db.execute(sql`
         INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, cargo_plataforma_por_pasajero_default)
-        VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${nuevoMonto})
+        VALUES ('9999999999001', 'Columbus (pendiente RUC real)', ${nuevoMonto})
         RETURNING id
       `);
       configuracionId = (creada.rows[0] as { id: string }).id;
@@ -380,7 +380,7 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     if (filaExistente.rows.length === 0) {
       const creada = await this.db.execute(sql`
         INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, modo_iva_boleto)
-        VALUES ('9999999999001', 'TicketYa (pendiente RUC real)', ${modo})
+        VALUES ('9999999999001', 'Columbus (pendiente RUC real)', ${modo})
         RETURNING id
       `);
       configuracionId = (creada.rows[0] as { id: string }).id;
