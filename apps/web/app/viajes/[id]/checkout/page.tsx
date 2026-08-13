@@ -20,14 +20,23 @@ const TARIFAS = [
  * pantalla (un solo pasajero por compra) -- ahora es un arreglo, uno
  * por cada asiento elegido, para soportar varios pasajeros en una sola
  * transaccion.
+ *
+ * Item 31.1 (13-ago-2026) -- nombreCompleto se separo en nombres y
+ * apellidos reales, se agrego tipoDocumento (selector explicito
+ * cedula/pasaporte, el backend valida cada uno distinto) y
+ * esEmbarazada (atencion preferente, LOTTTSV Art. 48 -- no es un
+ * descuento, va aparte de tipoTarifa).
  */
 interface DatosPasajero {
   viajeId: string;
   numeroAsiento: string;
-  nombreCompleto: string;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: "cedula" | "pasaporte";
   documento: string;
   tipoTarifa: (typeof TARIFAS)[number]["valor"];
   fechaNacimiento: string;
+  esEmbarazada: boolean;
   adultoResponsableNombre: string;
   adultoResponsableDocumento: string;
   adultoResponsableTelefono: string;
@@ -37,10 +46,13 @@ function datosPasajeroVacio(viajeId: string, numeroAsiento: string): DatosPasaje
   return {
     viajeId,
     numeroAsiento,
-    nombreCompleto: "",
+    nombres: "",
+    apellidos: "",
+    tipoDocumento: "cedula",
     documento: "",
     tipoTarifa: "adulto",
     fechaNacimiento: "",
+    esEmbarazada: false,
     adultoResponsableNombre: "",
     adultoResponsableDocumento: "",
     adultoResponsableTelefono: "",
@@ -168,10 +180,13 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
       const pasajeros: PasajeroCompraInput[] = pasajerosData.map((p) => ({
         viajeId: p.viajeId,
         numeroAsiento: p.numeroAsiento,
-        nombreCompleto: p.nombreCompleto,
-        documento: p.documento,
+        nombres: p.nombres.trim(),
+        apellidos: p.apellidos.trim(),
+        tipoDocumento: p.tipoDocumento,
+        documento: p.documento.trim(),
         tipoTarifa: p.tipoTarifa,
         fechaNacimiento: p.fechaNacimiento || undefined,
+        esEmbarazada: p.esEmbarazada || undefined,
         autorizacionMenor:
           p.tipoTarifa === "nino"
             ? {
@@ -407,23 +422,53 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   )}
                 </p>
               )}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor={`checkout-nombres-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                    Nombres
+                  </label>
+                  <input
+                    id={`checkout-nombres-${indice}`}
+                    type="text"
+                    required
+                    minLength={2}
+                    value={p.nombres}
+                    onChange={(e) => actualizarPasajero(indice, { nombres: e.target.value })}
+                    className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                  />
+                </div>
+                <div>
+                  <label htmlFor={`checkout-apellidos-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                    Apellidos
+                  </label>
+                  <input
+                    id={`checkout-apellidos-${indice}`}
+                    type="text"
+                    required
+                    minLength={2}
+                    value={p.apellidos}
+                    onChange={(e) => actualizarPasajero(indice, { apellidos: e.target.value })}
+                    className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                  />
+                </div>
+              </div>
               <div>
-                <label htmlFor={`checkout-nombre-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                  Nombre completo
+                <label htmlFor={`checkout-tipo-documento-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  Tipo de documento
                 </label>
-                <input
-                  id={`checkout-nombre-${indice}`}
-                  type="text"
-                  required
-                  minLength={3}
-                  value={p.nombreCompleto}
-                  onChange={(e) => actualizarPasajero(indice, { nombreCompleto: e.target.value })}
+                <select
+                  id={`checkout-tipo-documento-${indice}`}
+                  value={p.tipoDocumento}
+                  onChange={(e) => actualizarPasajero(indice, { tipoDocumento: e.target.value as DatosPasajero["tipoDocumento"] })}
                   className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
-                />
+                >
+                  <option value="cedula">Cédula</option>
+                  <option value="pasaporte">Pasaporte</option>
+                </select>
               </div>
               <div>
                 <label htmlFor={`checkout-documento-${indice}`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                  Cédula / documento
+                  {p.tipoDocumento === "cedula" ? "Número de cédula" : "Número de pasaporte"}
                 </label>
                 <input
                   id={`checkout-documento-${indice}`}
@@ -451,6 +496,18 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg bg-brand-light/40 px-3 py-2.5">
+                <input
+                  id={`checkout-embarazada-${indice}`}
+                  type="checkbox"
+                  checked={p.esEmbarazada}
+                  onChange={(e) => actualizarPasajero(indice, { esEmbarazada: e.target.checked })}
+                  className="h-4 w-4 rounded border-brand-light text-brand focus:ring-brand-medium"
+                />
+                <label htmlFor={`checkout-embarazada-${indice}`} className="text-sm text-brand-dark/80">
+                  ¿Viaja embarazada? — atención preferente, no afecta el precio
+                </label>
               </div>
               {p.tipoTarifa === "nino" && (
                 <div>
