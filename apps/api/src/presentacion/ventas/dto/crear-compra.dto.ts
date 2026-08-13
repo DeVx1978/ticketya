@@ -5,11 +5,41 @@ import {
   IsString,
   IsUUID,
   IsInt,
+  IsBoolean,
+  Matches,
   ValidateNested,
   MinLength,
   ArrayMinSize,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { esDocumentoValido } from '../../../dominio/ventas/validadores-documento';
+
+/**
+ * Item 31.1, Fase 7 (13-ago-2026) -- el numero de documento se valida
+ * distinto segun el tipo declarado (cedula: algoritmo real Modulo 10;
+ * pasaporte: formato mas ligero) -- necesita leer el campo hermano
+ * tipoDocumento, por eso es un validador de clase, no un decorador
+ * simple como @Matches.
+ */
+@ValidatorConstraint({ name: 'esDocumentoValidoSegunTipo', async: false })
+class EsDocumentoValidoSegunTipoConstraint implements ValidatorConstraintInterface {
+  validate(documento: string, args: ValidationArguments): boolean {
+    const objeto = args.object as { tipoDocumento?: 'cedula' | 'pasaporte' };
+    if (!objeto.tipoDocumento) return false;
+    return esDocumentoValido(documento, objeto.tipoDocumento);
+  }
+
+  defaultMessage(args: ValidationArguments): string {
+    const objeto = args.object as { tipoDocumento?: 'cedula' | 'pasaporte' };
+    return objeto.tipoDocumento === 'cedula'
+      ? 'El numero de cedula no es valido (verifica los digitos).'
+      : 'El numero de pasaporte no tiene un formato valido.';
+  }
+}
 
 /**
  * RF-MENOR — autorización de viaje de menor de edad. Solo se exige
@@ -38,8 +68,10 @@ class AutorizacionMenorDto {
   @MinLength(5)
   adultoResponsableDocumento?: string;
 
+  /** Item 31.1 -- formato movil ecuatoriano real (10 digitos, empieza con 09). */
   @IsOptional()
   @IsString()
+  @Matches(/^09\d{8}$/, { message: 'El telefono debe ser un numero movil ecuatoriano valido (10 digitos, empieza con 09).' })
   adultoResponsableTelefono?: string;
 
   @IsOptional()
@@ -54,12 +86,21 @@ export class PasajeroCheckoutDto {
   @IsString()
   numeroAsiento!: string;
 
+  /** Item 31.1, Fase 7 (13-ago-2026) -- separado en 2 campos reales (antes nombreCompleto). */
   @IsString()
-  @MinLength(3)
-  nombreCompleto!: string;
+  @MinLength(2)
+  nombres!: string;
 
   @IsString()
-  @MinLength(5)
+  @MinLength(2)
+  apellidos!: string;
+
+  /** Selector explicito -- confirmado con FlixBus que ambos son documentos validos reales. */
+  @IsIn(['cedula', 'pasaporte'])
+  tipoDocumento!: 'cedula' | 'pasaporte';
+
+  @IsString()
+  @Validate(EsDocumentoValidoSegunTipoConstraint)
   documento!: string;
 
   @IsIn(['adulto', 'nino', 'tercera_edad', 'discapacidad'])
@@ -68,6 +109,11 @@ export class PasajeroCheckoutDto {
   @IsOptional()
   @IsString()
   fechaNacimiento?: string;
+
+  /** LOTTTSV Art. 48 -- atencion preferente, NO es un descuento (no toca tipoTarifa ni el precio). */
+  @IsOptional()
+  @IsBoolean()
+  esEmbarazada?: boolean;
 
   @IsOptional()
   @ValidateNested()
@@ -98,8 +144,10 @@ export class CrearCompraDto {
    * presente en ese caso, porque sin ninguno no hay forma real de
    * contactar al pasajero.
    */
+  /** Item 31.1 -- formato movil ecuatoriano real (10 digitos, empieza con 09). */
   @IsOptional()
   @IsString()
+  @Matches(/^09\d{8}$/, { message: 'El telefono debe ser un numero movil ecuatoriano valido (10 digitos, empieza con 09).' })
   telefonoContacto?: string;
 
   @IsOptional()

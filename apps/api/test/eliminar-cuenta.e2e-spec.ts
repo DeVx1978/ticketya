@@ -193,8 +193,10 @@ describe('Eliminación de cuenta (e2e)', () => {
           {
             viajeId: viaje.body.id,
             numeroAsiento: '1A',
-            nombreCompleto: 'Pasajero A Eliminar E2E',
-            documento: '0955555599',
+            nombres: 'Pasajero',
+            apellidos: 'A Eliminar E2E',
+            tipoDocumento: 'cedula',
+            documento: '1701004119',
             tipoTarifa: 'adulto',
           },
         ],
@@ -252,11 +254,12 @@ describe('Eliminación de cuenta (e2e)', () => {
     // vendido siguen intactos -- es el registro contable de la
     // cooperativa, no un dato exclusivo de la cuenta eliminada.
     const filaPasajeroCompra = await pg.query(
-      'SELECT nombre_completo, documento FROM pasajeros_compra WHERE compra_id = $1',
+      'SELECT nombres, apellidos, documento FROM pasajeros_compra WHERE compra_id = $1',
       [compraId],
     );
-    expect(filaPasajeroCompra.rows[0].nombre_completo).toBe('Pasajero A Eliminar E2E');
-    expect(filaPasajeroCompra.rows[0].documento).toBe('0955555599');
+    expect(filaPasajeroCompra.rows[0].nombres).toBe('Pasajero');
+    expect(filaPasajeroCompra.rows[0].apellidos).toBe('A Eliminar E2E');
+    expect(filaPasajeroCompra.rows[0].documento).toBe('1701004119');
   });
 
   it('acepta la frase "ELIMINAR" para una cuenta sin contraseña (login externo simulado)', async () => {

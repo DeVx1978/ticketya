@@ -634,7 +634,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   async listarPasajerosDeViaje(cooperativaId: string, viajeId: string) {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const resultado = await tx.execute(sql`
-        SELECT va.numero_asiento, pc.nombre_completo, pc.documento,
+        SELECT va.numero_asiento, pc.nombres || ' ' || pc.apellidos AS nombre_completo, pc.documento,
                pc.tipo_tarifa, pc.es_menor_edad, b.estado
         FROM viaje_asientos va
         JOIN boletos b ON b.viaje_asiento_id = va.id
@@ -1256,7 +1256,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<ResultadoValidacionQr> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
-        SELECT b.id, b.estado, pc.id AS pasajero_compra_id, pc.nombre_completo, pc.es_menor_edad
+        SELECT b.id, b.estado, pc.id AS pasajero_compra_id, pc.nombres || ' ' || pc.apellidos AS nombre_completo, pc.es_menor_edad
         FROM boletos b
         JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
         WHERE b.codigo_qr = ${codigoQr}
@@ -1310,7 +1310,7 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         const autRows = await tx.execute(sql`
           SELECT am.tipo_acompanamiento, am.adulto_responsable_nombre,
                  am.adulto_responsable_documento, am.adulto_responsable_telefono,
-                 am.documento_autorizacion_url, acompanante.nombre_completo AS adulto_acompanante_nombre,
+                 am.documento_autorizacion_url, acompanante.nombres || ' ' || acompanante.apellidos AS adulto_acompanante_nombre,
                  vm.id AS verificacion_id
           FROM autorizaciones_menor am
           LEFT JOIN pasajeros_compra acompanante ON acompanante.id = am.adulto_acompanante_en_compra_id
