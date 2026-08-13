@@ -1,4 +1,16 @@
-const CLAVE_TOKEN = "ticketya_token";
+/**
+ * Rebrand a Columbus, lado frontend (13-ago-2026) -- la clave real
+ * cambia de "ticketya_token" a "columbus_token". Cambiar el nombre de
+ * golpe habria dejado deslogueado a cualquier usuario con sesion activa
+ * hoy (localStorage no sabe de renombres, solo de claves exactas) --
+ * en vez de eso, se hace una migracion silenciosa: la primera vez que
+ * se lee el token, si esta bajo la clave vieja, se copia a la nueva y
+ * se borra la vieja, sin que el usuario pierda su sesion ni lo note.
+ * Decision reportada al director: preservar sesiones activas en vez de
+ * forzar un logout masivo el dia del cambio.
+ */
+const CLAVE_TOKEN = "columbus_token";
+const CLAVE_TOKEN_VIEJA = "ticketya_token";
 
 /**
  * Guardado simple en localStorage — suficiente para esta etapa
@@ -10,16 +22,31 @@ const CLAVE_TOKEN = "ticketya_token";
 export function guardarToken(token: string) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(CLAVE_TOKEN, token);
+  // Por si quedaba una sesión vieja en la clave anterior -- ya no debe
+  // convivir con la nueva, para no confundir una futura limpieza manual.
+  window.localStorage.removeItem(CLAVE_TOKEN_VIEJA);
 }
 
 export function obtenerToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(CLAVE_TOKEN);
+  const tokenNuevo = window.localStorage.getItem(CLAVE_TOKEN);
+  if (tokenNuevo) return tokenNuevo;
+  // Migración silenciosa (13-ago-2026): sesión guardada antes del
+  // rebrand, bajo el nombre viejo -- se traslada a la clave nueva sin
+  // desloguear a quien ya tenía la sesión abierta.
+  const tokenViejo = window.localStorage.getItem(CLAVE_TOKEN_VIEJA);
+  if (tokenViejo) {
+    window.localStorage.setItem(CLAVE_TOKEN, tokenViejo);
+    window.localStorage.removeItem(CLAVE_TOKEN_VIEJA);
+    return tokenViejo;
+  }
+  return null;
 }
 
 export function borrarToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(CLAVE_TOKEN);
+  window.localStorage.removeItem(CLAVE_TOKEN_VIEJA);
 }
 
 /** Forma del payload que emite el backend — ver dominio/auth/auth.ports.ts (PayloadToken). */
@@ -73,7 +100,7 @@ export function tokenValido(): string | null {
   return token;
 }
 
-const CLAVE_SESION_INVITADO = "ticketya_sesion_invitado";
+const CLAVE_SESION_INVITADO = "columbus_sesion_invitado";
 
 /**
  * Item 31, Fase 7 (11-ago-2026) -- compra como invitado (sin cuenta).
