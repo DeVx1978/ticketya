@@ -337,10 +337,20 @@ export default function UnidadesPage() {
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                       Vista previa
                     </p>
-                    <div className="space-y-3 rounded-lg bg-white p-4">
+                    {/* Lectores de pantalla (13-ago-2026, accesibilidad parte
+                        2) -- esta vista previa NO es interactiva (la edición
+                        real pasa por el textarea de arriba, ya accesible por
+                        teclado de forma nativa) -- se marca como región de
+                        solo lectura para que un lector de pantalla no la
+                        confunda con un editor de verdad. */}
+                    <div
+                      className="space-y-3 rounded-lg bg-white p-4"
+                      role="img"
+                      aria-label={`Vista previa de solo lectura de la distribución de asientos configurada, ${obtenerPisosDeDistribucion(distribucionParseada, Number(capacidad) || 0).length} piso(s)`}
+                    >
                       {obtenerPisosDeDistribucion(distribucionParseada, Number(capacidad) || 0).map(
                         (piso, pisoIdx) => (
-                          <div key={pisoIdx}>
+                          <div key={pisoIdx} aria-hidden="true">
                             <p className="mb-1 text-xs font-bold text-brand-dark">{piso.nombre}</p>
                             <div className="space-y-1">
                               {piso.filas.map((fila, i) => (

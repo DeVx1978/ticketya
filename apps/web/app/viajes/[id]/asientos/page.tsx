@@ -225,10 +225,10 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
         {hayEtiquetas && (
           <div className="mt-4 flex items-center justify-center gap-4 text-xs text-brand-dark/70">
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" /> VIP
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500" aria-hidden="true" /> VIP
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-pink-500" /> Exclusivo mujeres
+              <span className="h-2.5 w-2.5 rounded-full bg-pink-500" aria-hidden="true" /> Exclusivo mujeres
             </span>
           </div>
         )}
@@ -245,7 +245,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
                   )}
                 </div>
               )}
-              <div className="space-y-2">
+              <div className="space-y-2" role="group" aria-label={`Asientos, piso ${piso.nombre ?? pisoIdx + 1}`}>
                 {piso.filas.map((fila, i) => (
                   <div key={i} className="flex items-center justify-center gap-2">
                     {fila.celdas.map((celda, j) => {
@@ -257,12 +257,35 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
                       const estado = estadoPorNumero.get(numero);
                       const noDisponible = estado === "ocupado" || estado === "bloqueado_temporal";
                       const esSeleccionado = seleccionados.includes(numero);
+                      // Lectores de pantalla (13-ago-2026, accesibilidad
+                      // parte 2) -- el mapa se veía bien pero no se podía
+                      // "escuchar": sin esto, un lector de pantalla solo
+                      // anunciaba el número, nunca si el asiento estaba
+                      // libre, ocupado, seleccionado, o si era VIP/exclusivo
+                      // mujeres (antes solo un `title=`, que la mayoría de
+                      // lectores de pantalla no anuncia de forma confiable).
+                      const descripcionEstado = noDisponible
+                        ? "ocupado"
+                        : esSeleccionado
+                          ? "seleccionado"
+                          : "disponible";
+                      const descripcionEtiquetas = [
+                        etiquetas.includes("vip") ? "VIP" : null,
+                        etiquetas.includes("mujeres") ? "exclusivo mujeres" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ");
+                      const etiquetaAria = `Asiento ${numero}, ${descripcionEstado}${
+                        descripcionEtiquetas ? `, ${descripcionEtiquetas}` : ""
+                      }`;
                       return (
                         <div key={numero} className="relative">
                           <button
                             type="button"
                             disabled={noDisponible}
                             onClick={() => alternarAsiento(numero)}
+                            aria-label={etiquetaAria}
+                            aria-pressed={esSeleccionado}
                             className={`h-10 w-10 rounded-lg text-xs font-semibold transition ${
                               noDisponible
                                 ? "cursor-not-allowed bg-gray-200 text-gray-400"
@@ -273,9 +296,11 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
                           >
                             {numero}
                           </button>
-                          {/* Ítem 14 (05-ago-2026) -- indicadores de etiqueta, un asiento puede tener ambas a la vez. */}
+                          {/* Ítem 14 (05-ago-2026) -- indicadores de etiqueta, un asiento puede tener ambas a la vez.
+                              aria-hidden: el significado ya va en el aria-label del botón de arriba -- estos puntos
+                              de color son puramente decorativos para quien SÍ ve la pantalla. */}
                           {!noDisponible && etiquetas.length > 0 && (
-                            <span className="absolute -top-1 -right-1 flex gap-0.5">
+                            <span className="absolute -top-1 -right-1 flex gap-0.5" aria-hidden="true">
                               {etiquetas.includes("vip") && (
                                 <span
                                   className="h-2.5 w-2.5 rounded-full bg-amber-500 ring-1 ring-white"

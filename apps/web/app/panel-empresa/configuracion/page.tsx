@@ -182,10 +182,11 @@ export default function ConfiguracionPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="config-razon-social" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Razón social
               </label>
               <input
+                id="config-razon-social"
                 type="text"
                 value={razonSocial}
                 onChange={(e) => setRazonSocial(e.target.value)}
@@ -193,10 +194,11 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="config-ruc" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 RUC
               </label>
               <input
+                id="config-ruc"
                 type="text"
                 value={ruc}
                 onChange={(e) => setRuc(e.target.value)}
@@ -204,10 +206,11 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="config-direccion-legal" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Dirección legal
               </label>
               <input
+                id="config-direccion-legal"
                 type="text"
                 value={direccionLegal}
                 onChange={(e) => setDireccionLegal(e.target.value)}
@@ -215,10 +218,11 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="config-contacto-nombre" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Nombre de contacto
               </label>
               <input
+                id="config-contacto-nombre"
                 type="text"
                 value={contactoNombre}
                 onChange={(e) => setContactoNombre(e.target.value)}
@@ -226,10 +230,11 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="config-contacto-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Correo de contacto
               </label>
               <input
+                id="config-contacto-correo"
                 type="email"
                 value={contactoCorreo}
                 onChange={(e) => setContactoCorreo(e.target.value)}
@@ -237,10 +242,11 @@ export default function ConfiguracionPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+              <label htmlFor="config-contacto-telefono" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
                 Teléfono de contacto
               </label>
               <input
+                id="config-contacto-telefono"
                 type="text"
                 value={contactoTelefono}
                 onChange={(e) => setContactoTelefono(e.target.value)}
