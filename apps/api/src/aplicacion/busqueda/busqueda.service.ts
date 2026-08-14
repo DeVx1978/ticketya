@@ -72,6 +72,7 @@ export class BusquedaService {
       .from(puntosOperacion)
       .where(
         and(
+          eq(puntosOperacion.estado, 'aprobado'),
           or(
             ilike(puntosOperacion.ciudad, `%${textoNormalizado}%`),
             ilike(puntosOperacion.nombre, `%${textoNormalizado}%`),
@@ -142,6 +143,11 @@ export class BusquedaService {
       eq(rutas.destinoPuntoOperacionId, destinoId),
       eq(viajes.fechaSalida, fecha),
       eq(viajes.estado, 'programado'),
+      // Cooperativas proponen sus propios puntos de operación
+      // (13-ago-2026) -- un punto todavía pendiente de revisión (o ya
+      // rechazado) nunca debe aparecer en un resultado de búsqueda real.
+      eq(origen.estado, 'aprobado'),
+      eq(destino.estado, 'aprobado'),
     ];
 
     if (horaDesde && horaHasta) {
@@ -304,6 +310,7 @@ export class BusquedaService {
       .from(rutas)
       .innerJoin(origen, eq(rutas.origenPuntoOperacionId, origen.id))
       .innerJoin(destino, eq(rutas.destinoPuntoOperacionId, destino.id))
+      .where(and(eq(origen.estado, 'aprobado'), eq(destino.estado, 'aprobado')))
       .orderBy(rutas.creadoEn)
       .limit(limite);
   }

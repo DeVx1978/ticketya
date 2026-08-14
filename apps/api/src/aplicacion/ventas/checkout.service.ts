@@ -427,6 +427,13 @@ export class CheckoutService {
     const ivaVisible = modoIva === 'calculado';
     const ivaMonto = modoIva === 'cero' ? 0 : datos.ivaMonto;
 
+    // Contacto de soporte global (13-ago-2026) -- hallazgo real
+    // reportado en el rediseño anterior: no existía este campo en
+    // ningún lado del sistema. Ya construido, ahora sí se usa aquí. Si
+    // no está configurado (ambos null), simplemente no se muestra la
+    // línea -- nunca un placeholder ni un texto vacío.
+    const contactoSoporte = await this.compras.obtenerContactoSoporte();
+
     // Número de boleto corto y legible (13-ago-2026) -- decisión de
     // diseño reportada: NO reutiliza el código QR completo (larguísimo,
     // pensado para escanear, no para leer) ni el código de pasajero
@@ -516,7 +523,7 @@ export class CheckoutService {
       // sin avisar cuando el pie de página se desbordó apenas unos
       // puntos a una segunda página casi vacía. Corregido para usar el
       // margen real.
-      if (yPie + 20 > altoPagina - doc.page.margins.bottom) {
+      if (yPie + 34 > altoPagina - doc.page.margins.bottom) {
         throw new Error(
           'El diseño del PDF del boleto no cabe en una sola página con los datos reales de este boleto -- revisar aritmética de posiciones.',
         );
@@ -728,6 +735,25 @@ export class CheckoutService {
           width: anchoUtil,
           align: 'center',
         });
+
+      // Contacto de soporte global (13-ago-2026) -- decisión real,
+      // investigada contra FlixBus: el soporte se centraliza en la
+      // marca de la plataforma, no en cada cooperativa. Solo se
+      // muestra si de verdad está configurado -- nunca un placeholder
+      // ni una línea vacía.
+      if (contactoSoporte.correo || contactoSoporte.telefono) {
+        const partesContacto = [contactoSoporte.correo, contactoSoporte.telefono].filter(
+          (v): v is string => Boolean(v),
+        );
+        doc
+          .fontSize(7.5)
+          .fillColor('#999999')
+          .font('Helvetica')
+          .text(`Soporte Columbus: ${partesContacto.join(' · ')}`, margenIzq, yPie + 19, {
+            width: anchoUtil,
+            align: 'center',
+          });
+      }
 
       doc.end();
     });

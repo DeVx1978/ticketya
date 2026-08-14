@@ -529,6 +529,21 @@ export interface PanelEmpresaRepositorio {
     cooperativaId: string,
     datos: DatosNuevoTipoVehiculo,
   ): Promise<{ id: string }>;
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026)
+   * -- inserta directo en 'pendiente_revision', cooperativaId siempre
+   * viene del token autenticado (nunca del cuerpo de la petición) --
+   * una cooperativa nunca puede proponer a nombre de otra.
+   */
+  proponerPuntoOperacion(
+    cooperativaId: string,
+    datos: {
+      tipo: 'oficina_agencia' | 'parada_intermedia';
+      nombre: string;
+      ciudad: string;
+      provincia: string;
+    },
+  ): Promise<{ id: string }>;
   /** Tipos de vehículo de la cooperativa — se necesita antes de poder crear una unidad. */
   listarTiposVehiculo(cooperativaId: string): Promise<TipoVehiculoResumen[]>;
   editarTipoVehiculo(

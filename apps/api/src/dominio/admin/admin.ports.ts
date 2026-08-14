@@ -105,6 +105,57 @@ export interface AdminRepositorio {
     datos: Partial<DatosNuevoPuntoOperacion>,
   ): Promise<void>;
 
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026)
+   * -- crea directo en 'pendiente_revision', mismo estilo que
+   * crearPuntoOperacion pero sin permitir 'terminal_terrestre' (se
+   * valida en la capa de aplicación, antes de llegar aquí -- este
+   * método confía en que ya se validó).
+   */
+  proponerPuntoOperacion(datos: {
+    tipo: 'oficina_agencia' | 'parada_intermedia';
+    nombre: string;
+    ciudad: string;
+    provincia: string;
+    cooperativaPropietariaId: string;
+  }): Promise<{ puntoOperacionId: string }>;
+
+  listarPuntosOperacionPendientes(): Promise<
+    {
+      id: string;
+      tipo: string;
+      nombre: string;
+      ciudad: string;
+      provincia: string;
+      cooperativaPropietariaId: string | null;
+      cooperativaPropietariaNombre: string | null;
+      creadoEn: Date;
+    }[]
+  >;
+
+  /** Mismo patrón exacto que aprobarCampana/rechazarCampana -- ok:false con motivo si ya no está pendiente. */
+  aprobarPuntoOperacion(
+    id: string,
+    usuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  rechazarPuntoOperacion(
+    id: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+
+  /**
+   * Contacto de soporte global de la plataforma (13-ago-2026) --
+   * decisión real del director, investigada contra FlixBus (mismo
+   * modelo: soporte centralizado en la marca de la plataforma, no en
+   * cada operador). Mismo patrón exacto que obtenerCargoPlataforma /
+   * actualizarCargoPlataforma.
+   */
+  obtenerContactoSoporte(): Promise<{ correo: string | null; telefono: string | null }>;
+  actualizarContactoSoporte(
+    datos: { correo: string | null; telefono: string | null },
+    usuarioId: string,
+  ): Promise<void>;
+
   dashboardNacional(): Promise<FilaVentaNacional[]>;
 
   obtenerIvaNacional(): Promise<number>;

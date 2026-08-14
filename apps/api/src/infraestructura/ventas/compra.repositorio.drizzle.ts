@@ -1180,6 +1180,20 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     return (fila?.modo_iva_boleto as 'calculado' | 'cero' | 'oculto') ?? 'calculado';
   }
 
+  /** Contacto de soporte global (13-ago-2026) -- usado en el pie de página del boleto PDF. */
+  async obtenerContactoSoporte(): Promise<{ correo: string | null; telefono: string | null }> {
+    const resultado = await this.dbPublico.execute(
+      sql`SELECT soporte_correo, soporte_telefono FROM configuracion_plataforma LIMIT 1`,
+    );
+    const fila = resultado.rows[0] as
+      | { soporte_correo: string | null; soporte_telefono: string | null }
+      | undefined;
+    return {
+      correo: fila?.soporte_correo ?? null,
+      telefono: fila?.soporte_telefono ?? null,
+    };
+  }
+
   /**
    * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF.
    * Reubicado 13-ago-2026 (auditoría) desde

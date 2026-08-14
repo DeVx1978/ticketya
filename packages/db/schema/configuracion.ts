@@ -75,6 +75,16 @@ export const configuracionPlataforma = pgTable(
       scale: 2,
     }),
 
+    // Contacto de soporte global de la plataforma (13-ago-2026) --
+    // decisión real del director, investigada contra FlixBus (mismo
+    // modelo: una plataforma, muchos operadores independientes,
+    // soporte centralizado en la marca de la plataforma, no en cada
+    // operador). Nullable, sin valor por defecto -- hasta que el
+    // director los configure, mismo criterio que el resto de esta
+    // tabla (nunca inventar un placeholder).
+    soporteCorreo: varchar('soporte_correo', { length: 200 }),
+    soporteTelefono: varchar('soporte_telefono', { length: 20 }),
+
     // RN-004 -- decision pendiente: duracion exacta de la ventana de bloqueo
     // temporal de asiento (referencia de industria: 5-10 min, no asumida
     // como definitiva).

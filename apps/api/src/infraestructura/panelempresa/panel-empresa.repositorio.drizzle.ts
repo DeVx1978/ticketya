@@ -77,6 +77,30 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     });
   }
 
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026).
+   * `puntos_operacion` NO tiene política RLS (a diferencia de
+   * tipos_vehiculo arriba) -- es un recurso compartido, así que no hace
+   * falta ejecutarComoCooperativa, un INSERT directo basta. Siempre
+   * 'pendiente_revision' -- este método nunca crea algo ya aprobado.
+   */
+  async proponerPuntoOperacion(
+    cooperativaId: string,
+    datos: {
+      tipo: 'oficina_agencia' | 'parada_intermedia';
+      nombre: string;
+      ciudad: string;
+      provincia: string;
+    },
+  ): Promise<{ id: string }> {
+    const filas = await this.db.execute(sql`
+      INSERT INTO puntos_operacion (tipo, nombre, ciudad, provincia, cooperativa_propietaria_id, estado)
+      VALUES (${datos.tipo}, ${datos.nombre}, ${datos.ciudad}, ${datos.provincia}, ${cooperativaId}, 'pendiente_revision')
+      RETURNING id
+    `);
+    return { id: (filas.rows[0] as { id: string }).id };
+  }
+
   async listarTiposVehiculo(
     cooperativaId: string,
   ): Promise<TipoVehiculoResumen[]> {
