@@ -899,6 +899,31 @@ La sección 3.9 dice que lo único pendiente es que "la etiqueta Publicidad se m
 
 **Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **199/199 pruebas e2e** (sin pruebas nuevas en esta tarea -- era un rediseño visual, no lógica de negocio nueva; las pruebas existentes de descarga de PDF y del flujo de checkout siguen cubriendo que el documento se genera).
 
+## 5.4 Cooperativas proponen sus propios puntos de operación -- 13-ago-2026
+
+**Decisión real del director, investigada contra plataformas marketplace:** modelo mixto -- la cooperativa puede proponer su propia oficina/parada, pero queda pendiente de aprobación del admin de plataforma antes de publicarse. `terminal_terrestre` sigue siendo exclusivo del admin (infraestructura pública compartida entre varias cooperativas) -- nunca se abre a que una cooperativa lo proponga.
+
+**Investigado antes de construir:** se revisó `solicitudes-factura.ts` como plantilla sugerida, pero su enum (`pendiente`/`emitida`) no encajaba -- solo 2 estados, semántica distinta. Se usó como plantilla real más cercana el flujo ya existente de moderación de campañas comerciales (`estadoCampanaEnum`, `aprobarCampana`/`rechazarCampana`), que sí tiene el patrón de 3 estados (`pendiente_revision`/`aprobado(a)`/`rechazado(a)`) que pedía la orden.
+
+**Construido:**
+- Esquema: enum nuevo `estadoPuntoOperacionEnum`, columna `estado` en `puntos_operacion` con **default `'aprobado'`** -- decisión clave para no romper nada existente: el flujo del admin para crear puntos directo (`crearPuntoOperacion`) nunca especifica `estado`, así que sigue funcionando exactamente igual sin tocarlo, apareciendo aprobado de inmediato. Solo el endpoint nuevo de panel-empresa inserta explícito en `'pendiente_revision'`. Más `aprobadoPorUsuarioId`/`aprobadoEn`, mismo patrón de auditoría que `campanasPublicitarias`.
+- `POST /coop/puntos-operacion` -- solo `oficina_agencia`/`parada_intermedia` (el DTO rechaza `terminal_terrestre` con `@IsIn`, y se repite la validación en la capa de aplicación como defensa adicional). `cooperativaPropietariaId` siempre viene del token autenticado, nunca del cuerpo de la petición -- una cooperativa nunca puede proponer a nombre de otra.
+- `GET /admin/puntos-operacion/pendientes`, `PATCH /admin/puntos-operacion/:id/aprobar`, `PATCH /admin/puntos-operacion/:id/rechazar` -- mismo patrón exacto que `aprobarCampana`/`rechazarCampana` (`ok:false` con motivo si ya no está pendiente).
+- **Filtro real agregado en los 3 lugares donde `busqueda.service.ts` consulta `puntos_operacion`**, confirmados uno por uno antes de tocar nada: el autocomplete de puntos (`buscarPuntosOperacion`), la búsqueda principal de viajes (`buscarViajes`, en ambos alias origen/destino), y las rutas disponibles de portada (`listarRutasDisponibles`). Ninguno filtraba por estado antes -- ahora los 3 exigen `estado = 'aprobado'`.
+
+**Decisión reportada, no asumida en silencio:** las 2 órdenes de esta sesión (puntos de operación y contacto de soporte) se entregan en un solo Pull Request -- separarlas habría significado dividir varios archivos compartidos (`admin.controller.ts`, `admin.service.ts`, `admin.ports.ts`, `admin.repositorio.drizzle.ts`, `enums.ts`) línea por línea de forma artificial, sin beneficio real.
+
+**Pruebas reales (5), verificadas de punta a punta vía HTTP, no solo contra la base de datos:** una cooperativa propone y queda pendiente; una cooperativa NO puede proponer `terminal_terrestre` (400); el admin ve pendientes, aprueba, y rechaza (confirmado con lectura directa de la fila, incluida la auditoría de quién y cuándo aprobó); una cooperativa no puede aprobar sus propias propuestas (403 real de `RolesGuard`, ni siquiera llega a la lógica de negocio); un punto pendiente NO aparece en `/viajes/buscar` (endpoint público real, con una ruta y un viaje reales construidos sobre el punto propuesto) hasta que se aprueba.
+
+## 5.5 Contacto de soporte global de la plataforma -- 13-ago-2026
+
+**Decisión real del director, investigada contra FlixBus:** mismo modelo que Columbus (una plataforma, muchos operadores independientes) -- el soporte al cliente se centraliza en la marca de la plataforma, no en cada cooperativa.
+
+**Construido:**
+- `configuracion_plataforma`: columnas `soporte_correo`/`soporte_telefono`, nullable, sin valor por defecto -- hasta que el director las configure, mismo criterio que el resto de esta tabla.
+- `GET/PATCH /admin/soporte` -- mismo patrón exacto que `cargo-plataforma` (lectura para `admin_plataforma`/`super_admin`, escritura exclusiva de `super_admin`), no se creó un endpoint genérico nuevo, se siguió el estilo real ya establecido de un endpoint dedicado por grupo de configuración.
+- **Usado en el boleto PDF** (pieza pendiente del rediseño anterior): si `soporte_correo`/`soporte_telefono` están configurados, aparecen en el pie de página, debajo de la política de cancelación/reprogramación. Si están vacíos, la línea completa se omite -- nunca un placeholder ni un texto vacío. Verificado visualmente de verdad (PDF real generado con ambos campos configurados, convertido a imagen, confirmado 1 sola página, la línea se ve limpia).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
