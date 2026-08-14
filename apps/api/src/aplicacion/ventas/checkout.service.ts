@@ -401,6 +401,14 @@ export class CheckoutService {
    * usa QRCode.toBuffer() en vez de QRCode.toCanvas(). Mismo valor
    * codificado (codigo_qr) en ambos casos.
    */
+  /**
+   * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF.
+   * Rediseño premium (13-ago-2026, orden explícita del director, regla
+   * "mejor que una plataforma de boletos de avión") -- formato pase de
+   * abordar de 2 secciones: información completa arriba, talón
+   * recortable abajo con lo esencial para abordar. Investigado contra
+   * redBus/FlixBus antes de diseñar (ver DOCUMENTO_MAESTRO.md).
+   */
   async generarPdfBoleto(boletoId: string, usuarioId: string): Promise<Buffer> {
     const datos = await this.compras.obtenerDatosBoletoParaPdf(
       boletoId,
@@ -411,6 +419,44 @@ export class CheckoutService {
         'Este boleto no existe o no te pertenece.',
       );
     }
+
+    // Mismo criterio real que ya usa procesarCompra para decidir si el
+    // IVA se muestra desglosado -- no se inventa un criterio nuevo
+    // solo para el PDF.
+    const modoIva = await this.compras.obtenerModoIvaBoleto();
+    const ivaVisible = modoIva === 'calculado';
+    const ivaMonto = modoIva === 'cero' ? 0 : datos.ivaMonto;
+
+    // Número de boleto corto y legible (13-ago-2026) -- decisión de
+    // diseño reportada: NO reutiliza el código QR completo (larguísimo,
+    // pensado para escanear, no para leer) ni el código de pasajero
+    // (COL-XXXXXX, es un identificador de CUENTA, no de boleto -- son
+    // cosas distintas, confundirlas sería un bug real). Se deriva
+    // determinísticamente del id real del boleto (primeros 8
+    // caracteres del UUID, en mayúsculas) -- mismo prefijo visual
+    // "COL-" por consistencia de marca, sin necesitar ninguna columna
+    // ni migración nueva: siempre reconstruible desde el id.
+    const numeroBoleto = `COL-${boletoId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+
+    const ETIQUETAS_TARIFA: Record<string, string> = {
+      adulto: 'Adulto',
+      nino: 'Niño',
+      tercera_edad: 'Tercera edad',
+      discapacidad: 'Discapacidad',
+    };
+    const etiquetaTarifa = ETIQUETAS_TARIFA[datos.tipoTarifa] ?? datos.tipoTarifa;
+    // Privacidad real (pedido explícito del director): nunca se
+    // muestra el número de carné/cédula de discapacidad en el PDF --
+    // ese dato ya se declaró en el checkout y se verifica físicamente
+    // en el andén (ver validarBoletoPorQr), el PDF no necesita
+    // repetirlo, mucho menos en un documento que el pasajero imprime o
+    // reenvía por WhatsApp.
+    const textoTarifa =
+      datos.tipoTarifa === 'discapacidad'
+        ? 'Discapacidad -- verificado al abordar'
+        : etiquetaTarifa;
+
+    const etiquetaDocumento = datos.tipoDocumento === 'pasaporte' ? 'Pasaporte' : 'Cédula';
 
     const qrBuffer = await QRCode.toBuffer(datos.codigoQr, {
       width: 300,
@@ -425,119 +471,263 @@ export class CheckoutService {
       doc.on('error', reject);
 
       const anchoPagina = doc.page.width;
+      const altoPagina = doc.page.height;
       const margenIzq = doc.page.margins.left;
       const margenDer = doc.page.margins.right;
       const anchoUtil = anchoPagina - margenIzq - margenDer;
+      const AMARILLO_MARCA = '#ffd425';
+      const NEGRO_MARCA = '#000000';
 
-      // Encabezado -- marca visible, requisito 1 del director.
+      /**
+       * Aritmética de posiciones 100% fija y calculada a mano (13-ago-2026,
+       * segunda iteración) -- la primera versión mezclaba doc.moveDown()
+       * con coordenadas absolutas y se desbordaba a 9 páginas en blanco
+       * (bug real encontrado con la propia inspección visual que pidió
+       * el director, no algo que tsc pudiera atrapar). Cada bloque ahora
+       * tiene su y de inicio y alto YA sumados de antemano, verificados
+       * a mano para que el total quede dentro de una sola página LETTER
+       * (792pt) con margen de sobra -- nunca se deja que pdfkit decida
+       * solo si algo cabe o no.
+       */
+      const yHeader = 50;
+      const yOperadoPor = 118;
+      const yRuta = 170;
+      const alturaBloqueRuta = 55;
+      const yGrid = yRuta + alturaBloqueRuta + 12; // 237
+      const alturaFilaGrid = 38;
+      const yPrecio = yGrid + alturaFilaGrid * 3 + 14; // 365
+      const yInstruccion = yPrecio + 58; // 423
+      const alturaInstruccion = 34;
+      const yLineaPunteada = yInstruccion + alturaInstruccion + 14; // 471
+      const yTalon = yLineaPunteada + 12; // 483
+      const tamanoQr = 135;
+      const yQr = yTalon + 10;
+      const yCodigoQrTexto = yQr + tamanoQr + 8;
+      const yCeldasRepetidas = yCodigoQrTexto + 18;
+      const alturaTalon = yCeldasRepetidas + 30 - yTalon;
+      const yPie = yTalon + alturaTalon + 10;
+      // Verificación real, no solo confiada: si esto algún día no cupiera
+      // (ej. una cooperativa con nombre muy largo forzando más líneas),
+      // es mejor fallar temprano y ruidoso que producir otro PDF de
+      // varias páginas en silencio. Bug real encontrado en la propia
+      // inspección visual de esta tarea: la primera versión de esta
+      // guarda usaba un margen inventado (altoPagina - 20) en vez del
+      // margen REAL de la página (doc.page.margins.bottom, 50) -- pasó
+      // sin avisar cuando el pie de página se desbordó apenas unos
+      // puntos a una segunda página casi vacía. Corregido para usar el
+      // margen real.
+      if (yPie + 20 > altoPagina - doc.page.margins.bottom) {
+        throw new Error(
+          'El diseño del PDF del boleto no cabe en una sola página con los datos reales de este boleto -- revisar aritmética de posiciones.',
+        );
+      }
+
+      // Encabezado -- marca visible + número de boleto corto en la
+      // esquina superior derecha.
       doc
         .fontSize(24)
-        .fillColor('#000000')
+        .fillColor(NEGRO_MARCA)
         .font('Helvetica-Bold')
-        .text('Columbus', margenIzq, doc.y);
+        .text('Columbus', margenIzq, yHeader);
       doc
         .fontSize(10)
         .fillColor('#888888')
         .font('Helvetica')
-        .text('Boleto electrónico', margenIzq, doc.y);
-      doc.moveDown(1);
-      doc
-        .strokeColor('#dddddd')
-        .lineWidth(1)
-        .moveTo(margenIzq, doc.y)
-        .lineTo(anchoPagina - margenDer, doc.y)
-        .stroke();
-      doc.moveDown(1.5);
-
-      // Cooperativa + ruta -- requisito 2, cada dato en su propia sección.
-      doc.fontSize(10).fillColor('#888888').text('OPERADO POR');
-      doc
-        .fontSize(16)
-        .fillColor('#1a1a1a')
-        .font('Helvetica-Bold')
-        .text(datos.cooperativaNombre);
-      doc.moveDown(1);
-
-      doc
-        .fontSize(20)
-        .fillColor('#1a1a1a')
-        .font('Helvetica-Bold')
-        // 05-ago-2026 -- bug real encontrado con una prueba visual real:
-        // la fuente estándar Helvetica de pdfkit no tiene el glifo de
-        // flecha Unicode (→) -- lo sustituía por basura visual en vez
-        // de fallar limpio. "->" (ASCII) es seguro en cualquier fuente.
-        .text(`${datos.origenCiudad}  ->  ${datos.destinoCiudad}`);
-      doc.moveDown(1.2);
-
-      // Fecha/hora/asiento/pasajero -- cuadrícula de 2 columnas, cada
-      // dato con su propia etiqueta, no un bloque de texto corrido.
-      const col1X = margenIzq;
-      const col2X = margenIzq + anchoUtil / 2;
-      const inicioGrilla = doc.y;
-
-      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('FECHA', col1X, inicioGrilla);
-      doc
-        .fontSize(13)
-        .fillColor('#1a1a1a')
-        .font('Helvetica-Bold')
-        .text(formatearFechaBoleto(datos.fechaSalida), col1X, inicioGrilla + 13, {
-          width: anchoUtil / 2 - 10,
-        });
-
-      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('HORA DE SALIDA', col2X, inicioGrilla);
-      doc
-        .fontSize(13)
-        .fillColor('#1a1a1a')
-        .font('Helvetica-Bold')
-        .text(formatearHoraBoleto(datos.horaSalidaProgramada), col2X, inicioGrilla + 13);
-
-      const segundaFila = inicioGrilla + 55;
-      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('ASIENTO', col1X, segundaFila);
-      doc
-        .fontSize(13)
-        .fillColor('#1a1a1a')
-        .font('Helvetica-Bold')
-        .text(datos.numeroAsiento, col1X, segundaFila + 13);
-
-      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('PASAJERO', col2X, segundaFila);
-      doc
-        .fontSize(13)
-        .fillColor('#1a1a1a')
-        .font('Helvetica-Bold')
-        .text(datos.pasajeroNombre, col2X, segundaFila + 13, { width: anchoUtil / 2 - 10 });
-
-      doc.y = segundaFila + 55;
-      doc.moveDown(1);
-      doc
-        .strokeColor('#dddddd')
-        .lineWidth(1)
-        .moveTo(margenIzq, doc.y)
-        .lineTo(anchoPagina - margenDer, doc.y)
-        .stroke();
-      doc.moveDown(1.5);
-
-      // QR grande y centrado -- requisito 3, nada de un ícono perdido
-      // en la esquina, tiene que ser legible sin esfuerzo en un andén.
-      doc
-        .fontSize(11)
-        .fillColor('#555555')
-        .font('Helvetica')
-        .text('Presenta este código al abordar', margenIzq, doc.y, {
-          width: anchoUtil,
-          align: 'center',
-        });
-      doc.moveDown(0.8);
-
-      const tamanoQr = 220;
-      const xQr = (anchoPagina - tamanoQr) / 2;
-      doc.image(qrBuffer, xQr, doc.y, { width: tamanoQr, height: tamanoQr });
-      doc.y += tamanoQr + 12;
+        .text('Boleto electrónico', margenIzq, yHeader + 30);
 
       doc
         .fontSize(9)
         .fillColor('#888888')
         .font('Helvetica')
-        .text(datos.codigoQr, margenIzq, doc.y, { width: anchoUtil, align: 'center' });
+        .text('N.º DE BOLETO', margenIzq, yHeader, { width: anchoUtil, align: 'right' });
+      doc
+        .fontSize(14)
+        .fillColor(NEGRO_MARCA)
+        .font('Helvetica-Bold')
+        .text(numeroBoleto, margenIzq, yHeader + 12, { width: anchoUtil, align: 'right' });
+
+      doc
+        .strokeColor('#dddddd')
+        .lineWidth(1)
+        .moveTo(margenIzq, yOperadoPor - 12)
+        .lineTo(anchoPagina - margenDer, yOperadoPor - 12)
+        .stroke();
+
+      // Cooperativa.
+      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('OPERADO POR', margenIzq, yOperadoPor);
+      doc
+        .fontSize(15)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(datos.cooperativaNombre, margenIzq, yOperadoPor + 12);
+
+      // Ruta -- terminal real de origen/destino, no solo la ciudad.
+      const anchoRutaCol = anchoUtil / 2 - 15;
+      doc
+        .fontSize(9)
+        .fillColor('#888888')
+        .font('Helvetica')
+        .text('ORIGEN', margenIzq, yRuta, { width: anchoRutaCol });
+      doc
+        .fontSize(14)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(datos.origenNombre, margenIzq, yRuta + 12, { width: anchoRutaCol, height: 20, ellipsis: true });
+      doc
+        .fontSize(10)
+        .fillColor('#666666')
+        .font('Helvetica')
+        .text(datos.origenCiudad, margenIzq, yRuta + 34, { width: anchoRutaCol });
+
+      const colDestinoX = margenIzq + anchoUtil / 2 + 15;
+      doc
+        .fontSize(9)
+        .fillColor('#888888')
+        .font('Helvetica')
+        .text('DESTINO', colDestinoX, yRuta, { width: anchoRutaCol });
+      doc
+        .fontSize(14)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(datos.destinoNombre, colDestinoX, yRuta + 12, { width: anchoRutaCol, height: 20, ellipsis: true });
+      doc
+        .fontSize(10)
+        .fillColor('#666666')
+        .font('Helvetica')
+        .text(datos.destinoCiudad, colDestinoX, yRuta + 34, { width: anchoRutaCol });
+
+      // Flecha ASCII -- la fuente estándar Helvetica de pdfkit no tiene
+      // el glifo de flecha Unicode (→), lo sustituye por basura visual
+      // en vez de fallar limpio (hallazgo real, 05-ago-2026).
+      doc
+        .fontSize(14)
+        .fillColor('#cccccc')
+        .font('Helvetica-Bold')
+        .text('->', margenIzq + anchoUtil / 2 - 8, yRuta + 14);
+
+      // Grilla de 3 filas x 2 columnas.
+      const col1X = margenIzq;
+      const col2X = margenIzq + anchoUtil / 2;
+      const anchoCol = anchoUtil / 2 - 10;
+
+      function celda(etiqueta: string, valor: string, x: number, y: number) {
+        doc.fontSize(9).fillColor('#888888').font('Helvetica').text(etiqueta, x, y);
+        doc
+          .fontSize(13)
+          .fillColor('#1a1a1a')
+          .font('Helvetica-Bold')
+          .text(valor, x, y + 13, { width: anchoCol, height: 20, ellipsis: true });
+      }
+
+      celda('FECHA', formatearFechaBoleto(datos.fechaSalida), col1X, yGrid);
+      celda('HORA DE SALIDA', formatearHoraBoleto(datos.horaSalidaProgramada), col2X, yGrid);
+      celda('ASIENTO', datos.numeroAsiento, col1X, yGrid + alturaFilaGrid);
+      celda('PASAJERO', datos.pasajeroNombre, col2X, yGrid + alturaFilaGrid);
+      celda('DOCUMENTO', `${etiquetaDocumento} · ${datos.documento}`, col1X, yGrid + alturaFilaGrid * 2);
+      celda('TARIFA', textoTarifa, col2X, yGrid + alturaFilaGrid * 2);
+
+      doc
+        .strokeColor('#dddddd')
+        .lineWidth(1)
+        .moveTo(margenIzq, yPrecio - 14)
+        .lineTo(anchoPagina - margenDer, yPrecio - 14)
+        .stroke();
+
+      // Precio, con IVA desglosado -- respeta la misma configuración de
+      // visibilidad que ya usa el checkout (modoIvaBoleto).
+      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('PRECIO PAGADO', margenIzq, yPrecio);
+      doc
+        .fontSize(22)
+        .fillColor(NEGRO_MARCA)
+        .font('Helvetica-Bold')
+        .text(`$${datos.precioPagado.toFixed(2)}`, margenIzq, yPrecio + 12);
+      if (ivaVisible && ivaMonto > 0) {
+        doc
+          .fontSize(10)
+          .fillColor('#666666')
+          .font('Helvetica')
+          .text(`Incluye IVA: $${ivaMonto.toFixed(2)}`, margenIzq, yPrecio + 40);
+      }
+
+      // Instrucción real -- franja de color sutil de marca.
+      doc.rect(margenIzq, yInstruccion, anchoUtil, alturaInstruccion).fillColor('#fff8dc').fill();
+      doc
+        .fontSize(10)
+        .fillColor('#5a4a00')
+        .font('Helvetica-Bold')
+        .text(
+          'Preséntate en el punto de embarque al menos 15 minutos antes de la salida, con tu documento de identidad.',
+          margenIzq + 12,
+          yInstruccion + 10,
+          { width: anchoUtil - 24, height: alturaInstruccion - 10 },
+        );
+
+      // Separación tipo "talón recortable" de un pase de abordar real.
+      doc
+        .strokeColor('#999999')
+        .lineWidth(1)
+        .dash(4, { space: 4 })
+        .moveTo(margenIzq, yLineaPunteada)
+        .lineTo(anchoPagina - margenDer, yLineaPunteada)
+        .stroke()
+        .undash();
+
+      // Talón -- franja de fondo + QR grande + número de boleto, asiento
+      // y hora repetidos en grande (lo que el personal necesita ver
+      // rápido al abordar).
+      doc.rect(margenIzq, yTalon, anchoUtil, alturaTalon).fillColor('#fffbea').fill();
+      doc.rect(margenIzq, yTalon, anchoUtil, 4).fillColor(AMARILLO_MARCA).fill();
+
+      const xQr = (anchoPagina - tamanoQr) / 2;
+      doc.image(qrBuffer, xQr, yQr, { width: tamanoQr, height: tamanoQr });
+
+      doc
+        .fontSize(9)
+        .fillColor('#888888')
+        .font('Helvetica')
+        .text(datos.codigoQr, margenIzq, yCodigoQrTexto, { width: anchoUtil, align: 'center' });
+
+      const anchoTercio = anchoUtil / 3;
+      const celdaTalon = (etiqueta: string, valor: string, x: number) => {
+        doc
+          .fontSize(8)
+          .fillColor('#888888')
+          .font('Helvetica')
+          .text(etiqueta, x, yCeldasRepetidas, { width: anchoTercio, align: 'center' });
+        doc
+          .fontSize(15)
+          .fillColor(NEGRO_MARCA)
+          .font('Helvetica-Bold')
+          .text(valor, x, yCeldasRepetidas + 11, { width: anchoTercio, align: 'center', ellipsis: true });
+      };
+      celdaTalon('BOLETO', numeroBoleto, margenIzq);
+      celdaTalon('ASIENTO', datos.numeroAsiento, margenIzq + anchoTercio);
+      celdaTalon('SALIDA', formatearHoraBoleto(datos.horaSalidaProgramada), margenIzq + anchoTercio * 2);
+
+      // Pie de página -- política REAL de esta cooperativa específica,
+      // mismo texto que ya ve el pasajero en el checkout.
+      doc
+        .strokeColor('#eeeeee')
+        .lineWidth(1)
+        .moveTo(margenIzq, yPie)
+        .lineTo(anchoPagina - margenDer, yPie)
+        .stroke();
+
+      const textoCancelacion = datos.permiteCancelacion
+        ? `cancelación${datos.horasLimiteCancelacion ? ` hasta ${datos.horasLimiteCancelacion}h antes de la salida` : ' disponible'}`
+        : 'sin cancelación';
+      const textoReprogramacion = datos.permiteReprogramacion
+        ? `reprogramación${datos.horasLimiteReprogramacion ? ` hasta ${datos.horasLimiteReprogramacion}h antes de la salida` : ' disponible'}`
+        : 'sin reprogramación';
+
+      doc
+        .fontSize(7.5)
+        .fillColor('#999999')
+        .font('Helvetica')
+        .text(`Política de esta cooperativa: ${textoCancelacion} · ${textoReprogramacion}.`, margenIzq, yPie + 8, {
+          width: anchoUtil,
+          align: 'center',
+        });
 
       doc.end();
     });

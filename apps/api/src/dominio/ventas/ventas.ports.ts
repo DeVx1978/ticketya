@@ -400,10 +400,20 @@ export interface CompraRepositorio {
    * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF.
    * Reubicado 13-ago-2026 (auditoría, hallazgo de organización): vivía
    * en CalificacionesRepositorio, sin relación real con calificaciones
-   * -- ahora vive donde pertenece de verdad. Mismo comportamiento
-   * exacto, sin cambios funcionales. Null si el boleto no existe o no
-   * le pertenece a quien lo pide -- el service lo traduce a un 403, no
-   * a un 404 (no revela si el boleto existe o no).
+   * -- ahora vive donde pertenece de verdad.
+   *
+   * Ampliado 13-ago-2026 (rediseño premium tipo pase de abordar) con
+   * los campos reales que ya existían en el esquema pero no se traían:
+   * tipoDocumento/documento/tipoTarifa (ítem 31.1), ivaMonto (ya vivía
+   * en boletos, nunca se exponía en el PDF), nombre real de las 2
+   * terminales (puntosOperacion.nombre, separado de ciudad desde el
+   * inicio), y las políticas de cancelación/reprogramación de la
+   * cooperativa (mismos campos que ya usa el checkout para avisar
+   * ANTES de comprar -- aquí se reutilizan, no se duplican).
+   *
+   * Null si el boleto no existe o no le pertenece a quien lo pide --
+   * el service lo traduce a un 403, no a un 404 (no revela si el
+   * boleto existe o no).
    */
   obtenerDatosBoletoParaPdf(
     boletoId: string,
@@ -412,13 +422,23 @@ export interface CompraRepositorio {
     codigoQr: string;
     estado: string;
     precioPagado: number;
+    ivaMonto: number;
     pasajeroNombre: string;
+    tipoDocumento: string;
+    documento: string;
+    tipoTarifa: string;
     numeroAsiento: string;
     cooperativaNombre: string;
+    origenNombre: string;
     origenCiudad: string;
+    destinoNombre: string;
     destinoCiudad: string;
     fechaSalida: string;
     horaSalidaProgramada: Date;
+    permiteCancelacion: boolean;
+    horasLimiteCancelacion: number | null;
+    permiteReprogramacion: boolean;
+    horasLimiteReprogramacion: number | null;
   } | null>;
 }
 
