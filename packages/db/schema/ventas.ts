@@ -125,6 +125,16 @@ export const pasajerosCompra = pgTable(
     // Por eso vive separado de tipoTarifa -- no afecta el precio.
     esEmbarazada: boolean('es_embarazada').default(false).notNull(),
 
+    // Discapacidad, captura real (13-ago-2026) -- número de carné
+    // CONADIS/MSP o de cédula (donde ya conste la condición desde que
+    // el carné físico dejó de emitirse el 31-dic-2024). Solo una
+    // referencia DECLARADA -- no hay verificación automática contra
+    // ningún sistema del CONADIS, mismo criterio que
+    // adultoResponsableDocumento en autorizaciones_menor (se declara,
+    // se verifica físicamente en el andén, nunca contra un registro
+    // externo). Nullable -- solo aplica cuando tipoTarifa='discapacidad'.
+    numeroDocumentoDiscapacidad: varchar('numero_documento_discapacidad', { length: 20 }),
+
     // RF-MENOR-001 — calculado/confirmado en la capa de aplicación al
     // momento del checkout (a partir de tipoTarifa='nino' o edad < 18
     // según fechaNacimiento) y persistido aquí para no tener que

@@ -1257,7 +1257,8 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         SELECT b.id, b.estado, b.compra_id, b.precio_pagado, c.comprador_usuario_id,
-               pc.id AS pasajero_compra_id, pc.nombres || ' ' || pc.apellidos AS nombre_completo, pc.es_menor_edad
+               pc.id AS pasajero_compra_id, pc.nombres || ' ' || pc.apellidos AS nombre_completo, pc.es_menor_edad,
+               pc.tipo_tarifa, pc.numero_documento_discapacidad
         FROM boletos b
         JOIN pasajeros_compra pc ON pc.id = b.pasajero_compra_id
         JOIN compras c ON c.id = b.compra_id
@@ -1282,6 +1283,8 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         pasajero_compra_id: string;
         nombre_completo: string;
         es_menor_edad: boolean;
+        tipo_tarifa: string;
+        numero_documento_discapacidad: string | null;
       };
 
       if (fila.estado === 'usado') {
@@ -1350,6 +1353,14 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
         mensaje: 'Boleto válido. Abordaje confirmado.',
         pasajeroNombre: fila.nombre_completo,
         menor,
+        // Discapacidad, captura real (13-ago-2026) -- el personal en
+        // el andén ve el número declarado para poder pedir el
+        // carné/cédula físico y compararlo con sus propios ojos.
+        // Nunca se verifica automáticamente contra ningún sistema.
+        documentoDiscapacidad:
+          fila.tipo_tarifa === 'discapacidad'
+            ? { numeroDeclarado: fila.numero_documento_discapacidad }
+            : undefined,
         // Wallet/cashback Fase 1 (13-ago-2026) -- datos que
         // PanelEmpresaService necesita para acreditar cashback justo
         // después de esta validación, sin tener que volver a consultar.

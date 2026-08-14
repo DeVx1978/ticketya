@@ -382,6 +382,10 @@ describe('Checkout y pago (e2e)', () => {
       'Padre Verificacion E2E',
     );
     expect(validacion.body.menor.yaVerificado).toBe(false);
+    // El campo de discapacidad NO debe aparecer para un pasajero con
+    // tarifa 'nino' -- confirma que documentoDiscapacidad solo se
+    // adjunta cuando la tarifa real es 'discapacidad'.
+    expect(validacion.body.documentoDiscapacidad).toBeUndefined();
 
     await request(app.getHttpServer())
       .post('/coop/verificar-menor')
@@ -392,6 +396,89 @@ describe('Checkout y pago (e2e)', () => {
         documentoAutorizacionVerificado: true,
       })
       .expect(201);
+  });
+
+  it('rechaza una compra con tarifa discapacidad sin el número de documento (13-ago-2026)', async () => {
+    await bloquearYRegistrarAsiento('5B', tokenPasajero);
+    const res = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '5B',
+            nombres: 'Pasajero',
+            apellidos: 'Discapacidad Sin Documento E2E',
+            tipoDocumento: 'cedula',
+            documento: '1701002741',
+            tipoTarifa: 'discapacidad',
+          },
+        ],
+      })
+      .expect(400);
+    expect(res.body.message).toContain(
+      'falta el número de carné CONADIS/MSP o de cédula donde conste la condición',
+    );
+  });
+
+  it('acepta con el número de documento presente, aplica correctamente el 50% (13-ago-2026)', async () => {
+    await bloquearYRegistrarAsiento('5C', tokenPasajero);
+    const res = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '5C',
+            nombres: 'Pasajero',
+            apellidos: 'Discapacidad E2E',
+            tipoDocumento: 'cedula',
+            documento: '1701004119',
+            tipoTarifa: 'discapacidad',
+            numeroDocumentoDiscapacidad: 'CONADIS-123456',
+          },
+        ],
+      })
+      .expect(201);
+
+    // Precio base 10, 50% de descuento (Reglamento LOD Art. 22) → montoTotal debe dar exactamente 5.
+    expect(Number(res.body.montoTotal)).toBe(5);
+  });
+
+  it('el personal de la cooperativa puede ver el número de documento declarado al validar el boleto en el andén (13-ago-2026)', async () => {
+    await bloquearYRegistrarAsiento('5D', tokenPasajero);
+    const compra = await request(app.getHttpServer())
+      .post('/compras')
+      .set('Authorization', `Bearer ${tokenPasajero}`)
+      .send({
+        pasajeros: [
+          {
+            viajeId,
+            numeroAsiento: '5D',
+            nombres: 'Pasajero',
+            apellidos: 'Discapacidad Verificacion E2E',
+            tipoDocumento: 'cedula',
+            documento: '1701006429',
+            tipoTarifa: 'discapacidad',
+            numeroDocumentoDiscapacidad: 'CEDULA-1701006429',
+          },
+        ],
+      })
+      .expect(201);
+    const codigoQr = compra.body.boletos[0].codigoQr;
+
+    const validacion = await request(app.getHttpServer())
+      .post('/coop/validar-qr')
+      .set('Authorization', `Bearer ${tokenCoopRechazo}`)
+      .send({ codigoQr })
+      .expect(201);
+
+    expect(validacion.body.documentoDiscapacidad).toBeDefined();
+    expect(validacion.body.documentoDiscapacidad.numeroDeclarado).toBe(
+      'CEDULA-1701006429',
+    );
   });
 
   it('la cooperativa puede ver la lista de pasajeros ("manifiesto") de un viaje concreto — hallazgo real cerrado 22-jul-2026 (antes no existía ninguna forma de ver quién iba a abordar)', async () => {

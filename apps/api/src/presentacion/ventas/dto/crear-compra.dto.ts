@@ -119,6 +119,18 @@ export class PasajeroCheckoutDto {
   @ValidateNested()
   @Type(() => AutorizacionMenorDto)
   autorizacionMenor?: AutorizacionMenorDto;
+
+  /**
+   * Discapacidad, captura real (13-ago-2026) -- número de carné
+   * CONADIS/MSP o de cédula (donde ya conste la condición). Solo
+   * declaración -- la validación condicional real (obligatorio cuando
+   * tipoTarifa='discapacidad') vive en checkout.service.ts, mismo
+   * patrón que autorizacionMenor con esMenorDeEdad -- no aquí en el
+   * DTO, porque depende de otro campo del mismo objeto.
+   */
+  @IsOptional()
+  @IsString()
+  numeroDocumentoDiscapacidad?: string;
 }
 
 export class CrearCompraDto {

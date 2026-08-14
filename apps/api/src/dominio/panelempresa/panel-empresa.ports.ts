@@ -399,6 +399,13 @@ export interface ResultadoValidacionQr {
   compradorUsuarioId?: string | null;
   /** Programa de referidos (13-ago-2026) -- id real del boleto validado. */
   boletoId?: string;
+  /**
+   * Discapacidad, captura real (13-ago-2026) -- presente solo si el
+   * pasajero de este boleto tiene tarifa de discapacidad. El personal
+   * en el andén ve el número declarado para comparar con el carné o
+   * cédula físicos -- nunca se verifica automáticamente.
+   */
+  documentoDiscapacidad?: { numeroDeclarado: string | null };
 }
 
 export interface RutaResumen {

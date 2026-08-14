@@ -122,6 +122,23 @@ export class CheckoutService {
       }
     }
 
+    // Discapacidad, captura real (13-ago-2026) -- mismo criterio de
+    // "fail fast" que RF-MENOR arriba: se valida ANTES de bloquear
+    // asientos o cobrar nada. Solo exige la DECLARACIÓN del número de
+    // documento -- nunca lo verifica contra ningún sistema del
+    // CONADIS (no existe una API pública conocida para eso, y no es
+    // parte de este alcance); la verificación real es física, en el
+    // andén, por el personal de la cooperativa (ver
+    // panel-empresa.repositorio.drizzle.ts::validarBoletoPorQr).
+    for (const p of pasajeros) {
+      if (p.tipoTarifa !== 'discapacidad') continue;
+      if (!p.numeroDocumentoDiscapacidad?.trim()) {
+        throw new BadRequestException(
+          `El pasajero "${p.nombres} ${p.apellidos}" tiene tarifa de discapacidad -- falta el número de carné CONADIS/MSP o de cédula donde conste la condición.`,
+        );
+      }
+    }
+
     const desglose = await this.compras.validarYCalcularAsientos(
       pasajeros,
       usuarioId,
