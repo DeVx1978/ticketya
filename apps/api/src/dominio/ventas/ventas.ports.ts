@@ -389,6 +389,16 @@ export interface CompraRepositorio {
   /** 27-jul-2026 -- controla como se muestra el IVA al pasajero en el checkout. */
   obtenerModoIvaBoleto(): Promise<'calculado' | 'cero' | 'oculto'>;
 
+  /**
+   * Contacto de soporte global (13-ago-2026) -- usado en el pie de
+   * página del boleto PDF. Mismo patrón que obtenerModoIvaBoleto: el
+   * checkout lee configuracion_plataforma directo, sin depender de
+   * AdminService (evita una dependencia cruzada entre módulos que no
+   * tiene sentido real -- ventas no debería necesitar todo admin solo
+   * para leer 2 columnas).
+   */
+  obtenerContactoSoporte(): Promise<{ correo: string | null; telefono: string | null }>;
+
   /** Registra y envia (via NotificadorEmail) la confirmacion de una compra ya aprobada. Nunca lanza -- si falla, queda registrado como fallido, sin afectar la venta. */
   notificarCompraConfirmada(
     compraId: string,

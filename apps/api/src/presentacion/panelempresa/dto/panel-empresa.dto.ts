@@ -15,6 +15,26 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+/**
+ * Cooperativas proponen sus propios puntos de operación (13-ago-2026)
+ * -- solo oficina_agencia/parada_intermedia, terminal_terrestre sigue
+ * siendo exclusivo del admin (infraestructura pública compartida).
+ */
+export class ProponerPuntoOperacionDto {
+  @IsIn(['oficina_agencia', 'parada_intermedia'])
+  tipo!: 'oficina_agencia' | 'parada_intermedia';
+
+  @IsString()
+  @MinLength(3)
+  nombre!: string;
+
+  @IsString()
+  ciudad!: string;
+
+  @IsString()
+  provincia!: string;
+}
+
 export class CrearTipoVehiculoDto {
   @IsString()
   @MinLength(2)

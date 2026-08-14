@@ -61,6 +61,18 @@ export class AdminService {
     return this.admin.actualizarPuntoOperacion(id, datos);
   }
 
+  async listarPuntosOperacionPendientes() {
+    return this.admin.listarPuntosOperacionPendientes();
+  }
+
+  async aprobarPuntoOperacion(id: string, usuarioId: string) {
+    return this.admin.aprobarPuntoOperacion(id, usuarioId);
+  }
+
+  async rechazarPuntoOperacion(id: string) {
+    return this.admin.rechazarPuntoOperacion(id);
+  }
+
   async dashboardNacional() {
     return this.admin.dashboardNacional();
   }
@@ -85,6 +97,17 @@ export class AdminService {
 
   async actualizarCargoPlataforma(nuevoMonto: number, usuarioId: string) {
     return this.admin.actualizarCargoPlataforma(nuevoMonto, usuarioId);
+  }
+
+  async obtenerContactoSoporte() {
+    return this.admin.obtenerContactoSoporte();
+  }
+
+  async actualizarContactoSoporte(
+    datos: { correo: string | null; telefono: string | null },
+    usuarioId: string,
+  ) {
+    return this.admin.actualizarContactoSoporte(datos, usuarioId);
   }
 
   async listarBannersPropios() {

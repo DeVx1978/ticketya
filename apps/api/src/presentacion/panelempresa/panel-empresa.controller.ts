@@ -41,6 +41,7 @@ import {
   ActualizarEstadoHorarioRutaDto,
   CancelarViajesMasivoDto,
   ConfirmarDatosCooperativaDto,
+  ProponerPuntoOperacionDto,
 } from './dto/panel-empresa.dto';
 import { GuardarMetodoPagoDto, ConfirmarPagoManualDto, MarcarFacturaEmitidaDto } from './dto/metodos-pago.dto';
 import { CrearCredencialApiDto, ActualizarWebhookCredencialApiDto } from './dto/credenciales-api.dto';
@@ -85,6 +86,20 @@ export class PanelEmpresaController {
   @Get('tipos-vehiculo')
   async listarTiposVehiculo(@Request() req: { user: PayloadToken }) {
     return this.panel.listarTiposVehiculo(cooperativaDelToken(req.user));
+  }
+
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026)
+   * -- queda 'pendiente_revision', el admin de plataforma aprueba o
+   * rechaza (ver GET/PATCH /admin/puntos-operacion/...).
+   */
+  @Roles('admin_cooperativa')
+  @Post('puntos-operacion')
+  async proponerPuntoOperacion(
+    @Body() dto: ProponerPuntoOperacionDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.proponerPuntoOperacion(cooperativaDelToken(req.user), dto);
   }
 
   @Roles('admin_cooperativa')

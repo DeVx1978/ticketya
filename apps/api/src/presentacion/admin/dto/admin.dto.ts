@@ -150,6 +150,21 @@ export class ActualizarCargoPlataformaDto {
   monto!: number;
 }
 
+/**
+ * Contacto de soporte global de la plataforma (13-ago-2026). Ambos
+ * opcionales -- se puede configurar solo uno de los 2, o ninguno
+ * (para volver a ocultarlos sin tener que cambiar el otro).
+ */
+export class ActualizarContactoSoporteDto {
+  @IsOptional()
+  @IsEmail()
+  correo?: string;
+
+  @IsOptional()
+  @IsString()
+  telefono?: string;
+}
+
 /** 27-jul-2026 -- editable desde el Panel Admin. */
 export class ActualizarModoIvaBoletoDto {
   @IsIn(['calculado', 'cero', 'oculto'])

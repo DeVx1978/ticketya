@@ -154,6 +154,8 @@ export const accionAuditoriaEnum = pgEnum('accion_auditoria', [
   'cambio_cashback_porcentaje',
   // 13-ago-2026, programa de referidos -- sin equivalente existente que reutilizar.
   'cambio_config_referidos',
+  // 13-ago-2026, contacto de soporte global -- sin equivalente existente que reutilizar.
+  'cambio_contacto_soporte',
 ]);
 
 /** RF-COMM-002 — planes comerciales diferenciados. */
@@ -166,6 +168,20 @@ export const estadoCampanaEnum = pgEnum('estado_campana', [
   'rechazada',
   'activa',
   'vencida',
+]);
+
+/**
+ * Cooperativas proponen sus propios puntos de operación (13-ago-2026)
+ * -- modelo mixto investigado contra plataformas marketplace reales:
+ * la cooperativa propone, el admin de plataforma aprueba antes de
+ * publicarse. No se reutiliza estadoSolicitudFacturaEnum (solo tiene
+ * 'pendiente'/'emitida', semántica distinta) -- se sigue el mismo
+ * patrón de 3 estados que ya usa estadoCampanaEnum arriba.
+ */
+export const estadoPuntoOperacionEnum = pgEnum('estado_punto_operacion', [
+  'pendiente_revision',
+  'aprobado',
+  'rechazado',
 ]);
 
 /** RF-COMM-003 — seguimiento comercial de leads de anunciantes. */

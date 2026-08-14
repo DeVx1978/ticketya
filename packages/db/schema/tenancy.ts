@@ -21,7 +21,8 @@ import {
   index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { estadoCooperativaEnum, modeloIntegracionEnum, tipoPuntoOperacionEnum } from './enums';
+import { estadoCooperativaEnum, modeloIntegracionEnum, tipoPuntoOperacionEnum, estadoPuntoOperacionEnum } from './enums';
+import { usuarios } from './usuarios';
 
 export const cooperativas = pgTable(
   'cooperativas',
@@ -184,6 +185,19 @@ export const puntosOperacion = pgTable(
     // solo en las cooperativas.
     logoUrl: text('logo_url'),
 
+    // Cooperativas proponen sus propios puntos de operación (13-ago-2026)
+    // -- default 'aprobado' a propósito: el admin sigue creando puntos
+    // directo sin pasar por revisión (crearPuntoOperacion, sin tocar),
+    // así que el default hace que ese flujo existente siga funcionando
+    // exactamente igual, sin necesitar modificarlo. Solo el endpoint
+    // NUEVO de panel-empresa inserta explícitamente en
+    // 'pendiente_revision'.
+    estado: estadoPuntoOperacionEnum('estado').default('aprobado').notNull(),
+    // Mismo patrón de auditoría real que campanasPublicitarias -- quién
+    // aprobó (o revisó) esta propuesta y cuándo, no solo el estado final.
+    aprobadoPorUsuarioId: uuid('aprobado_por_usuario_id').references(() => usuarios.id),
+    aprobadoEn: timestamp('aprobado_en', { withTimezone: true }),
+
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),
     actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -191,6 +205,7 @@ export const puntosOperacion = pgTable(
     index('idx_puntos_operacion_tipo').on(t.tipo),
     index('idx_puntos_operacion_ciudad').on(t.ciudad),
     index('idx_puntos_operacion_cooperativa_propietaria').on(t.cooperativaPropietariaId),
+    index('idx_puntos_operacion_estado').on(t.estado),
   ],
 );
 

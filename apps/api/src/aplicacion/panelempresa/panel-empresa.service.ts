@@ -64,6 +64,33 @@ export class PanelEmpresaService {
     return this.panel.listarTiposVehiculo(cooperativaId);
   }
 
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026).
+   * El DTO (`@IsIn(['oficina_agencia', 'parada_intermedia'])`) ya
+   * bloquea 'terminal_terrestre' a nivel de validación de entrada, pero
+   * se repite la defensa aquí también -- si algún día alguien relaja
+   * el DTO sin darse cuenta de esta regla de negocio, esta capa sigue
+   * protegiendo. cooperativaId siempre viene del token autenticado
+   * (nunca del cuerpo de la petición) -- una cooperativa nunca puede
+   * proponer a nombre de otra.
+   */
+  proponerPuntoOperacion(
+    cooperativaId: string,
+    datos: { tipo: string; nombre: string; ciudad: string; provincia: string },
+  ) {
+    if (datos.tipo !== 'oficina_agencia' && datos.tipo !== 'parada_intermedia') {
+      throw new BadRequestException(
+        'Una cooperativa solo puede proponer oficina_agencia o parada_intermedia -- terminal_terrestre es exclusivo del administrador de plataforma.',
+      );
+    }
+    return this.panel.proponerPuntoOperacion(cooperativaId, {
+      tipo: datos.tipo,
+      nombre: datos.nombre,
+      ciudad: datos.ciudad,
+      provincia: datos.provincia,
+    });
+  }
+
   editarTipoVehiculo(
     cooperativaId: string,
     tipoVehiculoId: string,

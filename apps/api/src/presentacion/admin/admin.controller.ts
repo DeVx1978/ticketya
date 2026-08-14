@@ -8,6 +8,7 @@ import {
   Param,
   Request,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { AdminService } from '../../aplicacion/admin/admin.service';
 import {
@@ -18,6 +19,7 @@ import {
   CrearBannerPropioDto,
   ActualizarBannerPropioDto,
   ActualizarCargoPlataformaDto,
+  ActualizarContactoSoporteDto,
   ActualizarModoIvaBoletoDto,
   CrearAdministradorDto,
 } from './dto/admin.dto';
@@ -71,6 +73,38 @@ export class AdminController {
     @Body() dto: ActualizarPuntoOperacionDto,
   ) {
     await this.admin.actualizarPuntoOperacion(id, dto);
+    return { ok: true };
+  }
+
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026).
+   * Estos 3 endpoints son EXCLUSIVOS del admin -- una cooperativa nunca
+   * puede aprobar/rechazar sus propias propuestas, eso es justo el
+   * punto real de tener un flujo de aprobación.
+   */
+  @Get('puntos-operacion/pendientes')
+  async listarPuntosOperacionPendientes() {
+    return this.admin.listarPuntosOperacionPendientes();
+  }
+
+  @Patch('puntos-operacion/:id/aprobar')
+  async aprobarPuntoOperacion(
+    @Param('id') id: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.admin.aprobarPuntoOperacion(id, req.user.sub);
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
+    return { ok: true };
+  }
+
+  @Patch('puntos-operacion/:id/rechazar')
+  async rechazarPuntoOperacion(@Param('id') id: string) {
+    const resultado = await this.admin.rechazarPuntoOperacion(id);
+    if (!resultado.ok) {
+      throw new BadRequestException(resultado.motivo);
+    }
     return { ok: true };
   }
 
@@ -133,6 +167,29 @@ export class AdminController {
     @Request() req: { user: PayloadToken },
   ) {
     await this.admin.actualizarCargoPlataforma(dto.monto, req.user.sub);
+    return { ok: true };
+  }
+
+  /**
+   * Contacto de soporte global de la plataforma (13-ago-2026). Mismo
+   * nivel de acceso exacto que cargo-plataforma -- GET para
+   * admin_plataforma y super_admin, PATCH exclusivo de super_admin.
+   */
+  @Get('soporte')
+  async obtenerContactoSoporte() {
+    return this.admin.obtenerContactoSoporte();
+  }
+
+  @Roles('super_admin')
+  @Patch('soporte')
+  async actualizarContactoSoporte(
+    @Body() dto: ActualizarContactoSoporteDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.admin.actualizarContactoSoporte(
+      { correo: dto.correo ?? null, telefono: dto.telefono ?? null },
+      req.user.sub,
+    );
     return { ok: true };
   }
 

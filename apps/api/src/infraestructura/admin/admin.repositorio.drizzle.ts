@@ -190,6 +190,109 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     }
   }
 
+  /**
+   * Cooperativas proponen sus propios puntos de operación (13-ago-2026).
+   * Inserta directo en 'pendiente_revision' -- el default de la
+   * columna es 'aprobado' (para no romper crearPuntoOperacion, que no
+   * lo especifica), así que aquí SÍ hay que setearlo explícito.
+   */
+  async proponerPuntoOperacion(datos: {
+    tipo: 'oficina_agencia' | 'parada_intermedia';
+    nombre: string;
+    ciudad: string;
+    provincia: string;
+    cooperativaPropietariaId: string;
+  }): Promise<{ puntoOperacionId: string }> {
+    const [fila] = await this.db
+      .insert(puntosOperacion)
+      .values({
+        tipo: datos.tipo,
+        nombre: datos.nombre,
+        ciudad: datos.ciudad,
+        provincia: datos.provincia,
+        cooperativaPropietariaId: datos.cooperativaPropietariaId,
+        estado: 'pendiente_revision',
+      })
+      .returning();
+    return { puntoOperacionId: fila.id };
+  }
+
+  async listarPuntosOperacionPendientes(): Promise<
+    {
+      id: string;
+      tipo: string;
+      nombre: string;
+      ciudad: string;
+      provincia: string;
+      cooperativaPropietariaId: string | null;
+      cooperativaPropietariaNombre: string | null;
+      creadoEn: Date;
+    }[]
+  > {
+    const filas = await this.db
+      .select({
+        id: puntosOperacion.id,
+        tipo: puntosOperacion.tipo,
+        nombre: puntosOperacion.nombre,
+        ciudad: puntosOperacion.ciudad,
+        provincia: puntosOperacion.provincia,
+        cooperativaPropietariaId: puntosOperacion.cooperativaPropietariaId,
+        cooperativaPropietariaNombre: cooperativas.nombreComercial,
+        creadoEn: puntosOperacion.creadoEn,
+      })
+      .from(puntosOperacion)
+      .leftJoin(cooperativas, eq(puntosOperacion.cooperativaPropietariaId, cooperativas.id))
+      .where(eq(puntosOperacion.estado, 'pendiente_revision'))
+      .orderBy(puntosOperacion.creadoEn);
+    return filas;
+  }
+
+  /** Mismo patrón exacto que aprobarCampana -- ok:false con motivo si ya no está pendiente. */
+  async aprobarPuntoOperacion(
+    id: string,
+    usuarioId: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const punto = await this.db.query.puntosOperacion.findFirst({
+      where: eq(puntosOperacion.id, id),
+    });
+    if (!punto) {
+      return { ok: false, motivo: 'Este punto de operación no existe.' };
+    }
+    if (punto.estado !== 'pendiente_revision') {
+      return {
+        ok: false,
+        motivo: `Este punto de operación ya está "${punto.estado}" -- solo se puede aprobar uno pendiente de revisión.`,
+      };
+    }
+    await this.db
+      .update(puntosOperacion)
+      .set({ estado: 'aprobado', aprobadoPorUsuarioId: usuarioId, aprobadoEn: new Date() })
+      .where(eq(puntosOperacion.id, id));
+    return { ok: true };
+  }
+
+  async rechazarPuntoOperacion(
+    id: string,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    const punto = await this.db.query.puntosOperacion.findFirst({
+      where: eq(puntosOperacion.id, id),
+    });
+    if (!punto) {
+      return { ok: false, motivo: 'Este punto de operación no existe.' };
+    }
+    if (punto.estado !== 'pendiente_revision') {
+      return {
+        ok: false,
+        motivo: `Este punto de operación ya está "${punto.estado}" -- solo se puede rechazar uno pendiente de revisión.`,
+      };
+    }
+    await this.db
+      .update(puntosOperacion)
+      .set({ estado: 'rechazado' })
+      .where(eq(puntosOperacion.id, id));
+    return { ok: true };
+  }
+
   async dashboardNacional(): Promise<FilaVentaNacional[]> {
     const resultado = await this.db.execute(sql`
       SELECT c.nombre_comercial AS cooperativa_nombre,
@@ -303,6 +406,53 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     await this.db.execute(sql`
       INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
       VALUES ('cambio_comision', ${usuarioId}, 'configuracion_plataforma', ${configuracionId}, ${JSON.stringify({ nuevoMonto })})
+    `);
+  }
+
+  /**
+   * Contacto de soporte global (13-ago-2026) -- mismo patrón exacto que
+   * obtenerCargoPlataforma / actualizarCargoPlataforma.
+   */
+  async obtenerContactoSoporte(): Promise<{ correo: string | null; telefono: string | null }> {
+    const resultado = await this.db.execute(
+      sql`SELECT soporte_correo, soporte_telefono FROM configuracion_plataforma LIMIT 1`,
+    );
+    const fila = resultado.rows[0] as
+      | { soporte_correo: string | null; soporte_telefono: string | null }
+      | undefined;
+    return {
+      correo: fila?.soporte_correo ?? null,
+      telefono: fila?.soporte_telefono ?? null,
+    };
+  }
+
+  async actualizarContactoSoporte(
+    datos: { correo: string | null; telefono: string | null },
+    usuarioId: string,
+  ): Promise<void> {
+    const filaExistente = await this.db.execute(
+      sql`SELECT id FROM configuracion_plataforma LIMIT 1`,
+    );
+    let configuracionId: string;
+    if (filaExistente.rows.length === 0) {
+      const creada = await this.db.execute(sql`
+        INSERT INTO configuracion_plataforma (ruc_plataforma, razon_social_plataforma, soporte_correo, soporte_telefono)
+        VALUES ('9999999999001', 'Columbus (pendiente RUC real)', ${datos.correo}, ${datos.telefono})
+        RETURNING id
+      `);
+      configuracionId = (creada.rows[0] as { id: string }).id;
+    } else {
+      configuracionId = (filaExistente.rows[0] as { id: string }).id;
+      await this.db.execute(sql`
+        UPDATE configuracion_plataforma
+        SET soporte_correo = ${datos.correo}, soporte_telefono = ${datos.telefono}, actualizado_en = now()
+        WHERE id = ${configuracionId}
+      `);
+    }
+
+    await this.db.execute(sql`
+      INSERT INTO auditoria_admin (accion, usuario_id, entidad_tipo, entidad_id, detalle)
+      VALUES ('cambio_contacto_soporte', ${usuarioId}, 'configuracion_plataforma', ${configuracionId}, ${JSON.stringify(datos)})
     `);
   }
 
