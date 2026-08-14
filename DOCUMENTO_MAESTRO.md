@@ -697,6 +697,20 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 
 **Lo que sí sigue siendo un hueco real, con esto ya corregido:** elegibilidad real exige certificación de 30% o más de discapacidad, y presentar el carné de discapacidad y/o la cédula donde conste la condición (el carné físico de CONADIS/MSP fue válido hasta 31-dic-2024; desde entonces la condición consta directo en la cédula electrónica). Columbus hoy no captura ningún dato de esto -- ni número de carné, ni una casilla que declare la condición. Construcción real pendiente, ver orden de trabajo asignada 13-ago-2026: captura de referencia del documento en la compra + verificación física del carné/cédula en el andén al abordar (mismo patrón real que ya usa la autorización de menores, verificación en 2 momentos distintos). Adulto, niño y tercera edad confirmados correctos con evidencia real de compra.
 
+**✅ CERRADO (13-ago-2026) -- captura real construida, mismo patrón que autorización de menores.**
+
+**Investigado primero, antes de construir (código real de menores como plantilla, tal como pidió la orden):** el patrón real de menores usa 2 piezas separadas -- `autorizacionesMenor` (tabla completa, captura en checkout, con múltiples campos y hasta archivo adjunto) y `verificacionesMenor` (tabla completa, registro de auditoría de quién verificó qué y cuándo en el andén). Para discapacidad, dado que la captura es un solo valor simple (a diferencia de los múltiples campos de menores), se decidió **no** replicar la segunda tabla de auditoría formal -- decisión explícita, reportada, no asumida en silencio: el alcance pedido solo exige que el personal *pueda ver* el número declarado al validar, no que quede un registro persistente de que lo comparó. Si más adelante se necesita ese nivel de auditoría, es una extensión simple sobre lo ya construido.
+
+**Construido:**
+- Esquema: columna `numero_documento_discapacidad` (varchar, nullable) en `pasajeros_compra` -- migración `0033_discapacidad_documento.sql`.
+- Captura: campo `numeroDocumentoDiscapacidad` en el DTO de checkout. Validación condicional en `checkout.service.ts`, mismo patrón exacto que RF-MENOR (fail fast, antes de bloquear asientos o cobrar): rechaza con 400 si la tarifa es `discapacidad` y falta el campo.
+- Sin verificación automática contra ningún sistema del CONADIS -- es una declaración, igual que el nombre del adulto responsable de un menor. No existe una API pública conocida para verificar esto, y no era parte del alcance.
+- Verificación en el andén: `validarBoletoPorQr()` ahora expone `documentoDiscapacidad: { numeroDeclarado }` -- visible solo cuando la tarifa real del pasajero es `discapacidad`, para que el personal de la cooperativa pueda pedir el carné/cédula físico y compararlo con sus propios ojos. Igual que con menores, el sistema nunca confirma que el documento es auténtico.
+
+**Verificado con 3 pruebas e2e reales, siguiendo el estilo exacto de las pruebas de menores ya existentes en `checkout.e2e-spec.ts`:** rechaza sin el número de documento; acepta con el número, aplica 50% exacto ($10 de $20); el personal ve el número declarado al validar el QR -- con aserción negativa incluida, confirmando que el campo NO aparece para un pasajero de otra tarifa (ej. niño).
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **196/196 pruebas e2e** (193 previas + 3 nuevas).
+
 
 31.1 Validacion real de datos del pasajero en checkout -- **CERRADO (13-ago-2026, PR pendiente de fusionar).**
 
