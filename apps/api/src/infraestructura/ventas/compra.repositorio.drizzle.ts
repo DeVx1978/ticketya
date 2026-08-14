@@ -1179,4 +1179,58 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     const fila = resultado.rows[0] as { modo_iva_boleto: string } | undefined;
     return (fila?.modo_iva_boleto as 'calculado' | 'cero' | 'oculto') ?? 'calculado';
   }
+
+  /**
+   * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF.
+   * Reubicado 13-ago-2026 (auditoría) desde
+   * CalificacionesRepositorioDrizzle -- mismo query exacto, sin ningún
+   * cambio de comportamiento, solo de ubicación.
+   */
+  async obtenerDatosBoletoParaPdf(
+    boletoId: string,
+    usuarioId: string,
+  ): Promise<{
+    codigoQr: string;
+    estado: string;
+    precioPagado: number;
+    pasajeroNombre: string;
+    numeroAsiento: string;
+    cooperativaNombre: string;
+    origenCiudad: string;
+    destinoCiudad: string;
+    fechaSalida: string;
+    horaSalidaProgramada: Date;
+  } | null> {
+    const puntosOrigenPdf = alias(puntosOperacion, 'puntos_origen_pdf');
+    const puntosDestinoPdf = alias(puntosOperacion, 'puntos_destino_pdf');
+
+    const [fila] = await this.dbPublico
+      .select({
+        codigoQr: boletos.codigoQr,
+        estado: boletos.estado,
+        precioPagado: boletos.precioPagado,
+        pasajeroNombre: sql<string>`${pasajerosCompra.nombres} || ' ' || ${pasajerosCompra.apellidos}`,
+        numeroAsiento: viajeAsientos.numeroAsiento,
+        cooperativaNombre: cooperativas.nombreComercial,
+        origenCiudad: puntosOrigenPdf.ciudad,
+        destinoCiudad: puntosDestinoPdf.ciudad,
+        fechaSalida: viajes.fechaSalida,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+      })
+      .from(boletos)
+      .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .innerJoin(pasajerosCompra, eq(boletos.pasajeroCompraId, pasajerosCompra.id))
+      .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
+      .innerJoin(puntosOrigenPdf, eq(rutas.origenPuntoOperacionId, puntosOrigenPdf.id))
+      .innerJoin(puntosDestinoPdf, eq(rutas.destinoPuntoOperacionId, puntosDestinoPdf.id))
+      .innerJoin(cooperativas, eq(boletos.cooperativaId, cooperativas.id))
+      .where(
+        sql`${boletos.id} = ${boletoId} AND ${compras.compradorUsuarioId} = ${usuarioId}`,
+      );
+
+    if (!fila) return null;
+    return { ...fila, precioPagado: Number(fila.precioPagado) };
+  }
 }

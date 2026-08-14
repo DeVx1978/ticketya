@@ -5,8 +5,10 @@ import {
   CALIFICACIONES_REPOSITORIO,
 } from '../../aplicacion/calificaciones/calificaciones.service';
 import { CalificacionesRepositorioDrizzle } from '../../infraestructura/calificaciones/calificaciones.repositorio.drizzle';
+import { VentasModule } from '../ventas/ventas.module';
 
 @Module({
+  imports: [VentasModule],
   controllers: [CalificacionesController],
   providers: [
     CalificacionesService,
