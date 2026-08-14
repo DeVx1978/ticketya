@@ -1193,13 +1193,27 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     codigoQr: string;
     estado: string;
     precioPagado: number;
+    ivaMonto: number;
     pasajeroNombre: string;
+    tipoDocumento: string;
+    documento: string;
+    tipoTarifa: string;
     numeroAsiento: string;
     cooperativaNombre: string;
+    // Ambos, ya que el boleto premium (13-ago-2026) necesita el nombre
+    // real de la terminal (ej. "Terminal Terrestre Quitumbe"), no solo
+    // la ciudad -- puntosOperacion.nombre ya existía en el esquema,
+    // separado de ciudad, listo para usar sin ningún cambio de esquema.
+    origenNombre: string;
     origenCiudad: string;
+    destinoNombre: string;
     destinoCiudad: string;
     fechaSalida: string;
     horaSalidaProgramada: Date;
+    permiteCancelacion: boolean;
+    horasLimiteCancelacion: number | null;
+    permiteReprogramacion: boolean;
+    horasLimiteReprogramacion: number | null;
   } | null> {
     const puntosOrigenPdf = alias(puntosOperacion, 'puntos_origen_pdf');
     const puntosDestinoPdf = alias(puntosOperacion, 'puntos_destino_pdf');
@@ -1209,13 +1223,23 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         codigoQr: boletos.codigoQr,
         estado: boletos.estado,
         precioPagado: boletos.precioPagado,
+        ivaMonto: boletos.ivaMonto,
         pasajeroNombre: sql<string>`${pasajerosCompra.nombres} || ' ' || ${pasajerosCompra.apellidos}`,
+        tipoDocumento: pasajerosCompra.tipoDocumento,
+        documento: pasajerosCompra.documento,
+        tipoTarifa: pasajerosCompra.tipoTarifa,
         numeroAsiento: viajeAsientos.numeroAsiento,
         cooperativaNombre: cooperativas.nombreComercial,
+        origenNombre: puntosOrigenPdf.nombre,
         origenCiudad: puntosOrigenPdf.ciudad,
+        destinoNombre: puntosDestinoPdf.nombre,
         destinoCiudad: puntosDestinoPdf.ciudad,
         fechaSalida: viajes.fechaSalida,
         horaSalidaProgramada: viajes.horaSalidaProgramada,
+        permiteCancelacion: cooperativas.permiteCancelacion,
+        horasLimiteCancelacion: cooperativas.horasLimiteCancelacion,
+        permiteReprogramacion: cooperativas.permiteReprogramacion,
+        horasLimiteReprogramacion: cooperativas.horasLimiteReprogramacion,
       })
       .from(boletos)
       .innerJoin(compras, eq(boletos.compraId, compras.id))
@@ -1231,6 +1255,10 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       );
 
     if (!fila) return null;
-    return { ...fila, precioPagado: Number(fila.precioPagado) };
+    return {
+      ...fila,
+      precioPagado: Number(fila.precioPagado),
+      ivaMonto: Number(fila.ivaMonto),
+    };
   }
 }
