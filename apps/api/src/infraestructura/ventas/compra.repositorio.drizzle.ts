@@ -252,6 +252,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           documento: p.documento,
           tipoTarifa: p.tipoTarifa,
           esEmbarazada: p.esEmbarazada ?? false,
+          numeroDocumentoDiscapacidad: p.numeroDocumentoDiscapacidad ?? null,
           fechaNacimiento: p.fechaNacimiento,
           esMenorEdad: esMenorDeEdad(p.tipoTarifa, p.fechaNacimiento),
           viajeAsientoId,

@@ -64,6 +64,8 @@ export interface PasajeroCheckout {
   /** LOTTTSV Art. 48 -- atencion preferente, NO afecta tipoTarifa ni el precio. */
   esEmbarazada?: boolean;
   autorizacionMenor?: AutorizacionMenor;
+  /** Discapacidad (13-ago-2026) -- numero de carne CONADIS/MSP o cedula, declarado, sin verificacion automatica. */
+  numeroDocumentoDiscapacidad?: string;
 }
 
 export interface DesgloseAsiento {
