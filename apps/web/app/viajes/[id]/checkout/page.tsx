@@ -652,10 +652,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   Compras sin crear cuenta -- solo necesitamos donde enviarte tu boleto
                 </p>
                 <div>
-                  <label className="block text-sm font-medium text-brand-dark/70">
+                  <label htmlFor="checkout-invitado-telefono" className="block text-sm font-medium text-brand-dark/70">
                     Telefono (para WhatsApp)
                   </label>
                   <input
+                    id="checkout-invitado-telefono"
                     type="tel"
                     value={telefonoContacto}
                     onChange={(e) => setTelefonoContacto(e.target.value)}
@@ -664,10 +665,11 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-brand-dark/70">
+                  <label htmlFor="checkout-invitado-correo" className="block text-sm font-medium text-brand-dark/70">
                     Correo (opcional si ya diste telefono)
                   </label>
                   <input
+                    id="checkout-invitado-correo"
                     type="email"
                     value={correoContacto}
                     onChange={(e) => setCorreoContacto(e.target.value)}

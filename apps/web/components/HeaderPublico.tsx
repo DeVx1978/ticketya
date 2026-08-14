@@ -53,7 +53,7 @@ export function HeaderPublico() {
         </Link>
 
         {payload ? (
-          <div className="flex items-center gap-3">
+          <nav aria-label="Cuenta" className="flex items-center gap-3">
             {payload.rol === "pasajero" ? (
               <Link
                 href="/perfil"
@@ -75,9 +75,9 @@ export function HeaderPublico() {
             >
               Salir
             </button>
-          </div>
+          </nav>
         ) : (
-          <div className="flex items-center gap-3">
+          <nav aria-label="Cuenta" className="flex items-center gap-3">
             <Link
               href="/ingresar"
               className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
@@ -90,7 +90,7 @@ export function HeaderPublico() {
             >
               Registrarse
             </Link>
-          </div>
+          </nav>
         )}
       </div>
     </header>
