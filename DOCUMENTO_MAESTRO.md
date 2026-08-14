@@ -874,6 +874,31 @@ La sección 3.9 dice que lo único pendiente es que "la etiqueta Publicidad se m
 
 **Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **199/199 pruebas e2e** (196 previas + 3 nuevas: rotación de refresh token, refresh token inválido, límite de 90 días de identidad).
 
+## 5.3 Rediseño premium del boleto PDF -- 13-ago-2026
+
+**Orden explícita del director, regla ya documentada como no negociable:** el diseño debe ser el más completo, moderno y profesional posible en toda la plataforma -- "mejor que una plataforma de boletos de avión". Este boleto es el primer ejemplo real de ese estándar.
+
+**Investigado antes de diseñar (evidencia real de redBus y FlixBus, ya reunida por el director):** un boleto profesional real lleva número de boleto corto/legible, precio con impuestos desglosados, punto de embarque específico (terminal real, no solo ciudad), instrucción de anticipación, política de cancelación, información de contacto, y requisito de identificación al abordar.
+
+**Diseño construido: pase de abordar de 2 secciones, tal como se pidió.**
+- **Sección principal:** encabezado con marca, número de boleto corto (`COL-XXXXXXXX`), cooperativa, ruta con nombre real de cada terminal (`puntosOperacion.nombre`, ya existía en el esquema separado de `ciudad`, nunca se había usado en el PDF), fecha/hora, asiento, pasajero, **documento (tipo + número, ítem 31.1)**, **tipo de tarifa**, precio con IVA desglosado (respetando la misma configuración de visibilidad que ya usa el checkout -- `obtenerModoIvaBoleto()`, no un criterio nuevo), instrucción de embarque.
+- **Talón (sección inferior), separado con línea punteada tipo "recorte":** QR grande, número de boleto y código QR completo repetidos, asiento y hora repetidos en grande.
+- **Pie de página:** política real de cancelación/reprogramación de esa cooperativa específica (mismos campos que ya usa el checkout para avisar antes de comprar -- `permiteCancelacion`/`permiteReprogramacion`/`horasLimite*` -- nunca un texto genérico).
+
+**Decisiones de diseño tomadas, reportadas con precisión:**
+- **Número de boleto:** se deriva determinísticamente del propio `id` del boleto (primeros 8 caracteres del UUID, mayúsculas, prefijo `COL-`) -- **no** reutiliza el código QR completo (pensado para escanear, no leer) **ni** el código de pasajero (`COL-XXXXXX`, es un identificador de CUENTA, confundirlo con un número de boleto habría sido un bug real de identidad). No requiere columna ni migración nueva -- siempre reconstruible desde el `id`.
+- **Discapacidad, privacidad real:** el PDF nunca muestra el número de carné/cédula de discapacidad -- solo dice "Discapacidad -- verificado al abordar". Ese dato ya se declaró en el checkout (ítem del 13-ago) y se verifica físicamente en el andén; repetirlo en un documento que el pasajero puede imprimir o reenviar por WhatsApp sería un descuido de privacidad real, no solo estético.
+
+**Hallazgo real, reportado tal como pedía la orden explícitamente, no inventado:** no existe ningún campo de correo/teléfono de soporte en `cooperativas` ni en `configuracion_plataforma` -- se buscó en todo el esquema real antes de reportarlo. El PDF **no** incluye información de contacto por esta razón -- construirla es una decisión de alcance nueva (¿es por cooperativa o global de la plataforma?) que le corresponde al director, no algo para inventar sin confirmación.
+
+**2 bugs reales encontrados por la propia inspección visual que pidió la orden (no algo que `tsc` pudiera atrapar):**
+1. La primera versión del diseño generaba **9 páginas**, la mayoría en blanco -- una combinación de `doc.moveDown()` con coordenadas absolutas hizo que el talón se desbordara del margen inferior, y cada elemento posterior (todavía posicionado cerca del borde inferior de la página 1) volvía a desbordarse en cascada. Corregido reescribiendo toda la aritmética de posiciones con coordenadas fijas calculadas a mano, verificadas contra la altura real de la página.
+2. Con la aritmética corregida, todavía sobraban **2 páginas** -- el pie de política se desbordaba por apenas unos puntos. La propia guarda de seguridad que se había agregado (`if (yPie + 30 > altoPagina - 20)`) no lo detectó porque usaba un margen inventado (`- 20`) en vez del margen real de la página (`doc.page.margins.bottom`, 50). Corregido el cálculo y la guarda misma.
+
+**Verificado visualmente de verdad, no solo que compilara:** PDF real generado con datos representativos (terminal "Terminal Terrestre Quitumbe" → "Terminal Terrestre de Guayaquil", pasajero con nombre largo, IVA real), convertido a imagen e inspeccionado -- confirmado 1 sola página, con el caso de tarifa adulto y el caso de tarifa discapacidad (precio recalculado correctamente al 50%, número de carné correctamente oculto).
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **199/199 pruebas e2e** (sin pruebas nuevas en esta tarea -- era un rediseño visual, no lógica de negocio nueva; las pruebas existentes de descarga de PDF y del flujo de checkout siguen cubriendo que el documento se genera).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
