@@ -108,7 +108,7 @@ Lo que se propone es distinto y adicional, no un reemplazo: un identificador **f
 **Propuesta concreta:** un "código de pasajero" único y permanente (formato corto, ej. `COL-4X9K2P`), mostrado como QR en el perfil, escaneable por el personal de cooperativa para ver identidad + boletos vigentes de esa persona — complementa el QR de boleto, no lo reemplaza.
 
 **Estado real:** ✅ Completo, cerrado 03-ago-2026 -- perfil base + código de pasajero + límite de frecuencia, todo construido y verificado.
-- Código de pasajero: formato `COL-XXXXXX`, generado de forma perezosa (lazy) en `GET /auth/perfil` -- no en el registro, así los usuarios que ya existían antes de este cambio también terminan con uno, sin backfill manual. Permanente, ligado a la cuenta, distinto del QR de boleto
+- Código de pasajero: formato `COL-XXXXXX`. **Actualizado 13-ago-2026 (programa de referidos):** ya no se genera solo de forma perezosa en `GET /auth/perfil` -- ahora se genera de forma ANTICIPADA en el propio registro (con el mismo mecanismo perezoso como respaldo, para las cuentas creadas antes de este cambio). Permanente, ligado a la cuenta, distinto del QR de boleto
 - Mostrado como QR en el perfil (`/perfil`), en la tarjeta de identidad
 - Límite de 90 días: endpoint separado `PATCH /auth/perfil/identidad`, exclusivo para nombre completo y cédula/documento -- `PATCH /auth/perfil` (teléfono/foto) ya no acepta nombreCompleto, sin límite
 - Regla de negocio pura `puedeEditarIdentidad()`: rechaza con 400 y los días restantes exactos si el límite no se cumple todavía
@@ -687,7 +687,7 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 
 **Verificado con certeza:** 171/171 pruebas e2e en verde (170 + 1 nueva, la prueba vieja que exigia 401 sin token se actualizo para reflejar la decision real), `tsc --noEmit` limpio en las 3 partes (db, api, web), `nest build` limpio, `next build` con las 29 paginas generadas sin error.
 
-**Confirmado, verificado con evidencia real (07-ago-2026): el selector de tipo de tarifa (adulto/nino/tercera edad -- 50% descuento/discapacidad -- descuento segun carnet CONADIS) YA esta construido y funcionando en el checkout real, con la logica de autorizacion de menores incluida -- NO es un hueco, cumple con la exigencia legal ecuatoriana (LOTTTSV Art. 79). Se verifico esto explicitamente porque el director lo pregunto directo, sin asumir nada -- mismo criterio de honestidad que rige el resto de este documento.**
+**Confirmado, verificado con evidencia real (07-ago-2026): el selector de tipo de tarifa (adulto/nino/tercera edad -- 50% descuento/discapacidad -- descuento segun carnet CONADIS) YA esta construido y funcionando en el checkout real, con la logica de autorizacion de menores incluida.** ⚠️ **CORRECCIÓN REAL (Auditoría, 13-ago-2026): esta afirmación era INCORRECTA para el caso de discapacidad.** El código (`ventas.ports.ts`) usa un 50% FIJO como marcador de posición, no el 25%-80% real según certificación CONADIS que exige la ley -- el propio código lo admite explícitamente en su comentario ("dejar esto tal cual sería incorrecto en producción real"). NO se captura ningún número de carnet ni porcentaje individual en el checkout. Ver el detalle completo en la sección de Auditoría, más abajo. Adulto, niño y tercera edad SÍ están confirmados correctos con evidencia real de compra.
 
 31.1 Validacion real de datos del pasajero en checkout -- **CERRADO (13-ago-2026, PR pendiente de fusionar).**
 
@@ -774,6 +774,64 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 **Nota tecnica real a considerar cuando se investigue el alcance:** como Zego es un desarrollo propio y separado, se necesitara definir como Columbus se comunica con Zego (deep link simple con parametros de ubicacion/hora, o una integracion mas real via API propia) -- eso todavia no esta decidido, queda para cuando Zego este mas avanzado.
 
 **Principio confirmado por el director para estos 2 ultimos (items 34, 35) y cualquier integracion futura similar:** Columbus es SaaS multi-cooperativa por diseno desde el origen (no un sistema para una sola empresa que se hizo escalable despues) -- cualquier integracion nueva debe construirse generica, para que cualquier cooperativa que se registre la aproveche igual, sin trabajo adicional por cooperativa.
+
+---
+
+## 5.1 Auditoría real completa, sección por sección -- 13-ago-2026
+
+**Cómo se hizo:** no se confió en lo que este documento afirma -- cada sección de la Fase 3 se verificó contra el código real (archivos abiertos, no solo nombres asumidos), y donde hacía falta, con pruebas e2e reales corridas en el momento (temporales, borradas después de confirmar). Instrucción explícita del director: reportar cualquier hallazgo con honestidad, nunca ocultarlo ni asumirlo resuelto.
+
+**Línea base:** 193/193 pruebas e2e pasando antes de empezar (17 suites).
+
+### Veredicto por sección
+
+| Sección | Veredicto | Detalle |
+|---|---|---|
+| 3.1 Autenticación | ✅ Completo y verificado | Refresh tokens confirmados funcionando de punta a punta con prueba real (rotación de token confirmada). Hallazgo: 0 pruebas e2e permanentes cubren `/auth/refresh`. |
+| 3.1.1 Perfil del pasajero | ✅ Completo, 2 hallazgos | Código de pasajero y límite de 90 días confirmados con pruebas reales (ver detalle abajo). Línea desactualizada ya corregida arriba (generación anticipada, no perezosa). Hallazgo: 0 pruebas e2e permanentes cubren `PATCH /auth/perfil/identidad`. |
+| 3.2 Búsqueda | ✅ Completo | Filtros, GPS, umbral de calificación confirmados en código real. |
+| 3.2.1 Reseñas de texto | ✅ Completo | Construido y probado en sesión reciente, sin cambios desde entonces. |
+| 3.3 Selección de asientos | ✅ Completo | Ver Flujo 2 completo, más abajo. |
+| 3.4 Métodos de pago | 🟡 Parcial (ya documentado correctamente) | Sin hallazgos nuevos -- bloqueo externo real de proveedor de pasarela. |
+| 3.5 Boletos | ✅ Completo, 1 hallazgo | `generarPdfBoleto()` vive dentro de `CalificacionesService`/`calificaciones.controller.ts` -- funciona, pero es confuso arquitectónicamente (un desarrollador nuevo no lo buscaría ahí). No es un bug, es deuda de organización. |
+| 3.6 Facturación | 🟡 Parcial (ya documentado correctamente) | Sin hallazgos nuevos -- bloqueo legal externo real. |
+| 3.7 Panel de cooperativa | ✅ Completo | Endpoints reales confirmados (`estado-datos`, `confirmar-datos`), suite de pruebas verde. |
+| 3.8 Panel de administrador | ✅ Completo | Endpoints reales confirmados (`administradores`), suite verde. |
+| 3.9 Comercial/Publicidad | 🔴 **El documento SUBESTIMA el hueco real** | Ver hallazgo grave #2, abajo. |
+| 3.10 Liquidaciones | ✅ Completo | Sin hallazgos nuevos. |
+| 3.11 Modelo B | ✅ Completo | Infraestructura genérica confirmada; lo específico correctamente pendiente de una cooperativa real. |
+| 3.12 Notificaciones | ✅ Completo | Cron jobs de ítems 32/33 confirmados en código real (`@Cron(EVERY_10_MINUTES)`, `@Cron(EVERY_HOUR)`). |
+| 3.13 Contador de usuarios | ✅ Completo | Endpoint confirmado. |
+| 3.14 / 3.14.1 / 3.15 Wallet y Referidos | ✅ Completo | Construido y verificado exhaustivamente en sesión reciente con pruebas e2e reales -- sin cambios desde entonces. |
+
+### 🔴 Hallazgo grave #1 -- Descuento de discapacidad NO cumple la ley real
+
+Ver corrección ya aplicada arriba, en la sección de la Fase 7 (ítem 29). Resumen: el código usa 50% fijo en vez del 25%-80% real según certificación CONADIS. El propio comentario del código admite que esto sería incorrecto en producción real. **Investigado contra la industria (FlixBus, Golden Empire Transit):** ambas exigen presentar un certificado médico/de discapacidad válido -- incluso si la verificación final es física en el andén, ambas al menos *capturan una referencia del documento*. Columbus hoy no captura absolutamente nada, ni siquiera una declaración con número de carnet -- es un hueco real más grande que "falta verificar", es "no existe ningún campo".
+
+**Recomendación, no una decisión tomada:** como mínimo, agregar un campo de número de carnet CONADIS (declarado, sin verificación automática todavía) antes de poder afirmar cumplimiento legal siquiera parcial -- la verificación real del porcentaje probablemente necesite integración con el propio sistema del CONADIS o revisión manual, una decisión de negocio y alcance que le corresponde al director.
+
+### 🔴 Hallazgo grave #2 -- Comercial/Publicidad: el documento subestima el hueco real
+
+La sección 3.9 dice que lo único pendiente es que "la etiqueta Publicidad se muestre también en la landing pública". **Confirmado con el código real (`comercial.controller.ts`):** no existe absolutamente ningún endpoint público -- ni para que un anunciante deje sus datos (`POST leads` no existe, solo `GET leads` para el admin), ni para mostrar campañas activas en la landing. Hoy es literalmente imposible que un anuncio de un tercero aparezca en producción, y un negocio real no tiene ninguna forma de llegar a Columbus a través del software. Esto ya se había encontrado y reportado en una sesión anterior (13-ago) -- la auditoría confirma que sigue exactamente igual, sin construir todavía.
+
+### FLUJO 1 -- Compra por tipo de tarifa, verificado con compra real de punta a punta
+
+| Tipo | Resultado real (compra de prueba, tarifa base $20) | Veredicto |
+|---|---|---|
+| Adulto | $20.00, sin descuento | ✅ correcto |
+| Niño | $10.00 (exacto 50%) | ✅ correcto |
+| Niño sin autorización de acompañante | Rechazado 400: *"es menor de edad -- falta indicar como viaja acompanado"* | ✅ bloquea de verdad, no solo en teoría |
+| Tercera edad | $10.00 (exacto 50%) | ✅ correcto, coincide con LOTTTSV Art. 79 |
+| Discapacidad | $10.00 (50% FIJO, sin carnet) | 🔴 ver hallazgo grave #1 |
+
+Ítem 31.1 (cédula/pasaporte Módulo 10, nombres/apellidos separados) confirmado funcionando en las 5 compras de arriba, como parte del flujo real, no aislado.
+
+### FLUJO 2 -- Variedad de buses entre cooperativas, verificado con prueba real de aislamiento
+
+- **Cadena de datos confirmada en código real:** `viajes → unidades → tiposVehiculo`, todo por llaves foráneas reales, scoped por `viajeId` específico -- ninguna configuración de asientos compartida ni hardcodeada. `distribucionAsientos` es `NOT NULL` en el esquema: todo tipo de vehículo debe tener su propia distribución real.
+- **RLS confirmado con prueba real, no solo lectura de política SQL:** se crearon 2 cooperativas de prueba, cada una con su propio tipo de vehículo. Cooperativa B no pudo ver el tipo de vehículo de A (`0` resultados en su propia lista), y un intento directo de editarlo por ID respondió *"Este tipo de vehiculo no existe"* -- RLS lo esconde por completo, ni siquiera revela que existe.
+- **Hallazgo menor:** no existía, antes de esta auditoría, ninguna prueba e2e permanente que confirmara explícitamente este aislamiento para `tipos_vehiculo`/`unidades` -- el documento afirmaba "RLS verificado en vivo" de forma genérica, sin una prueba dedicada a este caso específico. Ahora está confirmado con evidencia real (prueba temporal, borrada tras confirmar).
+- **Veredicto: ✅ Completo, sin hallazgos negativos.** El sistema soporta de verdad buses de distinta capacidad y distribución por cooperativa, sin mezclarse en ningún punto verificado (búsqueda, mapa de asientos, edición).
 
 ---
 
