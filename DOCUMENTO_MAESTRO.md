@@ -822,7 +822,7 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 | 3.6 Facturación | 🟡 Parcial (ya documentado correctamente) | Sin hallazgos nuevos -- bloqueo legal externo real. |
 | 3.7 Panel de cooperativa | ✅ Completo | Endpoints reales confirmados (`estado-datos`, `confirmar-datos`), suite de pruebas verde. |
 | 3.8 Panel de administrador | ✅ Completo | Endpoints reales confirmados (`administradores`), suite verde. |
-| 3.9 Comercial/Publicidad | 🔴 **El documento SUBESTIMA el hueco real** | Ver hallazgo grave #2, abajo. |
+| 3.9 Comercial/Publicidad | 🟡 Corregido tras revisión cruzada (ver más abajo) | Backend público real y funcional; falta que el frontend lo consuma. |
 | 3.10 Liquidaciones | ✅ Completo | Sin hallazgos nuevos. |
 | 3.11 Modelo B | ✅ Completo | Infraestructura genérica confirmada; lo específico correctamente pendiente de una cooperativa real. |
 | 3.12 Notificaciones | ✅ Completo | Cron jobs de ítems 32/33 confirmados en código real (`@Cron(EVERY_10_MINUTES)`, `@Cron(EVERY_HOUR)`). |
@@ -835,9 +835,13 @@ Ver corrección ya aplicada arriba, en la sección de la Fase 7 (ítem 29). Resu
 
 **Recomendación, no una decisión tomada:** como mínimo, agregar un campo de número de carnet CONADIS (declarado, sin verificación automática todavía) antes de poder afirmar cumplimiento legal siquiera parcial -- la verificación real del porcentaje probablemente necesite integración con el propio sistema del CONADIS o revisión manual, una decisión de negocio y alcance que le corresponde al director.
 
-### 🔴 Hallazgo grave #2 -- Comercial/Publicidad: el documento subestima el hueco real
+### 🟡 Hallazgo corregido -- Comercial/Publicidad: backend público SÍ existe y funciona; el frontend no lo conecta
 
-La sección 3.9 dice que lo único pendiente es que "la etiqueta Publicidad se muestre también en la landing pública". **Confirmado con el código real (`comercial.controller.ts`):** no existe absolutamente ningún endpoint público -- ni para que un anunciante deje sus datos (`POST leads` no existe, solo `GET leads` para el admin), ni para mostrar campañas activas en la landing. Hoy es literalmente imposible que un anuncio de un tercero aparezca en producción, y un negocio real no tiene ninguna forma de llegar a Columbus a través del software. Esto ya se había encontrado y reportado en una sesión anterior (13-ago) -- la auditoría confirma que sigue exactamente igual, sin construir todavía.
+**Corrección real (13-ago-2026, tras revisión cruzada de la directora antes de aplicar esta misma auditoría a `main`):** la primera versión de este hallazgo decía "no existe ningún endpoint público" -- **eso era incorrecto**, y el error fue metodológico: la búsqueda original solo revisó `comercial.controller.ts` (el controlador admin, con guards) y nunca hizo un listado completo de la carpeta `presentacion/comercial/`, donde vive un segundo archivo hermano.
+
+**Lo real, confirmado con el archivo abierto y con pruebas reales corridas en el momento:** existe `apps/api/src/presentacion/comercial/publicidad.controller.ts`, `@Controller('publicidad')`, **sin ningún guard**, con 4 endpoints públicos reales: `POST /publicidad/leads`, `GET /publicidad/activas`, `POST /:campanaId/impresion`, `POST /:campanaId/clic`. Registrado correctamente en `ComercialModule`. Historial de commits legítimo (`28eb281`, `60e5e38`), no algo de hoy. Se probó en vivo: `POST /publicidad/leads` devolvió `201` con un lead creado de verdad; `GET /publicidad/activas` devolvió `200` con un arreglo (vacío, correcto, sin campañas de prueba activas en este entorno).
+
+**El hueco real, más preciso:** el backend está listo y funcionando -- lo que falta es que el frontend lo consuma. Búsqueda exhaustiva en todo `apps/web`: cero coincidencias de `publicidad/activas`, `publicidad/leads`, `listarCampanasActivas`, o cualquier variante -- ningún componente del frontend llama a estos endpoints. Tampoco existe ninguna prueba e2e que los cubra. Es decir: un anunciante SÍ podría llegar a Columbus hoy mismo con una llamada directa a la API, pero no hay ningún formulario visible en la landing que haga esa llamada por él, y ninguna campaña aprobada se mostraría todavía porque no hay ninguna pantalla que pida `GET /publicidad/activas`.
 
 ### FLUJO 1 -- Compra por tipo de tarifa, verificado con compra real de punta a punta
 
