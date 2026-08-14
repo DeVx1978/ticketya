@@ -810,13 +810,13 @@ El helper compartido `limpiarCooperativasDePrueba` (`test/helpers/limpieza.ts`) 
 
 | Sección | Veredicto | Detalle |
 |---|---|---|
-| 3.1 Autenticación | ✅ Completo y verificado | Refresh tokens confirmados funcionando de punta a punta con prueba real (rotación de token confirmada). Hallazgo: 0 pruebas e2e permanentes cubren `/auth/refresh`. |
-| 3.1.1 Perfil del pasajero | ✅ Completo, 2 hallazgos | Código de pasajero y límite de 90 días confirmados con pruebas reales (ver detalle abajo). Línea desactualizada ya corregida arriba (generación anticipada, no perezosa). Hallazgo: 0 pruebas e2e permanentes cubren `PATCH /auth/perfil/identidad`. |
+| 3.1 Autenticación | ✅ Completo, hallazgo CERRADO 13-ago-2026 | Refresh tokens confirmados funcionando de punta a punta con prueba real (rotación de token confirmada). Prueba e2e permanente agregada -- ver detalle abajo. |
+| 3.1.1 Perfil del pasajero | ✅ Completo, hallazgos CERRADOS 13-ago-2026 | Código de pasajero y límite de 90 días confirmados con pruebas reales. Línea desactualizada ya corregida arriba (generación anticipada, no perezosa). Prueba e2e permanente de `PATCH /auth/perfil/identidad` agregada -- ver detalle abajo. |
 | 3.2 Búsqueda | ✅ Completo | Filtros, GPS, umbral de calificación confirmados en código real. |
 | 3.2.1 Reseñas de texto | ✅ Completo | Construido y probado en sesión reciente, sin cambios desde entonces. |
 | 3.3 Selección de asientos | ✅ Completo | Ver Flujo 2 completo, más abajo. |
 | 3.4 Métodos de pago | 🟡 Parcial (ya documentado correctamente) | Sin hallazgos nuevos -- bloqueo externo real de proveedor de pasarela. |
-| 3.5 Boletos | ✅ Completo, 1 hallazgo | `generarPdfBoleto()` vive dentro de `CalificacionesService`/`calificaciones.controller.ts` -- funciona, pero es confuso arquitectónicamente (un desarrollador nuevo no lo buscaría ahí). No es un bug, es deuda de organización. |
+| 3.5 Boletos | ✅ Completo, hallazgo CERRADO 13-ago-2026 | `generarPdfBoleto()` vivía dentro de `CalificacionesService`/`calificaciones.controller.ts` -- reubicado a `CheckoutService`/`CompraRepositorio` (módulo de ventas/boletos, donde pertenece de verdad). Ver detalle completo abajo. |
 | 3.6 Facturación | 🟡 Parcial (ya documentado correctamente) | Sin hallazgos nuevos -- bloqueo legal externo real. |
 | 3.7 Panel de cooperativa | ✅ Completo | Endpoints reales confirmados (`estado-datos`, `confirmar-datos`), suite de pruebas verde. |
 | 3.8 Panel de administrador | ✅ Completo | Endpoints reales confirmados (`administradores`), suite verde. |
@@ -857,6 +857,20 @@ La sección 3.9 dice que lo único pendiente es que "la etiqueta Publicidad se m
 - **Veredicto: ✅ Completo, sin hallazgos negativos.** El sistema soporta de verdad buses de distinta capacidad y distribución por cooperativa, sin mezclarse en ningún punto verificado (búsqueda, mapa de asientos, edición).
 
 ---
+
+## 5.2 Cierre de los 3 hallazgos menores de la auditoría -- 13-ago-2026
+
+**1. `/auth/refresh` sin prueba e2e permanente -- CERRADO.** Agregada en `auth.e2e-spec.ts`, dentro de `describe('Login')`: confirma que el refresh token rota de verdad (el nuevo es distinto del usado), que el access token nuevo funciona contra un endpoint real (`GET /auth/perfil`), y el camino de error (refresh token inválido rechaza con 401).
+
+**2. `PATCH /auth/perfil/identidad` sin prueba e2e permanente -- CERRADO.** Agregada en `auth.e2e-spec.ts`, dentro de `describe('Perfil')`: primer cambio de identidad pasa, segundo cambio inmediato se rechaza con "90 días" y el número exacto de días restantes en el mensaje, y se confirma que el nombre realmente NO cambió tras el rechazo (no es solo un error sin efecto).
+
+**3. `generarPdfBoleto()` mal ubicado -- CERRADO.** Reubicado desde `CalificacionesService`/`CalificacionesRepositorio` hacia `CheckoutService`/`CompraRepositorio` (módulo de ventas/boletos, donde pertenece de verdad) -- mismo código exacto, mismo comportamiento, solo cambió dónde vive.
+
+**Decisión de diseño, reportada:** la orden pedía "sin cambiar el comportamiento". Como el frontend real (`lib/api.ts`) ya llama literalmente a `/calificaciones/mis-boletos/:boletoId/pdf`, mover también la ruta HTTP habría sido un cambio de comportamiento real (rompe el contrato con el frontend), no la reorganización pura pedida. Se movió la lógica (servicio + repositorio), pero la ruta HTTP se dejó exactamente donde estaba -- el controlador de calificaciones ahora solo inyecta `CheckoutService` y delega, sin tener la lógica de negocio él mismo.
+
+**Hallazgo adicional encontrado en el camino, verificado antes de dar esto por bueno:** no existía (ni antes ni después de este cambio) ninguna prueba e2e permanente que cubriera la descarga de PDF en sí -- las 199 pruebas que pasaban no incluían ninguna que ejercitara esa ruta específica. Se verificó manualmente con una prueba real temporal (borrada después de confirmar) que el PDF se sigue generando correctamente tras el movimiento: `200`, `Content-Type: application/pdf`, firma binaria real `%PDF` al inicio del archivo. Se reporta la falta de cobertura permanente como hallazgo, sin agregarla -- no era parte del alcance pedido en esta orden.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 29/29 páginas, y **199/199 pruebas e2e** (196 previas + 3 nuevas: rotación de refresh token, refresh token inválido, límite de 90 días de identidad).
 
 ## 6. Regla de mantenimiento de este documento
 
