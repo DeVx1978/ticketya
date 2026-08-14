@@ -1,4 +1,4 @@
-import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type {
   CompraRepositorio,
@@ -12,10 +12,37 @@ import type { ProveedorFacturacionElectronica } from '../../dominio/facturacion/
 import { DespachadorWebhooksService } from '../webhooks/despachador-webhooks.service';
 import { WalletService } from '../wallet/wallet.service';
 import { ReferidosService } from '../referidos/referidos.service';
+import PDFDocument from 'pdfkit';
+import QRCode from 'qrcode';
 
 export const COMPRA_REPOSITORIO = 'COMPRA_REPOSITORIO';
 export const PASARELA_PAGO = 'PASARELA_PAGO';
 export const PROVEEDOR_FACTURACION = 'PROVEEDOR_FACTURACION';
+
+/**
+ * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF. Fecha
+ * local Ecuador en ambos formateos, mismo criterio que el resto del
+ * proyecto (America/Guayaquil, sin horario de verano). Reubicadas
+ * 13-ago-2026 (auditoría) desde CalificacionesService -- mismo
+ * comportamiento exacto, sin cambios funcionales.
+ */
+function formatearFechaBoleto(fechaSalida: string): string {
+  return new Date(`${fechaSalida}T00:00:00`).toLocaleDateString('es-EC', {
+    timeZone: 'America/Guayaquil',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function formatearHoraBoleto(hora: Date): string {
+  return hora.toLocaleTimeString('es-EC', {
+    timeZone: 'America/Guayaquil',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 @Injectable()
 export class CheckoutService {
@@ -356,6 +383,164 @@ export class CheckoutService {
 
   async cancelarBoleto(boletoId: string, usuarioId: string) {
     return this.compras.cancelarBoleto(boletoId, usuarioId);
+  }
+
+  /**
+   * Ítem 13, Fase 2 (05-ago-2026) -- descarga de boleto en PDF.
+   * Reubicado 13-ago-2026 (auditoría, hallazgo de organización): vivía
+   * en CalificacionesService, sin relación real con calificaciones --
+   * ahora vive en CheckoutService, junto a cancelarBoleto y el resto
+   * del ciclo de vida real del boleto. Mismo comportamiento exacto,
+   * mismo query, mismo documento generado -- solo cambió dónde vive el
+   * código, no cómo funciona.
+   *
+   * Requisitos del director (sin cambios): encabezado con marca, datos
+   * organizados en secciones claras, QR grande y legible. QR generado
+   * del lado del servidor con la misma librería `qrcode` que ya usa el
+   * frontend (CodigoQr.tsx) -- aquí no hay DOM disponible, así que se
+   * usa QRCode.toBuffer() en vez de QRCode.toCanvas(). Mismo valor
+   * codificado (codigo_qr) en ambos casos.
+   */
+  async generarPdfBoleto(boletoId: string, usuarioId: string): Promise<Buffer> {
+    const datos = await this.compras.obtenerDatosBoletoParaPdf(
+      boletoId,
+      usuarioId,
+    );
+    if (!datos) {
+      throw new ForbiddenException(
+        'Este boleto no existe o no te pertenece.',
+      );
+    }
+
+    const qrBuffer = await QRCode.toBuffer(datos.codigoQr, {
+      width: 300,
+      margin: 1,
+    });
+
+    return new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'LETTER', margin: 50 });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const anchoPagina = doc.page.width;
+      const margenIzq = doc.page.margins.left;
+      const margenDer = doc.page.margins.right;
+      const anchoUtil = anchoPagina - margenIzq - margenDer;
+
+      // Encabezado -- marca visible, requisito 1 del director.
+      doc
+        .fontSize(24)
+        .fillColor('#000000')
+        .font('Helvetica-Bold')
+        .text('Columbus', margenIzq, doc.y);
+      doc
+        .fontSize(10)
+        .fillColor('#888888')
+        .font('Helvetica')
+        .text('Boleto electrónico', margenIzq, doc.y);
+      doc.moveDown(1);
+      doc
+        .strokeColor('#dddddd')
+        .lineWidth(1)
+        .moveTo(margenIzq, doc.y)
+        .lineTo(anchoPagina - margenDer, doc.y)
+        .stroke();
+      doc.moveDown(1.5);
+
+      // Cooperativa + ruta -- requisito 2, cada dato en su propia sección.
+      doc.fontSize(10).fillColor('#888888').text('OPERADO POR');
+      doc
+        .fontSize(16)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(datos.cooperativaNombre);
+      doc.moveDown(1);
+
+      doc
+        .fontSize(20)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        // 05-ago-2026 -- bug real encontrado con una prueba visual real:
+        // la fuente estándar Helvetica de pdfkit no tiene el glifo de
+        // flecha Unicode (→) -- lo sustituía por basura visual en vez
+        // de fallar limpio. "->" (ASCII) es seguro en cualquier fuente.
+        .text(`${datos.origenCiudad}  ->  ${datos.destinoCiudad}`);
+      doc.moveDown(1.2);
+
+      // Fecha/hora/asiento/pasajero -- cuadrícula de 2 columnas, cada
+      // dato con su propia etiqueta, no un bloque de texto corrido.
+      const col1X = margenIzq;
+      const col2X = margenIzq + anchoUtil / 2;
+      const inicioGrilla = doc.y;
+
+      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('FECHA', col1X, inicioGrilla);
+      doc
+        .fontSize(13)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(formatearFechaBoleto(datos.fechaSalida), col1X, inicioGrilla + 13, {
+          width: anchoUtil / 2 - 10,
+        });
+
+      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('HORA DE SALIDA', col2X, inicioGrilla);
+      doc
+        .fontSize(13)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(formatearHoraBoleto(datos.horaSalidaProgramada), col2X, inicioGrilla + 13);
+
+      const segundaFila = inicioGrilla + 55;
+      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('ASIENTO', col1X, segundaFila);
+      doc
+        .fontSize(13)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(datos.numeroAsiento, col1X, segundaFila + 13);
+
+      doc.fontSize(9).fillColor('#888888').font('Helvetica').text('PASAJERO', col2X, segundaFila);
+      doc
+        .fontSize(13)
+        .fillColor('#1a1a1a')
+        .font('Helvetica-Bold')
+        .text(datos.pasajeroNombre, col2X, segundaFila + 13, { width: anchoUtil / 2 - 10 });
+
+      doc.y = segundaFila + 55;
+      doc.moveDown(1);
+      doc
+        .strokeColor('#dddddd')
+        .lineWidth(1)
+        .moveTo(margenIzq, doc.y)
+        .lineTo(anchoPagina - margenDer, doc.y)
+        .stroke();
+      doc.moveDown(1.5);
+
+      // QR grande y centrado -- requisito 3, nada de un ícono perdido
+      // en la esquina, tiene que ser legible sin esfuerzo en un andén.
+      doc
+        .fontSize(11)
+        .fillColor('#555555')
+        .font('Helvetica')
+        .text('Presenta este código al abordar', margenIzq, doc.y, {
+          width: anchoUtil,
+          align: 'center',
+        });
+      doc.moveDown(0.8);
+
+      const tamanoQr = 220;
+      const xQr = (anchoPagina - tamanoQr) / 2;
+      doc.image(qrBuffer, xQr, doc.y, { width: tamanoQr, height: tamanoQr });
+      doc.y += tamanoQr + 12;
+
+      doc
+        .fontSize(9)
+        .fillColor('#888888')
+        .font('Helvetica')
+        .text(datos.codigoQr, margenIzq, doc.y, { width: anchoUtil, align: 'center' });
+
+      doc.end();
+    });
   }
 
   /**

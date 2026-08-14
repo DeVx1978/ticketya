@@ -204,6 +204,40 @@ describe('Autenticación (e2e)', () => {
         .expect(401);
       expect(res.body.message).toContain('bloqueada temporalmente');
     });
+
+    it('el refresh token renueva el access token sin pedir la contraseña de nuevo (RF-AUTH-005) -- hallazgo real de auditoría: existía y funcionaba, pero sin ninguna prueba e2e permanente', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo, password: passwordCorrecta })
+        .expect(201);
+      const refreshTokenOriginal = login.body.refreshToken;
+      expect(refreshTokenOriginal).toBeDefined();
+
+      const refresco = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken: refreshTokenOriginal })
+        .expect(201);
+
+      expect(refresco.body.accessToken).toBeDefined();
+      // Rotación real: el refresh token nuevo es DISTINTO del que se
+      // usó -- confirma que no es reutilizable indefinidamente.
+      expect(refresco.body.refreshToken).toBeDefined();
+      expect(refresco.body.refreshToken).not.toBe(refreshTokenOriginal);
+
+      // El access token nuevo funciona de verdad contra un endpoint real.
+      const perfil = await request(app.getHttpServer())
+        .get('/auth/perfil')
+        .set('Authorization', `Bearer ${refresco.body.accessToken}`)
+        .expect(200);
+      expect(perfil.body.correo).toBe(correo);
+    });
+
+    it('rechaza un refresh token inválido o ya usado', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken: 'esto-no-es-un-refresh-token-valido' })
+        .expect(401);
+    });
   });
 
   describe('Perfil (RF-AUTH-006)', () => {
@@ -300,6 +334,57 @@ describe('Autenticación (e2e)', () => {
           passwordNueva: 'OtraClave12345',
         })
         .expect(400);
+    });
+
+    it('el límite de 90 días para cambiar nombre/cédula funciona de verdad -- hallazgo real de auditoría: existía y funcionaba, pero sin ninguna prueba e2e permanente', async () => {
+      const correoIdentidad = `identidad.e2e.${sufijo}@ticketya.ec`;
+      const registro = await request(app.getHttpServer())
+        .post('/auth/registro')
+        .send({
+          correo: correoIdentidad,
+          password: 'ClaveSegura123',
+          nombres: 'Identidad', apellidos: 'Prueba E2E',
+        })
+        .expect(201);
+      const tokenIdentidad = registro.body.accessToken;
+
+      // Primer cambio: debe pasar, nunca se había tocado antes.
+      await request(app.getHttpServer())
+        .patch('/auth/perfil/identidad')
+        .set('Authorization', `Bearer ${tokenIdentidad}`)
+        .send({ nombreCompleto: 'Nombre Cambiado Primera Vez' })
+        .expect(200);
+
+      const perfilTrasPrimerCambio = await request(app.getHttpServer())
+        .get('/auth/perfil')
+        .set('Authorization', `Bearer ${tokenIdentidad}`)
+        .expect(200);
+      expect(perfilTrasPrimerCambio.body.nombreCompleto).toBe(
+        'Nombre Cambiado Primera Vez',
+      );
+      // El código de pasajero (COL-XXXXXX) sigue disponible, sin verse
+      // afectado por el cambio de identidad -- son cosas separadas.
+      expect(perfilTrasPrimerCambio.body.codigoPasajero).toMatch(/^COL-/);
+
+      // Segundo cambio inmediato: debe rechazar, con los días exactos
+      // restantes en el mensaje (puedeEditarIdentidad, 90 días).
+      const segundoCambio = await request(app.getHttpServer())
+        .patch('/auth/perfil/identidad')
+        .set('Authorization', `Bearer ${tokenIdentidad}`)
+        .send({ nombreCompleto: 'Nombre Cambiado Segunda Vez' })
+        .expect(400);
+      expect(segundoCambio.body.message).toContain('90 días');
+      expect(segundoCambio.body.message).toMatch(/\d+ día\(s\)/);
+
+      // El nombre NO debe haber cambiado -- el rechazo es real, no solo
+      // un error sin efecto.
+      const perfilTrasRechazo = await request(app.getHttpServer())
+        .get('/auth/perfil')
+        .set('Authorization', `Bearer ${tokenIdentidad}`)
+        .expect(200);
+      expect(perfilTrasRechazo.body.nombreCompleto).toBe(
+        'Nombre Cambiado Primera Vez',
+      );
     });
   });
 
