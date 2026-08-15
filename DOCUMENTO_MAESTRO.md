@@ -963,6 +963,26 @@ Ver corrección ya aplicada arriba, en la sección de la Fase 7 (ítem 29). Resu
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas, Lighthouse real 100/100 en las 2 pantallas nuevas auditadas.
 
-## 6. Regla de mantenimiento de este documento
+## 5.7 Siembra de datos reales en producción + regla no negociable: migrar producción tras cada PR con migración -- 13-ago-2026
+
+**Orden del director:** la plataforma necesitaba verse viva, con datos reales en cada sección, para revisión visual real -- no más reportes de texto sin verificación suya.
+
+**Construido:** `sembrar-produccion.js` -- script real (12 fases), corrido de punta a punta contra producción real (`https://columbus-backend.onrender.com`). Sembró: 1 director (`super_admin`, 2FA real), 3 cooperativas con nombres reales (Transportes Ecuador, Flota Imbabura, Panamericana Internacional, cada una con su propio 2FA), 3 terminales terrestres reales, 6 tipos de vehículo, 3 propuestas de punto de operación (1 aprobada, 2 pendientes -- flujo completo visible), 10 viajes (1 pasado + 9 futuros), 5 boletos cubriendo los 4 tipos de tarifa, wallet y referidos con saldo real (activado validando QR de verdad), 5 calificaciones (3 con comentario, umbral real para mostrarse públicamente), 1 solicitud de factura, 1 lead de publicidad.
+
+**3 bugs reales del script encontrados y corregidos en el camino** (2FA obligatorio no contemplado en el diseño original, formato de distribución de asientos inválido según el validador real, falta de reintento ante el límite de peticiones) -- corregidos con evidencia real de cada error, no supuestos.
+
+### 🔴 Hallazgo grave real de proceso: producción llevaba 5 migraciones completas sin aplicar
+
+**No es la primera vez que esto pasa** -- ya había un antecedente real documentado arriba (Fase 8, ítems 32/33): 3 migraciones manuales quedaron sin ejecutarse contra producción durante un tiempo, sin que nadie lo notara, hasta que un error real las expuso. Hoy pasó lo mismo, a mayor escala: las migraciones `0031` a `0035` completas (wallet/cashback, referidos, discapacidad, puntos de operación propuestos, soporte global) nunca se habían aplicado contra la base de datos real de producción, a pesar de que el código correspondiente sí estaba desplegado y funcionando desde hacía días (confirmado con el historial real de "Deploy live" en Render).
+
+**Causa raíz real, confirmada:** el auto-deploy de Render **solo despliega código**, nunca ejecuta migraciones de base de datos. Fusionar un PR con una migración nueva no la aplica a producción -- eso siempre ha sido, y sigue siendo, un paso manual aparte que alguien tiene que correr explícitamente.
+
+**Verificado con evidencia real, no con confianza** (siguiendo el pedido explícito de la directora): se construyó una consulta SQL que compara, uno por uno, los 37 elementos exactos que las 5 migraciones debían crear (cada columna, cada tabla completa, cada llave foránea, cada índice, el enum nuevo y sus valores) contra `information_schema`/`pg_constraint`/`pg_indexes`/`pg_enum` reales. Resultado real contra producción: **los 37 elementos en `false`** -- confirmando el hueco por completo, no parcialmente. Se aplicó un bloque de recuperación (`IF NOT EXISTS`/`duplicate-safe` en cada pieza, seguro de reintentar), y se verificó de nuevo: **37 de 37 en `true`.** Se reconcilió el registro oficial de migraciones (`_migraciones_aplicadas`) con la herramienta real del proyecto (`aplicar-migraciones.cjs --marcar-como-aplicadas`), y se confirmó con una consulta directa contra la tabla de control en producción real -- las 5 filas existen, con fecha y hora reales de reconciliación.
+
+### ✅ REGLA NO NEGOCIABLE, agregada hoy (13-ago-2026)
+
+**Después de fusionar cualquier PR que incluya una migración de base de datos nueva, correr `db:migrar` (o `aplicar-migraciones.cjs` directo) contra producción real es un paso OBLIGATORIO del mismo cierre -- nunca una tarea aparte, nunca algo que se asume que "ya se hizo solo". El auto-deploy de Render NO migra la base de datos, solo despliega código.** Confirmar con una consulta real contra `_migraciones_aplicadas` en producción antes de dar el PR por completo, no solo con el mensaje de la terminal.
+
+
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
