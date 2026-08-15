@@ -34,6 +34,17 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
   const [abierto, setAbierto] = useState(false);
   const [indiceResaltado, setIndiceResaltado] = useState(-1);
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Hallazgo real (15-ago-2026, reportado por el director al recorrer
+  // producción real): condición de carrera en el autocompletado -- con
+  // varias peticiones disparadas mientras se escribe (una por letra,
+  // el debounce solo cancela el TIMEOUT, nunca la petición ya en
+  // vuelo), una respuesta vieja (de un texto parcial, ej. "gu") podía
+  // llegar DESPUÉS de la respuesta correcta más reciente y
+  // sobrescribirla -- el usuario veía menos opciones de las reales,
+  // sin ningún error visible. Corregido con un número de secuencia:
+  // solo se aplica la respuesta si sigue siendo la petición más
+  // reciente en el momento en que vuelve.
+  const secuenciaPeticion = useRef(0);
 
   useEffect(() => {
     if (temporizador.current) clearTimeout(temporizador.current);
@@ -42,7 +53,9 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
       return;
     }
     temporizador.current = setTimeout(async () => {
+      const idPeticion = ++secuenciaPeticion.current;
       const resultado = await buscarPuntosOperacion(texto);
+      if (idPeticion !== secuenciaPeticion.current) return; // ya no es la más reciente -- descartar
       setSugerencias(resultado);
       setIndiceResaltado(-1);
     }, 250);
