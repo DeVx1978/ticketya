@@ -636,6 +636,43 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(viajeId).toBeDefined();
   });
 
+  /**
+   * Hallazgo real del director (16-ago-2026, comparando la pantalla de
+   * resultados con plataformas profesionales): la hora de llegada
+   * estimada nunca existió como campo en CrearViajeDto -- confirmado
+   * con una consulta directa a produccion, TODOS los viajes reales
+   * tenian este campo en NULL. Prueba real de que ahora si se guarda
+   * cuando se proporciona, y que sigue siendo opcional (no rompe el
+   * caso ya cubierto arriba, donde no se envia).
+   */
+  it('guarda la hora de llegada estimada cuando se proporciona -- hallazgo real del 16-ago-2026, nunca existia este campo', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/viajes')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        rutaId,
+        unidadId,
+        fechaSalida: '2026-09-02',
+        horaSalidaProgramada: '2026-09-02T10:00:00-05:00',
+        horaLlegadaEstimada: '2026-09-02T14:00:00-05:00',
+        precioBase: 6.5,
+      })
+      .expect(201);
+    const viajeConLlegadaId = res.body.id;
+
+    const busqueda = await request(app.getHttpServer())
+      .get('/viajes/buscar')
+      .query({ origenId: puntoOrigenId, destinoId: puntoDestinoId, fecha: '2026-09-02', pasajeros: 1 })
+      .expect(200);
+
+    const encontrado = busqueda.body.find((v: { viajeId: string }) => v.viajeId === viajeConLlegadaId);
+    expect(encontrado).toBeDefined();
+    expect(encontrado.horaLlegadaEstimada).toBeDefined();
+    expect(new Date(encontrado.horaLlegadaEstimada).toISOString()).toBe(
+      new Date('2026-09-02T14:00:00-05:00').toISOString(),
+    );
+  });
+
   it('el viaje recién creado aparece al listar, con la placa y el tipo de vehículo ya resueltos (GET /coop/viajes)', async () => {
     const res = await request(app.getHttpServer())
       .get('/coop/viajes')

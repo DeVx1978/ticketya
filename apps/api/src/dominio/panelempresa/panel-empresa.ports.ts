@@ -254,6 +254,7 @@ export interface DatosNuevoViaje {
   unidadId: string;
   fechaSalida: string;
   horaSalidaProgramada: string;
+  horaLlegadaEstimada?: string;
   precioBase: number;
 }
 

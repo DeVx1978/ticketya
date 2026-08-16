@@ -923,7 +923,14 @@ export async function listarViajesCoop(token: string): Promise<ViajeCoopResumen[
 
 export async function crearViajeCoop(
   token: string,
-  datos: { rutaId: string; unidadId: string; fechaSalida: string; horaSalidaProgramada: string; precioBase: number },
+  datos: {
+    rutaId: string;
+    unidadId: string;
+    fechaSalida: string;
+    horaSalidaProgramada: string;
+    horaLlegadaEstimada?: string;
+    precioBase: number;
+  },
 ): Promise<{ id: string }> {
   const res = await fetch(`${API_URL}/coop/viajes`, {
     method: "POST",
