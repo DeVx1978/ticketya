@@ -102,7 +102,7 @@ function MiCuenta() {
     .toUpperCase();
 
   return (
-    <main className="mx-auto max-w-4xl flex-1 px-4 py-10">
+    <main className="mx-auto max-w-6xl flex-1 px-4 py-10 lg:px-8">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Mi cuenta</h1>
@@ -110,7 +110,11 @@ function MiCuenta() {
       {/* Identidad, en forma de pase de abordar real -- mismo talón
           recortable y franja de marca que ya usa el boleto PDF, para
           que el pasaporte de viajero se sienta parte de la misma
-          familia visual, no una tarjeta de gradiente genérica. */}
+          familia visual, no una tarjeta de gradiente genérica. Ancho
+          completo real (15-ago-2026, hallazgo del director: "no debe
+          verse centrado, debe adaptarse a la pantalla") -- la tarjeta
+          crece con la pantalla en vez de quedar flotando en el centro
+          con espacio vacío a los lados. */}
       <div className="mt-6 overflow-hidden rounded-2xl bg-brand-dark shadow-lg shadow-brand-dark/10">
         <div className="flex flex-wrap items-center gap-5 px-6 py-6 sm:px-8">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-amber font-display text-2xl font-bold text-brand-dark">
@@ -156,7 +160,12 @@ function MiCuenta() {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-black/5">
+      {/* En celular/tablet: pestañas horizontales arriba, mismo
+          comportamiento de siempre. En pantalla grande (lg+): panel
+          lateral fijo, mismo patrón que Stripe/Linear para páginas de
+          cuenta -- usa el ancho real de la pantalla en vez de una
+          columna angosta flotando en el centro. */}
+      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-black/5 lg:hidden">
         {PESTANAS.map((p) => (
           <button
             key={p.valor}
@@ -172,18 +181,46 @@ function MiCuenta() {
         ))}
       </div>
 
-      <div className="mt-6 max-w-2xl">
-        {pestanaActiva === "datos" && (
-          <TabDatosPersonales
-            perfil={perfil}
-            onActualizado={(cambios) => setPerfil((p) => (p ? { ...p, ...cambios } : p))}
-            onExito={setMensajeExito}
-          />
-        )}
-        {pestanaActiva === "boletos" && <TabMisBoletos onExito={setMensajeExito} />}
-        {pestanaActiva === "wallet" && <TabWallet />}
-        {pestanaActiva === "referidos" && <TabReferidos perfil={perfil} />}
-        {pestanaActiva === "creditos" && <TabMisCreditos />}
+      <div className="mt-6 lg:mt-8 lg:grid lg:grid-cols-[220px_1fr] lg:items-start lg:gap-10">
+        <nav className="hidden lg:sticky lg:top-6 lg:block lg:space-y-1">
+          {PESTANAS.map((p) => (
+            <button
+              key={p.valor}
+              onClick={() => cambiarPestana(p.valor)}
+              className={`block w-full rounded-lg px-4 py-2.5 text-left text-sm font-semibold transition ${
+                pestanaActiva === p.valor
+                  ? "bg-brand-dark text-white"
+                  : "text-brand-dark/60 hover:bg-brand-dark/5 hover:text-brand-dark"
+              }`}
+            >
+              {p.etiqueta}
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0">
+          {pestanaActiva === "datos" && (
+            <div className="max-w-2xl">
+              <TabDatosPersonales
+                perfil={perfil}
+                onActualizado={(cambios) => setPerfil((p) => (p ? { ...p, ...cambios } : p))}
+                onExito={setMensajeExito}
+              />
+            </div>
+          )}
+          {pestanaActiva === "boletos" && (
+            <div className="max-w-2xl">
+              <TabMisBoletos onExito={setMensajeExito} />
+            </div>
+          )}
+          {pestanaActiva === "wallet" && <TabWallet />}
+          {pestanaActiva === "referidos" && <TabReferidos perfil={perfil} />}
+          {pestanaActiva === "creditos" && (
+            <div className="max-w-2xl">
+              <TabMisCreditos />
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
