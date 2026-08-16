@@ -1121,6 +1121,18 @@ Mismo hueco identificado desde la auditoría del 13-ago (sección 3.9): el backe
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas (`/anunciar` es la nueva). **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 6 veces, con estrategias distintas (espera con sondeo, espera fija, servidor ya compilado, backend+frontend por separado, verificación intermedia con curl, secuencia más ajustada sin verificación intermedia) -- el entorno falló en las 6, con el mismo patrón de servidores muriendo entre pasos que ya se documentó otras veces en el proyecto. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
 
+## 5.14 Logo real en encabezado y pie de página -- 16-ago-2026
+
+Hallazgo real del director, con evidencia (captura de producción): tanto `HeaderPublico.tsx` como `Footer.tsx` mostraban el texto plano "Columbus" en vez del logo real -- inconsistente con el `Hero.tsx` de la Fase 2, que sí usa la imagen real del logo.
+
+**Causa real, no solo un olvido:** el archivo del logo (`logo-columbus.png`) tiene el texto en **blanco puro** -- solo funciona sobre fondo oscuro. `Footer.tsx` tiene fondo oscuro (funciona directo), pero `HeaderPublico.tsx` tiene fondo **blanco** -- el logo blanco ahí sería invisible.
+
+**Resuelto generando una segunda versión del logo, no fabricando nada nuevo:** el ícono (la figura sentada) usa amarillo de marca real (`#ffd425`), separado del texto. Se generó `logo-columbus-oscuro.png` recoloreando ÚNICAMENTE los píxeles blancos puros a negro (con Python/PIL, preservando el canal alfa exacto) -- el ícono amarillo no se tocó. Hallazgo real en el camino: las últimas 2 letras ("us") del logo original YA venían en amarillo en el archivo real (no blanco) -- un detalle de diseño de la marca real que se preservó automáticamente al no ser píxeles blancos puros.
+
+`HeaderPublico.tsx` ahora usa `logo-columbus-oscuro.png`, `Footer.tsx` usa el `logo-columbus.png` original (blanco). Confirmado con búsqueda en todo el código que no quedó ningún otro lugar con "Columbus" como texto plano.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
