@@ -2,6 +2,7 @@ import Link from "next/link";
 import { buscarViajes, AMENIDADES_CATALOGO, type Amenidad, type ResultadoViaje } from "@/lib/api";
 import { FiltrosBusqueda } from "./FiltrosBusqueda";
 import { ResenasCooperativa } from "./ResenasCooperativa";
+import { OrdenarPor } from "./OrdenarPor";
 
 function formatearHora(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-EC", {
@@ -20,19 +21,56 @@ function formatearFecha(fecha: string): string {
 }
 
 /**
+ * Fase 5-buscador (16-ago-2026) -- duración real del viaje, calculada
+ * de los 2 horarios que YA existen en ResultadoViaje (horaSalidaProgramada,
+ * horaLlegadaEstimada) -- nunca un dato inventado. Si la cooperativa no
+ * cargó hora de llegada estimada, simplemente no se muestra duración
+ * (se degrada con gracia, en vez de forzar un número falso).
+ */
+function calcularDuracion(salida: string, llegada: string | null): string | null {
+  if (!llegada) return null;
+  const minutos = Math.round((new Date(llegada).getTime() - new Date(salida).getTime()) / 60000);
+  if (minutos <= 0) return null;
+  const horas = Math.floor(minutos / 60);
+  const mins = minutos % 60;
+  return mins > 0 ? `${horas}h ${mins}min` : `${horas}h`;
+}
+
+/**
  * Fase 7-idayvuelta (11-ago-2026) -- tarjeta de resultado extraida
  * como funcion separada, reutilizada para ida y para vuelta (antes
  * vivia una sola vez, embebida directo en el .map() de la pagina).
  * `hrefBase` decide a donde va "Elegir asiento" -- si ya se eligio el
  * tramo de ida, el tramo de vuelta debe llevar esa eleccion consigo en
  * la URL, para poder combinar ambos en un solo checkout mas adelante.
+ *
+ * Fase 5-buscador (16-ago-2026) -- rediseño real, comparando con
+ * referencias de la industria (redBus, FlixBus): agregada la línea
+ * visual del trayecto (salida -- duración -- llegada, como cualquier
+ * resultado de vuelo/bus real) y la insignia "Mejor precio" (recibida
+ * como prop, calculada una sola vez en la página con los datos reales
+ * de TODOS los resultados -- nunca decidida tarjeta por tarjeta).
  */
-function TarjetaResultado({ r, hrefAsientos }: { r: ResultadoViaje; hrefAsientos: string }) {
+function TarjetaResultado({
+  r,
+  hrefAsientos,
+  esMejorPrecio,
+}: {
+  r: ResultadoViaje;
+  hrefAsientos: string;
+  esMejorPrecio: boolean;
+}) {
+  const duracion = calcularDuracion(r.horaSalidaProgramada, r.horaLlegadaEstimada);
   return (
     <div
       key={r.viajeId}
-      className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 md:flex-row md:items-center md:justify-between"
+      className="relative flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 md:flex-row md:items-center md:justify-between"
     >
+      {esMejorPrecio && (
+        <span className="absolute -top-2.5 left-4 rounded-full bg-brand-cobalto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+          Mejor precio
+        </span>
+      )}
       <div>
         <div className="flex items-center gap-2">
           {r.cooperativaLogoUrl && (
@@ -67,10 +105,24 @@ function TarjetaResultado({ r, hrefAsientos }: { r: ResultadoViaje; hrefAsientos
             ))}
           </div>
         )}
-        <p className="mt-1 text-sm text-brand-dark/70">
-          Sale {formatearHora(r.horaSalidaProgramada)}
-          {r.horaLlegadaEstimada && <> · Llega {formatearHora(r.horaLlegadaEstimada)}</>}
-        </p>
+
+        {/* Línea visual del trayecto -- salida, duración real (si existe), llegada. */}
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-sm font-semibold text-brand-dark">{formatearHora(r.horaSalidaProgramada)}</span>
+          <span className="flex flex-1 items-center gap-1 text-brand-dark/25">
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            <span className="h-px flex-1 bg-current" />
+            {duracion && (
+              <span className="shrink-0 text-[10px] font-medium text-brand-dark/50">{duracion}</span>
+            )}
+            <span className="h-px flex-1 bg-current" />
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          </span>
+          {r.horaLlegadaEstimada && (
+            <span className="text-sm font-semibold text-brand-dark">{formatearHora(r.horaLlegadaEstimada)}</span>
+          )}
+        </div>
+
         {/* Ítem 15 (05-ago-2026) -- link estándar de Google Maps, sin SDK ni API key. */}
         <a
           href={`https://www.google.com/maps/dir/?api=1&origin=${r.origenLatitud},${r.origenLongitud}&destination=${r.destinoLatitud},${r.destinoLongitud}`}
@@ -92,7 +144,7 @@ function TarjetaResultado({ r, hrefAsientos }: { r: ResultadoViaje; hrefAsientos
       </div>
       <div className="flex items-center justify-between gap-6 md:justify-end">
         <div className="text-right">
-          <p className="font-display text-2xl font-extrabold text-brand">${Number(r.precioBase).toFixed(2)}</p>
+          <p className="font-display text-2xl font-extrabold text-brand-dark">${Number(r.precioBase).toFixed(2)}</p>
           <p className="text-xs text-brand-dark/50">
             {r.asientosDisponibles} asiento{r.asientosDisponibles !== 1 ? "s" : ""} libre
             {r.asientosDisponibles !== 1 ? "s" : ""}
@@ -121,7 +173,7 @@ export default async function ResultadosBusquedaPage({
   // y idaAsiento llegan cuando ya se eligio el tramo de ida y se esta
   // viendo la busqueda del tramo de vuelta (ver TarjetaResultado, que
   // arma ese link al elegir "Elegir asiento" en el tramo de ida).
-  const { fechaVuelta, idaViajeId, idaAsientos } = sp;
+  const { fechaVuelta, idaViajeId, idaAsientos, ordenarPor } = sp;
   const esIdaYVuelta = !!fechaVuelta;
 
   if (!origenId || !destinoId || !fecha) {
@@ -172,6 +224,26 @@ export default async function ResultadosBusquedaPage({
     error = "No se pudo completar la búsqueda. Intenta de nuevo en un momento.";
   }
 
+  // Fase 5-buscador (16-ago-2026) -- ordenamiento real, del lado del
+  // servidor, sobre los datos reales ya obtenidos -- nunca se inventa
+  // ni se reordena en el cliente por separado.
+  function ordenar(lista: ResultadoViaje[]): ResultadoViaje[] {
+    const copia = [...lista];
+    switch (ordenarPor) {
+      case "precio_desc":
+        return copia.sort((a, b) => Number(b.precioBase) - Number(a.precioBase));
+      case "salida_temprano":
+        return copia.sort(
+          (a, b) => new Date(a.horaSalidaProgramada).getTime() - new Date(b.horaSalidaProgramada).getTime(),
+        );
+      case "precio_asc":
+      default:
+        return copia.sort((a, b) => Number(a.precioBase) - Number(b.precioBase));
+    }
+  }
+  resultadosIda = ordenar(resultadosIda);
+  resultadosVuelta = ordenar(resultadosVuelta);
+
   // Fase 7-idayvuelta (11-ago-2026) -- construye el link de "Elegir
   // asiento" para cada tramo:
   // - Ida, viaje sencillo: va directo a elegir asientos.
@@ -216,9 +288,17 @@ export default async function ResultadosBusquedaPage({
   const mostrandoVuelta = esIdaYVuelta && !!idaViajeId;
   const resultadosAMostrar = mostrandoVuelta ? resultadosVuelta : resultadosIda;
 
+  // Fase 5-buscador (16-ago-2026) -- "Mejor precio" real, calculado
+  // una sola vez sobre TODOS los resultados que se van a mostrar, no
+  // una insignia fija ni inventada por tarjeta.
+  const precioMinimo =
+    resultadosAMostrar.length > 0
+      ? Math.min(...resultadosAMostrar.map((r) => Number(r.precioBase)))
+      : null;
+
   return (
     <main className="flex-1 bg-brand-light/40">
-      <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="mx-auto max-w-5xl px-4 py-10">
         <Link href="/" className="text-sm font-semibold text-brand-cobalto hover:underline">
           ← Nueva búsqueda
         </Link>
@@ -243,33 +323,51 @@ export default async function ResultadosBusquedaPage({
           · {pasajeros ?? 1} pasajero{Number(pasajeros ?? 1) > 1 ? "s" : ""}
         </p>
 
-        {!mostrandoVuelta && (
-          <div className="mt-4">
-            <FiltrosBusqueda />
-          </div>
-        )}
-
-        <div className="mt-6 space-y-4">
-          {error && <p className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}
-
-          {!error && resultadosAMostrar.length === 0 && (
-            <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-              <p className="font-display text-lg font-bold text-brand-dark">
-                No encontramos viajes para esta fecha.
-              </p>
-              <p className="mt-1 text-sm text-brand-dark/70">
-                Prueba con otra fecha, o confirma que la ruta ya esté publicada por alguna cooperativa.
-              </p>
-            </div>
+        <div className="mt-6 lg:grid lg:grid-cols-[260px_1fr] lg:items-start lg:gap-6">
+          {!mostrandoVuelta && (
+            <>
+              <div className="lg:hidden">
+                <FiltrosBusqueda />
+              </div>
+              <div className="hidden lg:sticky lg:top-6 lg:block">
+                <FiltrosBusqueda variante="panel" />
+              </div>
+            </>
           )}
 
-          {resultadosAMostrar.map((r) => (
-            <TarjetaResultado
-              key={r.viajeId}
-              r={r}
-              hrefAsientos={mostrandoVuelta ? hrefParaVuelta(r.viajeId) : hrefParaIda(r.viajeId)}
-            />
-          ))}
+          <div className={mostrandoVuelta ? "lg:col-span-2" : ""}>
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-semibold text-brand-dark/70">
+                {resultadosAMostrar.length} cooperativa{resultadosAMostrar.length !== 1 ? "s" : ""} disponible
+                {resultadosAMostrar.length !== 1 ? "s" : ""} para esta ruta
+              </p>
+              {resultadosAMostrar.length > 1 && <OrdenarPor />}
+            </div>
+
+            <div className="space-y-4">
+              {error && <p className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}
+
+              {!error && resultadosAMostrar.length === 0 && (
+                <div className="rounded-xl bg-white p-8 text-center shadow-sm">
+                  <p className="font-display text-lg font-bold text-brand-dark">
+                    No encontramos viajes para esta fecha.
+                  </p>
+                  <p className="mt-1 text-sm text-brand-dark/70">
+                    Prueba con otra fecha, o confirma que la ruta ya esté publicada por alguna cooperativa.
+                  </p>
+                </div>
+              )}
+
+              {resultadosAMostrar.map((r) => (
+                <TarjetaResultado
+                  key={r.viajeId}
+                  r={r}
+                  hrefAsientos={mostrandoVuelta ? hrefParaVuelta(r.viajeId) : hrefParaIda(r.viajeId)}
+                  esMejorPrecio={precioMinimo !== null && Number(r.precioBase) === precioMinimo}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </main>
