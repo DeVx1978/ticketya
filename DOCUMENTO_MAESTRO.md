@@ -1143,6 +1143,19 @@ Corregido: `HeaderPublico.tsx` ahora tiene fondo `bg-brand-dark` (consistente co
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.16 Sesión de frontend, Fase 4: dirección visual aplicada al buscador de resultados y elegir asiento -- 16-ago-2026
+
+Con las Fases 1-3 cerradas (ilustraciones, hero/portada, publicidad nativa), esta fase lleva el mismo sistema visual a las 2 pantallas donde de verdad se compra el pasaje -- hasta ahora seguían con el diseño viejo.
+
+**Decisión real de alcance, por seguridad:** `app/buscar/page.tsx` (277 líneas) y `app/viajes/[id]/asientos/page.tsx` (352 líneas) son código maduro y funcional, con lógica real de ida y vuelta, mapas de asientos multi-piso, y accesibilidad ya integrada (`aria-label`, `aria-pressed`, documentada en la sección de accesibilidad del 13-ago). **No se reescribió nada de esa lógica** -- solo se actualizaron clases de color, siguiendo el mismo criterio de todo este proyecto (pasos pequeños y verificados, no reescrituras grandes y riesgosas sobre código que ya funciona).
+
+**Cambios reales aplicados:**
+- Enlaces y acentos informativos (`← Nueva búsqueda`, el selector de pasos "1. Ida / 2. Vuelta", "Ver trayecto en el mapa", "Volver al inicio", "Tramo X de 2") cambiaron de `text-brand` (negro de marca) a `text-brand-cobalto` -- consistente con el resto del sistema ya construido en las Fases 1-3.
+- **Hallazgo real de UX, no solo estético, encontrado al revisar el código:** el estado de "pasar el mouse" sobre un asiento disponible usaba el mismo amarillo (`bg-brand-medium`) que el estado de "ya seleccionado" (`bg-brand-amber`) -- a medio camino, un asiento a punto de elegirse se veía casi igual que uno ya elegido. Corregido: el hover ahora usa `bg-brand-cobalto`, dejando el amarillo exclusivamente para "ya seleccionado" -- separación visual real entre "estoy considerando" y "ya elegí", no solo un cambio de color al azar.
+- El amarillo (`bg-brand-amber`) se mantuvo sin tocar en los lugares donde ya estaba correctamente usado como color protagonista: el botón "Elegir asiento", el asiento ya seleccionado, y el botón principal de continuar -- ninguno de estos necesitaba cambiar, ya cumplían la regla de diseño ya documentada (amarillo reservado para momentos protagonistas).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, **8/8 pruebas e2e de asientos, sin ninguna regresión** (confirmando que los cambios fueron puramente visuales, sin tocar la lógica real de bloqueo de asientos). **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 4 veces -- un intento sí confirmó backend y frontend arriba juntos (ambos con código 200 vía curl), pero el navegador llegó justo cuando el servidor había caído entre esa confirmación y la captura; los otros 3 intentos fallaron con timeouts duros del entorno. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

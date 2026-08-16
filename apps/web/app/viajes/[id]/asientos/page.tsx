@@ -87,7 +87,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
     return (
       <main className="mx-auto max-w-2xl flex-1 px-4 py-16 text-center">
         <p className="text-red-600">{error}</p>
-        <Link href="/" className="mt-4 inline-block font-semibold text-brand hover:underline">
+        <Link href="/" className="mt-4 inline-block font-semibold text-brand-cobalto hover:underline">
           Volver al inicio
         </Link>
       </main>
@@ -291,7 +291,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
                                 ? "cursor-not-allowed bg-gray-200 text-gray-400"
                                 : esSeleccionado
                                   ? "bg-brand-amber text-brand-dark ring-2 ring-brand-dark"
-                                  : "bg-brand-light text-brand-dark hover:bg-brand-medium hover:text-white"
+                                  : "bg-brand-light text-brand-dark hover:bg-brand-cobalto hover:text-white"
                             }`}
                           >
                             {numero}
@@ -325,7 +325,7 @@ export default function SeleccionAsientosPage({ params }: { params: Promise<{ id
           ))}
         </div>
         {(esTramoIda || esTramoVuelta) && (
-          <p className="mt-3 text-center text-sm font-semibold text-brand">
+          <p className="mt-3 text-center text-sm font-semibold text-brand-cobalto">
             {esTramoIda ? "Tramo 1 de 2: Ida" : "Tramo 2 de 2: Vuelta"}
           </p>
         )}
