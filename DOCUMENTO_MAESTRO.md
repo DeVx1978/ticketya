@@ -1089,6 +1089,18 @@ Las 8 fotos se procesaron a 480px de ancho (tamaño de tarjeta, no pantalla comp
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas.
 
+## 5.12 Tarjeta del buscador -- transparencia y bug real de "Ida y vuelta" -- 16-ago-2026
+
+2 hallazgos reales del director, con evidencia (captura real de producción):
+
+1. **Paleta de colores -- aclarado, no era un bug.** El director preguntó si el matiz de colores de la referencia (Dribbble, verde) era el mismo que se está aplicando. Aclarado: no, nunca fue la intención -- se eligió azul cobalto + amarillo como decisión real documentada (sección 5.8), replicando la ESTRUCTURA de la referencia (fondo claro, tarjetas blancas, un acento), no su color literal.
+
+2. **Bug real de layout, confirmado con el código:** al activar "Ida y vuelta", el formulario agregaba un 7º campo (fecha de vuelta) a una fila `flex` sin `flex-wrap` y sin ancho mínimo en `SelectorCiudad` (`flex-1` puro) -- los campos de origen/destino se comprimían hasta cortarse, en vez de que el formulario creciera o pasara a una segunda línea. Corregido: `SelectorCiudad` ahora tiene `min-w-[180px]`, la fila del formulario tiene `flex-wrap`, y el contenedor en `Hero.tsx` creció de `max-w-3xl` a `max-w-4xl` para dar más espacio real en pantallas grandes antes de necesitar envolver.
+
+3. **Tarjeta del buscador semitransparente** -- pedido real del director: no debía tapar tanto la foto del bus de fondo. Cambiado de `bg-white` sólido a `bg-white/90` con `backdrop-blur-sm` (sigue siendo perfectamente legible, pero dejando ver la foto detrás).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas. **Limitación real, reportada con honestidad:** no se logró la verificación visual en vivo del toggle "Ida y vuelta" -- 3 intentos con estrategias distintas, incluido encontrar y corregir una causa real en el camino (`puppeteer-core` no estaba instalado en el entorno). Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

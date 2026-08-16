@@ -96,7 +96,7 @@ export function Hero() {
           Compara horarios y precios de todas las cooperativas de una ruta, elige tu asiento, y recibe
           tu boleto digital con QR al instante.
         </p>
-        <div className="mt-8 max-w-3xl">
+        <div className="mt-8 max-w-4xl">
           <BuscadorForm />
         </div>
       </div>

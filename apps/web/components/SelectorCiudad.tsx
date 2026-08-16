@@ -92,7 +92,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
   }
 
   return (
-    <div className="relative flex-1">
+    <div className="relative min-w-[180px] flex-1">
       <label htmlFor={idCampo} className="block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1">
         {etiqueta}
       </label>
