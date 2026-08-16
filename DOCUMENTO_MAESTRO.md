@@ -1156,6 +1156,23 @@ Con las Fases 1-3 cerradas (ilustraciones, hero/portada, publicidad nativa), est
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, **8/8 pruebas e2e de asientos, sin ninguna regresión** (confirmando que los cambios fueron puramente visuales, sin tocar la lógica real de bloqueo de asientos). **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 4 veces -- un intento sí confirmó backend y frontend arriba juntos (ambos con código 200 vía curl), pero el navegador llegó justo cuando el servidor había caído entre esa confirmación y la captura; los otros 3 intentos fallaron con timeouts duros del entorno. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
 
+## 5.17 Sesión de frontend, Fase 5: rediseño real de la pantalla de resultados -- 16-ago-2026
+
+Hallazgo real del director, con evidencia (comparación directa contra referencias reales: redBus, FlixBus, y un prototipo HTML anterior propio del director alojado en Netlify, distinto a este proyecto): la pantalla de resultados (`/buscar`) le faltaba información y estructura real comparada con plataformas profesionales.
+
+**Confirmado primero qué datos reales existen, para no inventar nada** -- `ResultadoViaje` no tiene campo de descuento ni tarifa VIP separada; esos elementos de las referencias no se construyeron, por no ser datos reales del sistema.
+
+**Construido con datos 100% reales, ninguno inventado:**
+- **Orden real de resultados** (`OrdenarPor.tsx`, nuevo) -- precio ascendente/descendente, salida más temprana. Mismo patrón que `FiltrosBusqueda` (actualiza la URL, el servidor reordena el arreglo ya obtenido -- sin estado de cliente separado).
+- **Insignia "Mejor precio"** -- calculada una sola vez por página, comparando el precio de TODOS los resultados que se van a mostrar (`Math.min` real), nunca fija ni decidida tarjeta por tarjeta.
+- **Línea visual de trayecto** (salida -- duración -- llegada) -- la duración se calcula de los 2 horarios que ya existían (`horaSalidaProgramada`, `horaLlegadaEstimada`); si la cooperativa no cargó hora de llegada, simplemente no se muestra duración -- se degrada con gracia, sin forzar un número falso.
+- **Conteo real de cooperativas disponibles** en el encabezado de resultados.
+- **`FiltrosBusqueda.tsx` con nueva variante `"panel"`** -- en pantalla grande se muestra como panel fijo al lado de los resultados (layout de 2 columnas, `lg:grid-cols-[260px_1fr]`), en celular sigue siendo desplegable. La lógica real de filtrado (hora, amenidades, actualiza la URL) no cambió en absoluto, solo cómo se presenta.
+
+**Explícitamente NO construido, para no fabricar información falsa:** banners de descuento ("15% de descuento"), tarifa VIP separada del precio base, direcciones exactas de terminal (ej. "Av. Ferroviaria km 3.5") -- ninguno de estos existe como dato real en el sistema hoy.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, **12/12 pruebas e2e de búsqueda, sin ninguna regresión** (confirma que el orden por defecto del backend, RF-BUS-001, sigue intacto -- el ordenamiento nuevo vive solo en el frontend, sobre los mismos datos reales). **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 3 veces, el entorno falló las 3 con timeouts duros. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
