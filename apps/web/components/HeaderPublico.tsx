@@ -35,7 +35,13 @@ export function HeaderPublico() {
     if (datos && !tokenExpirado(datos)) setPayload(datos);
   }, [pathname]);
 
-  if (pathname.startsWith("/panel-empresa") || pathname.startsWith("/admin")) {
+  // Se desactiva en el panel de cooperativa y el panel de admin
+  // (tienen su propio header con su propia navegación) -- y en la
+  // portada (16-ago-2026, hallazgo real del director: el Hero de la
+  // Fase 2 ya trae su propio encabezado con el logo real superpuesto
+  // sobre la foto, más "Iniciar sesión" -- tenerlos los dos duplicaba
+  // el nombre "Columbus" y el botón de sesión en la misma pantalla).
+  if (pathname.startsWith("/panel-empresa") || pathname.startsWith("/admin") || pathname === "/") {
     return null;
   }
 
