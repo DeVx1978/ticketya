@@ -21,6 +21,14 @@ export class WalletController {
     return this.wallet.saldo(req.user.sub);
   }
 
+  /** Hallazgo real del director (15-ago-2026) -- el pasajero solo veía
+   * el número final, nunca de dónde salió. */
+  @UseGuards(JwtAuthGuard)
+  @Get('movimientos')
+  async movimientos(@Request() req: { user: PayloadToken }) {
+    return this.wallet.movimientos(req.user.sub);
+  }
+
   /**
    * Configuración global -- mismo patrón exacto que
    * GET/PATCH /admin/cargo-plataforma (mismo nivel de acceso,

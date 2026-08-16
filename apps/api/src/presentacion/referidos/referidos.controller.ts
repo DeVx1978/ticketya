@@ -36,4 +36,12 @@ export class ReferidosController {
     );
     return { ok: true };
   }
+
+  /** Hallazgo real del director (15-ago-2026, recorrido en vivo de
+   * producción) -- el pasajero nunca podía ver a quién había referido. */
+  @UseGuards(JwtAuthGuard)
+  @Get('mis-referidos')
+  async misReferidos(@Request() req: { user: PayloadToken }) {
+    return this.referidos.misReferidos(req.user.sub);
+  }
 }

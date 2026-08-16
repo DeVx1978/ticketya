@@ -130,4 +130,30 @@ export class ReferidosRepositorioDrizzle implements ReferidosRepositorio {
       VALUES ('cambio_config_referidos', ${actualizadoPorUsuarioId}, 'configuracion_plataforma', ${configuracionId}, ${JSON.stringify(datos)})
     `);
   }
+
+  async listarMisReferidos(usuarioReferidorId: string): Promise<
+    { id: string; nombreReferido: string; creadoEn: string; creditoDisparado: boolean }[]
+  > {
+    const filas = await this.db.execute(sql`
+      SELECT r.id, u.nombre_completo AS nombre_referido, r.creado_en,
+             (r.boleto_que_disparo_credito_id IS NOT NULL) AS credito_disparado
+      FROM referidos r
+      JOIN usuarios u ON u.id = r.usuario_referido_id
+      WHERE r.usuario_referidor_id = ${usuarioReferidorId}
+      ORDER BY r.creado_en DESC
+    `);
+    return (
+      filas.rows as {
+        id: string;
+        nombre_referido: string;
+        creado_en: string;
+        credito_disparado: boolean;
+      }[]
+    ).map((f) => ({
+      id: f.id,
+      nombreReferido: f.nombre_referido,
+      creadoEn: f.creado_en,
+      creditoDisparado: f.credito_disparado,
+    }));
+  }
 }

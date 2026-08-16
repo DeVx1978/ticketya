@@ -168,4 +168,12 @@ export class ReferidosService {
   ): Promise<void> {
     await this.referidos.actualizarConfiguracion(datos, usuarioId);
   }
+
+  /** Hallazgo real del director (15-ago-2026) -- el pasajero nunca
+   * podía ver a quién había referido. */
+  async misReferidos(
+    usuarioId: string,
+  ): Promise<{ id: string; nombreReferido: string; creadoEn: string; creditoDisparado: boolean }[]> {
+    return this.referidos.listarMisReferidos(usuarioId);
+  }
 }

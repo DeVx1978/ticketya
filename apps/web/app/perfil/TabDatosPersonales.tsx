@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
 import {
   actualizarMiPerfil,
   actualizarMiIdentidad,
@@ -13,21 +12,6 @@ import {
 } from "@/lib/api";
 import { tokenValido, borrarToken } from "@/lib/auth";
 import { CampoPassword } from "@/components/CampoPassword";
-
-const ETIQUETA_ROL: Record<string, string> = {
-  pasajero: "Pasajero",
-  vendedor: "Vendedor",
-  admin_cooperativa: "Administrador de cooperativa",
-  admin_plataforma: "Administrador de plataforma",
-};
-
-function formatearFecha(iso: string) {
-  return new Date(iso).toLocaleDateString("es-EC", {
-    timeZone: "America/Guayaquil",
-    year: "numeric",
-    month: "long",
-  });
-}
 
 export function TabDatosPersonales({
   perfil,
@@ -51,13 +35,6 @@ export function TabDatosPersonales({
   const [cedulaIdentidad, setCedulaIdentidad] = useState(perfil.cedula ?? "");
   const [guardandoIdentidad, setGuardandoIdentidad] = useState(false);
   const [errorIdentidad, setErrorIdentidad] = useState<string | null>(null);
-
-  const [qrCodigoPasajero, setQrCodigoPasajero] = useState<string | null>(null);
-  useEffect(() => {
-    QRCode.toDataURL(perfil.codigoPasajero, { margin: 1, width: 180 })
-      .then(setQrCodigoPasajero)
-      .catch(() => setQrCodigoPasajero(null));
-  }, [perfil.codigoPasajero]);
 
   const [passwordActual, setPasswordActual] = useState("");
   const [passwordNueva, setPasswordNueva] = useState("");
@@ -171,64 +148,10 @@ export function TabDatosPersonales({
 
   return (
     <>
-      {/* Tarjeta de identidad — el vistazo "exclusivo" del perfil */}
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-dark via-brand to-brand-medium p-6 text-white shadow-lg">
-        <div className="flex items-center gap-4">
-          {perfil.fotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica, no un asset local
-            <img
-              src={perfil.fotoUrl}
-              alt={perfil.nombreCompleto}
-              className="h-16 w-16 rounded-full object-cover ring-2 ring-white/40"
-            />
-          ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold ring-2 ring-white/40">
-              {perfil.nombreCompleto.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div>
-            <p className="font-display text-xl font-extrabold">{perfil.nombreCompleto}</p>
-            <p className="text-sm text-white/75">{ETIQUETA_ROL[perfil.rol]}</p>
-          </div>
-        </div>
-        <div className="mt-4 flex items-center gap-6 border-t border-white/20 pt-4 text-sm">
-          <div>
-            <p className="text-white/60">Miembro desde</p>
-            <p className="font-semibold">{formatearFecha(perfil.creadoEn)}</p>
-          </div>
-          {perfil.viajesCompletados !== undefined && (
-            <div>
-              <p className="text-white/60">Viajes completados</p>
-              <p className="font-semibold">{perfil.viajesCompletados}</p>
-            </div>
-          )}
-        </div>
-        {/* Código de pasajero (ítem 6, Fase 2, 03-ago-2026) -- fijo,
-            distinto del QR de boleto: identifica a la persona, no una
-            compra. El personal de cooperativa lo escanea en terminal
-            para verificar identidad aunque no tengas el boleto a mano. */}
-        <div className="mt-4 flex items-center gap-4 border-t border-white/20 pt-4">
-          {qrCodigoPasajero && (
-            // eslint-disable-next-line @next/next/no-img-element -- data URL generada en el cliente
-            <img
-              src={qrCodigoPasajero}
-              alt={`Código de pasajero ${perfil.codigoPasajero}`}
-              className="h-20 w-20 rounded-lg bg-white p-1"
-            />
-          )}
-          <div>
-            <p className="text-xs text-white/60">Tu código de pasajero</p>
-            <p className="font-display text-lg font-extrabold tracking-wide">
-              {perfil.codigoPasajero}
-            </p>
-            <p className="mt-0.5 text-xs text-white/60">
-              Muéstralo en el terminal para verificar tu identidad, aunque no tengas tu boleto a
-              mano.
-            </p>
-          </div>
-        </div>
-      </div>
-
+      {/* Tarjeta de identidad -- movida a la cabecera de page.tsx
+          (15-ago-2026, hallazgo real del director): estaba duplicada
+          con el resto de "Mi cuenta", y solo aparecía en esta pestaña
+          en vez de en todas. */}
       {/* Identidad -- nombre y cédula, límite de 90 días (ítem 6, Fase
           2, 03-ago-2026). Separado del formulario libre de abajo a
           propósito: protege boletos ya comprados a tu nombre. */}
