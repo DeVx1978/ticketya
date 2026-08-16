@@ -1006,6 +1006,17 @@ export interface BoletoEmitido {
   tasaTerminal: number;
   cargoPlataforma: number;
   ivaMonto: number;
+  // Hallazgo real del director (15-ago-2026, recorrido en vivo de
+  // producción): la pantalla de confirmación no mostraba nada de esto.
+  cooperativaNombre: string;
+  rutaOrigenCiudad: string;
+  rutaDestinoCiudad: string;
+  fechaSalida: string;
+  horaSalidaProgramada: string;
+  unidadPlaca: string | null;
+  unidadIdentificador: string | null;
+  compradorNombre: string;
+  compradorDocumento: string | null;
 }
 
 export interface ResultadoCompra {

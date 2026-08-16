@@ -19,7 +19,11 @@ import {
   configuracionPlataforma,
   notificaciones,
   creditosPasajero,
+  unidades,
+  usuarios,
 } from '@columbus/db';
+const puntosOperacionOrigen = alias(puntosOperacion, 'po_origen_idem');
+const puntosOperacionDestino = alias(puntosOperacion, 'po_destino_idem');
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
 import type { DrizzleDb } from '../database/database.provider';
 import { ejecutarComoCooperativa } from '../database/tenant-transaction';
@@ -66,9 +70,30 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         cargoPlataforma: boletos.cargoPlataforma,
         ivaMonto: boletos.ivaMonto,
         tasaTerminal: comprobantesTasaTerminal.monto,
+        cooperativaNombre: cooperativas.nombreComercial,
+        rutaOrigenCiudad: puntosOperacionOrigen.ciudad,
+        rutaDestinoCiudad: puntosOperacionDestino.ciudad,
+        fechaSalida: viajes.fechaSalida,
+        horaSalidaProgramada: viajes.horaSalidaProgramada,
+        unidadPlaca: unidades.placa,
+        unidadIdentificador: unidades.identificadorOperativo,
+        pasajeroNombres: pasajerosCompra.nombres,
+        pasajeroApellidos: pasajerosCompra.apellidos,
+        pasajeroDocumento: pasajerosCompra.documento,
+        compradorNombreCuenta: usuarios.nombreCompleto,
+        compradorCedulaCuenta: usuarios.cedula,
       })
       .from(boletos)
       .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
+      .innerJoin(viajes, eq(viajeAsientos.viajeId, viajes.id))
+      .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
+      .innerJoin(puntosOperacionOrigen, eq(rutas.origenPuntoOperacionId, puntosOperacionOrigen.id))
+      .innerJoin(puntosOperacionDestino, eq(rutas.destinoPuntoOperacionId, puntosOperacionDestino.id))
+      .innerJoin(cooperativas, eq(viajes.cooperativaId, cooperativas.id))
+      .leftJoin(unidades, eq(viajes.unidadId, unidades.id))
+      .innerJoin(pasajerosCompra, eq(boletos.pasajeroCompraId, pasajerosCompra.id))
+      .innerJoin(compras, eq(boletos.compraId, compras.id))
+      .leftJoin(usuarios, eq(compras.compradorUsuarioId, usuarios.id))
       .leftJoin(
         comprobantesTasaTerminal,
         eq(comprobantesTasaTerminal.boletoId, boletos.id),
@@ -86,6 +111,15 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         cargoPlataforma: Number(b.cargoPlataforma),
         ivaMonto: Number(b.ivaMonto),
         tasaTerminal: Number(b.tasaTerminal ?? 0),
+        cooperativaNombre: b.cooperativaNombre,
+        rutaOrigenCiudad: b.rutaOrigenCiudad,
+        rutaDestinoCiudad: b.rutaDestinoCiudad,
+        fechaSalida: b.fechaSalida,
+        horaSalidaProgramada: b.horaSalidaProgramada.toISOString(),
+        unidadPlaca: b.unidadPlaca,
+        unidadIdentificador: b.unidadIdentificador,
+        compradorNombre: b.compradorNombreCuenta ?? `${b.pasajeroNombres} ${b.pasajeroApellidos}`,
+        compradorDocumento: b.compradorCedulaCuenta ?? b.pasajeroDocumento,
       })),
     };
   }
@@ -602,6 +636,65 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
                 RETURNING id`,
           );
           const boletoId = (boletoRows.rows[0] as { id: string }).id;
+
+          // Hallazgo real del director (15-ago-2026, recorrido en vivo
+          // de producción): la pantalla de confirmación y el boleto no
+          // mostraban cooperativa, ruta, hora de salida, ni unidad --
+          // solo el asiento y el precio. Se trae todo junto aquí antes
+          // de armar el boleto de respuesta.
+          const datosViaje = await tx.execute(
+            sql`SELECT
+                  r.origen_punto_operacion_id AS origen_id,
+                  po_origen.ciudad AS origen_ciudad,
+                  po_destino.ciudad AS destino_ciudad,
+                  v.fecha_salida AS fecha_salida,
+                  v.hora_salida_programada AS hora_salida_programada,
+                  c.nombre_comercial AS cooperativa_nombre,
+                  u.placa AS unidad_placa,
+                  u.identificador_operativo AS unidad_identificador
+                FROM viajes v
+                JOIN rutas r ON r.id = v.ruta_id
+                JOIN puntos_operacion po_origen ON po_origen.id = r.origen_punto_operacion_id
+                JOIN puntos_operacion po_destino ON po_destino.id = r.destino_punto_operacion_id
+                JOIN cooperativas c ON c.id = v.cooperativa_id
+                LEFT JOIN unidades u ON u.id = v.unidad_id
+                WHERE v.id = ${item.viajeId}`,
+          );
+          const filaViaje = datosViaje.rows[0] as {
+            origen_id: string;
+            origen_ciudad: string;
+            destino_ciudad: string;
+            fecha_salida: string;
+            hora_salida_programada: string;
+            cooperativa_nombre: string;
+            unidad_placa: string | null;
+            unidad_identificador: string | null;
+          };
+          const puntoOperacionId = filaViaje.origen_id;
+
+          // Nombre/documento de quien compró -- si hay cuenta real
+          // (compradorUsuarioId), se usa su nombre/cédula reales; si es
+          // compra de invitado (sin cuenta), no existe cédula del
+          // comprador en ese flujo (solo teléfono/correo de contacto),
+          // así que se usa el nombre del propio pasajero como el mejor
+          // dato real disponible -- decisión documentada, no oculta.
+          const filaPasajero = await tx.execute(
+            sql`SELECT nombres, apellidos, documento FROM pasajeros_compra WHERE id = ${item.pasajeroCompraId}`,
+          );
+          const p = filaPasajero.rows[0] as { nombres: string; apellidos: string; documento: string };
+          let compradorNombre = `${p.nombres} ${p.apellidos}`;
+          let compradorDocumento: string | null = p.documento;
+          const filaComprador = await tx.execute(
+            sql`SELECT u.nombre_completo, u.cedula FROM compras co
+                JOIN usuarios u ON u.id = co.comprador_usuario_id
+                WHERE co.id = ${compraId} AND co.comprador_usuario_id IS NOT NULL`,
+          );
+          if (filaComprador.rows[0]) {
+            const c = filaComprador.rows[0] as { nombre_completo: string; cedula: string | null };
+            compradorNombre = c.nombre_completo;
+            compradorDocumento = c.cedula;
+          }
+
           boletosEmitidos.push({
             id: boletoId,
             codigoQr,
@@ -610,16 +703,16 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
             tasaTerminal: item.tasaTerminal,
             cargoPlataforma: item.cargoPlataforma,
             ivaMonto: item.ivaMonto,
+            cooperativaNombre: filaViaje.cooperativa_nombre,
+            rutaOrigenCiudad: filaViaje.origen_ciudad,
+            rutaDestinoCiudad: filaViaje.destino_ciudad,
+            fechaSalida: filaViaje.fecha_salida,
+            horaSalidaProgramada: filaViaje.hora_salida_programada,
+            unidadPlaca: filaViaje.unidad_placa,
+            unidadIdentificador: filaViaje.unidad_identificador,
+            compradorNombre,
+            compradorDocumento,
           });
-
-          // RF-TICKET-002 — comprobante de tasa de terminal, uno por
-          // pasajero, referenciando el punto de operación de origen.
-          const rutaOrigen = await tx.execute(
-            sql`SELECT r.origen_punto_operacion_id AS id FROM viajes v
-                JOIN rutas r ON r.id = v.ruta_id
-                WHERE v.id = ${item.viajeId}`,
-          );
-          const puntoOperacionId = (rutaOrigen.rows[0] as { id: string }).id;
 
           await tx.execute(
             sql`INSERT INTO comprobantes_tasa_terminal (boleto_id, punto_operacion_id, monto, codigo_verificacion)
@@ -1228,6 +1321,11 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     horasLimiteCancelacion: number | null;
     permiteReprogramacion: boolean;
     horasLimiteReprogramacion: number | null;
+    // Hallazgo real del director (15-ago-2026, recorrido en vivo de
+    // producción): faltaba unidad y a nombre de quién queda el boleto.
+    unidadIdentificador: string | null;
+    compradorNombre: string;
+    compradorDocumento: string | null;
   } | null> {
     const puntosOrigenPdf = alias(puntosOperacion, 'puntos_origen_pdf');
     const puntosDestinoPdf = alias(puntosOperacion, 'puntos_destino_pdf');
@@ -1254,6 +1352,9 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         horasLimiteCancelacion: cooperativas.horasLimiteCancelacion,
         permiteReprogramacion: cooperativas.permiteReprogramacion,
         horasLimiteReprogramacion: cooperativas.horasLimiteReprogramacion,
+        unidadIdentificador: unidades.identificadorOperativo,
+        compradorNombreCuenta: usuarios.nombreCompleto,
+        compradorCedulaCuenta: usuarios.cedula,
       })
       .from(boletos)
       .innerJoin(compras, eq(boletos.compraId, compras.id))
@@ -1264,6 +1365,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       .innerJoin(puntosOrigenPdf, eq(rutas.origenPuntoOperacionId, puntosOrigenPdf.id))
       .innerJoin(puntosDestinoPdf, eq(rutas.destinoPuntoOperacionId, puntosDestinoPdf.id))
       .innerJoin(cooperativas, eq(boletos.cooperativaId, cooperativas.id))
+      .leftJoin(unidades, eq(viajes.unidadId, unidades.id))
+      .leftJoin(usuarios, eq(compras.compradorUsuarioId, usuarios.id))
       .where(
         sql`${boletos.id} = ${boletoId} AND ${compras.compradorUsuarioId} = ${usuarioId}`,
       );
@@ -1273,6 +1376,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       ...fila,
       precioPagado: Number(fila.precioPagado),
       ivaMonto: Number(fila.ivaMonto),
+      compradorNombre: fila.compradorNombreCuenta ?? fila.pasajeroNombre,
+      compradorDocumento: fila.compradorCedulaCuenta ?? fila.documento,
     };
   }
 }
