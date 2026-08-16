@@ -985,4 +985,66 @@ Ver corrección ya aplicada arriba, en la sección de la Fase 7 (ítem 29). Resu
 
 
 
+## 5.8 Recorrido en vivo del director en producción real + sesión de exploración de diseño -- 15-ago-2026
+
+### 8 hallazgos reales del recorrido en vivo del director
+
+El director entró personalmente a producción real, con las credenciales de la siembra del 14-ago, y recorrió la plataforma con sus propios ojos -- no un reporte de texto sin verificación suya.
+
+1. **Tercera edad sin captura de datos al comprar** -- investigado con 3 fuentes legales reales (Ley del Anciano Art. 15, Ministerio de Desarrollo Humano). Confirmado: la ley solo exige cédula, no existe ningún carné especial de tercera edad. **Cerrado sin cambios de código.**
+
+2. **Pregunta sobre niveles/porcentaje de discapacidad** -- investigado con 6 fuentes del Reglamento a la Ley Orgánica de Discapacidades (Decreto Ejecutivo 194, Art. 22). Confirmado: el transporte tiene una excepción legal explícita -- siempre 50% fijo, sin importar el porcentaje certificado (el sistema de niveles sí existe en la ley, pero para otros beneficios, no transporte). Resuelve una contradicción real con una investigación anterior de la sesión del 13-ago. **Cerrado sin cambios de código.**
+
+3. **Tasa de terminal ($0.25) y cargo de plataforma ($0.50) "no se veían"** -- investigado con el código real: **ya existían completamente construidos**, con toda la lógica condicional lista -- solo estaban configurados en $0 por las pruebas de toda la sesión anterior. Configurados a los valores reales que confirmó el director, directo en producción.
+
+4. **Pantalla de confirmación de compra demasiado básica** -- no mostraba cooperativa, ruta, hora de salida, ni unidad, solo asiento y precio. **Cerrado con PR #77** (ver detalle abajo).
+
+5. **Boleto PDF sin número de unidad ni mensaje de cierre** -- cerrado en el mismo PR #77.
+
+6. **Terminal "Guayaquil" duplicada** (efecto colateral real de un intento fallido de la siembra del 14-ago) -- unificada: las rutas se repuntaron a la terminal original real (creada 07-ago), la duplicada (creada 15-ago) quedó **oculta de las búsquedas (`estado = 'rechazado'`), sin borrarse**. Decisión reversible tomada por precaución -- no se pudo confirmar con certeza el origen exacto de la terminal original del 7 de agosto, así que se evitó cualquier borrado irreversible.
+
+7. **Terminal "Quitumbe" duplicada** -- mismo hallazgo exacto, mismo arreglo (oculta, no borrada).
+
+8. **Terminal "Carcelén" (Quito) nunca había existido** en el sistema -- creada directo en producción real.
+
+### PR #76 -- condición de carrera real en el autocompletado del buscador
+
+Encontrada mientras el director probaba el buscador de la portada durante su propio recorrido -- reportaba "no encontramos viajes" para rutas que sí existían. Causa real confirmada con las herramientas de desarrollador del navegador: el backend sí devolvía las opciones correctas (confirmado en la pestaña Network), pero como el debounce del autocompletado solo cancela el temporizador (nunca una petición ya en vuelo), una respuesta de red vieja (de un texto parcial escrito, ej. "gu") podía llegar después de la respuesta correcta más reciente y sobrescribirla -- sin ningún error visible, solo menos resultados de los reales. Corregido con un número de secuencia real: cada petición se marca con un id incremental, solo se aplica la respuesta si sigue siendo la más reciente en el momento en que vuelve.
+
+### PR #77 -- boleto y confirmación con información completa
+
+Cierra los hallazgos 4 y 5 de arriba. La respuesta de compra (`BoletoEmitido`) ahora incluye cooperativa, ruta, fecha, hora de salida, unidad, y nombre/documento de quien compró -- aplicado en los 2 lugares reales del backend donde se construye esta respuesta (compra nueva y reintento por idempotencia). El comprador usa el nombre/cédula de la cuenta real si existe, o el nombre del propio pasajero para compras de invitado (decisión documentada, no oculta). El PDF ganó "UNIDAD" (junto a cooperativa, sin desplazar el diseño ya verificado el 13-ago) y "Gracias por preferirnos" -- el nombre del comprador NO se forzó en el PDF por falta real de espacio verificado (solo ~2pt de margen antes del límite de página, y ya hubo un bug real de desbordamiento por forzar contenido ahí antes) -- sí se ve completo en la pantalla de confirmación. Verificado con 204/204 pruebas e2e, sin ninguna regresión.
+
+### PR #78 -- perfil rediseñado: wallet y referidos conectados al frontend por primera vez
+
+**El hallazgo más importante de documentar con precisión.** Al investigar antes de construir nada (orden del director: mejorar su propio perfil, que encontró "asqueroso estéticamente"), se confirmó que el backend de wallet (ganar/gastar cashback) y de referidos ("Invita y Gana") **ya funcionaba perfecto de punta a punta desde hacía días** -- el frontend nunca se conectó a ninguno de los 2. Cero llamadas a `/wallet/saldo` o `/referidos/...` en todo el cliente, en ningún archivo.
+
+**Patrón real que se repite -- vale la pena vigilar en construcciones futuras:** esta es la **segunda vez** que se encuentra este patrón exacto en el proyecto -- la primera fue con Comercial/Publicidad (auditoría real del 13-ago, sección 5.1: "el documento decía que solo faltaba la etiqueta visual -- en realidad no existía ningún endpoint público"). El patrón real en ambos casos: **el backend se construye y se verifica con pruebas e2e reales, pero el frontend que lo consume nunca se construye en la misma tarea**, y queda invisible hasta que alguien lo busca específicamente meses después. Recomendación real: cuando se cierre una función de backend, confirmar explícitamente si el frontend correspondiente ya existe antes de dar la tarea por completa -- no asumir que "está construido" solo porque el backend pasa sus pruebas.
+
+Se construyeron 2 endpoints nuevos reales (`GET /wallet/movimientos`, `GET /referidos/mis-referidos`), la identidad se rediseñó como un pase de abordar real (mismo lenguaje visual del talón punteado que ya usa el boleto PDF), y se agregaron las pestañas "Mi saldo" e "Invitar y ganar", conectadas al backend real por primera vez. "Mis boletos" se renombró a "Mis viajes" (mismo contenido real, mejor nombrado).
+
+### PR #79 -- perfil responsive real, panel lateral en pantalla grande
+
+El director pidió explícitamente que el diseño no se viera "centrado" sino adaptado a la pantalla completa, y que el trabajo de frontend sea responsive de verdad, no solo más ancho. Rediseñado con panel de navegación lateral fijo en pantalla grande (mismo patrón real que usan Stripe y Linear para páginas de cuenta) -- en celular, el comportamiento queda exactamente igual que antes (pestañas horizontales arriba).
+
+### Sesión de exploración de dirección de diseño con el director (fuera de código, decisión real documentada)
+
+El director pidió definir juntos la dirección visual de la plataforma antes de la sesión dedicada de frontend. Proceso real: búsqueda de referencias (redBus, FlixBus, Wanderu, 12Go, Trainline, Revolut), investigación de tendencias reales de diseño 2026 (fuentes citadas), e iteración visual en vivo probando varias paletas de color sobre la misma estructura.
+
+**Dirección de diseño acordada, documentada como decisión real del proyecto -- todavía no construida en código:**
+- Fondo claro en el cuerpo de la página (el negro completo se sintió "fúnebre" al director).
+- Azul cobalto (`#2451c4`) como color de acento nuevo, junto al amarillo de marca ya existente (`#ffd425`).
+- Amarillo reservado para momentos protagonistas (el hero, detalles puntuales) -- no como fondo dominante.
+- Hero tipo slider de fotos reales, casi pantalla completa en PC, con el logo real superpuesto.
+- Destinos populares = sitios turísticos reales de Ecuador (Montañita, Baños, Galápagos, Mindo), no solo nombres de ciudades.
+- Terminales aliadas, con **Machala destacada como la primera/estratégica** -- instrucción explícita del director.
+- Publicidad estilo nativo, discreta (tipo tarjetas patrocinadas de redes sociales) -- nunca un banner que interrumpe.
+- Ilustraciones propias (SVG original) para cooperativas e íconos de contenido -- nunca emojis ni fotos de internet con derechos de autor ajenos (límite real de copyright, no una preferencia).
+
+Se entregó un archivo HTML de referencia (imágenes reales del director incrustadas) como documento de comparación visual -- verificado con capturas reales antes de cada entrega. **No es el frontend real todavía** -- se construirá en el código del proyecto en la sesión dedicada de frontend.
+
+**Hallazgo real sin resolver, reportado con honestidad:** el director reportó ver emojis en el archivo de referencia después de que se reemplazaron por ilustraciones SVG propias -- confirmadas visualmente con una captura real antes de la entrega. Sospecha real, sin confirmar: un archivo duplicado/viejo en la carpeta de Descargas del director (los navegadores a veces guardan `archivo (1).html` sin sobrescribir el original). Pendiente de confirmar y resolver en la sesión dedicada de frontend, antes de dar la dirección de diseño por completamente cerrada.
+
+## 6. Regla de mantenimiento de este documento
+
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
