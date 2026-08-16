@@ -55,7 +55,7 @@ export function BuscadorForm() {
   return (
     <form
       onSubmit={buscar}
-      className="rounded-2xl bg-white p-4 shadow-xl shadow-brand-dark/20 ring-1 ring-black/5 md:p-5"
+      className="rounded-2xl bg-white/90 p-4 shadow-xl shadow-brand-dark/20 ring-1 ring-black/5 backdrop-blur-sm md:p-5"
     >
       <div
         role="group"
@@ -83,7 +83,7 @@ export function BuscadorForm() {
           Ida y vuelta
         </button>
       </div>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end">
+      <div className="flex flex-col flex-wrap gap-3 md:flex-row md:items-end">
         <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} />
         <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} />
         <div className="w-full md:w-40">
