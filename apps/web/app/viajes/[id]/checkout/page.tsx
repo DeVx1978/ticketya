@@ -319,10 +319,35 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           <p className="font-display text-lg font-bold text-brand-dark">
             {resultado.boletos.length > 1 ? "¡Boletos confirmados!" : "¡Boleto confirmado!"}
           </p>
+          {/* Hallazgo real del director (15-ago-2026, recorrido en vivo
+              de producción): faltaba cooperativa, ruta, hora, unidad y
+              a nombre de quién queda el boleto -- se toma del primer
+              boleto porque todos los boletos de una misma compra son
+              del mismo viaje. */}
+          <div className="mt-2 space-y-0.5 text-sm text-brand-dark/70">
+            <p className="font-semibold text-brand-dark">{resultado.boletos[0].cooperativaNombre}</p>
+            <p>{resultado.boletos[0].rutaOrigenCiudad} → {resultado.boletos[0].rutaDestinoCiudad}</p>
+            <p>
+              {new Date(resultado.boletos[0].horaSalidaProgramada).toLocaleDateString("es-EC", {
+                weekday: "long", day: "numeric", month: "long",
+              })}{" "}
+              ·{" "}
+              {new Date(resultado.boletos[0].horaSalidaProgramada).toLocaleTimeString("es-EC", {
+                hour: "numeric", minute: "2-digit",
+              })}
+            </p>
+            {resultado.boletos[0].unidadIdentificador && (
+              <p>Unidad {resultado.boletos[0].unidadIdentificador}</p>
+            )}
+          </div>
           <div className="mt-4 space-y-6">
             {resultado.boletos.map((boleto) => (
               <div key={boleto.codigoQr} className="border-t border-brand-dark/10 pt-4 first:border-t-0 first:pt-0">
                 <p className="text-sm text-brand-dark/70">Asiento {boleto.numeroAsiento}</p>
+                <p className="text-xs text-brand-dark/50">
+                  A nombre de {boleto.compradorNombre}
+                  {boleto.compradorDocumento ? ` — ${boleto.compradorDocumento}` : ""}
+                </p>
                 <div className="mt-2 space-y-1 rounded-lg bg-brand-light/30 px-4 py-3 text-left text-sm">
                   <div className="flex justify-between text-brand-dark/70">
                     <span>Tarifa</span>
@@ -367,6 +392,9 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           </div>
           <p className="mt-4 text-xs text-brand-dark/50">
             Muestra estos códigos al abordar. También puedes tomarles una captura de pantalla.
+          </p>
+          <p className="mt-3 text-center text-sm font-semibold text-brand-dark">
+            Gracias por preferirnos 🚌
           </p>
           <div className="mt-6 flex flex-col gap-2">
             <Link

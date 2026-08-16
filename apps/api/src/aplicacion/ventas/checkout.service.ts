@@ -523,7 +523,11 @@ export class CheckoutService {
       // sin avisar cuando el pie de página se desbordó apenas unos
       // puntos a una segunda página casi vacía. Corregido para usar el
       // margen real.
-      if (yPie + 34 > altoPagina - doc.page.margins.bottom) {
+      //
+      // 15-ago-2026 -- se agregó una 3ª línea al pie ("Gracias por
+      // preferirnos"), el presupuesto sube de 34 a 46 -- verificado a
+      // mano igual que el resto de esta aritmética, no una suposición.
+      if (yPie + 46 > altoPagina - doc.page.margins.bottom) {
         throw new Error(
           'El diseño del PDF del boleto no cabe en una sola página con los datos reales de este boleto -- revisar aritmética de posiciones.',
         );
@@ -567,6 +571,22 @@ export class CheckoutService {
         .fillColor('#1a1a1a')
         .font('Helvetica-Bold')
         .text(datos.cooperativaNombre, margenIzq, yOperadoPor + 12);
+      // Unidad (15-ago-2026, hallazgo real del director) -- a la
+      // derecha, misma fila que cooperativa, sin desplazar nada del
+      // resto del diseño ya verificado. Solo se muestra si existe --
+      // un viaje puede no tener unidad asignada todavía.
+      if (datos.unidadIdentificador) {
+        doc
+          .fontSize(9)
+          .fillColor('#888888')
+          .font('Helvetica')
+          .text('UNIDAD', margenIzq, yOperadoPor, { width: anchoUtil, align: 'right' });
+        doc
+          .fontSize(15)
+          .fillColor('#1a1a1a')
+          .font('Helvetica-Bold')
+          .text(datos.unidadIdentificador, margenIzq, yOperadoPor + 12, { width: anchoUtil, align: 'right' });
+      }
 
       // Ruta -- terminal real de origen/destino, no solo la ciudad.
       const anchoRutaCol = anchoUtil / 2 - 15;
@@ -754,6 +774,16 @@ export class CheckoutService {
             align: 'center',
           });
       }
+
+      // Mensaje de cierre (15-ago-2026, hallazgo real del director).
+      doc
+        .fontSize(8.5)
+        .fillColor(NEGRO_MARCA)
+        .font('Helvetica-Bold')
+        .text('Gracias por preferirnos', margenIzq, yPie + 31, {
+          width: anchoUtil,
+          align: 'center',
+        });
 
       doc.end();
     });

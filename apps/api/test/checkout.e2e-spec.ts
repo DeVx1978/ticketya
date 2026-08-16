@@ -939,17 +939,36 @@ describe('Checkout y pago (e2e)', () => {
       .expect(201);
 
     const boleto = res.body.boletos[0];
+    // Ampliado 15-ago-2026 -- hallazgo real del director en el
+    // recorrido en vivo de producción: faltaba cooperativa, ruta,
+    // hora, unidad y a nombre de quién queda el boleto.
     expect(Object.keys(boleto).sort()).toEqual([
       'cargoPlataforma',
       'codigoQr',
+      'compradorDocumento',
+      'compradorNombre',
+      'cooperativaNombre',
+      'fechaSalida',
+      'horaSalidaProgramada',
       'id',
       'ivaMonto',
       'numeroAsiento',
       'precioPagado',
+      'rutaDestinoCiudad',
+      'rutaOrigenCiudad',
       'tasaTerminal',
+      'unidadIdentificador',
+      'unidadPlaca',
     ]);
     expect(boleto.numeroAsiento).toBe('1D');
     expect(boleto.precioPagado).toBe(PRECIO_BASE);
+    // Verificación real de los valores, no solo de las llaves --
+    // mismo criterio de rigor del resto del proyecto.
+    expect(boleto.cooperativaNombre).toBeTruthy();
+    expect(boleto.rutaOrigenCiudad).toBeTruthy();
+    expect(boleto.rutaDestinoCiudad).toBeTruthy();
+    expect(boleto.compradorNombre).toBeTruthy();
+    expect(new Date(boleto.horaSalidaProgramada).toString()).not.toBe('Invalid Date');
   });
 
   it('el desglose por boleto sigue disponible aunque se reintente la misma idempotencyKey (RF-CHECK-005 + hallazgo del 22-jul-2026 combinados)', async () => {
