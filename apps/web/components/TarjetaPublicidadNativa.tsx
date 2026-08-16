@@ -1,59 +1,83 @@
 "use client";
 
+import Image from "next/image";
 import { IconoPublicidad } from "./ilustraciones/IconoPublicidad";
 
 interface Props {
-  /** Nombre real del anunciante -- mismo campo que ya usa CampanaPublicitaria en lib/api.ts. */
+  /** Nombre real del anunciante -- mismo campo que ya usa CampanaActiva en lib/api.ts. */
   nombreAnunciante: string;
-  /** Texto corto de la campaña (oferta, descuento, mensaje). */
-  descripcion: string;
-  /** URL real del logo/imagen del anunciante, si la campaña ya tiene una subida.
-   * Si no existe, se usa el ícono genérico -- nunca queda un espacio vacío ni roto. */
+  /** URL real de la creatividad ya diseñada, subida por el equipo desde el Panel Admin
+   * (RF-COMM-009) -- nunca la carga el anunciante directamente. Si no existe, se usa el
+   * ícono genérico -- nunca queda un espacio vacío ni roto. */
   archivoUrl?: string | null;
   /** A dónde lleva el clic -- opcional, para cuando la tarjeta es interactiva. */
   href?: string;
+  /** Se dispara al hacer clic, antes de navegar -- para registrar la métrica real. */
+  onClic?: () => void;
 }
 
 /**
- * Publicidad nativa, no invasiva -- decisión real del director
- * (15-ago-2026, sesión de exploración de diseño): estilo similar a
- * las tarjetas patrocinadas de redes sociales (Reels/Instagram) -- se
- * mezcla con el contenido normal de la página, con una etiqueta
- * pequeña "Patrocinado", nunca un banner que interrumpe.
+ * Publicidad nativa -- decisión real de diseño, investigada y
+ * documentada el 07-ago-2026 (DOCUMENTO_MAESTRO.md sección 3.9, con
+ * fuentes reales: Booking.com, Skyscanner, "Paid Posts" de NYT):
+ * "el resultado patrocinado usa el MISMO formato de tarjeta que un
+ * resultado orgánico -- mismo tamaño, tipografía y bordes que el
+ * resto de Columbus". Por eso esta tarjeta usa exactamente el mismo
+ * estilo visual que una tarjeta de DestinosPopulares.tsx (foto de
+ * fondo, degradado, nombre abajo) -- no un formato distinto.
  *
- * Componente real reutilizable (Fase 1, 16-ago-2026) -- reemplaza el
- * marcado suelto que existía solo en el documento de referencia HTML.
+ * Etiqueta "Publicidad" (no "Patrocinado" -- texto exacto ya decidido
+ * en esa misma sección), pequeña y discreta, nunca oculta.
+ *
+ * Componente real reutilizable (Fase 1, 16-ago-2026; ajustado en la
+ * Fase 3 al conectar datos reales de campañas -- CampanaActiva no
+ * trae descripción, solo nombre + creatividad ya diseñada).
  */
-export function TarjetaPublicidadNativa({ nombreAnunciante, descripcion, archivoUrl, href }: Props) {
+export function TarjetaPublicidadNativa({ nombreAnunciante, archivoUrl, href, onClic }: Props) {
   const contenido = (
-    <div className="relative flex items-center gap-3 rounded-xl border border-black/5 bg-white p-3">
-      <span className="absolute right-3 top-2.5 rounded bg-[--color-brand-cobalto-claro] px-2 py-0.5 text-[10px] text-black/40">
-        Patrocinado
-      </span>
+    <div className="group relative h-28 w-full overflow-hidden rounded-xl">
       {archivoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica de la campaña, no un asset local
-        <img
+        <Image
           src={archivoUrl}
           alt={nombreAnunciante}
-          className="h-12 w-12 shrink-0 rounded-lg object-cover"
+          fill
+          sizes="(max-width: 640px) 50vw, 25vw"
+          className="object-cover"
+          unoptimized
         />
       ) : (
-        <IconoPublicidad tamano={48} className="shrink-0" />
+        <div className="flex h-full w-full items-center justify-center bg-brand-cobalto-claro">
+          <IconoPublicidad tamano={40} />
+        </div>
       )}
-      <div>
-        <p className="text-sm font-semibold text-brand-dark">{nombreAnunciante}</p>
-        <p className="text-xs text-brand-dark/60">{descripcion}</p>
-      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/70 via-brand-dark/0 to-transparent" />
+      <span className="absolute right-2 top-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-white/90">
+        Publicidad
+      </span>
+      <p className="absolute bottom-2 left-3 text-sm font-semibold text-white">{nombreAnunciante}</p>
     </div>
   );
 
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer sponsored" className="block max-w-md">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer sponsored"
+        onClick={onClic}
+        className="block transition hover:-translate-y-0.5"
+      >
         {contenido}
       </a>
     );
   }
 
-  return <div className="max-w-md">{contenido}</div>;
+  // Sin URL de destino real todavía (hallazgo real: CrearCampanaDto no
+  // captura ningún campo de destino/landing del anunciante) -- se
+  // registra el clic igual como métrica real, sin fingir un enlace.
+  return (
+    <button type="button" onClick={onClic} className="block w-full text-left transition hover:-translate-y-0.5">
+      {contenido}
+    </button>
+  );
 }
