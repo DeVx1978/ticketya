@@ -76,7 +76,7 @@ function TarjetaResultado({ r, hrefAsientos }: { r: ResultadoViaje; hrefAsientos
           href={`https://www.google.com/maps/dir/?api=1&origin=${r.origenLatitud},${r.origenLongitud}&destination=${r.destinoLatitud},${r.destinoLongitud}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-block text-xs font-semibold text-brand underline decoration-dotted underline-offset-2 hover:text-brand-dark"
+          className="mt-1 inline-block text-xs font-semibold text-brand-cobalto underline decoration-dotted underline-offset-2 hover:text-brand-dark"
         >
           Ver trayecto en el mapa
         </a>
@@ -128,7 +128,7 @@ export default async function ResultadosBusquedaPage({
     return (
       <main className="mx-auto max-w-3xl flex-1 px-4 py-16 text-center">
         <p className="text-brand-dark">Faltan datos de búsqueda. Vuelve al inicio e intenta de nuevo.</p>
-        <Link href="/" className="mt-4 inline-block font-semibold text-brand underline">
+        <Link href="/" className="mt-4 inline-block font-semibold text-brand-cobalto underline">
           Volver al inicio
         </Link>
       </main>
@@ -219,17 +219,17 @@ export default async function ResultadosBusquedaPage({
   return (
     <main className="flex-1 bg-brand-light/40">
       <div className="mx-auto max-w-3xl px-4 py-10">
-        <Link href="/" className="text-sm font-semibold text-brand hover:underline">
+        <Link href="/" className="text-sm font-semibold text-brand-cobalto hover:underline">
           ← Nueva búsqueda
         </Link>
 
         {esIdaYVuelta && (
           <div className="mt-3 flex items-center gap-2 text-sm font-semibold">
-            <span className={mostrandoVuelta ? "text-brand-dark/40" : "text-brand"}>
+            <span className={mostrandoVuelta ? "text-brand-dark/40" : "text-brand-cobalto"}>
               1. Ida{idaViajeId && mostrandoVuelta ? " ✓" : ""}
             </span>
             <span className="text-brand-dark/30">→</span>
-            <span className={mostrandoVuelta ? "text-brand" : "text-brand-dark/40"}>2. Vuelta</span>
+            <span className={mostrandoVuelta ? "text-brand-cobalto" : "text-brand-dark/40"}>2. Vuelta</span>
           </div>
         )}
 
