@@ -50,6 +50,23 @@ export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperaci
 }
 
 /**
+ * Fase 2-portada (16-ago-2026) -- terminales aliadas reales, para la
+ * portada. A diferencia de `buscarPuntosOperacion`, no necesita
+ * texto -- lista todas las aprobadas de una vez.
+ */
+export interface TerminalAliada {
+  id: string;
+  nombre: string;
+  ciudad: string;
+}
+
+export async function listarTerminalesAliadas(): Promise<TerminalAliada[]> {
+  const res = await fetch(`${API_URL}/puntos-operacion/aliadas`, { cache: "no-store" });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+/**
  * Fase 7-portada (07-ago-2026) -- rutas reales disponibles con precio de
  * referencia, para la portada. Decision del director: "rutas
  * disponibles" (dato real), no "populares" (implicaria datos de demanda

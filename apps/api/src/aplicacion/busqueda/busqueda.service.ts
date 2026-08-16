@@ -316,6 +316,25 @@ export class BusquedaService {
   }
 
   /**
+   * Fase 2-portada (16-ago-2026) -- terminales aliadas reales para la
+   * portada. Lista TODAS las terminales aprobadas, sin depender de
+   * que ya tengan una ruta real asociada -- una terminal recién
+   * aliada (ej. Machala) debe poder mostrarse desde el primer día,
+   * antes de que cualquier cooperativa programe un viaje ahí.
+   */
+  async listarTerminalesAliadas() {
+    return this.db
+      .select({
+        id: puntosOperacion.id,
+        nombre: puntosOperacion.nombre,
+        ciudad: puntosOperacion.ciudad,
+      })
+      .from(puntosOperacion)
+      .where(and(eq(puntosOperacion.tipo, 'terminal_terrestre'), eq(puntosOperacion.estado, 'aprobado')))
+      .orderBy(puntosOperacion.ciudad);
+  }
+
+  /**
    * Fase 7-portada (07-ago-2026) -- contador real de cooperativas
    * activas y rutas disponibles, para la prueba social de la portada.
    * Sin autenticacion. Solo cooperativas con estado 'aprobada' -- ningun

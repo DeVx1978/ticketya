@@ -276,6 +276,23 @@ describe('Búsqueda de rutas (e2e)', () => {
     });
   });
 
+  describe('Terminales aliadas (Fase 2-portada, 16-ago-2026)', () => {
+    it('lista terminales aprobadas SIN necesitar texto de búsqueda -- una terminal recién aliada debe verse desde el primer día', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/puntos-operacion/aliadas')
+        .expect(200);
+
+      expect(Array.isArray(res.body)).toBe(true);
+      const encontrada = res.body.find((p: { id: string }) => p.id === puntoOrigenId);
+      expect(encontrada).toBeDefined();
+      expect(encontrada.ciudad).toBe('Machala');
+    });
+
+    it('no exige ningún query param -- distinto a /puntos-operacion/buscar, que rechaza texto corto', async () => {
+      await request(app.getHttpServer()).get('/puntos-operacion/aliadas').expect(200);
+    });
+  });
+
   describe('Búsqueda de viajes (RF-BUS-001, 003, 006)', () => {
     it('devuelve resultados de AMBAS cooperativas para la misma ruta y fecha (RF-BUS-003, multi-cooperativa)', async () => {
       const res = await request(app.getHttpServer())

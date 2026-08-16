@@ -23,6 +23,20 @@ export class BusquedaController {
     return this.busqueda.buscarPuntosOperacion(query.texto);
   }
 
+  /**
+   * Fase 2-portada (16-ago-2026) -- terminales aliadas reales, para
+   * la sección de la portada. Mismo criterio público que el resto de
+   * este controlador -- sin autenticación. A diferencia de
+   * `/puntos-operacion/buscar`, esta lista TODAS las terminales
+   * aprobadas sin necesitar texto de búsqueda -- una terminal recién
+   * aliada (ej. Machala) debe verse aquí aunque todavía no tenga
+   * ninguna ruta real asociada.
+   */
+  @Get('puntos-operacion/aliadas')
+  async listarTerminalesAliadas() {
+    return this.busqueda.listarTerminalesAliadas();
+  }
+
   /** RF-BUS-001, RF-BUS-003, RF-BUS-006 -- item 11 agrega filtros de hora, tipo de vehiculo y amenidades. */
   @Get('viajes/buscar')
   async buscarViajes(@Query() query: BuscarViajesDto) {
