@@ -336,8 +336,8 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   ): Promise<{ id: string }> {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
-        INSERT INTO viajes (cooperativa_id, ruta_id, unidad_id, fecha_salida, hora_salida_programada, precio_base, estado)
-        VALUES (${cooperativaId}, ${datos.rutaId}, ${datos.unidadId}, ${datos.fechaSalida}, ${datos.horaSalidaProgramada}, ${datos.precioBase}, 'programado')
+        INSERT INTO viajes (cooperativa_id, ruta_id, unidad_id, fecha_salida, hora_salida_programada, hora_llegada_estimada, precio_base, estado)
+        VALUES (${cooperativaId}, ${datos.rutaId}, ${datos.unidadId}, ${datos.fechaSalida}, ${datos.horaSalidaProgramada}, ${datos.horaLlegadaEstimada ?? null}, ${datos.precioBase}, 'programado')
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };

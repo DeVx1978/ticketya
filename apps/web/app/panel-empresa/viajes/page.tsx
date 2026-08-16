@@ -254,6 +254,7 @@ export default function ViajesPage() {
   const [unidadElegida, setUnidadElegida] = useState("");
   const [fecha, setFecha] = useState("");
   const [hora, setHora] = useState("");
+  const [horaLlegada, setHoraLlegada] = useState("");
   const [precio, setPrecio] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState<string | null>(null);
@@ -288,10 +289,17 @@ export default function ViajesPage() {
         unidadId: unidadElegida,
         fechaSalida: fecha,
         horaSalidaProgramada: `${fecha}T${hora}:00-05:00`,
+        // Hallazgo real del director (16-ago-2026): este campo nunca
+        // se pedía, así que ningún viaje real tenía hora de llegada
+        // estimada -- la pantalla de resultados nunca la podía
+        // mostrar. Opcional a propósito (no siempre se sabe con
+        // precisión al crear el viaje).
+        horaLlegadaEstimada: horaLlegada ? `${fecha}T${horaLlegada}:00-05:00` : undefined,
         precioBase: Number(precio),
       });
       setFecha("");
       setHora("");
+      setHoraLlegada("");
       setPrecio("");
       setMensajeExito("Viaje programado correctamente.");
       cargarTodo();
@@ -391,6 +399,18 @@ id="viaje-fecha"
             type="time"
             value={hora}
             onChange={(e) => setHora(e.target.value)}
+            className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+        <div>
+          <label htmlFor="viaje-hora-llegada" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            Hora de llegada estimada <span className="font-normal normal-case text-brand-dark/40">(opcional)</span>
+          </label>
+          <input
+            id="viaje-hora-llegada"
+            type="time"
+            value={horaLlegada}
+            onChange={(e) => setHoraLlegada(e.target.value)}
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
           />
         </div>

@@ -1173,6 +1173,21 @@ Hallazgo real del director, con evidencia (comparación directa contra referenci
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, **12/12 pruebas e2e de búsqueda, sin ninguna regresión** (confirma que el orden por defecto del backend, RF-BUS-001, sigue intacto -- el ordenamiento nuevo vive solo en el frontend, sobre los mismos datos reales). **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 3 veces, el entorno falló las 3 con timeouts duros. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
 
+## 5.18 Hallazgo real de raíz: la hora de llegada estimada nunca existió como campo -- 16-ago-2026
+
+El director reportó, con captura real de producción, que la línea visual del trayecto (construida en la sección 5.17) no mostraba hora de llegada -- ni siquiera el punto final de la línea. Investigado antes de asumir que era un bug de frontend: confirmado con consulta directa a la base de datos real de producción que `hora_llegada_estimada` estaba en NULL para TODOS los viajes reales revisados.
+
+**Causa raíz real, no un simple dato faltante por casualidad:** `CrearViajeDto` (el formulario que usa cada cooperativa para programar un viaje) **nunca tuvo este campo, en toda la historia del sistema** -- ninguna cooperativa jamás pudo capturarlo, así que la pantalla de resultados nunca tuvo cómo mostrarlo. La lógica de "no fabricar datos falsos" (sección 5.17) funcionaba exactamente como se diseñó, pero sobre datos que nunca pudieron existir.
+
+**Corregido de raíz, no solo parchado:**
+- `CrearViajeDto` -- nuevo campo `horaLlegadaEstimada`, opcional (una cooperativa puede no saberla con precisión al crear el viaje).
+- `DatosNuevoViaje` (dominio) y el `INSERT` real en `panel-empresa.repositorio.drizzle.ts` -- actualizados para guardar el dato cuando se proporciona.
+- Formulario real de "Crear viaje" en `panel-empresa/viajes/page.tsx` -- nuevo campo visual "Hora de llegada estimada (opcional)", junto al de hora de salida.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **207/207 pruebas e2e de toda la suite, sin ninguna regresión** -- incluida 1 prueba nueva real que confirma que el campo se guarda correctamente y aparece en la búsqueda pública cuando se proporciona.
+
+**Pendiente real, para cuando se aplique:** los viajes YA sembrados en producción (creados antes de este arreglo) siguen con `hora_llegada_estimada` en NULL -- necesitan una actualización de datos real (SQL directo) para que la demo se vea completa de inmediato, no solo los viajes nuevos que se creen desde ahora.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

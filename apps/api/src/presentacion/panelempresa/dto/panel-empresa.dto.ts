@@ -105,6 +105,18 @@ export class CrearViajeDto {
   @IsISO8601()
   horaSalidaProgramada!: string;
 
+  /**
+   * Hallazgo real del director (16-ago-2026, comparando con
+   * plataformas profesionales): este campo nunca existió en toda la
+   * historia del sistema -- ningún viaje real tenía hora de llegada
+   * estimada, así que la pantalla de resultados nunca la podía
+   * mostrar. Opcional a propósito (una cooperativa puede no saberla
+   * con precisión al crear el viaje), pero ahora sí se puede capturar.
+   */
+  @IsOptional()
+  @IsISO8601()
+  horaLlegadaEstimada?: string;
+
   @IsNumber()
   @Min(0)
   precioBase!: number;
