@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 /**
  * Pie de página -- hallazgo real de la Fase 3 (16-ago-2026): no
@@ -31,7 +32,7 @@ export function Footer() {
   return (
     <footer className="border-t border-black/5 bg-brand-dark px-4 py-8">
       <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 sm:flex-row">
-        <span className="font-display text-sm font-bold text-brand-amber">Columbus</span>
+        <Image src="/img/logo-columbus.png" alt="Columbus" width={100} height={26} />
         <div className="flex items-center gap-6 text-xs text-white/60">
           <a href="/anunciar" className="hover:text-white">
             Anuncia con nosotros

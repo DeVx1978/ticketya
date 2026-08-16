@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { obtenerToken, decodificarToken, tokenExpirado, borrarToken, type PayloadToken } from "@/lib/auth";
 
 const RUTA_POR_ROL: Record<PayloadToken["rol"], string> = {
@@ -54,8 +55,8 @@ export function HeaderPublico() {
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="font-display text-lg font-extrabold text-brand-dark">
-          Columbus
+        <Link href="/" className="flex items-center">
+          <Image src="/img/logo-columbus-oscuro.png" alt="Columbus" width={110} height={28} priority />
         </Link>
 
         {payload ? (
