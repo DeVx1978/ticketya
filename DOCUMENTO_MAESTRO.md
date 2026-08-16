@@ -1060,6 +1060,23 @@ Primera fase real de construcción de la dirección de diseño acordada (secció
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas. **Limitación real, reportada con honestidad:** el entorno tuvo fallas repetidas de timeout al intentar levantar un servidor de verificación visual en vivo (mismo tipo de inestabilidad ya documentada otras veces en el proyecto) -- no se logró una captura de pantalla real de los componentes ya renderizados con el tema de Tailwind real, más allá de la compilación limpia. Pendiente de confirmación visual real cuando se consuman en la Fase 2 (hero y portada), donde sí se van a ver en una página real.
 
+## 5.10 Sesión de frontend, Fase 2: hero y portada -- 16-ago-2026
+
+Construido sobre las ilustraciones de la Fase 1. Reemplaza el gradiente `from-brand-dark via-brand to-brand-medium` original -- el "fúnebre" real que el director rechazó en la sesión de exploración de diseño (sección 5.8).
+
+**Endpoint nuevo real, backend** -- `GET /puntos-operacion/aliadas`: a diferencia de `/puntos-operacion/buscar` (exige texto, mínimo 2 caracteres), lista TODAS las terminales aprobadas sin necesitar ninguna búsqueda -- necesario porque Machala debe poder mostrarse como aliada desde el primer día, aunque todavía no tenga ninguna ruta real asociada. Verificado con 2 pruebas e2e nuevas (12/12 en total en `busqueda.e2e-spec.ts`, sin regresión).
+
+**Construido en el frontend:**
+- `Hero.tsx` -- slider real de las 2 fotos del director (Gemini), con transición automática cada 5 segundos, logo real superpuesto (confirmado que funciona porque las fotos son oscuras), degradado real para legibilidad del texto, buscador (`BuscadorForm`, ya existente) integrado dentro del hero.
+- `DestinosPopulares.tsx` -- usa las 4 ilustraciones de la Fase 1, con los sitios turísticos reales acordados (Montañita, Baños de Agua Santa, Galápagos, Mindo).
+- `TerminalesAliadas.tsx` -- Machala destacada en amarillo **si existe** en la lista real que devuelve el backend (búsqueda case-insensitive por nombre/ciudad, no hardcodeada) -- si Machala todavía no está aliada en producción, la sección simplemente no destaca ninguna, sin romperse. Componente de servidor, mismo patrón real que `RutasDisponibles.tsx` ya existente.
+- `app/page.tsx` actualizado: `Hero` reemplaza la sección vieja del gradiente, `DestinosPopulares` y `TerminalesAliadas` se agregan justo después.
+- Imágenes reales del director (2 fotos + logo) copiadas a `apps/web/public/img/`, servidas con `next/image` (optimización real de Next.js, no `<img>` ni base64).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas, 12/12 pruebas e2e de búsqueda. **Limitación real, reportada con honestidad, a pesar de intentarlo en serio 4 veces con estrategias distintas** (espera con sondeo, espera fija, servidor ya compilado, backend+frontend arrancados juntos): no se logró una captura de pantalla real del hero renderizado -- el entorno falló con timeouts duros en cada intento. Un intento sí confirmó algo real y útil: el frontend arranca correctamente por sí solo (devolvió `500` únicamente por no encontrar el backend en ese momento específico, no por ningún error en el código nuevo). Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado en producción.
+
+## 6. Regla de mantenimiento de este documento
+
 
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
