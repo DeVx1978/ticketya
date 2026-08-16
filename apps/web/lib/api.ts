@@ -2383,3 +2383,72 @@ export async function listarMisReferidos(token: string): Promise<MiReferido[]> {
   if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar tus referidos.");
   return cuerpo as MiReferido[];
 }
+
+/**
+ * Comercial / Publicidad, lado público (16-ago-2026, Fase 3 de la
+ * sesión de frontend) -- hallazgo real de la auditoría del 13-ago
+ * (sección 3.9 de DOCUMENTO_MAESTRO.md, "Estado real: ✅ Completo"):
+ * el backend de publicidad ya funcionaba de punta a punta, pero el
+ * frontend público nunca lo consumió -- mismo patrón real que luego
+ * se repitió con wallet/referidos.
+ *
+ * Convención real de "ubicación" para el espacio de tarjeta nativa de
+ * la portada (documentada aquí porque el campo es texto libre en el
+ * panel admin, sin ningún catálogo cerrado): "portada_tarjeta_nativa".
+ */
+export interface CampanaActiva {
+  campanaId: string;
+  nombreAnunciante: string;
+  formato: "imagen_texto" | "imagen_texto_video";
+  archivoUrl: string;
+  anchoPx: number | null;
+  altoPx: number | null;
+}
+
+export async function listarPublicidadActiva(ubicacion: string): Promise<CampanaActiva[]> {
+  const res = await fetch(
+    `${API_URL}/publicidad/activas?ubicacion=${encodeURIComponent(ubicacion)}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function registrarImpresionPublicidad(campanaId: string): Promise<void> {
+  // No debe romper la navegación del pasajero si esto falla -- una
+  // metrica perdida no es motivo para mostrar un error en la portada.
+  try {
+    await fetch(`${API_URL}/publicidad/${campanaId}/impresion`, { method: "POST" });
+  } catch {
+    // silencioso a propósito
+  }
+}
+
+export async function registrarClicPublicidad(campanaId: string): Promise<void> {
+  try {
+    await fetch(`${API_URL}/publicidad/${campanaId}/clic`, { method: "POST" });
+  } catch {
+    // silencioso a propósito
+  }
+}
+
+export interface DatosLeadPublicidad {
+  nombreEmpresa: string;
+  contactoNombre?: string;
+  contactoCorreo: string;
+  contactoTelefono?: string;
+  mensaje?: string;
+}
+
+export async function enviarLeadPublicidad(datos: DatosLeadPublicidad): Promise<void> {
+  const res = await fetch(`${API_URL}/publicidad/leads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(datos),
+  });
+  if (!res.ok) {
+    const cuerpo = await res.json().catch(() => null);
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo enviar tu solicitud. Intenta de nuevo.");
+  }
+}

@@ -1101,6 +1101,26 @@ Las 8 fotos se procesaron a 480px de ancho (tamaño de tarjeta, no pantalla comp
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas. **Limitación real, reportada con honestidad:** no se logró la verificación visual en vivo del toggle "Ida y vuelta" -- 3 intentos con estrategias distintas, incluido encontrar y corregir una causa real en el camino (`puppeteer-core` no estaba instalado en el entorno). Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
 
+## 5.13 Sesión de frontend, Fase 3: publicidad nativa + Comercial/Publicidad conectado -- 16-ago-2026
+
+Mismo hueco identificado desde la auditoría del 13-ago (sección 3.9): el backend de `/publicidad/*` funcionaba completo y probado desde el 30-jul-2026, pero el frontend público nunca lo consumió -- mismo patrón real que luego se repitió con wallet/referidos (sección 5.10).
+
+**4 funciones de cliente reales conectadas** en `lib/api.ts`: `listarPublicidadActiva`, `registrarImpresionPublicidad`, `registrarClicPublicidad`, `enviarLeadPublicidad`.
+
+**`TarjetaPublicidadNativa` corregida y rediseñada** -- la Fase 1 la había construido con la etiqueta "Patrocinado", pero la investigación real ya documentada en la sección 3.9 (con fuentes reales: Booking.com, Skyscanner, "Paid Posts" del NYT) ya había decidido el texto exacto: **"Publicidad"**. Corregido. También rediseñada para cumplir la decisión ya documentada ("el resultado patrocinado usa el MISMO formato de tarjeta que un resultado orgánico") -- ahora usa el mismo estilo visual que una tarjeta de `DestinosPopulares.tsx` (foto de fondo, degradado, nombre abajo), no el formato de ícono+texto que tenía antes.
+
+**Hallazgo real de esquema, documentado sin ocultar:** `CampanaActiva` no tiene ningún campo de URL de destino -- una campaña real solo guarda `nombreAnunciante`, `formato`, `archivoUrl` (la creatividad ya diseñada), nunca a dónde debería llevar el clic. No se inventó un enlace falso -- el clic se registra igual como métrica real (`registrarClicPublicidad`), sin forzar una navegación que no existe. Pendiente real para cuando se retome: agregar un campo de URL de destino a `CrearCampanaDto` si se quiere que el clic navegue de verdad al sitio del anunciante.
+
+**`PublicidadNativa.tsx`** -- componente nuevo, mezclado dentro de la grilla de `DestinosPopulares.tsx` después de la 4ª tarjeta (nunca primera -- mismo criterio real de cualquier feed de contenido patrocinado). Convención real de "ubicación" establecida y documentada aquí (el campo es texto libre en el panel admin, sin catálogo cerrado): **`"portada_tarjeta_nativa"`**. Si no hay ninguna campaña activa aprobada para esa ubicación, el componente no renderiza nada -- nunca deja un hueco vacío en la grilla.
+
+**Página `/anunciar` construida** -- formulario público real, conecta `POST /publicidad/leads`.
+
+**`Footer.tsx` construido -- hallazgo real: no existía ningún pie de página en todo el proyecto**, en ninguna página. Necesario para que `/anunciar` sea descubrible, no solo una URL escondida. Mismo patrón de auto-desactivación que ya usa `HeaderPublico` (se apaga en `/panel-empresa`, `/admin`), y además se apaga dentro del flujo de compra (`/viajes/.../asientos`, `/viajes/.../checkout`) -- mismo principio ya documentado ("ningún espacio publicitario vive dentro del flujo de compra, solo en la landing pública").
+
+**Hallazgo real aparte, sin bloquear esta fase:** no existe ninguna prueba e2e para el módulo comercial/publicidad -- el documento decía "Probado en vivo de punta a punta" (30-jul-2026), pero esa era verificación manual en su momento, no una suite automatizada que proteje contra regresión futura. No se tocó backend en esta fase, así que no bloqueaba el trabajo, pero queda anotado como hueco real para atender después.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas (`/anunciar` es la nueva). **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 6 veces, con estrategias distintas (espera con sondeo, espera fija, servidor ya compilado, backend+frontend por separado, verificación intermedia con curl, secuencia más ajustada sin verificación intermedia) -- el entorno falló en las 6, con el mismo patrón de servidores muriendo entre pasos que ya se documentó otras veces en el proyecto. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { HeaderPublico } from "@/components/HeaderPublico";
+import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Columbus — Pasajes de bus interprovincial en Ecuador",
@@ -18,6 +19,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <HeaderPublico />
         {children}
+        <Footer />
       </body>
     </html>
   );

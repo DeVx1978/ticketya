@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { PublicidadNativa } from "./PublicidadNativa";
 
 /**
  * Destinos turísticos populares -- fotos reales proporcionadas por el
@@ -8,6 +9,12 @@ import Image from "next/image";
  * las 6 ciudades donde ya opera o planea operar Columbus (Ibarra,
  * Machala, Esmeraldas, Guayaquil, Quito) más 2 destinos turísticos
  * de playa (Salinas, Montañita, Baños).
+ *
+ * Fase 3 (16-ago-2026) -- la publicidad nativa se mezcla aquí mismo,
+ * después de la 4ª tarjeta (nunca primera, mismo criterio real de
+ * cualquier feed de contenido patrocinado) -- decisión explícita del
+ * director. Si no hay ninguna campaña activa, PublicidadNativa no
+ * renderiza nada, así que el grid no queda con un hueco.
  */
 const DESTINOS = [
   { nombre: "Quito", foto: "/img/destinos/quito.jpg" },
@@ -27,7 +34,28 @@ export function DestinosPopulares() {
         Destinos populares
       </h2>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {DESTINOS.map(({ nombre, foto }) => (
+        {DESTINOS.slice(0, 4).map(({ nombre, foto }) => (
+          <div
+            key={nombre}
+            className="group relative overflow-hidden rounded-xl transition hover:-translate-y-0.5"
+          >
+            <div className="relative h-28 w-full">
+              <Image
+                src={foto}
+                alt={nombre}
+                fill
+                sizes="(max-width: 640px) 50vw, 25vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/70 via-brand-dark/0 to-transparent" />
+            </div>
+            <p className="absolute bottom-2 left-3 text-sm font-semibold text-white">{nombre}</p>
+          </div>
+        ))}
+
+        <PublicidadNativa />
+
+        {DESTINOS.slice(4).map(({ nombre, foto }) => (
           <div
             key={nombre}
             className="group relative overflow-hidden rounded-xl transition hover:-translate-y-0.5"
