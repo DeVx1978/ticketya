@@ -18,6 +18,16 @@
   --brand-medium: #ffd425;
   --brand-light: #fffbe9;
   --brand-amber: #f5a800;
+
+  /* Azul cobalto -- decisión real de diseño del director (15-ago-2026,
+     sesión de exploración de dirección, documentada en DOCUMENTO_MAESTRO.md
+     sección 5.8): color de acento NUEVO, junto al amarillo de marca ya
+     existente -- el amarillo se reserva para momentos protagonistas
+     (hero, detalles puntuales), no como color de fondo dominante. Este
+     azul es el acento de uso general (íconos, enlaces, elementos
+     interactivos secundarios). */
+  --brand-cobalto: #2451c4;
+  --brand-cobalto-claro: #eef2fb;
 }
 
 @theme inline {
@@ -28,6 +38,8 @@
   --color-brand-medium: var(--brand-medium);
   --color-brand-light: var(--brand-light);
   --color-brand-amber: var(--brand-amber);
+  --color-brand-cobalto: var(--brand-cobalto);
+  --color-brand-cobalto-claro: var(--brand-cobalto-claro);
   /* Pila de fuentes del sistema en vez de next/font/google — no depende
      de una descarga externa en tiempo de build, funciona igual de bien
      y evita un punto de fallo innecesario. */

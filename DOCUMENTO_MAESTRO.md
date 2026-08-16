@@ -1043,8 +1043,23 @@ El director pidió definir juntos la dirección visual de la plataforma antes de
 
 Se entregó un archivo HTML de referencia (imágenes reales del director incrustadas) como documento de comparación visual -- verificado con capturas reales antes de cada entrega. **No es el frontend real todavía** -- se construirá en el código del proyecto en la sesión dedicada de frontend.
 
-**Hallazgo real sin resolver, reportado con honestidad:** el director reportó ver emojis en el archivo de referencia después de que se reemplazaron por ilustraciones SVG propias -- confirmadas visualmente con una captura real antes de la entrega. Sospecha real, sin confirmar: un archivo duplicado/viejo en la carpeta de Descargas del director (los navegadores a veces guardan `archivo (1).html` sin sobrescribir el original). Pendiente de confirmar y resolver en la sesión dedicada de frontend, antes de dar la dirección de diseño por completamente cerrada.
+**Hallazgo real, RESUELTO con certeza (16-ago-2026):** confirmado -- efectivamente había 2 archivos en la carpeta de Descargas del director (`columbus-diseno-referencia.html` y `columbus-diseno-referencia (1).html`, el navegador nunca sobrescribió el original). Verificado con conteo directo de contenido: el archivo sin "(1)" tenía 5 emojis y 0 SVG (la versión vieja, de antes de la corrección); el archivo con "(1)" tenía 8 SVG y 0 emojis (la versión correcta, entregada al final). El director había abierto el archivo viejo por accidente. **No era un bug real -- la dirección de diseño queda confirmada y cerrada.**
 
-## 6. Regla de mantenimiento de este documento
+## 5.9 Sesión de frontend, Fase 1: sistema de ilustraciones SVG -- 16-ago-2026
+
+Primera fase real de construcción de la dirección de diseño acordada (sección 5.8). Antes de construir nada, se resolvió con certeza el hallazgo pendiente: confirmado con conteo directo de contenido en los 2 archivos reales que el director tenía en su carpeta de Descargas -- `columbus-diseno-referencia.html` (el viejo, 5 emojis, 0 SVG) y `columbus-diseno-referencia (1).html` (el correcto, 8 SVG, 0 emojis, nunca sobrescrito por el navegador). El director había abierto el archivo viejo por accidente -- no era un bug real. **Dirección de diseño confirmada y cerrada.**
+
+**Construido como componentes React reales** (`apps/web/components/ilustraciones/`), no como archivos `.svg` sueltos ni como referencia visual:
+- `IlustracionMontanita`, `IlustracionBanos`, `IlustracionGalapagos`, `IlustracionMindo` -- mismo arte ya verificado visualmente en el documento de referencia HTML aprobado por el director, portado tal cual.
+- `IconoCooperativa` (bus genérico) -- para cuando una cooperativa no tiene logo real subido.
+- `IconoTerminal` (nuevo, con dosel/marquesina real de terminal ecuatoriano) -- a propósito distinto del ícono de cooperativa, para no confundir "quién opera el viaje" con "dónde se aborda".
+- `IconoPublicidad` -- ícono genérico de anunciante.
+- `TarjetaPublicidadNativa` (`apps/web/components/TarjetaPublicidadNativa.tsx`) -- componente real reutilizable, no solo un ícono: usa los campos reales de `CampanaPublicitaria` (`nombreAnunciante`, `archivoUrl`) ya existentes en `lib/api.ts`, con el ícono genérico como respaldo automático cuando la campaña todavía no tiene imagen propia.
+
+**Paleta real aplicada como tokens de marca**, no colores sueltos: `--brand-cobalto` (`#2451c4`) y `--brand-cobalto-claro` (`#eef2fb`) agregados a `globals.css`, documentados inline con la decisión real del director que los originó.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas. **Limitación real, reportada con honestidad:** el entorno tuvo fallas repetidas de timeout al intentar levantar un servidor de verificación visual en vivo (mismo tipo de inestabilidad ya documentada otras veces en el proyecto) -- no se logró una captura de pantalla real de los componentes ya renderizados con el tema de Tailwind real, más allá de la compilación limpia. Pendiente de confirmación visual real cuando se consuman en la Fase 2 (hero y portada), donde sí se van a ver en una página real.
+
+
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
