@@ -65,6 +65,17 @@ export class WalletService {
   }
 
   /**
+   * Hallazgo real del director (15-ago-2026, recorrido en vivo de
+   * producción): el pasajero podía ver su saldo, pero nunca de dónde
+   * venía.
+   */
+  async movimientos(
+    usuarioId: string,
+  ): Promise<{ id: string; monto: number; tipo: string; creadoEn: string }[]> {
+    return this.wallet.listarMovimientosDeUsuario(usuarioId);
+  }
+
+  /**
    * Fase 2 (13-ago-2026) -- versión cruda del saldo, para uso interno
    * de CheckoutService (necesita el número, no el `{ saldo }` envuelto
    * que expone el endpoint HTTP).

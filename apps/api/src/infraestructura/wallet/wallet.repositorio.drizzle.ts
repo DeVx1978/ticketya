@@ -67,6 +67,24 @@ export class WalletRepositorioDrizzle implements WalletRepositorio {
     return fila?.saldo ? Number(fila.saldo) : 0;
   }
 
+  async listarMovimientosDeUsuario(
+    usuarioId: string,
+  ): Promise<{ id: string; monto: number; tipo: string; creadoEn: string }[]> {
+    const filas = await this.db.execute(sql`
+      SELECT id, monto, tipo, creado_en
+      FROM wallet_movimientos
+      WHERE usuario_id = ${usuarioId}
+      ORDER BY creado_en DESC
+      LIMIT 50
+    `);
+    return (filas.rows as { id: string; monto: string; tipo: string; creado_en: string }[]).map((f) => ({
+      id: f.id,
+      monto: Number(f.monto),
+      tipo: f.tipo,
+      creadoEn: f.creado_en,
+    }));
+  }
+
   async obtenerCashbackPorcentajeDefault(): Promise<number | null> {
     const resultado = await this.db.execute(
       sql`SELECT cashback_porcentaje_default FROM configuracion_plataforma LIMIT 1`,

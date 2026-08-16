@@ -36,6 +36,20 @@ export interface WalletRepositorio {
    */
   saldoDeUsuario(usuarioId: string, diasVigencia: number): Promise<number>;
 
+  /**
+   * Hallazgo real del director (15-ago-2026, recorrido en vivo de
+   * producción): el pasajero podía ver SU SALDO, pero nunca de dónde
+   * salió -- ni un solo movimiento. Historial real, más reciente
+   * primero, con el tipo de movimiento tal cual (para que el frontend
+   * decida cómo etiquetarlo -- cashback vs. crédito de referido vs.
+   * gasto, sin duplicar esa lógica aquí).
+   */
+  listarMovimientosDeUsuario(
+    usuarioId: string,
+  ): Promise<
+    { id: string; monto: number; tipo: string; creadoEn: string }[]
+  >;
+
   /** Configuración global -- mismo patrón que cargoPlataformaPorPasajeroDefault. */
   obtenerCashbackPorcentajeDefault(): Promise<number | null>;
   actualizarCashbackPorcentajeDefault(

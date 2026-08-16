@@ -48,4 +48,21 @@ export interface ReferidosRepositorio {
     datos: { creditoReferidor: number; descuentoReferido: number },
     actualizadoPorUsuarioId: string,
   ): Promise<void>;
+
+  /**
+   * Hallazgo real del director (15-ago-2026, recorrido en vivo de
+   * producción): no existía NINGUNA forma de que el pasajero viera a
+   * quién había referido -- solo la configuración de admin. Se
+   * distingue si el crédito ya se disparó de verdad (boleto validado)
+   * o sigue pendiente, y no revela nada del referido más allá de su
+   * nombre -- ni correo, ni cédula, ni teléfono.
+   */
+  listarMisReferidos(usuarioReferidorId: string): Promise<
+    {
+      id: string;
+      nombreReferido: string;
+      creadoEn: string;
+      creditoDisparado: boolean;
+    }[]
+  >;
 }

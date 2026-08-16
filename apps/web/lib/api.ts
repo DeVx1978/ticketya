@@ -2315,3 +2315,54 @@ export async function confirmarDatosCoop(
     throw new Error(mensaje ?? "No se pudieron confirmar los datos.");
   }
 }
+
+/**
+ * Wallet + referidos, lado pasajero (15-ago-2026) -- hallazgo real del
+ * director en el recorrido en vivo de producción: el backend ya tenía
+ * todo esto funcionando (wallet gana/gasta, referidos acredita) desde
+ * hace días, pero el frontend nunca lo conectó -- el pasajero no tenía
+ * ningún lugar donde verlo.
+ */
+export interface MovimientoWallet {
+  id: string;
+  monto: number;
+  tipo: string;
+  creadoEn: string;
+}
+
+export async function obtenerSaldoWallet(token: string): Promise<number> {
+  const res = await fetch(`${API_URL}/wallet/saldo`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar tu saldo.");
+  return cuerpo.saldo;
+}
+
+export async function listarMovimientosWallet(token: string): Promise<MovimientoWallet[]> {
+  const res = await fetch(`${API_URL}/wallet/movimientos`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar tu historial.");
+  return cuerpo as MovimientoWallet[];
+}
+
+export interface MiReferido {
+  id: string;
+  nombreReferido: string;
+  creadoEn: string;
+  creditoDisparado: boolean;
+}
+
+export async function listarMisReferidos(token: string): Promise<MiReferido[]> {
+  const res = await fetch(`${API_URL}/referidos/mis-referidos`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudieron cargar tus referidos.");
+  return cuerpo as MiReferido[];
+}
