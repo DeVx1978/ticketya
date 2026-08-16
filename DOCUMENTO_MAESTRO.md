@@ -1075,8 +1075,20 @@ Construido sobre las ilustraciones de la Fase 1. Reemplaza el gradiente `from-br
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas, 12/12 pruebas e2e de búsqueda. **Limitación real, reportada con honestidad, a pesar de intentarlo en serio 4 veces con estrategias distintas** (espera con sondeo, espera fija, servidor ya compilado, backend+frontend arrancados juntos): no se logró una captura de pantalla real del hero renderizado -- el entorno falló con timeouts duros en cada intento. Un intento sí confirmó algo real y útil: el frontend arranca correctamente por sí solo (devolvió `500` únicamente por no encontrar el backend en ese momento específico, no por ningún error en el código nuevo). Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado en producción.
 
+## 5.11 Destinos populares con fotos reales -- 16-ago-2026
+
+Hallazgos posteriores a la fusión de la Fase 2, ambos reportados por el director con evidencia real, corregidos el mismo día:
+
+1. **Encabezado duplicado en la portada** -- el `HeaderPublico` global (texto "Columbus" + "Iniciar sesión") seguía renderizándose encima del `Hero` nuevo (que ya trae su propio encabezado con el logo real superpuesto sobre la foto). `HeaderPublico.tsx` ya tenía el patrón de desactivarse en rutas con su propio encabezado (`/panel-empresa`, `/admin`) -- se agregó la portada (`/`) a esa misma lista.
+2. **Foto equivocada reemplazada por error propio** -- al procesar el pedido de reemplazar la foto que aparecía en la captura del director, se asumió sin verificar cuál de las 2 fotos del slider era la que realmente se veía en ese momento (el slider rota solo cada 5 segundos). Se reemplazó `hero-1.jpg` (la mejor foto del set, con el logo Columbus real ya pintado) en vez de `hero-2.jpg` (la foto genérica sin marca, la que sí correspondía cambiar). Corregido: `hero-1.jpg` restaurado a su contenido original (recuperado del historial de git), `hero-2.jpg` actualizado con la foto correcta. Aprendizaje real aplicado: desde este punto, toda foto se verifica visualmente ANTES de comitear, no solo se asume.
+3. **Foto de Machala actualizada con el logo real bien integrado** -- el director proporcionó una versión mejorada de la foto de Machala, con el logo real de Columbus compuesto en el techo/letrero de destino y en los espejos laterales.
+
+**Destinos populares reemplazado por completo -- de ilustraciones a fotos reales.** El director descargó 8 fotos reales de destinos/ciudades: Quito, Guayaquil, Ibarra, Machala, Esmeraldas, Baños de Agua Santa, Montañita, Salinas -- decisión explícita: "Mindo y Galápagos no van" (no son parte de la cobertura real de rutas de Columbus). Las 4 ilustraciones SVG de la Fase 1 (`IlustracionMontanita`, `IlustracionBanos`, `IlustracionGalapagos`, `IlustracionMindo`) quedan sin uso en producción a partir de este cambio -- **no se borraron del código** (siguen siendo componentes reales y reutilizables, ej. para un estado vacío o un correo más adelante), documentado con honestidad que hoy no las consume ninguna página real.
+
+Las 8 fotos se procesaron a 480px de ancho (tamaño de tarjeta, no pantalla completa como el hero) y se guardaron en `apps/web/public/img/destinos/`, servidas con `next/image`. Verificadas visualmente las 8, una por una, antes de comitear.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 29/29 páginas.
+
 ## 6. Regla de mantenimiento de este documento
-
-
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
