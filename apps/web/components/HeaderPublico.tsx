@@ -53,10 +53,10 @@ export function HeaderPublico() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-white">
+    <header className="sticky top-0 z-50 border-b border-black/10 bg-brand-dark">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center">
-          <Image src="/img/logo-columbus-oscuro.png" alt="Columbus" width={110} height={28} priority />
+          <Image src="/img/logo-columbus.png" alt="Columbus" width={110} height={28} priority />
         </Link>
 
         {payload ? (
@@ -64,21 +64,21 @@ export function HeaderPublico() {
             {payload.rol === "pasajero" ? (
               <Link
                 href="/perfil"
-                className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
+                className="text-sm font-semibold text-white/70 transition hover:text-white"
               >
                 Mi cuenta
               </Link>
             ) : (
               <Link
                 href={RUTA_POR_ROL[payload.rol]}
-                className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
+                className="text-sm font-semibold text-white/70 transition hover:text-white"
               >
                 Ir a mi panel
               </Link>
             )}
             <button
               onClick={salir}
-              className="rounded-lg border border-brand-light px-3 py-1.5 text-sm font-semibold text-brand-dark/70 transition hover:bg-brand-light/40"
+              className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-white/70 transition hover:bg-white/10"
             >
               Salir
             </button>
@@ -87,13 +87,13 @@ export function HeaderPublico() {
           <nav aria-label="Cuenta" className="flex items-center gap-3">
             <Link
               href="/ingresar"
-              className="text-sm font-semibold text-brand-dark/70 transition hover:text-brand-dark"
+              className="text-sm font-semibold text-white/70 transition hover:text-white"
             >
               Iniciar sesión
             </Link>
             <Link
               href="/registro"
-              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-dark"
+              className="rounded-lg bg-brand-amber px-3 py-1.5 text-sm font-semibold text-brand-dark transition hover:bg-brand-amber/85"
             >
               Registrarse
             </Link>

@@ -1133,6 +1133,16 @@ Hallazgo real del director, con evidencia (captura de producción): tanto `Heade
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.15 Corrección de diseño: fondo oscuro en vez de recolorear el logo -- 16-ago-2026
+
+El director prefirió otro camino al de la sección 5.14: en vez de generar una versión recoloreada del logo (texto blanco a negro) para que funcionara sobre fondo blanco, mejor cambiar el fondo del encabezado a oscuro y mantener el logo original intacto -- preserva la identidad real de la marca sin tocar el archivo.
+
+Corregido: `HeaderPublico.tsx` ahora tiene fondo `bg-brand-dark` (consistente con `Footer.tsx` y el `Hero.tsx` de la Fase 2), usa el logo original blanco (`logo-columbus.png`), y los textos/botones de navegación se invirtieron a colores claros para verse bien sobre el nuevo fondo oscuro. El archivo `logo-columbus-oscuro.png` generado en la sección 5.14 se eliminó por completo -- no era el camino preferido, y no representaba un asset reutilizable real como sí lo son las ilustraciones SVG de la Fase 1.
+
+**Nota de diseño para seguimiento:** el encabezado ahora es oscuro en TODAS las páginas donde se muestra (todas menos portada, panel-empresa, admin) -- incluye páginas con fondo claro como `/ingresar`, `/perfil`, `/anunciar`. Si al verlo desplegado se siente pesado sobre esas páginas de fondo claro, es una decisión de diseño real a revisar, no un error de código.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
