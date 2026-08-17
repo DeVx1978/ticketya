@@ -31,29 +31,40 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative h-[92vh] min-h-[620px] overflow-hidden">
-      {FOTOS.map((foto, i) => (
-        <div
-          key={foto}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            i === indiceActivo ? "opacity-100" : "opacity-0"
-          }`}
-          aria-hidden={i !== indiceActivo}
-        >
-          <Image
-            src={foto}
-            alt=""
-            fill
-            priority={i === 0}
-            sizes="100vw"
-            className="object-cover"
-          />
-          {/* Degradado real para que el texto blanco y el logo se lean
-              bien encima de cualquier parte de la foto -- más oscuro
-              abajo, donde vive el buscador. */}
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-dark/55 via-brand-dark/25 to-brand-dark/75" />
-        </div>
-      ))}
+    <section className="relative overflow-hidden">
+      {/* Orden real del director (17-ago-2026): "para qué tener
+          imágenes profesionales ahí si van a ser tapadas por esa
+          tarjeta" -- la superposición se quita por completo, en
+          cualquier tamaño de pantalla, no solo en celular. La foto
+          se ve completa arriba, el contenido (título, texto,
+          buscador) va en flujo normal debajo, siempre -- más alta en
+          pantalla grande, donde hay más espacio real disponible. */}
+      <div className="relative h-[46vh] min-h-[320px] md:h-[62vh] md:min-h-[480px]">
+        {FOTOS.map((foto, i) => (
+          <div
+            key={foto}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              i === indiceActivo ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden={i !== indiceActivo}
+          >
+            <Image
+              src={foto}
+              alt=""
+              fill
+              priority={i === 0}
+              sizes="100vw"
+              className="object-cover"
+            />
+            {/* Degradado real, solo para que el logo/menú del
+                encabezado (que sí siguen superpuestos arriba de la
+                foto) se lean bien -- ya no hay título/texto/buscador
+                superpuesto más abajo, así que el degradado se
+                concentra arriba, no en toda la foto. */}
+            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-brand-dark/60 to-transparent" />
+          </div>
+        ))}
+      </div>
 
       {/* Indicadores del slider -- confirman que hay más de una foto,
           sin depender de flechas de navegación manual. */}
@@ -133,15 +144,15 @@ export function Hero() {
         </nav>
       )}
 
-      <div className="relative z-10 flex h-full flex-col justify-end px-[5%] pb-16">
-        <h1 className="font-display max-w-xl text-4xl font-bold leading-tight text-white md:text-5xl">
+      <div className="relative z-10 bg-white px-[5%] py-8 md:py-10">
+        <h1 className="font-display max-w-xl text-3xl font-bold leading-tight text-brand-dark md:text-4xl lg:text-5xl">
           Tu pasaje de bus, sin filas ni papeleo
         </h1>
-        <p className="mt-3 max-w-md text-base text-white/85">
+        <p className="mt-3 max-w-md text-base text-brand-dark/70">
           Compara horarios y precios de todas las cooperativas de una ruta, elige tu asiento, y recibe
           tu boleto digital con QR al instante.
         </p>
-        <div className="mt-8 max-w-4xl">
+        <div className="mt-6 max-w-4xl md:mt-8">
           <BuscadorForm />
         </div>
       </div>
