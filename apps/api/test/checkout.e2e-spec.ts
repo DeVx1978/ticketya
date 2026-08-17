@@ -1145,4 +1145,137 @@ describe('Checkout y pago (e2e)', () => {
       .send({ monto: 0 })
       .expect(200);
   });
+
+  /**
+   * Zona VIP de asientos (17-ago-2026, orden real del director) --
+   * fixture propio y aislado, no reutiliza el viaje compartido de la
+   * suite (necesita su propia distribución de asientos con una
+   * etiqueta 'vip' explícita, cosa que el tipo de vehículo compartido
+   * no tiene).
+   */
+  describe('Zona VIP de asientos -- recargo fijo real (17-ago-2026)', () => {
+    it('cobra precioBase + recargoVip en un asiento VIP, y solo precioBase en uno normal', async () => {
+      const correoAdminVip = `admin.vip.${sufijo}@ticketya.ec`;
+      const rucVip = `08${sufijo}`.slice(0, 13);
+      await request(app.getHttpServer())
+        .post('/admin/cooperativas')
+        .set('Authorization', `Bearer ${tokenAdmin}`)
+        .send({
+          cooperativa: {
+            ruc: rucVip,
+            razonSocial: `Coop VIP E2E ${sufijo}`,
+            nombreComercial: `Coop VIP ${sufijo}`,
+            modeloIntegracion: 'modelo_a',
+          },
+          usuario: {
+            correo: correoAdminVip,
+            password: 'ClaveSegura123',
+            nombreCompleto: 'Admin VIP E2E',
+          },
+        });
+      const loginCoopVip = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo: correoAdminVip, password: 'ClaveSegura123' });
+      const tokenCoopVip = loginCoopVip.body.accessToken;
+
+      // Distribución real con 1 asiento VIP (1A) y 1 normal (1B) --
+      // mismo formato real que ya usa el panel de cooperativa.
+      const tipoVip = await request(app.getHttpServer())
+        .post('/coop/tipos-vehiculo')
+        .set('Authorization', `Bearer ${tokenCoopVip}`)
+        .send({
+          nombre: `Tipo VIP ${sufijo}`,
+          capacidadTotal: 2,
+          distribucionAsientos: {
+            pisos: [
+              {
+                nombre: 'Piso único',
+                filas: [{ celdas: [{ numero: '1A', etiquetas: ['vip'] }, '1B'] }],
+              },
+            ],
+          },
+        });
+
+      const unidadVip = await request(app.getHttpServer())
+        .post('/coop/unidades')
+        .set('Authorization', `Bearer ${tokenCoopVip}`)
+        .send({
+          tipoVehiculoId: tipoVip.body.id,
+          placa: `VIP-${sufijo % 100000}`,
+          identificadorOperativo: `Op-VIP-${sufijo % 100000}`,
+        });
+
+      const rutaVip = await request(app.getHttpServer())
+        .post('/coop/rutas')
+        .set('Authorization', `Bearer ${tokenCoopVip}`)
+        .send({
+          origenPuntoOperacionId: puntoOrigenId,
+          destinoPuntoOperacionId: puntoDestinoId,
+          precioBaseReferencia: 10,
+        });
+
+      const viajeVip = await request(app.getHttpServer())
+        .post('/coop/viajes')
+        .set('Authorization', `Bearer ${tokenCoopVip}`)
+        .send({
+          rutaId: rutaVip.body.id,
+          unidadId: unidadVip.body.id,
+          fechaSalida: '2026-12-02',
+          horaSalidaProgramada: '2026-12-02T08:00:00-05:00',
+          precioBase: 10,
+          recargoVip: 3,
+        })
+        .expect(201);
+      const viajeIdVip = viajeVip.body.id;
+
+      const pasajeroVip = await request(app.getHttpServer())
+        .post('/auth/registro')
+        .send({
+          correo: `pasajero.vip.${sufijo}@ticketya.ec`,
+          password: 'ClaveSegura123',
+          nombres: 'Pasajero', apellidos: 'VIP E2E',
+        });
+      const loginPasajeroVip = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ correo: `pasajero.vip.${sufijo}@ticketya.ec`, password: 'ClaveSegura123' });
+      const tokenPasajeroVip = loginPasajeroVip.body.accessToken;
+
+      await request(app.getHttpServer())
+        .post(`/viajes/${viajeIdVip}/asientos/1A/bloquear`)
+        .set('Authorization', `Bearer ${tokenPasajeroVip}`)
+        .expect(201);
+      await request(app.getHttpServer())
+        .post(`/viajes/${viajeIdVip}/asientos/1B/bloquear`)
+        .set('Authorization', `Bearer ${tokenPasajeroVip}`)
+        .expect(201);
+
+      const compraVip = await request(app.getHttpServer())
+        .post('/compras')
+        .set('Authorization', `Bearer ${tokenPasajeroVip}`)
+        .send({
+          pasajeros: [
+            {
+              viajeId: viajeIdVip,
+              numeroAsiento: '1A',
+              nombres: 'Pasajero', apellidos: 'Vip Uno',
+              tipoDocumento: 'cedula', documento: '1701002741',
+              tipoTarifa: 'adulto',
+            },
+            {
+              viajeId: viajeIdVip,
+              numeroAsiento: '1B',
+              nombres: 'Pasajero', apellidos: 'Normal Dos',
+              tipoDocumento: 'cedula', documento: '1701004119',
+              tipoTarifa: 'adulto',
+            },
+          ],
+        })
+        .expect(201);
+
+      const boletoVip = compraVip.body.boletos.find((b: { numeroAsiento: string }) => b.numeroAsiento === '1A');
+      const boletoNormal = compraVip.body.boletos.find((b: { numeroAsiento: string }) => b.numeroAsiento === '1B');
+      expect(Number(boletoVip.precioPagado)).toBe(13); // 10 + 3 de recargo VIP
+      expect(Number(boletoNormal.precioPagado)).toBe(10); // sin recargo, es un asiento normal
+    });
+  });
 });
