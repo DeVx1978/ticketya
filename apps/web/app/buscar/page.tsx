@@ -80,7 +80,11 @@ function TarjetaResultado({
           el director no están todos optimizados para recorte
           circular), fondo blanco propio, y object-contain -- el logo
           COMPLETO siempre cabe adentro, nunca se recorta. */}
-      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
+      {/* Rectangular horizontal, no cuadrado -- orden explícita del
+          director (16-ago-2026): un contenedor cuadrado no le hace
+          justicia a logos que son naturalmente anchos (como el de
+          Transportes Ecuador, con su texto completo). */}
+      <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
         {r.cooperativaLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
           <img
