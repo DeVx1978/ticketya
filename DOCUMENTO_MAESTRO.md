@@ -1307,6 +1307,18 @@ Orden real del director: hoy cada horario de una cooperativa aparecía como una 
 
 **Hallazgo real, reportado con honestidad:** al verificar con la base de datos real de producción, **ninguna cooperativa tiene hoy más de 1 viaje programado en la misma ruta** -- la función está construida y lista, pero no hay datos reales todavía para verla en acción (el desplegable de horarios no aparece si solo hay 1). Pendiente: decidir si se agrega un segundo horario real de prueba para alguna ruta ya existente, usando el mismo flujo real de creación de viajes de la cooperativa (no datos falsos, un viaje real más).
 
+## 5.28 HOTFIX URGENTE: /buscar caído en producción (500) -- función pasada a través de la frontera servidor/cliente -- 17-ago-2026
+
+El director reportó, con captura real de producción, `/buscar` completamente caído: "This page couldn't load -- A server error occurred". Confirmado con evidencia real antes de asumir la causa.
+
+**Causa raíz real, confirmada:** el PR anterior (#102, "Ver horarios" agrupado) introdujo `page.tsx` (componente de SERVIDOR) pasando `construirHref={(viajeId) => ...}` -- una función -- como prop a `TarjetaCooperativaAgrupada` (componente de CLIENTE, `"use client"`). Next.js App Router no permite pasar funciones a través de esa frontera servidor/cliente (no son serializables) -- esto causa un error real de renderizado en el servidor.
+
+**Por qué no se detectó antes de fusionar:** ni `tsc --noEmit` ni `next build` lo atraparon, porque `/buscar` es una ruta dinámica (`ƒ`, no prerenderizada con datos reales durante el build) -- el error de serialización solo se manifiesta al renderizar de verdad, con parámetros reales, como hizo el director navegando en producción. **Hueco real identificado en el propio proceso de verificación de esta sesión**, no solo del código.
+
+**Corregido:** en vez de pasar la función `construirHref`, se calcula un mapa real `hrefsPorViaje: Record<string, string>` en el servidor (strings ya resueltos, 100% serializable), y se le pasa ese mapa al componente de cliente -- que ahora solo hace una búsqueda simple (`hrefsPorViaje[viajeId]`), sin necesitar ninguna función.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas. **Limitación real, reportada con la máxima honestidad -- esta vez el peso es mayor por tratarse de una corrección urgente de producción:** se intentó la verificación en vivo 4 veces en esta sola ronda (incluida una variante más liviana con `curl` en vez de captura de pantalla completa, para minimizar el riesgo de fallo del entorno) -- las 4 fallaron, los procesos morían incluso entre los propios comandos de una sola invocación. Se entrega el hotfix con alta confianza en la corrección (la causa raíz es una restricción bien documentada y conocida de Next.js, no una suposición), pero sin confirmación visual en vivo -- se pide al director confirmar de inmediato una vez desplegado, dado que la página está caída ahora mismo.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

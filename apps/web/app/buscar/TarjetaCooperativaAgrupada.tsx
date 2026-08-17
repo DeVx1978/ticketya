@@ -41,13 +41,13 @@ function calcularDuracion(salida: string, llegada: string | null): string | null
  */
 export function TarjetaCooperativaAgrupada({
   viajes,
-  construirHref,
+  hrefsPorViaje,
   esMejorPrecio,
   esTopCalificado,
   beneficiosReferidos,
 }: {
   viajes: ResultadoViaje[];
-  construirHref: (viajeId: string) => string;
+  hrefsPorViaje: Record<string, string>;
   esMejorPrecio: boolean;
   esTopCalificado: boolean;
   beneficiosReferidos: { creditoReferidor: number; descuentoReferido: number } | null;
@@ -212,7 +212,7 @@ export function TarjetaCooperativaAgrupada({
             </p>
           </div>
           <Link
-            href={construirHref(activo.viajeId)}
+            href={hrefsPorViaje[activo.viajeId]}
             className="shrink-0 rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95"
           >
             Elegir asiento
