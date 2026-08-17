@@ -1272,6 +1272,18 @@ El director pidió 3 cosas: que todo se agrande y distribuya mejor (parte ya res
 
 **Limitación real, reportada con la máxima honestidad:** van **8 intentos consecutivos fallidos** de la captura visual obligatoria en esta sola sesión (2 más en esta ronda). El entorno sigue sin cooperar en este momento -- no se fabricó ninguna comparación falsa.
 
+## 5.25 Bus real en el trayecto + corrección propia sobre paradas intermedias -- 16-ago-2026
+
+**Corrección honesta de un error propio:** en la sección anterior, se afirmó que "no existe soporte para paradas intermedias" -- esto fue incorrecto, por revisar solo la tabla `rutas` sin buscar en el resto del esquema. Confirmado con evidencia real: existe una tabla completa y bien diseñada `ruta_paradas` (RF-FLOTA-004, de una fase anterior del proyecto), con orden de parada, tarifa diferenciada desde el origen, y tiempo estimado -- pero **ninguna función de la aplicación la usa todavía** (cero referencias en controladores, servicios o repositorios). Es una base de datos real ya construida, esperando que se conecte con una función real -- ni completamente ausente (como se dijo por error) ni completamente lista para usar.
+
+También confirmado: `oficina_agencia` y `parada_intermedia` ya son tipos reales y válidos de `punto_operacion` en el enum real del sistema -- el director tenía razón en que "eso ya está establecido".
+
+**Bus real integrado en la línea de trayecto** -- el director proporcionó 2 ilustraciones de bus (verde y roja); se eligió la verde por contraste visual con el resto de la interfaz (el rojo se confunde con las alertas/insignias ya existentes). Recortada al contenido real (sin margen blanco sobrante), agregada en el centro de la línea salida-llegada de cada tarjeta de resultado, reemplazando el punto central abstracto.
+
+**Pendiente real, definido como el siguiente bloque de trabajo, no apresurado junto con esto:** función completa de "Ver horarios" agrupado por cooperativa (hoy cada horario es una tarjeta separada; la referencia agrupa todos los horarios de una cooperativa+ruta en una sola tarjeta desplegable) -- requiere trabajo real de backend y frontend, no un ajuste visual.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

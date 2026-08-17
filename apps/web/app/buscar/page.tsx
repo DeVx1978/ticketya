@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { buscarViajes, AMENIDADES_CATALOGO, type Amenidad, type ResultadoViaje } from "@/lib/api";
 import { FiltrosBusqueda } from "./FiltrosBusqueda";
 import { ResenasCooperativa } from "./ResenasCooperativa";
@@ -141,14 +142,18 @@ function TarjetaResultado({
             </span>
             <span className="block text-xs text-brand-cobalto/80">{r.origenNombre}</span>
           </div>
-          <span className="flex flex-1 items-center gap-1 text-brand-dark/25">
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {/* Bus real en el centro del trayecto -- pedido del
+              director (16-ago-2026): representa visualmente el
+              recorrido, en vez de solo puntos abstractos. */}
+          <span className="flex flex-1 items-center gap-1.5 text-brand-dark/25">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
             <span className="h-px flex-1 bg-current" />
+            <Image src="/img/bus-trayecto.png" alt="" width={44} height={15} className="shrink-0" />
             {duracion && (
               <span className="shrink-0 text-[10px] font-medium text-brand-dark/50">Aprox. {duracion}</span>
             )}
             <span className="h-px flex-1 bg-current" />
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
           </span>
           {r.horaLlegadaEstimada && (
             <div>
