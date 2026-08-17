@@ -1203,6 +1203,14 @@ El director reportó, con captura real de producción, que los 3 logos reales de
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas. **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 2 veces, el entorno falló ambas con timeouts duros. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado -- es especialmente importante esta vez, dado que el hallazgo anterior (logos cortados) solo se pudo confirmar con una captura real, no con verificación estática.
 
+## 5.20 Contenedor del avatar: de cuadrado a rectangular horizontal -- 16-ago-2026
+
+Orden explícita del director, tras confirmar visualmente que la sección 5.19 sí resolvió el recorte pero seguía usando un contenedor cuadrado: un contenedor cuadrado no le hace justicia a logos naturalmente anchos, como el de Transportes Ecuador.
+
+**Corregido:** el avatar cambió de `h-14 w-14` (56×56px, cuadrado) a `h-14 w-24` (56×96px, rectangular horizontal). Con el nuevo espacio, se reprocesó el logo de Transportes Ecuador -- el recorte anterior (sección 5.19-previo) solo mostraba el globo pequeño aislado, perdiendo el resto de la identidad de marca; el nuevo recorte incluye las estrellas decorativas junto con el globo completo, más rico visualmente, sin repetir el texto "Ecuador" (que ya se muestra aparte como nombre de la cooperativa).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
