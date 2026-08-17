@@ -1319,6 +1319,22 @@ El director reportó, con captura real de producción, `/buscar` completamente c
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas. **Limitación real, reportada con la máxima honestidad -- esta vez el peso es mayor por tratarse de una corrección urgente de producción:** se intentó la verificación en vivo 4 veces en esta sola ronda (incluida una variante más liviana con `curl` en vez de captura de pantalla completa, para minimizar el riesgo de fallo del entorno) -- las 4 fallaron, los procesos morían incluso entre los propios comandos de una sola invocación. Se entrega el hotfix con alta confianza en la corrección (la causa raíz es una restricción bien documentada y conocida de Next.js, no una suposición), pero sin confirmación visual en vivo -- se pide al director confirmar de inmediato una vez desplegado, dado que la página está caída ahora mismo.
 
+## 5.29 Filtro de hora rediseñado: franjas de un clic, en vez de 2 campos de hora confusos -- 17-ago-2026
+
+El director reportó que el filtro "Hora de salida" era confuso -- 2 campos `<input type="time">` nativos, cada uno con su propio reloj del navegador, se veían como un error visual ("íconos duplicados"), y un pasajero normal no entendería para qué sirven.
+
+**Corregido:** reemplazados los 2 campos de hora exacta por 4 franjas de horario de un solo clic (Madrugada 00-06h, Mañana 06-12h, Tarde 12-18h, Noche 18-24h) -- mismo patrón real de la referencia que el director ha compartido repetidamente. Selección única a propósito (no casillas independientes): el backend real solo acepta un rango continuo (`horaDesde`/`horaHasta`), así que una sola franja a la vez mantiene el resultado siempre predecible, sin necesitar ningún cambio de backend.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
+**Zona VIP -- alcance real explicado, no construido en este mismo cambio.** El director indicó que la distinción de asientos VIP/económicos dentro de un bus "es indispensable a esta altura". Confirmado con honestidad: esto NO es un ajuste visual, es una función real que requiere:
+- Un campo nuevo real (ej. en `unidades` o en el mapa de asientos) que distinga qué asientos de un bus específico son VIP.
+- Posiblemente un precio diferenciado por asiento VIP (hoy `precioBase` es un solo precio por viaje, no por asiento).
+- Actualizar el generador del mapa de asientos (`asientos/page.tsx`, ya con lógica real de pisos múltiples) para pintar los asientos VIP distinto.
+- Un lugar real en el panel de cooperativa para marcar qué asientos son VIP al configurar una unidad.
+
+Se reporta con honestidad que esto queda como el siguiente bloque real de trabajo, no algo que se pueda resolver dentro de un ajuste visual del panel de filtros.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

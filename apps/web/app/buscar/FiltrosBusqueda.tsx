@@ -16,14 +16,39 @@ import { AMENIDADES_CATALOGO, type Amenidad } from "@/lib/api";
  * resultados (mismo patrón real investigado en referencias de la
  * industria: redBus, FlixBus). En celular sigue siendo un desplegable
  * -- la lógica de filtrado real no cambió, solo cómo se muestra.
+ *
+ * Fase 7-buscador (17-ago-2026) -- hallazgo real del director: los 2
+ * campos de hora nativos (`<input type="time">`) mostraban cada uno
+ * su propio reloj del navegador, uno al lado del otro -- se veía como
+ * un error visual (íconos "duplicados"), y un pasajero normal no
+ * entendía para qué servían. Reemplazados por franjas de horario de
+ * un solo clic (Madrugada/Mañana/Tarde/Noche) -- mismo patrón real de
+ * la referencia del director, mucho más claro que escribir una hora
+ * exacta. El backend real solo acepta un rango continuo
+ * (horaDesde/horaHasta) -- por eso esto funciona como selección
+ * única (una franja a la vez), no casillas independientes: así el
+ * resultado siempre es predecible, sin necesitar cambios de backend.
  */
+const FRANJAS_HORARIO = [
+  { valor: "madrugada", etiqueta: "Madrugada", horaDesde: "00:00", horaHasta: "06:00" },
+  { valor: "manana", etiqueta: "Mañana", horaDesde: "06:00", horaHasta: "12:00" },
+  { valor: "tarde", etiqueta: "Tarde", horaDesde: "12:00", horaHasta: "18:00" },
+  { valor: "noche", etiqueta: "Noche", horaDesde: "18:00", horaHasta: "23:59" },
+] as const;
+
+function franjaActivaDesdeUrl(horaDesde: string | null, horaHasta: string | null): string | null {
+  const encontrada = FRANJAS_HORARIO.find((f) => f.horaDesde === horaDesde && f.horaHasta === horaHasta);
+  return encontrada?.valor ?? null;
+}
+
 export function FiltrosBusqueda({ variante = "dropdown" }: { variante?: "dropdown" | "panel" }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [horaDesde, setHoraDesde] = useState(searchParams.get("horaDesde") ?? "");
-  const [horaHasta, setHoraHasta] = useState(searchParams.get("horaHasta") ?? "");
+  const [franjaHorario, setFranjaHorario] = useState<string | null>(
+    franjaActivaDesdeUrl(searchParams.get("horaDesde"), searchParams.get("horaHasta")),
+  );
   const [amenidades, setAmenidades] = useState<Amenidad[]>(
     (searchParams.get("amenidades")?.split(",").filter(Boolean) as Amenidad[]) ?? [],
   );
@@ -35,11 +60,16 @@ export function FiltrosBusqueda({ variante = "dropdown" }: { variante?: "dropdow
     );
   }
 
+  function alternarFranja(valor: string) {
+    setFranjaHorario((actual) => (actual === valor ? null : valor));
+  }
+
   function aplicar() {
     const params = new URLSearchParams(searchParams.toString());
-    if (horaDesde && horaHasta) {
-      params.set("horaDesde", horaDesde);
-      params.set("horaHasta", horaHasta);
+    const franja = FRANJAS_HORARIO.find((f) => f.valor === franjaHorario);
+    if (franja) {
+      params.set("horaDesde", franja.horaDesde);
+      params.set("horaHasta", franja.horaHasta);
     } else {
       params.delete("horaDesde");
       params.delete("horaHasta");
@@ -53,8 +83,7 @@ export function FiltrosBusqueda({ variante = "dropdown" }: { variante?: "dropdow
   }
 
   function limpiar() {
-    setHoraDesde("");
-    setHoraHasta("");
+    setFranjaHorario(null);
     setAmenidades([]);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("horaDesde");
@@ -71,24 +100,24 @@ export function FiltrosBusqueda({ variante = "dropdown" }: { variante?: "dropdow
         <label id="filtros-hora-label" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           Hora de salida
         </label>
-        <div role="group" aria-labelledby="filtros-hora-label" className="flex items-center gap-2">
-          <input
-            id="filtros-hora-desde"
-            type="time"
-            aria-label="Hora desde"
-            value={horaDesde}
-            onChange={(e) => setHoraDesde(e.target.value)}
-            className="w-full rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-cobalto"
-          />
-          <span className="text-sm text-brand-dark/50">a</span>
-          <input
-            id="filtros-hora-hasta"
-            type="time"
-            aria-label="Hora hasta"
-            value={horaHasta}
-            onChange={(e) => setHoraHasta(e.target.value)}
-            className="w-full rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-cobalto"
-          />
+        <div role="group" aria-labelledby="filtros-hora-label" className="grid grid-cols-2 gap-2">
+          {FRANJAS_HORARIO.map((f) => (
+            <button
+              key={f.valor}
+              type="button"
+              onClick={() => alternarFranja(f.valor)}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                franjaHorario === f.valor
+                  ? "border-brand-cobalto bg-brand-cobalto/10 text-brand-cobalto"
+                  : "border-brand-light text-brand-dark/70 hover:border-brand-cobalto/40"
+              }`}
+            >
+              {f.etiqueta}
+              <span className="block text-[10px] font-normal text-brand-dark/40">
+                {f.horaDesde}–{f.horaHasta}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
