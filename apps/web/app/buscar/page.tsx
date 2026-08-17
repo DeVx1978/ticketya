@@ -64,23 +64,39 @@ function TarjetaResultado({
   return (
     <div
       key={r.viajeId}
-      className="relative flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 md:flex-row md:items-center md:justify-between"
+      className="relative flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:flex-row sm:items-start"
     >
       {esMejorPrecio && (
         <span className="absolute -top-2.5 left-4 rounded-full bg-brand-cobalto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
           Mejor precio
         </span>
       )}
-      <div>
+
+      {/* Avatar de la cooperativa -- hallazgo real del director
+          (16-ago-2026, captura de producción): el círculo de 32px con
+          object-cover cortaba el logo en vez de mostrarlo completo.
+          Corregido: contenedor más grande (56px), cuadrado con
+          esquinas redondeadas (no círculo -- los logos reales que dio
+          el director no están todos optimizados para recorte
+          circular), fondo blanco propio, y object-contain -- el logo
+          COMPLETO siempre cabe adentro, nunca se recorta. */}
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
+        {r.cooperativaLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
+          <img
+            src={r.cooperativaLogoUrl}
+            alt={r.cooperativaNombre}
+            className="h-full w-full object-contain p-1"
+          />
+        ) : (
+          <span className="font-display text-lg font-bold text-brand-cobalto">
+            {r.cooperativaNombre.slice(0, 2).toUpperCase()}
+          </span>
+        )}
+      </div>
+
+      <div className="flex-1">
         <div className="flex items-center gap-2">
-          {r.cooperativaLogoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
-            <img
-              src={r.cooperativaLogoUrl}
-              alt={r.cooperativaNombre}
-              className="h-8 w-8 rounded-full object-cover ring-1 ring-black/5"
-            />
-          )}
           <p className="font-display text-lg font-bold text-brand-dark">{r.cooperativaNombre}</p>
           {r.cooperativaCalificacionPromedio !== null && (
             <span className="flex items-center gap-0.5 text-xs font-semibold text-amber-600">
@@ -113,7 +129,7 @@ function TarjetaResultado({
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
             <span className="h-px flex-1 bg-current" />
             {duracion && (
-              <span className="shrink-0 text-[10px] font-medium text-brand-dark/50">{duracion}</span>
+              <span className="shrink-0 text-[10px] font-medium text-brand-dark/50">Aprox. {duracion}</span>
             )}
             <span className="h-px flex-1 bg-current" />
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -142,7 +158,7 @@ function TarjetaResultado({
           />
         )}
       </div>
-      <div className="flex items-center justify-between gap-6 md:justify-end">
+      <div className="flex items-center justify-between gap-6 sm:flex-col sm:items-end sm:justify-start">
         <div className="text-right">
           <p className="font-display text-2xl font-extrabold text-brand-dark">${Number(r.precioBase).toFixed(2)}</p>
           <p className="text-xs text-brand-dark/50">
