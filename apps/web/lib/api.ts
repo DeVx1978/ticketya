@@ -2461,3 +2461,23 @@ export async function enviarLeadPublicidad(datos: DatosLeadPublicidad): Promise<
     throw new Error(mensaje ?? "No se pudo enviar tu solicitud. Intenta de nuevo.");
   }
 }
+
+/**
+ * Fase 5-buscador (16-ago-2026) -- reemplaza el banner con un dato
+ * falso ("15% de descuento") por el beneficio real del programa de
+ * referidos, ya configurado en producción.
+ */
+export interface BeneficiosReferidos {
+  creditoReferidor: number;
+  descuentoReferido: number;
+}
+
+export async function obtenerBeneficiosReferidos(): Promise<BeneficiosReferidos | null> {
+  try {
+    const res = await fetch(`${API_URL}/referidos/beneficios-publicos`, { cache: "no-store" });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}

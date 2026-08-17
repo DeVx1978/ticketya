@@ -337,4 +337,19 @@ describe('Programa de referidos (e2e)', () => {
       .send({ creditoReferidor: 100, descuentoReferido: 100 })
       .expect(403);
   });
+
+  /**
+   * Fase 5-buscador (16-ago-2026) -- endpoint publico nuevo, para
+   * mostrar el beneficio real del programa de referidos en la
+   * portada/resultados (reemplaza un banner con un dato falso).
+   */
+  it('GET /referidos/beneficios-publicos -- no requiere autenticacion, devuelve los valores reales', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/referidos/beneficios-publicos')
+      .expect(200);
+    expect(res.body).toHaveProperty('creditoReferidor');
+    expect(res.body).toHaveProperty('descuentoReferido');
+    expect(typeof res.body.creditoReferidor).toBe('number');
+    expect(typeof res.body.descuentoReferido).toBe('number');
+  });
 });

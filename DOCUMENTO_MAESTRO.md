@@ -1284,6 +1284,16 @@ También confirmado: `oficina_agencia` y `parada_intermedia` ya son tipos reales
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.26 Franja de beneficio real de referidos, reemplaza el banner falso -- 16-ago-2026
+
+Con la confirmación real del director de los valores reales configurados (`cashback_porcentaje_default=10.00`, `referido_credito_referidor_default=5.00`, `referido_descuento_referido_default=3.00`), se construyó la franja verde de cada tarjeta de resultado usando el programa de referidos real, en vez del "15% de descuento" falso de la referencia.
+
+**Endpoint público nuevo, mínimo y de solo lectura:** `GET /referidos/beneficios-publicos` -- reutiliza el mismo método real que ya usaba el endpoint de `super_admin` (misma fuente de verdad, sin duplicar lógica), pero sin autenticación, porque un visitante sin cuenta también debe poder ver el beneficio. No expone ningún otro dato de configuración interna, solo `creditoReferidor` y `descuentoReferido`.
+
+**Frontend:** `obtenerBeneficiosReferidos()` en `lib/api.ts`, obtenido en paralelo con la búsqueda de viajes (no en secuencia, sin agregar latencia). Si falla, la tarjeta se ve bien igual, sin la franja -- nunca rompe la página completa por un dato secundario.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **9/9 pruebas e2e de referidos, sin ninguna regresión** (incluida 1 prueba nueva real que confirma que el endpoint público responde sin autenticación con los valores reales).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

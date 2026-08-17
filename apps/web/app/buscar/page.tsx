@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { buscarViajes, AMENIDADES_CATALOGO, type Amenidad, type ResultadoViaje } from "@/lib/api";
+import { buscarViajes, AMENIDADES_CATALOGO, obtenerBeneficiosReferidos, type Amenidad, type ResultadoViaje } from "@/lib/api";
 import { FiltrosBusqueda } from "./FiltrosBusqueda";
 import { ResenasCooperativa } from "./ResenasCooperativa";
 import { OrdenarPor } from "./OrdenarPor";
@@ -58,18 +58,28 @@ function TarjetaResultado({
   hrefAsientos,
   esMejorPrecio,
   esTopCalificado,
+  beneficiosReferidos,
 }: {
   r: ResultadoViaje;
   hrefAsientos: string;
   esMejorPrecio: boolean;
   esTopCalificado: boolean;
+  beneficiosReferidos: { creditoReferidor: number; descuentoReferido: number } | null;
 }) {
   const duracion = calcularDuracion(r.horaSalidaProgramada, r.horaLlegadaEstimada);
   return (
-    <div
-      key={r.viajeId}
-      className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:flex-row sm:items-start"
-    >
+    <div key={r.viajeId} className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+      {/* Franja de beneficio real -- reemplaza el "15% de descuento"
+          falso de la referencia (16-ago-2026, confirmado con el
+          director: usar el programa de referidos real en su lugar).
+          Solo se muestra si el dato real llegó correctamente -- si el
+          endpoint falla, la tarjeta se ve bien igual, sin franja. */}
+      {beneficiosReferidos && beneficiosReferidos.creditoReferidor > 0 && (
+        <div className="bg-emerald-50 px-5 py-2 text-xs font-medium text-emerald-800">
+          🎁 Invita a un amigo y gana ${beneficiosReferidos.creditoReferidor.toFixed(2)} de crédito
+        </div>
+      )}
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start">
       {/* Avatar de la cooperativa -- corregido con medición real de
           píxeles (16-ago-2026, orden de la directora: "la imagen de
           referencia es el plano exacto a replicar, no inspiración").
@@ -219,6 +229,7 @@ function TarjetaResultado({
         </Link>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -249,6 +260,12 @@ export default async function ResultadosBusquedaPage({
   }
 
   const amenidadesArr = amenidades ? (amenidades.split(",") as Amenidad[]) : undefined;
+
+  // Fase 5-buscador (16-ago-2026) -- en paralelo con la búsqueda de
+  // viajes, no en secuencia (no debe agregar latencia extra). Si
+  // falla, el resultado es null -- la franja de beneficio real
+  // simplemente no se muestra, sin romper toda la página.
+  const promesaBeneficios = obtenerBeneficiosReferidos();
 
   let resultadosIda: ResultadoViaje[] = [];
   let resultadosVuelta: ResultadoViaje[] = [];
@@ -284,6 +301,8 @@ export default async function ResultadosBusquedaPage({
   } catch {
     error = "No se pudo completar la búsqueda. Intenta de nuevo en un momento.";
   }
+
+  const beneficiosReferidos = await promesaBeneficios;
 
   // Fase 5-buscador (16-ago-2026) -- ordenamiento real, del lado del
   // servidor, sobre los datos reales ya obtenidos -- nunca se inventa
@@ -457,6 +476,7 @@ export default async function ResultadosBusquedaPage({
                     calificacionMaxima !== null &&
                     r.cooperativaCalificacionPromedio === calificacionMaxima
                   }
+                  beneficiosReferidos={beneficiosReferidos}
                 />
               ))}
             </div>
