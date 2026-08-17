@@ -135,6 +135,63 @@ export default function UnidadesPage() {
     }
   }
 
+  /**
+   * Fase 7-VIP (17-ago-2026, orden real del director): la vista previa
+   * deja de ser de solo lectura -- reutiliza EXACTAMENTE el mismo
+   * mecanismo real ya existente (piso.categoria === 'vip' se hereda a
+   * todos sus asientos, interpretarCelda ya lo maneja) en vez de
+   * inventar uno nuevo. Investigado contra plataformas profesionales
+   * de venta de asientos (Eventive, Seatmap.pro): separan "construir
+   * la estructura" de "categorizar los asientos" -- mismo criterio
+   * aquí. Contexto real del director: en Ecuador, un bus VIP casi
+   * siempre es de 2 pisos con el primero completo como VIP -- por eso
+   * el caso principal es un interruptor POR PISO, no clic por clic.
+   */
+  function actualizarDistribucionDesdeObjeto(nuevo: DistribucionAsientos) {
+    setDistribucionParseada(nuevo);
+    setDistribucionJson(JSON.stringify(nuevo, null, 2));
+  }
+
+  function alternarPisoVip(pisoIdx: number) {
+    if (!distribucionParseada?.pisos) return;
+    const nuevosPisos = distribucionParseada.pisos.map((p, i) => {
+      if (i !== pisoIdx) return p;
+      const esVipActual = p.categoria?.toLowerCase() === "vip";
+      if (esVipActual) {
+        const { categoria: _categoria, ...resto } = p;
+        return resto;
+      }
+      return { ...p, categoria: "vip" };
+    });
+    actualizarDistribucionDesdeObjeto({ ...distribucionParseada, pisos: nuevosPisos });
+  }
+
+  function alternarAsientoVip(pisoIdx: number, filaIdx: number, celdaIdx: number) {
+    if (!distribucionParseada?.pisos) return;
+    const nuevosPisos = distribucionParseada.pisos.map((p, pi) => {
+      if (pi !== pisoIdx) return p;
+      return {
+        ...p,
+        filas: p.filas.map((f, fi) => {
+          if (fi !== filaIdx) return f;
+          return {
+            celdas: f.celdas.map((c, ci) => {
+              if (ci !== celdaIdx || c === null) return c;
+              const numero = typeof c === "object" ? c.numero : c;
+              const etiquetasActuales = typeof c === "object" ? (c.etiquetas ?? []) : [];
+              const tieneVipPropio = etiquetasActuales.includes("vip");
+              const nuevasEtiquetas = tieneVipPropio
+                ? etiquetasActuales.filter((e) => e !== "vip")
+                : [...etiquetasActuales, "vip" as const];
+              return nuevasEtiquetas.length === 0 ? numero : { numero, etiquetas: nuevasEtiquetas };
+            }),
+          };
+        }),
+      };
+    });
+    actualizarDistribucionDesdeObjeto({ ...distribucionParseada, pisos: nuevosPisos });
+  }
+
   async function crearTipo(e: React.FormEvent) {
     e.preventDefault();
     setErrorTipo(null);
@@ -334,56 +391,85 @@ export default function UnidadesPage() {
 
                 {distribucionParseada && (
                   <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-                      Vista previa
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                        Marcar asientos VIP
+                      </p>
+                      <span className="flex items-center gap-1 text-[10px] text-brand-dark/50">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> VIP
+                      </span>
+                    </div>
+                    <p className="mb-2 text-xs text-brand-dark/50">
+                      En Ecuador, un bus VIP casi siempre es de 2 pisos con el primero completo como VIP
+                      -- usa el interruptor de piso para ese caso. Para un asiento suelto, haz clic
+                      directo sobre su número.
                     </p>
-                    {/* Lectores de pantalla (13-ago-2026, accesibilidad parte
-                        2) -- esta vista previa NO es interactiva (la edición
-                        real pasa por el textarea de arriba, ya accesible por
-                        teclado de forma nativa) -- se marca como región de
-                        solo lectura para que un lector de pantalla no la
-                        confunda con un editor de verdad. */}
-                    <div
-                      className="space-y-3 rounded-lg bg-white p-4"
-                      role="img"
-                      aria-label={`Vista previa de solo lectura de la distribución de asientos configurada, ${obtenerPisosDeDistribucion(distribucionParseada, Number(capacidad) || 0).length} piso(s)`}
-                    >
+                    <div className="space-y-4 rounded-lg bg-white p-4">
                       {obtenerPisosDeDistribucion(distribucionParseada, Number(capacidad) || 0).map(
-                        (piso, pisoIdx) => (
-                          <div key={pisoIdx} aria-hidden="true">
-                            <p className="mb-1 text-xs font-bold text-brand-dark">{piso.nombre}</p>
-                            <div className="space-y-1">
-                              {piso.filas.map((fila, i) => (
-                                <div key={i} className="flex items-center gap-1.5">
-                                  {fila.celdas.map((celda, j) => {
-                                    const interpretada = interpretarCelda(celda, piso);
-                                    if (interpretada === null) {
-                                      return <span key={j} className="w-3" />;
-                                    }
-                                    const { numero, etiquetas } = interpretada;
-                                    return (
-                                      <div key={j} className="relative">
-                                        <span className="flex h-7 w-7 items-center justify-center rounded bg-brand-light text-[10px] font-semibold text-brand-dark">
-                                          {numero}
-                                        </span>
-                                        {etiquetas.length > 0 && (
-                                          <span className="absolute -top-0.5 -right-0.5 flex gap-0.5">
-                                            {etiquetas.includes("vip") && (
-                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                            )}
-                                            {etiquetas.includes("mujeres") && (
-                                              <span className="h-1.5 w-1.5 rounded-full bg-pink-500" />
-                                            )}
-                                          </span>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ))}
+                        (piso, pisoIdx) => {
+                          const pisoEsVip = piso.categoria?.toLowerCase() === "vip";
+                          return (
+                            <div key={pisoIdx}>
+                              <div className="mb-1.5 flex items-center justify-between">
+                                <p className="text-xs font-bold text-brand-dark">{piso.nombre}</p>
+                                <label className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-dark/70">
+                                  <input
+                                    type="checkbox"
+                                    checked={pisoEsVip}
+                                    onChange={() => alternarPisoVip(pisoIdx)}
+                                    className="h-3.5 w-3.5 accent-amber-500"
+                                  />
+                                  Todo este piso es VIP
+                                </label>
+                              </div>
+                              <div className="space-y-1">
+                                {piso.filas.map((fila, filaIdx) => (
+                                  <div key={filaIdx} className="flex items-center gap-1.5">
+                                    {fila.celdas.map((celda, celdaIdx) => {
+                                      const interpretada = interpretarCelda(celda, piso);
+                                      if (interpretada === null) {
+                                        return <span key={celdaIdx} className="w-7" />;
+                                      }
+                                      const { numero, etiquetas } = interpretada;
+                                      const esVip = etiquetas.includes("vip");
+                                      const esMujeres = etiquetas.includes("mujeres");
+                                      return (
+                                        <div key={celdaIdx} className="relative">
+                                          <button
+                                            type="button"
+                                            disabled={pisoEsVip}
+                                            aria-pressed={esVip}
+                                            onClick={() => alternarAsientoVip(pisoIdx, filaIdx, celdaIdx)}
+                                            title={
+                                              pisoEsVip
+                                                ? "Ya es VIP porque todo el piso lo es"
+                                                : esVip
+                                                  ? "Quitar VIP a este asiento"
+                                                  : "Marcar este asiento como VIP"
+                                            }
+                                            className={`flex h-7 w-7 items-center justify-center rounded text-[10px] font-semibold transition disabled:cursor-default ${
+                                              esVip
+                                                ? "bg-amber-500 text-white"
+                                                : "bg-brand-light text-brand-dark hover:bg-brand-cobalto/20"
+                                            }`}
+                                          >
+                                            {numero}
+                                          </button>
+                                          {esMujeres && (
+                                            <span
+                                              title="Exclusivo mujeres (configurado por JSON)"
+                                              className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-pink-500"
+                                            />
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ),
+                          );
+                        },
                       )}
                     </div>
                   </div>
