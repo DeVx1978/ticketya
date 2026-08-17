@@ -148,6 +148,22 @@ export default async function ResultadosBusquedaPage({
   const mostrandoVuelta = esIdaYVuelta && !!idaViajeId;
   let resultadosAMostrar = mostrandoVuelta ? resultadosVuelta : resultadosIda;
 
+  // Corrección real de un bug de producción (17-ago-2026, reportado
+  // por el director con evidencia -- "This page couldn't load"):
+  // page.tsx es un componente de SERVIDOR, TarjetaCooperativaAgrupada
+  // es de CLIENTE -- Next.js no permite pasar una función como prop a
+  // través de esa frontera (no es serializable), solo datos.
+  // Corregido: en vez de pasar `construirHref` como función, se
+  // calcula aquí mismo un mapa real {viajeId: href} con datos ya
+  // resueltos (strings), y se le pasa el mapa -- 100% serializable.
+  // No se detectó en tsc/next build porque /buscar es una ruta
+  // dinámica (no se prerender con datos reales en build) -- solo se
+  // manifiesta al navegar de verdad, como hizo el director.
+  const hrefsPorViaje: Record<string, string> = {};
+  for (const r of resultadosAMostrar) {
+    hrefsPorViaje[r.viajeId] = mostrandoVuelta ? hrefParaVuelta(r.viajeId) : hrefParaIda(r.viajeId);
+  }
+
   // Filtro rápido por cooperativa (16-ago-2026, orden real de la
   // directora) -- lista de cooperativas ÚNICAS reales presentes en
   // los resultados de ESTA búsqueda (nunca un catálogo fijo -- si una
@@ -280,7 +296,7 @@ export default async function ResultadosBusquedaPage({
                 <TarjetaCooperativaAgrupada
                   key={`${grupo[0].cooperativaId}::${grupo[0].tipoVehiculoId}`}
                   viajes={grupo}
-                  construirHref={(viajeId) => (mostrandoVuelta ? hrefParaVuelta(viajeId) : hrefParaIda(viajeId))}
+                  hrefsPorViaje={hrefsPorViaje}
                   esMejorPrecio={
                     precioMinimo !== null && grupo.some((r) => Number(r.precioBase) === precioMinimo)
                   }
