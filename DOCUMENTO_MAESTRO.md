@@ -1397,6 +1397,16 @@ Segundo pendiente real acordado con la directora tras la Zona VIP (sección 5.30
 
 **Pendiente real, siguiente paso operativo, no de código:** una vez desplegado, corregir los datos ya existentes -- entrar al panel, buscar cada terminal real en Google Maps, y pegar su coordenada -- mismo criterio ya usado con las horas de llegada estimada de los viajes de prueba (sección 5.18).
 
+## 5.33 HOTFIX: sin menú de navegación en celular en la portada -- imposible iniciar sesión desde un teléfono real -- 17-ago-2026
+
+El director reportó, mientras probaba las funciones de esta sesión, que no encontraba cómo iniciar sesión desde la portada en su teléfono. Confirmado de inmediato con el código real: el menú completo del `Hero.tsx` (Rutas, Cooperativas, Ayuda, **Iniciar sesión**) tenía la clase `hidden sm:flex` -- invisible por completo en cualquier pantalla menor a 640px, **sin ningún menú alternativo para celular**, desde que se construyó el Hero en la Fase 2 (16-ago-2026, sección 5.10). Un bug real, crítico, presente en producción desde entonces, nunca detectado hasta esta prueba manual del director.
+
+**Corregido:** botón de menú hamburguesa, visible solo en celular (`sm:hidden`), que despliega el mismo menú real (mismos 4 enlaces, incluido "Iniciar sesión") como un panel debajo del encabezado.
+
+**Verificación real hecha antes de dar esto por cerrado:** se revisó si el mismo patrón (`hidden ... sm:flex` / `md:flex` sin alternativa) existía en otras pantallas del sitio -- confirmado que tanto `panel-empresa/layout.tsx` como `admin/layout.tsx` **ya tenían su propio menú móvil real** (una barra horizontal con `md:hidden`) -- el problema era exclusivo de la portada pública.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
