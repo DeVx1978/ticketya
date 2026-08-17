@@ -3,6 +3,7 @@ import { buscarViajes, AMENIDADES_CATALOGO, type Amenidad, type ResultadoViaje }
 import { FiltrosBusqueda } from "./FiltrosBusqueda";
 import { ResenasCooperativa } from "./ResenasCooperativa";
 import { OrdenarPor } from "./OrdenarPor";
+import { FiltroCooperativaPills } from "./FiltroCooperativaPills";
 
 function formatearHora(iso: string): string {
   return new Date(iso).toLocaleTimeString("es-EC", {
@@ -121,9 +122,17 @@ function TarjetaResultado({
           </div>
         )}
 
-        {/* Línea visual del trayecto -- salida, duración real (si existe), llegada. */}
+        {/* Línea visual del trayecto -- salida, duración real (si
+            existe), llegada. Nombre real de terminal debajo de cada
+            hora -- hallazgo real de la directora al medir la
+            referencia con precisión: la ciudad sola no bastaba. */}
         <div className="mt-2 flex items-center gap-2">
-          <span className="text-sm font-semibold text-brand-dark">{formatearHora(r.horaSalidaProgramada)}</span>
+          <div className="text-right sm:text-left">
+            <span className="block text-sm font-semibold text-brand-dark">
+              {formatearHora(r.horaSalidaProgramada)}
+            </span>
+            <span className="block text-[10px] text-brand-cobalto/80">{r.origenNombre}</span>
+          </div>
           <span className="flex flex-1 items-center gap-1 text-brand-dark/25">
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
             <span className="h-px flex-1 bg-current" />
@@ -134,7 +143,12 @@ function TarjetaResultado({
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
           </span>
           {r.horaLlegadaEstimada && (
-            <span className="text-sm font-semibold text-brand-dark">{formatearHora(r.horaLlegadaEstimada)}</span>
+            <div>
+              <span className="block text-sm font-semibold text-brand-dark">
+                {formatearHora(r.horaLlegadaEstimada)}
+              </span>
+              <span className="block text-[10px] text-brand-cobalto/80">{r.destinoNombre}</span>
+            </div>
           )}
         </div>
 
@@ -207,7 +221,7 @@ export default async function ResultadosBusquedaPage({
   // y idaAsiento llegan cuando ya se eligio el tramo de ida y se esta
   // viendo la busqueda del tramo de vuelta (ver TarjetaResultado, que
   // arma ese link al elegir "Elegir asiento" en el tramo de ida).
-  const { fechaVuelta, idaViajeId, idaAsientos, ordenarPor } = sp;
+  const { fechaVuelta, idaViajeId, idaAsientos, ordenarPor, cooperativaId } = sp;
   const esIdaYVuelta = !!fechaVuelta;
 
   if (!origenId || !destinoId || !fecha) {
@@ -320,7 +334,19 @@ export default async function ResultadosBusquedaPage({
   }
 
   const mostrandoVuelta = esIdaYVuelta && !!idaViajeId;
-  const resultadosAMostrar = mostrandoVuelta ? resultadosVuelta : resultadosIda;
+  let resultadosAMostrar = mostrandoVuelta ? resultadosVuelta : resultadosIda;
+
+  // Filtro rápido por cooperativa (16-ago-2026, orden real de la
+  // directora) -- lista de cooperativas ÚNICAS reales presentes en
+  // los resultados de ESTA búsqueda (nunca un catálogo fijo -- si una
+  // cooperativa no tiene viajes en esta ruta/fecha, no aparece).
+  const cooperativasUnicas = Array.from(
+    new Map(resultadosAMostrar.map((r) => [r.cooperativaId, { id: r.cooperativaId, nombre: r.cooperativaNombre }])).values(),
+  );
+
+  if (cooperativaId) {
+    resultadosAMostrar = resultadosAMostrar.filter((r) => r.cooperativaId === cooperativaId);
+  }
 
   // Fase 5-buscador (16-ago-2026) -- "Mejor precio" real, calculado
   // una sola vez sobre TODOS los resultados que se van a mostrar, no
@@ -391,6 +417,8 @@ export default async function ResultadosBusquedaPage({
               </p>
               {resultadosAMostrar.length > 1 && <OrdenarPor />}
             </div>
+
+            {!mostrandoVuelta && <FiltroCooperativaPills cooperativas={cooperativasUnicas} />}
 
             <div className="space-y-4">
               {error && <p className="rounded-lg bg-red-50 p-4 text-red-700">{error}</p>}

@@ -1228,6 +1228,22 @@ Tras 5 rondas de correcciones sobre la misma pantalla (secciones 5.17-5.20) sin 
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas. **Limitación real, reportada con la máxima honestidad dado el peso de esta regla nueva:** se intentó la captura real obligatoria 3 veces, el entorno falló las 3 con timeouts duros -- no se pudo cumplir el paso 3 del protocolo nuevo (comparación lado a lado antes de reportar). Esto se comunica de forma directa y explícita al director/directora, sin reportar el trabajo como "listo" -- la confirmación visual real depende de que ellos lo verifiquen una vez desplegado.
 
+## 5.22 Comparación estructural completa contra la referencia -- nombre de terminal + filtro rápido por cooperativa -- 16-ago-2026
+
+El director comparó su propia captura de producción contra la referencia real, elemento por elemento -- confirmó que faltaban piezas estructurales reales, no solo ajustes de tamaño: nombre de terminal debajo de cada hora, fila de filtro rápido por cooperativa, y más categorías en el panel de filtros (esto último queda pendiente).
+
+**Construido con datos 100% reales:**
+
+1. **Nombre real de terminal debajo de cada hora** -- hallazgo real: el `JOIN` con origen/destino ya existía en `busqueda.service.ts` (se usaba para lat/long del link del mapa), solo faltaba seleccionar el campo `nombre`. Agregado `origenNombre`/`destinoNombre` a `ResultadoViaje`, sin necesitar ningún `JOIN` nuevo.
+
+2. **Filtro rápido por cooperativa** (`FiltroCooperativaPills.tsx`, nuevo) -- píldoras horizontales arriba de los resultados, mismo patrón real de URL que ya usan `FiltrosBusqueda` y `OrdenarPor`. Usa las cooperativas ÚNICAS reales presentes en los resultados de esa búsqueda específica -- nunca un catálogo fijo ni los códigos de la referencia (que pertenecen a un conjunto de datos distinto al real de Columbus, RO/CI/TA/PA/CE/AZ no son cooperativas reales del sistema). El filtrado ocurre en el mismo servidor, sobre el arreglo ya obtenido -- sin necesitar ningún cambio de backend.
+
+**Explícitamente pendiente, comunicado con honestidad, no oculto:** más categorías de filtro en el panel lateral (precio min/max, tipo de bus por checkbox, cooperativa por checkbox) -- la referencia las tiene, Columbus hoy no. Y el botón "Ver horarios" de la referencia -- implica una función real que no existe (ver otros horarios de la misma cooperativa sin salir de la tarjeta); se preguntó explícitamente al director si construirla de verdad o si el botón debe ir a otro lado, sin respuesta todavía al momento de cerrar esta sección.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **12/12 pruebas e2e de búsqueda, sin ninguna regresión**.
+
+**Limitación real, reportada con la máxima honestidad -- 4º intento consecutivo fallido de la captura obligatoria del protocolo de la sección 5.21:** se compiló un build fresco del backend (confirmado con marca de tiempo real), se arrancaron backend y frontend, se confirmó con `curl` que ambos respondían `200` -- y aun así, el navegador llegó justo cuando el servidor había caído entre esa confirmación y la navegación real, mismo patrón intermitente ya documentado repetidamente en este proyecto. No se fabricó ni se fingió una comparación -- se reporta la falla tal cual, con la evidencia real de los intentos genuinos hechos.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
