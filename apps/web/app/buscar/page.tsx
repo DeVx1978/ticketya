@@ -55,45 +55,40 @@ function TarjetaResultado({
   r,
   hrefAsientos,
   esMejorPrecio,
+  esTopCalificado,
 }: {
   r: ResultadoViaje;
   hrefAsientos: string;
   esMejorPrecio: boolean;
+  esTopCalificado: boolean;
 }) {
   const duracion = calcularDuracion(r.horaSalidaProgramada, r.horaLlegadaEstimada);
   return (
     <div
       key={r.viajeId}
-      className="relative flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:flex-row sm:items-start"
+      className="flex flex-col gap-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:flex-row sm:items-start"
     >
-      {esMejorPrecio && (
-        <span className="absolute -top-2.5 left-4 rounded-full bg-brand-cobalto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-          Mejor precio
-        </span>
-      )}
-
-      {/* Avatar de la cooperativa -- hallazgo real del director
-          (16-ago-2026, captura de producción): el círculo de 32px con
-          object-cover cortaba el logo en vez de mostrarlo completo.
-          Corregido: contenedor más grande (56px), cuadrado con
-          esquinas redondeadas (no círculo -- los logos reales que dio
-          el director no están todos optimizados para recorte
-          circular), fondo blanco propio, y object-contain -- el logo
-          COMPLETO siempre cabe adentro, nunca se recorta. */}
-      {/* Rectangular horizontal, no cuadrado -- orden explícita del
-          director (16-ago-2026): un contenedor cuadrado no le hace
-          justicia a logos que son naturalmente anchos (como el de
-          Transportes Ecuador, con su texto completo). */}
-      <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
+      {/* Avatar de la cooperativa -- corregido con medición real de
+          píxeles (16-ago-2026, orden de la directora: "la imagen de
+          referencia es el plano exacto a replicar, no inspiración").
+          Medido directamente sobre la captura real del director: el
+          avatar es pequeño y CUADRADO (~42x42px reales sobre una
+          tarjeta de ~755px de ancho, es decir ~5.5% del ancho de la
+          tarjeta) -- no la versión rectangular ancha que se había
+          construido antes por interpretar un comentario verbal en vez
+          de medir la imagen. object-contain se mantiene (el logo
+          completo siempre cabe, nunca se recorta -- ese hallazgo del
+          16-ago sigue siendo válido). */}
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
         {r.cooperativaLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
           <img
             src={r.cooperativaLogoUrl}
             alt={r.cooperativaNombre}
-            className="h-full w-full object-contain p-1"
+            className="h-full w-full object-contain p-0.5"
           />
         ) : (
-          <span className="font-display text-lg font-bold text-brand-cobalto">
+          <span className="font-display text-sm font-bold text-brand-cobalto">
             {r.cooperativaNombre.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -162,8 +157,27 @@ function TarjetaResultado({
           />
         )}
       </div>
+
+      {/* Bloque de precio/acción -- reposicionado según medición real:
+          la insignia "Mejor precio" vive ARRIBA del precio, dentro de
+          este bloque -- no flotando en la esquina de la tarjeta como
+          antes (esa posición no existe en la referencia real medida). */}
       <div className="flex items-center justify-between gap-6 sm:flex-col sm:items-end sm:justify-start">
         <div className="text-right">
+          {(esMejorPrecio || esTopCalificado) && (
+            <div className="mb-1 flex flex-wrap justify-end gap-1">
+              {esMejorPrecio && (
+                <span className="inline-block rounded-full bg-brand-cobalto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                  Mejor precio
+                </span>
+              )}
+              {esTopCalificado && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  ★ Top calificado
+                </span>
+              )}
+            </div>
+          )}
           <p className="font-display text-2xl font-extrabold text-brand-dark">${Number(r.precioBase).toFixed(2)}</p>
           <p className="text-xs text-brand-dark/50">
             {r.asientosDisponibles} asiento{r.asientosDisponibles !== 1 ? "s" : ""} libre
@@ -316,6 +330,20 @@ export default async function ResultadosBusquedaPage({
       ? Math.min(...resultadosAMostrar.map((r) => Number(r.precioBase)))
       : null;
 
+  // Orden de la directora (16-ago-2026) -- agregado al medir la
+  // referencia real con precisión: "Top calificado" también es real,
+  // calculado (nunca fijo) -- la calificación más alta entre los
+  // resultados, con el mismo umbral mínimo de reseñas que ya usa
+  // ResenasCooperativa (5) para no destacar una calificación con muy
+  // pocos votos como si fuera representativa.
+  const calificacionMaxima =
+    resultadosAMostrar
+      .filter((r) => r.cooperativaCalificacionPromedio !== null && r.cooperativaCalificacionCantidad >= 5)
+      .reduce<number | null>(
+        (max, r) => (max === null || r.cooperativaCalificacionPromedio! > max ? r.cooperativaCalificacionPromedio! : max),
+        null,
+      );
+
   return (
     <main className="flex-1 bg-brand-light/40">
       <div className="mx-auto max-w-5xl px-4 py-10">
@@ -384,6 +412,10 @@ export default async function ResultadosBusquedaPage({
                   r={r}
                   hrefAsientos={mostrandoVuelta ? hrefParaVuelta(r.viajeId) : hrefParaIda(r.viajeId)}
                   esMejorPrecio={precioMinimo !== null && Number(r.precioBase) === precioMinimo}
+                  esTopCalificado={
+                    calificacionMaxima !== null &&
+                    r.cooperativaCalificacionPromedio === calificacionMaxima
+                  }
                 />
               ))}
             </div>
