@@ -1294,6 +1294,19 @@ Con la confirmación real del director de los valores reales configurados (`cash
 
 **Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **9/9 pruebas e2e de referidos, sin ninguna regresión** (incluida 1 prueba nueva real que confirma que el endpoint público responde sin autenticación con los valores reales).
 
+## 5.27 Sesión de frontend, Fase 6: "Ver horarios" agrupado por cooperativa -- 17-ago-2026
+
+Orden real del director: hoy cada horario de una cooperativa aparecía como una tarjeta separada -- el pasajero busca una ruta y, apenas la encuentra, debe poder elegir el horario que más le convenga dentro de la misma tarjeta, no una tarjeta por cada hora.
+
+**Construido:**
+- `TarjetaCooperativaAgrupada.tsx` (nuevo, componente cliente) -- reemplaza `TarjetaResultado` (eliminada, su lógica se movió aquí completa). Recibe TODOS los viajes reales de una misma cooperativa+tipo de vehículo para esta ruta/fecha, ordenados por hora de salida ascendente. Muestra el primero (salida más próxima) por defecto, con un desplegable real "Todos los horarios disponibles" que aparece solo si hay 2 o más -- al elegir otro horario, toda la tarjeta (hora, duración, precio, asientos disponibles, link de "Elegir asiento") se actualiza al viaje real correspondiente.
+- Agrupamiento real en `page.tsx` (componente de servidor) -- sobre los datos ya obtenidos de `buscarViajes`, sin ningún endpoint nuevo. "Mejor precio" y "Top calificado" ahora se calculan a nivel de GRUPO, no de viaje individual.
+- Texto real de ruta ("📍 Ruta: {origen} → {destino}") -- sin inventar paradas intermedias (ver hallazgo de la sección 5.25: existe la tabla `ruta_paradas` pero ninguna función la usa todavía).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, **12/12 pruebas e2e de búsqueda, sin ninguna regresión**.
+
+**Hallazgo real, reportado con honestidad:** al verificar con la base de datos real de producción, **ninguna cooperativa tiene hoy más de 1 viaje programado en la misma ruta** -- la función está construida y lista, pero no hay datos reales todavía para verla en acción (el desplegable de horarios no aparece si solo hay 1). Pendiente: decidir si se agrega un segundo horario real de prueba para alguna ruta ya existente, usando el mismo flujo real de creación de viajes de la cooperativa (no datos falsos, un viaje real más).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
