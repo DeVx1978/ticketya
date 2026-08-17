@@ -38,6 +38,8 @@ export interface ResultadoViaje {
   origenLongitud: string;
   destinoLatitud: string;
   destinoLongitud: string;
+  origenNombre: string;
+  destinoNombre: string;
 }
 
 export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperacion[]> {

@@ -202,6 +202,14 @@ export class BusquedaService {
         origenLongitud: origen.longitud,
         destinoLatitud: destino.latitud,
         destinoLongitud: destino.longitud,
+        // Orden real de la directora (16-ago-2026, protocolo de
+        // medición precisa de referencias): la referencia real
+        // mostraba el nombre de la terminal debajo de cada hora, no
+        // solo la ciudad -- el JOIN con origen/destino ya existía
+        // (se usaba para lat/long), solo faltaba seleccionar el
+        // nombre real.
+        origenNombre: origen.nombre,
+        destinoNombre: destino.nombre,
       })
       .from(viajes)
       .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
