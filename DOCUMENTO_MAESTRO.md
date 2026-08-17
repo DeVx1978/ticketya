@@ -1363,6 +1363,25 @@ Orden real del director, marcada como indispensable tras confirmar visualmente e
 
 **Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **211/211 pruebas e2e de TODA la suite, sin ninguna regresión** -- incluidas 3 pruebas nuevas reales: el cálculo correcto de precioBase+recargoVip en checkout, y 2 pruebas del bug de validación corregido (acepta el formato nuevo, rechaza una etiqueta inventada).
 
+## 5.31 Interfaz de clic real para marcar VIP -- investigación de plataformas profesionales, más contexto real del director -- 17-ago-2026
+
+Pendiente real que quedó de la sección 5.30 (la validación del backend ya aceptaba el formato correcto, pero el panel seguía siendo JSON crudo). Antes de construir, se investigaron plataformas profesionales reales de venta de asientos (Eventive, Seatmap.pro, seat-picker): todas separan "construir la estructura física" de "categorizar/etiquetar los asientos" como 2 pasos distintos -- mismo criterio aplicado aquí.
+
+**Contexto real del director, que cambió el diseño para bien:** en Ecuador, un bus VIP casi siempre es de 2 pisos, con el primer piso completo como VIP -- no asientos sueltos repartidos. Confirmado que el sistema YA soportaba exactamente este caso: `piso.categoria === 'vip'` se hereda a todos sus asientos (mecanismo real ya existente, documentado como "compatibilidad hacia atrás permanente" desde el 05-ago-2026) -- no había que construir nada nuevo para el caso principal, solo exponerlo como un interruptor.
+
+**Construido, sobre `panel-empresa/unidades/page.tsx`:**
+- La vista previa (antes marcada explícitamente como de solo lectura para lectores de pantalla) ahora es interactiva de verdad.
+- **Interruptor por piso** ("Todo este piso es VIP") -- el caso principal real, según el director.
+- **Clic directo sobre un asiento individual** -- el caso secundario (un asiento suelto VIP en un piso normal), deshabilitado automáticamente si el piso completo ya es VIP (evita una interacción redundante y confusa).
+- Cada clic actualiza el objeto real Y el texto JSON del `textarea` al mismo tiempo -- ambos se mantienen sincronizados, el JSON sigue siendo la fuente real que se envía al backend.
+- La etiqueta "mujeres" (configurable solo por JSON, fuera del alcance de esta orden) se sigue mostrando visualmente en la vista previa -- no se perdió información al construir esto.
+
+**Hallazgo real propio, corregido antes de comitear:** al insertar las funciones nuevas con `str_replace`, se consumió por error la línea de apertura de la función `crearTipo` (el ancla del reemplazo coincidía con esa línea completa) -- detectado de inmediato por `tsc`, corregido antes de continuar.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
+**Decisión real tomada con el director sobre el alcance:** no se construyó carga masiva para administradores en este mismo cambio (ya existe para que la propia cooperativa la use, `/panel-empresa/carga-masiva`, RF-COOP-008) -- se mantiene como un pendiente real separado, para no mezclar 2 funciones distintas en un solo cambio.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
