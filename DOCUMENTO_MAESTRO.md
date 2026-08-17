@@ -1382,6 +1382,21 @@ Pendiente real que quedó de la sección 5.30 (la validación del backend ya ace
 
 **Decisión real tomada con el director sobre el alcance:** no se construyó carga masiva para administradores en este mismo cambio (ya existe para que la propia cooperativa la use, `/panel-empresa/carga-masiva`, RF-COOP-008) -- se mantiene como un pendiente real separado, para no mezclar 2 funciones distintas en un solo cambio.
 
+## 5.32 Coordenadas reales de terminal -- hallazgo cerrado, "Ver trayecto en el mapa" ya funciona -- 17-ago-2026
+
+Segundo pendiente real acordado con la directora tras la Zona VIP (sección 5.30-5.31). Confirmado el hallazgo con certeza antes de construir: la columna `latitud`/`longitud` ya existía en el esquema real (`tenancy.ts`), pero **ningún DTO ni formulario, en ningún panel, permitía escribirla jamás** -- por eso "Ver trayecto en el mapa" nunca funcionó para ninguna terminal, en toda la historia del sistema.
+
+**Decisión real de alcance:** sin mapa interactivo dentro de la plataforma (habría sido un proyecto aparte, con posible costo de API) -- entrada manual, con un campo de conveniencia real: "pega coordenadas de Google Maps" (formato `lat, long`, el mismo que da un clic derecho sobre un punto real en Google Maps) -- el admin busca la ubicación real una sola vez, pega, y el sistema separa los 2 números solo.
+
+**Construido:**
+- `ActualizarPuntoOperacionDto`, `DatosNuevoPuntoOperacion`, el `UPDATE` real -- todos aceptan `latitud`/`longitud` ahora, con el rango real válido de coordenadas (-90/90, -180/180).
+- `listarPuntosOperacion` ahora también devuelve las coordenadas, para que el admin vea de un vistazo cuáles terminales todavía no las tienen.
+- `CoordenadasEditables` (nuevo componente, panel de admin) -- mismo patrón real de edición en línea que ya usaba `TasaEditable` para la tasa de terminal.
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **213/213 pruebas e2e de TODA la suite, sin ninguna regresión** -- incluidas 2 pruebas nuevas reales (guardar coordenadas reales de Machala, y rechazar una latitud fuera de rango).
+
+**Pendiente real, siguiente paso operativo, no de código:** una vez desplegado, corregir los datos ya existentes -- entrar al panel, buscar cada terminal real en Google Maps, y pegar su coordenada -- mismo criterio ya usado con las horas de llegada estimada de los viajes de prueba (sección 5.18).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

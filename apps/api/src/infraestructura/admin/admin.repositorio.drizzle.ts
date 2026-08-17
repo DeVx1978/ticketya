@@ -126,6 +126,8 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
         provincia: puntosOperacion.provincia,
         tasaMonto: puntosOperacion.tasaMonto,
         logoUrl: puntosOperacion.logoUrl,
+        latitud: puntosOperacion.latitud,
+        longitud: puntosOperacion.longitud,
         cooperativaPropietariaNombre: cooperativas.nombreComercial,
       })
       .from(puntosOperacion)
@@ -171,6 +173,8 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
     if (datos.tasaMonto !== undefined)
       valores.tasaMonto = String(datos.tasaMonto);
     if (datos.logoUrl !== undefined) valores.logoUrl = datos.logoUrl;
+    if (datos.latitud !== undefined) valores.latitud = datos.latitud;
+    if (datos.longitud !== undefined) valores.longitud = datos.longitud;
 
     if (Object.keys(valores).length === 0) return; // nada que actualizar
 

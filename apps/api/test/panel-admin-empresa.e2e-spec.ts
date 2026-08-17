@@ -252,6 +252,38 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     );
   });
 
+  /**
+   * Coordenadas reales (17-ago-2026) -- hallazgo real: la columna ya
+   * existía en el esquema (tenancy.ts), pero nunca se pudo escribir
+   * desde ningún formulario ni DTO -- "Ver trayecto en el mapa" nunca
+   * funcionó para ninguna terminal por esto.
+   */
+  it('se puede guardar la latitud/longitud real de un terminal (hallazgo real cerrado 17-ago-2026)', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/puntos-operacion/${puntoOrigenId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ latitud: -3.2649, longitud: -79.9612 }) // Machala real
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get('/admin/puntos-operacion')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .expect(200);
+    const actualizado = res.body.find(
+      (p: { id: string }) => p.id === puntoOrigenId,
+    );
+    expect(Number(actualizado.latitud)).toBeCloseTo(-3.2649, 4);
+    expect(Number(actualizado.longitud)).toBeCloseTo(-79.9612, 4);
+  });
+
+  it('RECHAZA una latitud fuera del rango real válido (-90 a 90)', async () => {
+    await request(app.getHttpServer())
+      .patch(`/admin/puntos-operacion/${puntoOrigenId}`)
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ latitud: 200, longitud: -79.9612 })
+      .expect(400);
+  });
+
   it('GET /admin/dashboard refleja la cooperativa creada (RF-ADMIN-002)', async () => {
     const res = await request(app.getHttpServer())
       .get('/admin/dashboard')
