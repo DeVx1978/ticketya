@@ -80,20 +80,28 @@ function TarjetaResultado({
           de medir la imagen. object-contain se mantiene (el logo
           completo siempre cabe, nunca se recorta -- ese hallazgo del
           16-ago sigue siendo válido). */}
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
-        {r.cooperativaLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
-          <img
-            src={r.cooperativaLogoUrl}
-            alt={r.cooperativaNombre}
-            className="h-full w-full object-contain p-0.5"
-          />
-        ) : (
+      {/* Hallazgo real del director (16-ago-2026): incluso sin
+          recortar (object-contain), un logo ancho como el de
+          Transportes Ecuador se veía diminuto dentro de una caja
+          cuadrada de 48px -- la mayor parte de la caja quedaba vacía.
+          Corregido: sin caja de tamaño fijo -- cada logo tiene solo
+          una altura fija (48px) y ancho NATURAL, así que uno ancho se
+          ve ancho de verdad, y uno cuadrado se ve cuadrado, cada uno
+          a su proporción real. */}
+      {r.cooperativaLogoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
+        <img
+          src={r.cooperativaLogoUrl}
+          alt={r.cooperativaNombre}
+          className="h-12 w-auto max-w-[140px] shrink-0 rounded-md object-contain"
+        />
+      ) : (
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-cobalto-claro">
           <span className="font-display text-sm font-bold text-brand-cobalto">
             {r.cooperativaNombre.slice(0, 2).toUpperCase()}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex-1">
         <div className="flex items-center gap-2">

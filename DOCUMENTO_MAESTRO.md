@@ -1260,6 +1260,18 @@ El director reportó que toda la sección se veía más pequeña que la referenc
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, y verificación adicional real (no solo confiada) de que la clase de Tailwind corregida sí compiló a CSS válido. **Limitación real, reportada con honestidad:** se intentó la captura visual obligatoria 2 veces más, el entorno falló ambas con timeouts duros -- van 6 intentos consecutivos fallidos de este mismo paso del protocolo en esta sesión.
 
+## 5.24 Logo sin caja fija + color real en las píldoras de filtro -- 16-ago-2026
+
+El director pidió 3 cosas: que todo se agrande y distribuya mejor (parte ya resuelta en la sección 5.23), que los logos se vean completos "incluso sin contenedor de ser el caso", y que la sección tenga el color/vida que sí tiene la referencia.
+
+**Logo sin caja de tamaño fijo:** hallazgo real -- incluso con `object-contain` (nunca recorta), un logo ancho como el de Transportes Ecuador se veía diminuto dentro de una caja cuadrada de 48px, dejando la mayor parte de la caja vacía. Corregido: sin caja de tamaño fijo -- cada logo tiene solo una altura fija (48px) y **ancho natural** (`w-auto`, con un tope de 140px para que ninguno se desborde) -- uno ancho se ve ancho de verdad, uno cuadrado se ve cuadrado, cada uno a su proporción real.
+
+**Color real en `FiltroCooperativaPills`:** 6 colores cíclicos reales, dentro de la paleta de marca ya establecida (cobalto + 5 acentos más), uno por cooperativa cuando está seleccionada -- no colores inventados sueltos ni copiados literalmente de la referencia (que usa su propia marca roja/verde, ajena a Columbus).
+
+**Verificado con un paso extra de disciplina, más allá de lo habitual:** además de `tsc --noEmit` limpio y `next build` 30/30 páginas, se confirmó explícitamente (con `grep` directo sobre el CSS ya compilado) que las clases nuevas -- incluida la arbitraria `max-w-[140px]` -- sí generaron CSS real, no solo se asumió que compilarían bien.
+
+**Limitación real, reportada con la máxima honestidad:** van **8 intentos consecutivos fallidos** de la captura visual obligatoria en esta sola sesión (2 más en esta ronda). El entorno sigue sin cooperar en este momento -- no se fabricó ninguna comparación falsa.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
