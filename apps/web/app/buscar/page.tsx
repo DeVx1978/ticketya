@@ -80,24 +80,32 @@ function TarjetaResultado({
           de medir la imagen. object-contain se mantiene (el logo
           completo siempre cabe, nunca se recorta -- ese hallazgo del
           16-ago sigue siendo válido). */}
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ring-1 ring-black/10">
-        {r.cooperativaLogoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
-          <img
-            src={r.cooperativaLogoUrl}
-            alt={r.cooperativaNombre}
-            className="h-full w-full object-contain p-0.5"
-          />
-        ) : (
+      {/* Hallazgo real del director (16-ago-2026): incluso sin
+          recortar (object-contain), un logo ancho como el de
+          Transportes Ecuador se veía diminuto dentro de una caja
+          cuadrada de 48px -- la mayor parte de la caja quedaba vacía.
+          Corregido: sin caja de tamaño fijo -- cada logo tiene solo
+          una altura fija (48px) y ancho NATURAL, así que uno ancho se
+          ve ancho de verdad, y uno cuadrado se ve cuadrado, cada uno
+          a su proporción real. */}
+      {r.cooperativaLogoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica (Cloudinary u otro), no un asset local
+        <img
+          src={r.cooperativaLogoUrl}
+          alt={r.cooperativaNombre}
+          className="h-12 w-auto max-w-[140px] shrink-0 rounded-md object-contain"
+        />
+      ) : (
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-cobalto-claro">
           <span className="font-display text-sm font-bold text-brand-cobalto">
             {r.cooperativaNombre.slice(0, 2).toUpperCase()}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <p className="font-display text-lg font-bold text-brand-dark">{r.cooperativaNombre}</p>
+          <p className="font-display text-xl font-bold text-brand-dark">{r.cooperativaNombre}</p>
           {r.cooperativaCalificacionPromedio !== null && (
             <span className="flex items-center gap-0.5 text-xs font-semibold text-amber-600">
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
@@ -128,10 +136,10 @@ function TarjetaResultado({
             referencia con precisión: la ciudad sola no bastaba. */}
         <div className="mt-2 flex items-center gap-2">
           <div className="text-right sm:text-left">
-            <span className="block text-sm font-semibold text-brand-dark">
+            <span className="block text-lg font-bold text-brand-dark">
               {formatearHora(r.horaSalidaProgramada)}
             </span>
-            <span className="block text-[10px] text-brand-cobalto/80">{r.origenNombre}</span>
+            <span className="block text-xs text-brand-cobalto/80">{r.origenNombre}</span>
           </div>
           <span className="flex flex-1 items-center gap-1 text-brand-dark/25">
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -144,10 +152,10 @@ function TarjetaResultado({
           </span>
           {r.horaLlegadaEstimada && (
             <div>
-              <span className="block text-sm font-semibold text-brand-dark">
+              <span className="block text-lg font-bold text-brand-dark">
                 {formatearHora(r.horaLlegadaEstimada)}
               </span>
-              <span className="block text-[10px] text-brand-cobalto/80">{r.destinoNombre}</span>
+              <span className="block text-xs text-brand-cobalto/80">{r.destinoNombre}</span>
             </div>
           )}
         </div>
@@ -192,7 +200,7 @@ function TarjetaResultado({
               )}
             </div>
           )}
-          <p className="font-display text-2xl font-extrabold text-brand-dark">${Number(r.precioBase).toFixed(2)}</p>
+          <p className="font-display text-3xl font-extrabold text-brand-dark">${Number(r.precioBase).toFixed(2)}</p>
           <p className="text-xs text-brand-dark/50">
             {r.asientosDisponibles} asiento{r.asientosDisponibles !== 1 ? "s" : ""} libre
             {r.asientosDisponibles !== 1 ? "s" : ""}
@@ -372,7 +380,7 @@ export default async function ResultadosBusquedaPage({
 
   return (
     <main className="flex-1 bg-brand-light/40">
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 py-10">
         <Link href="/" className="text-sm font-semibold text-brand-cobalto hover:underline">
           ← Nueva búsqueda
         </Link>
