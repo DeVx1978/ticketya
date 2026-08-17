@@ -31,29 +31,43 @@ export function Hero() {
   }, []);
 
   return (
-    <section className="relative h-[92vh] min-h-[620px] overflow-hidden">
-      {FOTOS.map((foto, i) => (
-        <div
-          key={foto}
-          className={`absolute inset-0 transition-opacity duration-1000 ${
-            i === indiceActivo ? "opacity-100" : "opacity-0"
-          }`}
-          aria-hidden={i !== indiceActivo}
-        >
-          <Image
-            src={foto}
-            alt=""
-            fill
-            priority={i === 0}
-            sizes="100vw"
-            className="object-cover"
-          />
-          {/* Degradado real para que el texto blanco y el logo se lean
-              bien encima de cualquier parte de la foto -- más oscuro
-              abajo, donde vive el buscador. */}
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-dark/55 via-brand-dark/25 to-brand-dark/75" />
-        </div>
-      ))}
+    <section className="relative overflow-hidden md:h-[92vh] md:min-h-[620px]">
+      {/* Hallazgo real del director (17-ago-2026), con evidencia
+          real: en celular, los 5 campos del buscador se apilan a
+          ancho completo -- la tarjeta crecía tanto que tapaba casi
+          toda la foto del bus. Corregido: en celular la foto tiene
+          una altura fija razonable (se ve completa, sin nada
+          superpuesto), y el contenido (título, texto, buscador) va
+          en flujo normal DEBAJO, no encima -- en pantalla grande
+          (md:) se mantiene exactamente el comportamiento superpuesto
+          de siempre, sin ningún cambio. */}
+      <div className="relative h-[46vh] min-h-[320px] md:absolute md:inset-0 md:h-full">
+        {FOTOS.map((foto, i) => (
+          <div
+            key={foto}
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              i === indiceActivo ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden={i !== indiceActivo}
+          >
+            <Image
+              src={foto}
+              alt=""
+              fill
+              priority={i === 0}
+              sizes="100vw"
+              className="object-cover"
+            />
+            {/* Degradado real para que el texto blanco y el logo se lean
+                bien encima de cualquier parte de la foto -- más oscuro
+                abajo, donde vive el buscador en pantalla grande. En
+                celular el buscador ya no vive encima de la foto, pero
+                el degradado se deja igual para que el título/logo del
+                encabezado se sigan leyendo bien sobre la foto. */}
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-dark/55 via-brand-dark/25 to-brand-dark/75" />
+          </div>
+        ))}
+      </div>
 
       {/* Indicadores del slider -- confirman que hay más de una foto,
           sin depender de flechas de navegación manual. */}
@@ -133,15 +147,15 @@ export function Hero() {
         </nav>
       )}
 
-      <div className="relative z-10 flex h-full flex-col justify-end px-[5%] pb-16">
-        <h1 className="font-display max-w-xl text-4xl font-bold leading-tight text-white md:text-5xl">
+      <div className="relative z-10 bg-white px-[5%] py-8 md:flex md:h-full md:flex-col md:justify-end md:bg-transparent md:py-0 md:pb-16">
+        <h1 className="font-display max-w-xl text-3xl font-bold leading-tight text-brand-dark md:text-4xl md:text-white lg:text-5xl">
           Tu pasaje de bus, sin filas ni papeleo
         </h1>
-        <p className="mt-3 max-w-md text-base text-white/85">
+        <p className="mt-3 max-w-md text-base text-brand-dark/70 md:text-white/85">
           Compara horarios y precios de todas las cooperativas de una ruta, elige tu asiento, y recibe
           tu boleto digital con QR al instante.
         </p>
-        <div className="mt-8 max-w-4xl">
+        <div className="mt-6 max-w-4xl md:mt-8">
           <BuscadorForm />
         </div>
       </div>

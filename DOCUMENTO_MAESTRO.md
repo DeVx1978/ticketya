@@ -1407,6 +1407,14 @@ El director reportó, mientras probaba las funciones de esta sesión, que no enc
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.34 La tarjeta del buscador tapaba la foto del bus en celular -- Hero reestructurado, sin superposición en móvil -- 17-ago-2026
+
+El director probó el sitio real en modo responsive y confirmó con captura: en celular, la tarjeta del buscador (con sus 5 campos apilados a ancho completo -- origen, destino, fecha, pasajeros, botón) crecía tanto en altura que tapaba casi por completo la foto real del bus.
+
+**Corregido con una reestructuración real, no un simple ajuste de tamaño:** en celular, la foto ahora tiene una altura fija razonable (`46vh`, se ve completa, nada superpuesto encima), y el título/texto/buscador viven en flujo normal DEBAJO de la foto, en una sección de fondo blanco -- ya no se superponen. En pantalla grande (`md:` en adelante), el comportamiento es EXACTAMENTE el mismo de siempre (foto de fondo completa, contenido superpuesto en blanco sobre la foto oscurecida) -- sin ningún cambio ahí.
+
+**Verificado con un paso extra de disciplina, más allá de lo habitual:** además de `tsc --noEmit` limpio y `next build` 30/30 páginas, se confirmó explícitamente (con `grep` directo sobre el CSS ya compilado) que las clases responsivas nuevas (`h-[46vh]`, `min-h-[320px]`) sí generaron CSS real.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
