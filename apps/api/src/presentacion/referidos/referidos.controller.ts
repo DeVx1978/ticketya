@@ -23,6 +23,20 @@ export class ReferidosController {
     return this.referidos.obtenerConfiguracion();
   }
 
+  /**
+   * Fase 5-buscador (16-ago-2026) -- endpoint público nuevo, de solo
+   * lectura, para mostrar el beneficio real del programa de referidos
+   * en la portada/resultados (reemplaza el banner de "15% de
+   * descuento" que era un dato falso). Reutiliza el mismo método real
+   * ya usado por el endpoint de super_admin -- misma fuente de
+   * verdad, sin duplicar lógica -- pero sin autenticación, porque un
+   * visitante sin cuenta también debe poder verlo.
+   */
+  @Get('beneficios-publicos')
+  async obtenerBeneficiosPublicos() {
+    return this.referidos.obtenerConfiguracion();
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin')
   @Patch('configuracion')
