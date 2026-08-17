@@ -1244,6 +1244,22 @@ El director comparó su propia captura de producción contra la referencia real,
 
 **Limitación real, reportada con la máxima honestidad -- 4º intento consecutivo fallido de la captura obligatoria del protocolo de la sección 5.21:** se compiló un build fresco del backend (confirmado con marca de tiempo real), se arrancaron backend y frontend, se confirmó con `curl` que ambos respondían `200` -- y aun así, el navegador llegó justo cuando el servidor había caído entre esa confirmación y la navegación real, mismo patrón intermitente ya documentado repetidamente en este proyecto. No se fabricó ni se fingió una comparación -- se reporta la falla tal cual, con la evidencia real de los intentos genuinos hechos.
 
+## 5.23 Ancho del contenedor y tamaños de texto -- medido de nuevo contra la referencia -- 16-ago-2026
+
+El director reportó que toda la sección se veía más pequeña que la referencia. Medido de nuevo con precisión: el contenedor real de la referencia llega hasta ~1362px de contenido, el nuestro estaba limitado a `max-w-5xl` (1024px, ~25% más angosto).
+
+**Corregido:**
+- Contenedor de la página de resultados: `max-w-5xl` → `max-w-7xl` (1280px, más cercano a la medida real).
+- Nombre de cooperativa: `text-lg` → `text-xl`.
+- Precio: `text-2xl` → `text-3xl`.
+- Horas de salida/llegada: `text-sm` → `text-lg` (más cercano al tamaño real medido en la referencia).
+- Nombre de terminal debajo de cada hora: `text-[10px]` → `text-xs` (más legible).
+- Avatar: `h-11 w-11` (44px) → `h-12 w-12` (48px), proporcional al texto más grande al lado.
+
+**Hallazgo real propio, encontrado antes de comitear:** al escribir `h-13 w-13` por error, esa clase NO existe en la escala por defecto de Tailwind -- no habría generado ningún CSS real, dejando el avatar sin tamaño aplicado, en silencio, sin ningún error de `tsc` ni de `next build` (esto no lo detecta el compilador, solo una inspección real del CSS generado). Corregido a `h-12 w-12` (válido), y verificado explícitamente que la clase sí generó CSS real en el archivo compilado antes de continuar.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, y verificación adicional real (no solo confiada) de que la clase de Tailwind corregida sí compiló a CSS válido. **Limitación real, reportada con honestidad:** se intentó la captura visual obligatoria 2 veces más, el entorno falló ambas con timeouts duros -- van 6 intentos consecutivos fallidos de este mismo paso del protocolo en esta sesión.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
