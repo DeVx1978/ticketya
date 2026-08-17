@@ -192,6 +192,9 @@ export class BusquedaService {
         horaSalidaProgramada: viajes.horaSalidaProgramada,
         horaLlegadaEstimada: viajes.horaLlegadaEstimada,
         precioBase: viajes.precioBase,
+        // Zona VIP de asientos (17-ago-2026) -- monto fijo adicional
+        // real, configurado por la cooperativa en este viaje.
+        recargoVip: viajes.recargoVip,
         tipoVehiculoId: tiposVehiculo.id,
         tipoVehiculoNombre: tiposVehiculo.nombre,
         tipoVehiculoCategoria: tiposVehiculo.categoria,

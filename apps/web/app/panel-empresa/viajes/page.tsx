@@ -256,6 +256,7 @@ export default function ViajesPage() {
   const [hora, setHora] = useState("");
   const [horaLlegada, setHoraLlegada] = useState("");
   const [precio, setPrecio] = useState("");
+  const [recargoVip, setRecargoVip] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState<string | null>(null);
   const [mensajeError, setMensajeError] = useState<string | null>(null);
@@ -295,12 +296,18 @@ export default function ViajesPage() {
         // mostrar. Opcional a propósito (no siempre se sabe con
         // precisión al crear el viaje).
         horaLlegadaEstimada: horaLlegada ? `${fecha}T${horaLlegada}:00-05:00` : undefined,
+        // Zona VIP de asientos (17-ago-2026, orden real del director):
+        // monto fijo adicional sobre precioBase para los asientos con
+        // etiqueta 'vip' -- configurable por la cooperativa en CADA
+        // viaje, opcional (0 si no se especifica).
+        recargoVip: recargoVip ? Number(recargoVip) : undefined,
         precioBase: Number(precio),
       });
       setFecha("");
       setHora("");
       setHoraLlegada("");
       setPrecio("");
+      setRecargoVip("");
       setMensajeExito("Viaje programado correctamente.");
       cargarTodo();
     } catch (err) {
@@ -425,6 +432,21 @@ id="viaje-fecha"
             value={precio}
             onChange={(e) => setPrecio(e.target.value)}
             placeholder="8.50"
+            className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+        <div>
+          <label htmlFor="viaje-recargo-vip" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            Recargo asiento VIP (USD) <span className="font-normal normal-case text-brand-dark/40">(opcional)</span>
+          </label>
+          <input
+            id="viaje-recargo-vip"
+            type="number"
+            min="0"
+            step="0.01"
+            value={recargoVip}
+            onChange={(e) => setRecargoVip(e.target.value)}
+            placeholder="2.00"
             className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
           />
         </div>

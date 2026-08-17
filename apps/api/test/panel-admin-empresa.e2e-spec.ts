@@ -323,6 +323,49 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
     expect(res.body.id).toBeDefined();
   });
 
+  /**
+   * Zona VIP de asientos (17-ago-2026) -- hallazgo real encontrado al
+   * construir el recargo VIP: esta validación solo aceptaba el
+   * formato viejo (string), rechazando el formato nuevo con etiquetas
+   * ({numero, etiquetas}) que interpretarCelda ya soportaba desde el
+   * 05-ago-2026 -- ninguna cooperativa podía crear un asiento VIP
+   * real hasta hoy, ni siquiera por la API directamente.
+   */
+  it('acepta el formato nuevo de celda con etiquetas ({numero, etiquetas: [vip]}) -- bug real corregido 17-ago-2026', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Bus con asiento VIP etiquetado ${sufijo}`,
+        capacidadTotal: 2,
+        distribucionAsientos: {
+          pisos: [
+            {
+              nombre: 'Piso único',
+              filas: [{ celdas: [{ numero: '1A', etiquetas: ['vip'] }, '1B'] }],
+            },
+          ],
+        },
+      })
+      .expect(201);
+    expect(res.body.id).toBeDefined();
+  });
+
+  it('RECHAZA una etiqueta que no está en el catálogo válido (vip, mujeres)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/coop/tipos-vehiculo')
+      .set('Authorization', `Bearer ${tokenCoop}`)
+      .send({
+        nombre: `Bus con etiqueta inventada ${sufijo}`,
+        capacidadTotal: 1,
+        distribucionAsientos: {
+          pisos: [{ nombre: 'Piso único', filas: [{ celdas: [{ numero: '1A', etiquetas: ['inventada'] }] }] }],
+        },
+      })
+      .expect(400);
+    expect(res.body.message).toContain('etiqueta inválida');
+  });
+
   it('RECHAZA una distribución cuya cantidad de asientos no coincide con la capacidad declarada', async () => {
     const res = await request(app.getHttpServer())
       .post('/coop/tipos-vehiculo')

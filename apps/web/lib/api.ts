@@ -40,6 +40,7 @@ export interface ResultadoViaje {
   destinoLongitud: string;
   origenNombre: string;
   destinoNombre: string;
+  recargoVip: string;
 }
 
 export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperacion[]> {
@@ -931,6 +932,7 @@ export async function crearViajeCoop(
     fechaSalida: string;
     horaSalidaProgramada: string;
     horaLlegadaEstimada?: string;
+    recargoVip?: number;
     precioBase: number;
   },
 ): Promise<{ id: string }> {

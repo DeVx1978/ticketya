@@ -117,6 +117,18 @@ export class CrearViajeDto {
   @IsISO8601()
   horaLlegadaEstimada?: string;
 
+  /**
+   * Zona VIP de asientos (17-ago-2026, orden real del director): monto
+   * FIJO adicional que se cobra sobre los asientos con etiqueta 'vip'
+   * en la distribución de asientos del tipo de vehículo -- configurable
+   * por la cooperativa en CADA viaje que crea, nunca un valor de
+   * plataforma. Opcional, 0 por defecto si no se envía.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  recargoVip?: number;
+
   @IsNumber()
   @Min(0)
   precioBase!: number;

@@ -2,6 +2,8 @@
  * Dominio del Panel Empresa — RF-COOP, RF-FLOTA.
  */
 
+import { ETIQUETAS_VALIDAS } from '../asientos/distribucion-asientos.util';
+
 /**
  * Métodos de pago manuales (29-jul-2026) — ver metodos-pago.ts en el
  * paquete de base de datos para el contexto completo de negocio.
@@ -174,19 +176,40 @@ export function validarDistribucionAsientos(
       }
       for (const celda of fila.celdas) {
         if (celda === null) continue;
-        if (typeof celda !== 'string' || !celda.trim()) {
+        // Zona VIP de asientos (17-ago-2026) -- hallazgo real
+        // encontrado al construir esta función: esta validación solo
+        // aceptaba el formato viejo (string), rechazando el formato
+        // nuevo con etiquetas ({numero, etiquetas}) que el resto del
+        // sistema (interpretarCelda, el mapa de asientos, el cálculo
+        // del checkout) ya soporta desde el 05-ago-2026 -- ninguna
+        // cooperativa podía crear un asiento VIP real hasta ahora, ni
+        // siquiera por la API directamente. Corregido: acepta ambos
+        // formatos, mismo tipo `Celda` real ya compartido.
+        const esFormatoNuevo = typeof celda === 'object' && celda !== null;
+        const numero = esFormatoNuevo ? (celda as { numero: string }).numero : celda;
+        const etiquetas = esFormatoNuevo ? (celda as { etiquetas?: string[] }).etiquetas : undefined;
+
+        if (typeof numero !== 'string' || !numero.trim()) {
           return {
             ok: false,
             motivo: `Un asiento del piso "${piso.nombre}" tiene un número inválido.`,
           };
         }
-        if (numeros.has(celda)) {
+        if (etiquetas !== undefined) {
+          if (!Array.isArray(etiquetas) || etiquetas.some((e) => !ETIQUETAS_VALIDAS.includes(e as never))) {
+            return {
+              ok: false,
+              motivo: `El asiento "${numero}" tiene una etiqueta inválida -- válidas: ${ETIQUETAS_VALIDAS.join(', ')}.`,
+            };
+          }
+        }
+        if (numeros.has(numero)) {
           return {
             ok: false,
-            motivo: `El número de asiento "${celda}" está repetido — cada asiento debe ser único en todo el vehículo.`,
+            motivo: `El número de asiento "${numero}" está repetido — cada asiento debe ser único en todo el vehículo.`,
           };
         }
-        numeros.add(celda);
+        numeros.add(numero);
       }
     }
   }
@@ -255,6 +278,7 @@ export interface DatosNuevoViaje {
   fechaSalida: string;
   horaSalidaProgramada: string;
   horaLlegadaEstimada?: string;
+  recargoVip?: number;
   precioBase: number;
 }
 

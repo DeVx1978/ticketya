@@ -1335,6 +1335,34 @@ El director reportó que el filtro "Hora de salida" era confuso -- 2 campos `<in
 
 Se reporta con honestidad que esto queda como el siguiente bloque real de trabajo, no algo que se pueda resolver dentro de un ajuste visual del panel de filtros.
 
+## 5.30 Zona VIP de asientos -- recargo real, más un bug de raíz encontrado y corregido en el camino -- 17-ago-2026
+
+Orden real del director, marcada como indispensable tras confirmar visualmente el resto de la pantalla de resultados. Investigación real hecha primero, antes de escribir código (protocolo del proyecto):
+
+| Pieza | Estado real encontrado |
+|---|---|
+| Esquema con etiquetas VIP por asiento | Ya existía completo (`distribucion-asientos.util.ts`, con herencia de piso y compatibilidad hacia atrás) |
+| Mapa de asientos del pasajero | Ya distinguía VIP visualmente, ya conectado |
+| Precio diferenciado por asiento VIP | No existía ningún código real |
+| Panel de cooperativa | Existía, pero solo por JSON crudo escrito a mano |
+
+**Decisión real confirmada con el director antes de construir:** monto FIJO en dólares (no porcentaje), configurable por **cada cooperativa, en cada viaje que crean** -- nunca un valor de plataforma, porque las tarifas varían por cooperativa y cambian con el tiempo según sus propias decisiones comerciales (mismo nivel real que `precioBase`, no como `cashback_porcentaje_default`).
+
+**Construido:**
+- Migración real `0036_recargo_vip.sql` -- columna `recargo_vip` en `viajes`, `numeric(8,2)`, default 0.
+- `CrearViajeDto`, `DatosNuevoViaje`, el `INSERT` real del panel de cooperativa -- todos actualizados.
+- `ResultadoViaje` (búsqueda pública) expone `recargoVip`.
+- **Cálculo real del checkout** (`compra.repositorio.drizzle.ts::validarYCalcularAsientos`) -- el asiento se identifica como VIP reutilizando EXACTAMENTE la misma lógica compartida que ya usa el mapa de asientos del pasajero (`obtenerPisos`/`interpretarCelda`, sin duplicar), y el recargo se suma al `precioBase` antes de aplicar el factor de descuento por tipo de tarifa.
+- Panel de cooperativa -- campo real nuevo "Recargo asiento VIP (USD) (opcional)" en el formulario de crear viaje.
+
+**Hallazgo real serio, encontrado al escribir la prueba e2e, no al construir el código feliz:** la función `validarDistribucionAsientos` (la que valida un tipo de vehículo nuevo) **solo aceptaba el formato viejo de celda (string), rechazando activamente el formato nuevo con etiquetas** (`{numero, etiquetas}`) que el resto del sistema ya soportaba desde el 05-ago-2026. Esto significaba que **ninguna cooperativa podía crear un asiento VIP real hasta hoy, ni siquiera llamando a la API directamente** -- el bug de fondo detrás de que el panel solo funcionara con JSON crudo. Corregido: la validación ahora acepta ambos formatos, y valida que las etiquetas estén dentro del catálogo real (`vip`, `mujeres`).
+
+**Hallazgo real aparte, fuera del alcance de esta orden, no resuelto aquí:** la pantalla de elegir asiento no muestra ningún precio hoy, para ningún asiento -- un hueco preexistente.
+
+**Pendiente real, siguiente bloque de trabajo:** la interfaz de clic real para marcar asientos VIP en el panel de cooperativa (punto 4 de la orden) -- hoy sigue siendo por JSON crudo (ya corregido para que ACEPTE el formato correcto, pero la experiencia de captura en sí sigue siendo texto, no clics).
+
+**Verificado:** `tsc --noEmit` limpio en backend y frontend, `next build` 30/30 páginas, **211/211 pruebas e2e de TODA la suite, sin ninguna regresión** -- incluidas 3 pruebas nuevas reales: el cálculo correcto de precioBase+recargoVip en checkout, y 2 pruebas del bug de validación corregido (acepta el formato nuevo, rechaza una etiqueta inventada).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

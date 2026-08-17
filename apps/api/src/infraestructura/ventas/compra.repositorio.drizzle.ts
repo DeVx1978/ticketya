@@ -21,7 +21,12 @@ import {
   creditosPasajero,
   unidades,
   usuarios,
+  tiposVehiculo,
 } from '@columbus/db';
+import {
+  obtenerPisos,
+  interpretarCelda,
+} from '../../dominio/asientos/distribucion-asientos.util';
 const puntosOperacionOrigen = alias(puntosOperacion, 'po_origen_idem');
 const puntosOperacionDestino = alias(puntosOperacion, 'po_destino_idem');
 import { DRIZZLE_DB_PUBLICO, DRIZZLE_DB } from '../database/database.module';
@@ -142,6 +147,9 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         .select({
           cooperativaId: viajes.cooperativaId,
           precioBase: viajes.precioBase,
+          recargoVip: viajes.recargoVip,
+          distribucionAsientos: tiposVehiculo.distribucionAsientos,
+          capacidadTotal: tiposVehiculo.capacidadTotal,
           estadoAsiento: viajeAsientos.estado,
           holdUsuarioId: viajeAsientos.holdUsuarioId,
           holdSesionInvitadoId: viajeAsientos.holdSesionInvitadoId,
@@ -158,6 +166,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           eq(rutas.origenPuntoOperacionId, puntosOperacion.id),
         )
         .innerJoin(cooperativas, eq(viajes.cooperativaId, cooperativas.id))
+        .innerJoin(unidades, eq(viajes.unidadId, unidades.id))
+        .innerJoin(tiposVehiculo, eq(unidades.tipoVehiculoId, tiposVehiculo.id))
         .where(
           and(
             eq(viajeAsientos.viajeId, asiento.viajeId),
@@ -176,6 +186,24 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       const holdVigente =
         f.holdExpiraEn && new Date(f.holdExpiraEn).getTime() > Date.now();
 
+      // Zona VIP de asientos (17-ago-2026) -- reutiliza EXACTAMENTE la
+      // misma lógica real que ya usa el mapa de asientos del pasajero
+      // (dominio/asientos/distribucion-asientos.util.ts) para
+      // interpretar las etiquetas -- nunca una segunda implementación
+      // que pudiera desincronizarse.
+      const pisos = obtenerPisos(f.distribucionAsientos, f.capacidadTotal);
+      let esVip = false;
+      for (const piso of pisos) {
+        for (const filaAsientos of piso.filas) {
+          for (const celda of filaAsientos.celdas) {
+            const interpretada = interpretarCelda(celda, piso);
+            if (interpretada?.numero === asiento.numeroAsiento && interpretada.etiquetas.includes('vip')) {
+              esVip = true;
+            }
+          }
+        }
+      }
+
       // Item 31, Fase 7 (11-ago-2026) -- mismo criterio de dueno que
       // asiento.repositorio.drizzle.ts::bloquear().
       const esElMismoDueno =
@@ -193,7 +221,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       }
 
       const precioPagado =
-        Number(f.precioBase) * factorDescuento(asiento.tipoTarifa);
+        (Number(f.precioBase) + (esVip ? Number(f.recargoVip) : 0)) *
+        factorDescuento(asiento.tipoTarifa);
       const ivaPorcentaje = Number(f.ivaPorcentaje ?? 0);
       // El precio YA trae el IVA incluido — se despeja la porción de IVA
       // sobre el total, no se suma aparte. Ej.: precio 11.50, IVA 15% →
