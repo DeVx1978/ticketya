@@ -1211,6 +1211,23 @@ Orden explícita del director, tras confirmar visualmente que la sección 5.19 s
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.21 Protocolo nuevo y no negociable de la directora: medición real de referencias -- 16-ago-2026
+
+Tras 5 rondas de correcciones sobre la misma pantalla (secciones 5.17-5.20) sin coincidir con la imagen de referencia real del director, la directora estableció un protocolo nuevo, explícito y no negociable para todo trabajo de diseño visual de aquí en adelante:
+
+1. **La imagen de referencia es el plano exacto a replicar, no inspiración.** Nada de criterio propio en tamaños, proporciones, espaciado o layout cuando hay una imagen real sobre la mesa.
+2. **Medir las proporciones reales de la imagen ANTES de escribir código** (no estimar a ojo).
+3. **Generar una captura real del resultado propio y compararla lado a lado con la referencia ANTES de reportar cualquier cosa como lista.**
+4. Reportar con las 2 imágenes lado a lado antes de que se apruebe fusionar cualquier trabajo de diseño visual.
+
+**Aplicado de inmediato:** se midió la captura real de referencia con precisión de píxeles (herramienta real: cuadrícula superpuesta con coordenadas, no estimación visual). Hallazgo real: el avatar de cooperativa en la referencia es **pequeño y cuadrado** (~42×42px reales sobre una tarjeta de ~755px de ancho, ~5.5% del ancho de la tarjeta) -- confirmando que el cambio de la sección 5.20 (rectangular horizontal, w-24) fue un error real: se interpretó un comentario verbal frustrado del director en vez de medir la imagen que él mismo había compartido como referencia.
+
+**Corregido con las medidas reales:** avatar vuelto a cuadrado, ahora en `h-11 w-11` (44px, la medida real más cercana disponible en la escala de espaciado del proyecto). La insignia "Mejor precio" se movió de flotar en la esquina de la tarjeta a vivir junto al precio (posición real medida). Se agregó "Top calificado" como insignia real nueva, calculada (nunca fija) sobre la calificación más alta entre los resultados, con el mismo umbral mínimo de 5 reseñas que ya usa `ResenasCooperativa`.
+
+**Tensión real identificada y resuelta con el director, no ignorada:** la referencia mostraba un banner verde "15% de descuento al finalizar la compra" -- un dato específico y falso en el sistema real de Columbus (no existe ese descuento configurado). Se preguntó explícitamente antes de fabricar el dato; el director confirmó **omitir el banner por completo** hasta que exista un descuento real. Mismo criterio ya establecido en la sección 5.17 (nunca fabricar datos que no existen), reafirmado aquí con una decisión explícita del director, no solo interpretación propia.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas. **Limitación real, reportada con la máxima honestidad dado el peso de esta regla nueva:** se intentó la captura real obligatoria 3 veces, el entorno falló las 3 con timeouts duros -- no se pudo cumplir el paso 3 del protocolo nuevo (comparación lado a lado antes de reportar). Esto se comunica de forma directa y explícita al director/directora, sin reportar el trabajo como "listo" -- la confirmación visual real depende de que ellos lo verifiquen una vez desplegado.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
