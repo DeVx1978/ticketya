@@ -1415,6 +1415,16 @@ El director probó el sitio real en modo responsive y confirmó con captura: en 
 
 **Verificado con un paso extra de disciplina, más allá de lo habitual:** además de `tsc --noEmit` limpio y `next build` 30/30 páginas, se confirmó explícitamente (con `grep` directo sobre el CSS ya compilado) que las clases responsivas nuevas (`h-[46vh]`, `min-h-[320px]`) sí generaron CSS real.
 
+## 5.35 Sin superposición en NINGUNA pantalla + foto real nueva del bus en Machala -- 17-ago-2026
+
+El director aclaró, tras la sección 5.34, que el problema no era exclusivo de celular: "para qué tener imágenes profesionales ahí si van a ser tapadas por esa tarjeta" -- confirmó que quería la foto sin nada superpuesto en NINGÚN tamaño de pantalla, no solo en celular.
+
+**Corregido:** se quitaron todos los ajustes `md:` que reactivaban la superposición en pantalla grande. Ahora, en cualquier tamaño, la foto se ve completa arriba (más alta en escritorio, `62vh` vs `46vh` en celular, aprovechando el espacio real disponible), y el contenido (título, texto, buscador) va siempre en flujo normal debajo, nunca encima. El degradado oscuro se redujo a solo la parte superior de la foto (donde sigue viviendo el logo/menú del encabezado, que sí permanece superpuesto) -- ya no cubre toda la foto, porque ya no hace falta para leer texto blanco sobre ella.
+
+**Foto real nueva:** el director proporcionó una foto nueva y reemplazó la anterior (`hero-2.jpg`) -- mismo bus de doble piso, con el logo real Columbus pintado en el parabrisas, en la Terminal de Machala real, con pasajeros reales con maletas. Reemplaza la foto anterior del bus de frente que causaba la confusión visual reportada (el logo pintado EN la foto coincidiendo con el logo real del encabezado, no un bug de código -- ver aclaración del director en esta misma sesión).
+
+**Verificado con el mismo paso extra de disciplina:** además de `tsc --noEmit` limpio y `next build` 30/30 páginas, se confirmó con `grep` directo sobre el CSS compilado que las clases nuevas (`h-[62vh]`, `min-h-[480px]`) sí generaron CSS real.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
