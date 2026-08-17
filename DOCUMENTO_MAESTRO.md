@@ -1188,6 +1188,21 @@ El director reportó, con captura real de producción, que la línea visual del 
 
 **Pendiente real, para cuando se aplique:** los viajes YA sembrados en producción (creados antes de este arreglo) siguen con `hora_llegada_estimada` en NULL -- necesitan una actualización de datos real (SQL directo) para que la demo se vea completa de inmediato, no solo los viajes nuevos que se creen desde ahora.
 
+## 5.19 Bug real: logos de cooperativas recortados -- reestructuración de la tarjeta de resultado -- 16-ago-2026
+
+El director reportó, con captura real de producción, que los 3 logos reales de cooperativas (sección 5.19 -- procesados en un PR previo, `feature/logos-reales-cooperativas`) se veían recortados/cortados dentro de la tarjeta de resultado.
+
+**Causa raíz real, confirmada en el código:** el avatar usaba `h-8 w-8` (32px, demasiado pequeño) con `rounded-full` (círculo) y `object-cover` (recorta la imagen para llenar el contenedor, sin importar qué parte se pierda). Los 3 logos reales tienen formas y composiciones distintas entre sí -- ninguno estaba diseñado para un recorte circular de 32px, así que cada uno se veía cortado de forma distinta e impredecible.
+
+**Corregido con una reestructuración real de la tarjeta**, no solo un ajuste de tamaño:
+- Avatar aumentado a `h-14 w-14` (56px), cuadrado con esquinas redondeadas (`rounded-lg`, no círculo completo) -- más fiel a cómo están compuestos los logos reales.
+- `object-contain` en vez de `object-cover` -- el logo COMPLETO siempre cabe adentro, nunca se recorta, aunque pueda dejar un pequeño margen blanco en logos que no son perfectamente cuadrados.
+- Layout de la tarjeta reestructurado a 3 columnas reales (avatar a la izquierda, información central, precio y botón a la derecha) -- más cercano al layout de la referencia real que el director ha estado señalando repetidamente (un prototipo HTML anterior propio, en Netlify, distinto a este proyecto).
+- La palabra "Aprox." agregada junto a la duración en la línea de trayecto, mismo detalle visual de la referencia.
+- Respaldo real si una cooperativa no tiene logo: iniciales en azul cobalto sobre fondo blanco (mismo contenedor, no un ícono roto ni un hueco vacío).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas. **Limitación real, reportada con honestidad:** se intentó la verificación visual real en vivo 2 veces, el entorno falló ambas con timeouts duros. Pendiente de confirmación visual real por parte de Josesito/el director, una vez desplegado -- es especialmente importante esta vez, dado que el hallazgo anterior (logos cortados) solo se pudo confirmar con una captura real, no con verificación estática.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
