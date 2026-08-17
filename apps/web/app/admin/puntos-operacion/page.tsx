@@ -94,6 +94,101 @@ function TasaEditable({
   );
 }
 
+/**
+ * Coordenadas reales (17-ago-2026) -- hallazgo real: la columna ya
+ * existía en el esquema, pero nunca se pudo escribir desde ningún
+ * formulario -- "Ver trayecto en el mapa" nunca funcionó para
+ * ninguna terminal por esto. Campo de conveniencia real: en Google
+ * Maps, clic derecho sobre un punto → copia las coordenadas
+ * exactamente en formato "lat, long" -- se pega tal cual aquí y se
+ * separa solo, sin que el admin tenga que escribir 2 campos a mano.
+ */
+function CoordenadasEditables({
+  puntoId,
+  latitudActual,
+  longitudActual,
+  onGuardado,
+}: {
+  puntoId: string;
+  latitudActual: number | null;
+  longitudActual: number | null;
+  onGuardado: (mensaje: string, esError: boolean) => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [pegado, setPegado] = useState(
+    latitudActual !== null && longitudActual !== null ? `${latitudActual}, ${longitudActual}` : "",
+  );
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardar() {
+    const token = obtenerToken();
+    const partes = pegado.split(",").map((p) => p.trim());
+    if (partes.length !== 2) {
+      onGuardado('Pega las 2 coordenadas separadas por coma, ej. "-3.2649, -79.9612".', true);
+      return;
+    }
+    const latitud = Number(partes[0]);
+    const longitud = Number(partes[1]);
+    if (Number.isNaN(latitud) || latitud < -90 || latitud > 90) {
+      onGuardado("La latitud debe ser un número entre -90 y 90.", true);
+      return;
+    }
+    if (Number.isNaN(longitud) || longitud < -180 || longitud > 180) {
+      onGuardado("La longitud debe ser un número entre -180 y 180.", true);
+      return;
+    }
+    if (!token) return;
+    setGuardando(true);
+    try {
+      await actualizarPuntoOperacionAdmin(token, puntoId, { latitud, longitud });
+      onGuardado("Coordenadas actualizadas.", false);
+      setEditando(false);
+    } catch (err) {
+      onGuardado(err instanceof Error ? err.message : "No se pudo actualizar las coordenadas.", true);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  if (!editando) {
+    return (
+      <button
+        onClick={() => setEditando(true)}
+        className="font-semibold text-brand-dark underline decoration-dotted underline-offset-2 hover:text-brand"
+      >
+        {latitudActual !== null && longitudActual !== null ? "📍 con coordenadas" : "— fijar coordenadas"}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <input
+        type="text"
+        autoFocus
+        value={pegado}
+        onChange={(e) => setPegado(e.target.value)}
+        placeholder="-3.2649, -79.9612"
+        title='Clic derecho sobre el punto real en Google Maps, copia las coordenadas, y pégalas aquí tal cual (formato "lat, long")'
+        className="w-40 rounded border border-brand-light px-2 py-1 text-right text-sm"
+      />
+      <button
+        onClick={guardar}
+        disabled={guardando}
+        className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+      >
+        ✓
+      </button>
+      <button
+        onClick={() => setEditando(false)}
+        className="rounded border border-brand-light px-2 py-1 text-xs text-brand-dark/70 hover:bg-brand-light/40"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
 export default function PuntosOperacionAdminPage() {
   const [puntos, setPuntos] = useState<PuntoOperacionResumen[] | null>(null);
   const [cooperativas, setCooperativas] = useState<CooperativaResumen[]>([]);
@@ -304,6 +399,7 @@ id="punto-tasa"
                 <th className="px-6 py-3">Tipo</th>
                 <th className="px-6 py-3">Ciudad</th>
                 <th className="px-6 py-3">Propietaria</th>
+                <th className="px-6 py-3 text-right">Coordenadas</th>
                 <th className="px-6 py-3 text-right">Tasa</th>
               </tr>
             </thead>
@@ -316,6 +412,20 @@ id="punto-tasa"
                     {p.ciudad}, {p.provincia}
                   </td>
                   <td className="px-6 py-3 text-brand-dark/70">{p.cooperativaPropietariaNombre ?? "—"}</td>
+                  <td className="px-6 py-3 text-right font-semibold text-brand-dark">
+                    <CoordenadasEditables
+                      puntoId={p.id}
+                      latitudActual={p.latitud}
+                      longitudActual={p.longitud}
+                      onGuardado={(mensaje, esError) => {
+                        if (esError) setMensajeError(mensaje);
+                        else {
+                          setMensajeExito(mensaje);
+                          cargar();
+                        }
+                      }}
+                    />
+                  </td>
                   <td className="px-6 py-3 text-right font-semibold text-brand-dark">
                     <TasaEditable
                       puntoId={p.id}

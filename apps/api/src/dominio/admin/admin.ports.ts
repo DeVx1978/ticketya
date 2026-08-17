@@ -27,6 +27,12 @@ export interface DatosNuevoPuntoOperacion {
   tasaMonto?: number;
   /** Vacío real de diseño encontrado el 29-jul-2026 -- terminales no tenían logo, cooperativas sí. */
   logoUrl?: string;
+  /**
+   * Coordenadas reales (17-ago-2026) -- la columna ya existía en el
+   * esquema, nunca se pudo escribir desde ningún formulario.
+   */
+  latitud?: number;
+  longitud?: number;
 }
 
 export interface FilaVentaNacional {

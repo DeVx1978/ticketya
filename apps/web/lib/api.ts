@@ -1258,6 +1258,8 @@ export interface PuntoOperacionResumen {
   ciudad: string;
   provincia: string;
   tasaMonto: number | null;
+  latitud: number | null;
+  longitud: number | null;
   cooperativaPropietariaNombre: string | null;
 }
 
@@ -1294,6 +1296,8 @@ export interface DatosNuevoPuntoOperacion {
   provincia: string;
   cooperativaPropietariaId?: string;
   tasaMonto?: number;
+  latitud?: number;
+  longitud?: number;
 }
 
 export async function crearPuntoOperacionAdmin(

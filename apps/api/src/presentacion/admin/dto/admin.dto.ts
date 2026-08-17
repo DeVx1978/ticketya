@@ -107,6 +107,26 @@ export class ActualizarPuntoOperacionDto {
   @IsString()
   logoUrl?: string;
 
+  /**
+   * Coordenadas reales (17-ago-2026) -- hallazgo real: la columna ya
+   * existía en el esquema (tenancy.ts), pero nunca se pudo escribir
+   * desde ningún formulario ni DTO -- "Ver trayecto en el mapa" nunca
+   * funcionó para ninguna terminal por esto. Opcionales (no todas las
+   * terminales existentes las tienen todavía), rango real de
+   * coordenadas válidas (-90 a 90 latitud, -180 a 180 longitud).
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitud?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitud?: number;
+
   @IsOptional()
   @IsNumber()
   @Min(0)
