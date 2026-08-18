@@ -1425,6 +1425,18 @@ El director aclaró, tras la sección 5.34, que el problema no era exclusivo de 
 
 **Verificado con el mismo paso extra de disciplina:** además de `tsc --noEmit` limpio y `next build` 30/30 páginas, se confirmó con `grep` directo sobre el CSS compilado que las clases nuevas (`h-[62vh]`, `min-h-[480px]`) sí generaron CSS real.
 
+## 5.36 Hero de vuelta a superposición, ajustado -- corrección propia de haberme excedido con contenido no pedido -- 17-ago-2026
+
+El director dio 2 órdenes en rápida sucesión que parecían contradecirse: primero "sin superposición" (sección 5.35), luego "recrea exactamente" una referencia que sí tiene superposición. Se siguió la instrucción más reciente y específica.
+
+**Construido inicialmente (con exceso real, corregido después):** foto casi de pantalla completa, contenido superpuesto abajo, barra de búsqueda compacta en una sola fila (nuevo prop `compacto` en `SelectorCiudad`, grid 2 columnas en celular en vez de 5 filas apiladas). Se agregó además una insignia de texto y una fila de estadísticas reales -- **esto último no fue pedido**, el director corrigió explícitamente: "no te estoy diciendo que agregues cosas de la otra imagen, solo que hagas los ajustes como te lo pedí".
+
+**Corregido de inmediato:** se quitó la insignia y la fila de estadísticas por completo (incluida la consulta real a `obtenerEstadisticasPublicas` que ya no se necesitaba, revertido `page.tsx` a su forma original) -- se dejó exactamente lo pedido: tamaño ajustado, la tarjeta de búsqueda con diseño y tamaño compacto, textos bien ubicados.
+
+**Lección real para las próximas veces:** al recrear una referencia, replicar la ESTRUCTURA/PROPORCIÓN pedida no es licencia para copiar también el CONTENIDO de la referencia que no se pidió -- son 2 cosas distintas, y hay que confirmar cuál se pidió antes de agregar.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

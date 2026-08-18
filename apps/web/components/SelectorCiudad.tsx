@@ -8,6 +8,11 @@ interface Props {
   placeholder: string;
   valor: PuntoOperacion | null;
   onCambio: (punto: PuntoOperacion | null) => void;
+  /** Orden real del director (17-ago-2026), recreando una referencia
+   * real: dentro de la barra compacta del Hero, sin borde ni fondo
+   * propio (el contenedor exterior ya trae el borde/divisor real) --
+   * opcional, false por defecto, no afecta dónde ya se usa sin esto. */
+  compacto?: boolean;
 }
 
 /**
@@ -23,7 +28,7 @@ interface Props {
  * resaltado virtual (aria-activedescendant), Enter confirma la
  * seleccionada, Escape cierra. Así no hay ninguna carrera con blur.
  */
-export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props) {
+export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compacto = false }: Props) {
   // Ítem 21 (07-ago-2026) -- useId(), no un id fijo: este componente se
   // usa 2 veces en la misma página (Origen y Destino) -- un id fijo
   // haría que ambas etiquetas apuntaran al mismo campo.
@@ -92,8 +97,8 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
   }
 
   return (
-    <div className="relative min-w-[180px] flex-1">
-      <label htmlFor={idCampo} className="block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1">
+    <div className="relative min-w-[140px] flex-1">
+      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-brand-dark/50 md:mb-0.5" : ""}`}>
         {etiqueta}
       </label>
       <input
@@ -116,7 +121,9 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio }: Props
         onFocus={() => setAbierto(true)}
         onBlur={() => setTimeout(() => setAbierto(false), 150)}
         onKeyDown={alPresionarTecla}
-        className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+        className={`w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium ${
+          compacto ? "md:border-0 md:p-0 md:text-sm md:placeholder:text-brand-dark/40 md:focus:ring-0" : ""
+        }`}
       />
       {abierto && sugerencias.length > 0 && (
         <ul id={idListbox} role="listbox" aria-label={etiqueta} className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg">
