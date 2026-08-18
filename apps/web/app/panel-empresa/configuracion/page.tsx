@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import {
   obtenerConfiguracionFiscal,
   actualizarConfiguracionFiscal,
+  obtenerConfiguracionVip,
+  actualizarConfiguracionVip,
   obtenerPoliticaCancelacionReprogramacion,
   actualizarPoliticaCancelacionReprogramacion,
   obtenerEstadoDatosCoop,
   confirmarDatosCoop,
   type ConfiguracionFiscal,
+  type ConfiguracionVip,
   type PoliticaCancelacionReprogramacion,
   type EstadoDatosCooperativa,
 } from "@/lib/api";
@@ -26,10 +29,12 @@ import { MetodosPago } from "./MetodosPago";
 export default function ConfiguracionPage() {
   const [fiscal, setFiscal] = useState<ConfiguracionFiscal | null>(null);
   const [politica, setPolitica] = useState<PoliticaCancelacionReprogramacion | null>(null);
+  const [vip, setVip] = useState<ConfiguracionVip | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
   const [guardandoFiscal, setGuardandoFiscal] = useState(false);
   const [guardandoPolitica, setGuardandoPolitica] = useState(false);
+  const [guardandoVip, setGuardandoVip] = useState(false);
 
   // Ítem 10, Fase 2 (04-ago-2026) -- actualización periódica
   // obligatoria de datos legales.
@@ -47,6 +52,9 @@ export default function ConfiguracionPage() {
     if (!token) return;
     obtenerConfiguracionFiscal(token)
       .then(setFiscal)
+      .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar."));
+    obtenerConfiguracionVip(token)
+      .then(setVip)
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar."));
     obtenerPoliticaCancelacionReprogramacion(token)
       .then(setPolitica)
@@ -77,6 +85,23 @@ export default function ConfiguracionPage() {
       setError(err instanceof Error ? err.message : "No se pudo guardar.");
     } finally {
       setGuardandoFiscal(false);
+    }
+  }
+
+  /** Correccion real 18-ago-2026: el recargo VIP ahora es una politica fija de la cooperativa. */
+  async function guardarVip(e: React.FormEvent) {
+    e.preventDefault();
+    const token = obtenerToken();
+    if (!token || !vip) return;
+    setGuardandoVip(true);
+    setError(null);
+    try {
+      await actualizarConfiguracionVip(token, vip);
+      setMensajeExito("Recargo VIP actualizado.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar.");
+    } finally {
+      setGuardandoVip(false);
     }
   }
 
@@ -124,7 +149,7 @@ export default function ConfiguracionPage() {
     }
   }
 
-  if (!fiscal || !politica) {
+  if (!fiscal || !politica || !vip) {
     return (
       <main className="mx-auto max-w-2xl flex-1 px-4 py-10">
         {error ? (
@@ -448,6 +473,39 @@ export default function ConfiguracionPage() {
           className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
         >
           {guardandoFiscal ? "Guardando..." : "Guardar IVA"}
+        </button>
+      </form>
+
+      {/* Recargo VIP -- correccion real 18-ago-2026, antes se pedia en cada viaje */}
+      <form
+        onSubmit={guardarVip}
+        className="mt-6 space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5"
+      >
+        <h2 className="font-display text-base font-bold text-brand-dark">Recargo VIP</h2>
+        <p className="text-sm text-brand-dark/60">
+          Se cobra sobre los asientos marcados como VIP en tus unidades. Este valor se pre-llena
+          automáticamente al crear un viaje nuevo -- puedes ajustarlo puntualmente por viaje si hace falta.
+        </p>
+        <div>
+          <label htmlFor="config-vip-recargo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+            Recargo VIP por defecto (USD)
+          </label>
+          <input
+            id="config-vip-recargo"
+            type="number"
+            min={0}
+            step="0.01"
+            value={vip.recargoVipDefault}
+            onChange={(e) => setVip((v) => (v ? { ...v, recargoVipDefault: Number(e.target.value) } : v))}
+            className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={guardandoVip}
+          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+        >
+          {guardandoVip ? "Guardando..." : "Guardar recargo VIP"}
         </button>
       </form>
     </main>

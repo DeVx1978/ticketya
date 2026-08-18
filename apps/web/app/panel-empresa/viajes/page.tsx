@@ -10,6 +10,7 @@ import {
   cancelarViajeCoop,
   cambiarUnidadViajeCoop,
   editarViajeCoop,
+  obtenerConfiguracionVip,
   type RutaResumen,
   type UnidadResumen,
   type ViajeCoopResumen,
@@ -271,6 +272,13 @@ export default function ViajesPage() {
         setViajes(v);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar la información."));
+    // Correccion real (18-ago-2026): el recargo VIP ahora es politica
+    // fija de la cooperativa -- se pre-llena aqui, en vez de pedirlo
+    // vacio en cada viaje nuevo. El admin sigue pudiendo cambiarlo
+    // puntualmente para un viaje especifico.
+    obtenerConfiguracionVip(token)
+      .then((cfg) => setRecargoVip(String(cfg.recargoVipDefault)))
+      .catch(() => {});
   }
 
   useEffect(cargarTodo, []);
@@ -437,7 +445,7 @@ id="viaje-fecha"
         </div>
         <div>
           <label htmlFor="viaje-recargo-vip" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
-            Recargo asiento VIP (USD) <span className="font-normal normal-case text-brand-dark/40">(opcional)</span>
+            Recargo asiento VIP (USD) <span className="font-normal normal-case text-brand-dark/40">(precargado con tu valor por defecto -- ajústalo aquí solo si este viaje lo necesita distinto)</span>
           </label>
           <input
             id="viaje-recargo-vip"

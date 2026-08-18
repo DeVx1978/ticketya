@@ -352,6 +352,39 @@ export async function actualizarConfiguracionFiscal(
   }
 }
 
+/** Recargo VIP fijo de la cooperativa -- corrección real 18-ago-2026 (antes se pedía en cada viaje). */
+export interface ConfiguracionVip {
+  recargoVipDefault: number;
+}
+
+export async function obtenerConfiguracionVip(token: string): Promise<ConfiguracionVip> {
+  const res = await fetch(`${API_URL}/coop/configuracion-vip`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudo cargar la configuración VIP.");
+  }
+  return cuerpo as ConfiguracionVip;
+}
+
+export async function actualizarConfiguracionVip(
+  token: string,
+  datos: ConfiguracionVip,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/configuracion-vip`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar la configuración VIP.");
+  }
+}
+
 /**
  * Política de cancelación/reprogramación (29-jul-2026, hallazgo real
  * de negocio) — Transportes Occidental (Machala) no permite cambios ni
