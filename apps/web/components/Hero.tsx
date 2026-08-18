@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { BuscadorForm } from "./BuscadorForm";
+import { obtenerToken, decodificarToken, tokenExpirado, type PayloadToken } from "@/lib/auth";
 
 /**
  * Hero real de la portada -- Fase 2 de la sesión de frontend
@@ -22,6 +23,17 @@ const FOTOS = ["/img/hero-1.jpg", "/img/hero-2.jpg"];
 export function Hero() {
   const [indiceActivo, setIndiceActivo] = useState(0);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  // Bug real encontrado por el director (17-ago-2026): el Hero nunca
+  // revisaba la sesion -- mostraba "Iniciar sesion" fijo incluso ya
+  // conectado. Mismo patron real que ya usa HeaderPublico.
+  const [payload, setPayload] = useState<PayloadToken | null>(null);
+
+  useEffect(() => {
+    const token = obtenerToken();
+    if (!token) return;
+    const datos = decodificarToken(token);
+    if (datos && !tokenExpirado(datos)) setPayload(datos);
+  }, []);
 
   useEffect(() => {
     const temporizador = setInterval(() => {
@@ -83,10 +95,10 @@ export function Hero() {
             Ayuda
           </a>
           <a
-            href="/ingresar"
+            href={payload ? "/perfil" : "/ingresar"}
             className="rounded-lg bg-brand-amber px-4 py-2 text-sm font-semibold text-brand-dark"
           >
-            Iniciar sesión
+            {payload ? "Mi cuenta" : "Iniciar sesión"}
           </a>
         </nav>
 
@@ -126,10 +138,10 @@ export function Hero() {
             Ayuda
           </a>
           <a
-            href="/ingresar"
+            href={payload ? "/perfil" : "/ingresar"}
             className="mt-1 rounded-lg bg-brand-amber px-3 py-2 text-center text-sm font-semibold text-brand-dark"
           >
-            Iniciar sesión
+            {payload ? "Mi cuenta" : "Iniciar sesión"}
           </a>
         </nav>
       )}
