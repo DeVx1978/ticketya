@@ -55,18 +55,18 @@ export function BuscadorForm() {
   return (
     <form
       onSubmit={buscar}
-      className="rounded-2xl bg-white/90 p-4 shadow-xl shadow-brand-dark/20 ring-1 ring-black/5 backdrop-blur-sm md:p-5"
+      className="rounded-2xl bg-white/95 p-3 shadow-xl shadow-brand-dark/25 ring-1 ring-black/5 backdrop-blur-sm md:p-4"
     >
       <div
         role="group"
         aria-label="Tipo de viaje"
-        className="mb-3 inline-flex overflow-hidden rounded-lg ring-1 ring-brand-light"
+        className="mb-2 inline-flex overflow-hidden rounded-lg ring-1 ring-brand-light"
       >
         <button
           type="button"
           onClick={() => setIdaYVuelta(false)}
           aria-pressed={!idaYVuelta}
-          className={`px-4 py-1.5 text-sm font-semibold transition ${
+          className={`px-3 py-1 text-xs font-semibold transition ${
             !idaYVuelta ? "bg-brand text-white" : "bg-white text-brand-dark/60 hover:bg-brand-light/50"
           }`}
         >
@@ -76,18 +76,28 @@ export function BuscadorForm() {
           type="button"
           onClick={() => setIdaYVuelta(true)}
           aria-pressed={idaYVuelta}
-          className={`px-4 py-1.5 text-sm font-semibold transition ${
+          className={`px-3 py-1 text-xs font-semibold transition ${
             idaYVuelta ? "bg-brand text-white" : "bg-white text-brand-dark/60 hover:bg-brand-light/50"
           }`}
         >
           Ida y vuelta
         </button>
       </div>
-      <div className="flex flex-col flex-wrap gap-3 md:flex-row md:items-end">
-        <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} />
-        <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} />
-        <div className="w-full md:w-40">
-          <label htmlFor="buscador-fecha" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+
+      {/* Orden real del director (17-ago-2026): recrear el diseño de
+          referencia -- barra compacta en una sola fila en pantalla
+          grande (con divisores verticales, no cada campo flotando por
+          separado), y también más compacta en celular (2 columnas en
+          vez de 5 filas apiladas -- reduce la altura total real). */}
+      <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:divide-x md:divide-brand-light md:gap-0 md:rounded-lg md:ring-1 md:ring-brand-light">
+        <div className="col-span-2 md:flex-1 md:px-3 md:py-1.5">
+          <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} compacto />
+        </div>
+        <div className="col-span-2 md:flex-1 md:px-3 md:py-1.5">
+          <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} compacto />
+        </div>
+        <div className="md:px-3 md:py-1.5">
+          <label htmlFor="buscador-fecha" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
             {idaYVuelta ? "Fecha de ida" : "Fecha"}
           </label>
           <input
@@ -96,12 +106,12 @@ export function BuscadorForm() {
             value={fecha}
             min={hoyISO()}
             onChange={(e) => setFecha(e.target.value)}
-            className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+            className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:p-0 md:focus:ring-0"
           />
         </div>
         {idaYVuelta && (
-          <div className="w-full md:w-40">
-            <label htmlFor="buscador-fecha-vuelta" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          <div className="md:px-3 md:py-1.5">
+            <label htmlFor="buscador-fecha-vuelta" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
               Fecha de vuelta
             </label>
             <input
@@ -110,12 +120,12 @@ export function BuscadorForm() {
               value={fechaVuelta}
               min={fecha}
               onChange={(e) => setFechaVuelta(e.target.value)}
-              className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:p-0 md:focus:ring-0"
             />
           </div>
         )}
-        <div className="w-full md:w-28">
-          <label htmlFor="buscador-pasajeros" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+        <div className="md:px-3 md:py-1.5">
+          <label htmlFor="buscador-pasajeros" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
             Pasajeros
           </label>
           <input
@@ -125,12 +135,12 @@ export function BuscadorForm() {
             max={10}
             value={pasajeros}
             onChange={(e) => setPasajeros(Number(e.target.value))}
-            className="w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+            className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-20 md:border-0 md:p-0 md:focus:ring-0"
           />
         </div>
         <button
           type="submit"
-          className="w-full shrink-0 rounded-lg bg-brand px-6 py-2.5 text-base font-semibold text-white transition hover:bg-brand-dark md:w-auto"
+          className="col-span-2 shrink-0 rounded-lg bg-brand-amber px-6 py-2.5 text-sm font-semibold text-brand-dark transition hover:brightness-95 md:col-span-1 md:m-1.5 md:rounded-lg"
         >
           Buscar pasajes
         </button>
