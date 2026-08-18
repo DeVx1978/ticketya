@@ -716,7 +716,11 @@ export interface TipoVehiculoResumen {
   nombre: string;
   categoria: "bus" | "buseta" | "van" | "auto" | null;
   capacidadTotal: number;
-  amenidades: Amenidad[];
+  // Bug real encontrado por el director (18-ago-2026): el backend
+  // puede devolver null cuando no se marco ninguna amenidad -- el tipo
+  // mentia diciendo que siempre era un arreglo, y eso dejo pasar un
+  // .map() sobre null hasta produccion, rompiendo toda la pantalla.
+  amenidades: Amenidad[] | null;
 }
 
 export async function listarTiposVehiculoCoop(token: string): Promise<TipoVehiculoResumen[]> {
