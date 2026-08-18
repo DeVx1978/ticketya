@@ -56,6 +56,24 @@ function amenidadesArraySql(amenidades: Amenidad[] | undefined) {
   )}]`;
 }
 
+/**
+ * Bug real encontrado por el director (18-ago-2026): las columnas de
+ * arreglo de un tipo personalizado de Postgres (enum[], como
+ * amenidades) leidas por SQL crudo (tx.execute(sql`...`)) no siempre
+ * llegan como un arreglo real de JavaScript -- el driver de Postgres
+ * puede devolver el texto plano ("{}", "{wifi,ac}") cuando no hay un
+ * parser de tipo registrado para ese OID especifico. Esto rompio la
+ * pantalla de Unidades en produccion con un .map() sobre una cadena.
+ * Esta funcion normaliza cualquiera de las 2 formas a un arreglo real.
+ */
+function parsearArregloPostgres<T extends string>(valor: T[] | string | null | undefined): T[] {
+  if (Array.isArray(valor)) return valor;
+  if (!valor) return [];
+  const sinLlaves = valor.replace(/^\{|\}$/g, '');
+  if (sinLlaves === '') return [];
+  return sinLlaves.split(',').map((v) => v.trim() as T);
+}
+
 @Injectable()
 export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
   constructor(
@@ -117,14 +135,14 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           nombre: string;
           categoria: string | null;
           capacidad_total: number;
-          amenidades: Amenidad[];
+          amenidades: Amenidad[] | string | null;
         };
         return {
           id: f.id,
           nombre: f.nombre,
           categoria: f.categoria,
           capacidadTotal: f.capacidad_total,
-          amenidades: f.amenidades ?? [],
+          amenidades: parsearArregloPostgres(f.amenidades),
         };
       });
     });
