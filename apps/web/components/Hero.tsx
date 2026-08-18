@@ -5,6 +5,18 @@ import Image from "next/image";
 import { BuscadorForm } from "./BuscadorForm";
 import { obtenerToken, decodificarToken, tokenExpirado, type PayloadToken } from "@/lib/auth";
 
+// Mismo mapeo real que ya usa HeaderPublico -- corrige un bug real
+// del director (18-ago-2026): el arreglo anterior mandaba a "Mi
+// cuenta" siempre a /perfil, sin importar el rol, y eso enviaba a un
+// super_admin al perfil de pasajero en vez de a /admin.
+const RUTA_POR_ROL: Record<PayloadToken["rol"], string> = {
+  admin_plataforma: "/admin",
+  super_admin: "/admin",
+  admin_cooperativa: "/panel-empresa",
+  vendedor: "/panel-empresa",
+  pasajero: "/perfil",
+};
+
 /**
  * Hero real de la portada -- Fase 2 de la sesión de frontend
  * (16-ago-2026). Reemplaza el gradiente negro/amarillo original --
@@ -95,7 +107,7 @@ export function Hero() {
             Ayuda
           </a>
           <a
-            href={payload ? "/perfil" : "/ingresar"}
+            href={payload ? RUTA_POR_ROL[payload.rol] : "/ingresar"}
             className="rounded-lg bg-brand-amber px-4 py-2 text-sm font-semibold text-brand-dark"
           >
             {payload ? "Mi cuenta" : "Iniciar sesión"}
@@ -138,7 +150,7 @@ export function Hero() {
             Ayuda
           </a>
           <a
-            href={payload ? "/perfil" : "/ingresar"}
+            href={payload ? RUTA_POR_ROL[payload.rol] : "/ingresar"}
             className="mt-1 rounded-lg bg-brand-amber px-3 py-2 text-center text-sm font-semibold text-brand-dark"
           >
             {payload ? "Mi cuenta" : "Iniciar sesión"}
