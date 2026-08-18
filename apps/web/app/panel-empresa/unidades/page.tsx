@@ -509,9 +509,9 @@ export default function UnidadesPage() {
                       )}
                     </td>
                     <td className="px-6 py-3">
-                      {t.amenidades.length > 0 ? (
+                      {(t.amenidades ?? []).length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {t.amenidades.map((a) => (
+                          {(t.amenidades ?? []).map((a) => (
                             <span
                               key={a}
                               className="rounded-full bg-brand-light/50 px-2 py-0.5 text-xs text-brand-dark/70"
