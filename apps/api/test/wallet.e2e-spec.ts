@@ -36,7 +36,7 @@ describe('Wallet / cashback (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombres: 'Director', apellidos: 'Wallet E2E',
+      nombres: 'Director', apellidos: 'Wallet Prueba',
     });
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
@@ -132,7 +132,7 @@ describe('Wallet / cashback (e2e)', () => {
       .send({
         correo: `pasajero.wallet.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Pasajero', apellidos: 'Wallet E2E',
+        nombres: 'Pasajero', apellidos: 'Wallet Prueba',
       });
     tokenPasajero = pasajero.body.accessToken;
   });
@@ -164,7 +164,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '1A',
             nombres: 'Invitado',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701000000',
             tipoTarifa: 'adulto',
@@ -210,7 +210,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '1B',
             nombres: 'Pasajero',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'adulto',
@@ -247,7 +247,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '1C',
             nombres: 'Pasajero',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701004119',
             tipoTarifa: 'adulto',
@@ -312,7 +312,7 @@ describe('Wallet / cashback (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoAdminPlataforma,
       password: 'ClaveSegura123',
-      nombres: 'Admin', apellidos: 'Plataforma Wallet E2E',
+      nombres: 'Admin', apellidos: 'Plataforma Wallet Prueba',
     });
     const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
     await pg.connect();
@@ -352,7 +352,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '1D',
             nombres: 'Pasajero',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701006429',
             tipoTarifa: 'adulto',
@@ -386,7 +386,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '2A',
             nombres: 'Pasajero',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'adulto',
@@ -418,7 +418,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '2B',
             nombres: 'Invitado',
-            apellidos: 'Wallet Fase2 E2E',
+            apellidos: 'Wallet Fase Dos',
             tipoDocumento: 'cedula',
             documento: '1701000000',
             tipoTarifa: 'adulto',
@@ -464,7 +464,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId,
             numeroAsiento: '2C',
             nombres: 'Pasajero',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'adulto',
@@ -573,7 +573,7 @@ describe('Wallet / cashback (e2e)', () => {
             viajeId: viajeRechazo.body.id,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Wallet E2E',
+            apellidos: 'Wallet Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'adulto',

@@ -38,7 +38,7 @@ describe('Programa de referidos (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombres: 'Director', apellidos: 'Referidos E2E',
+      nombres: 'Director', apellidos: 'Referidos Prueba',
     });
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
@@ -136,7 +136,7 @@ describe('Programa de referidos (e2e)', () => {
       .send({
         correo: `referidor.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Referidor', apellidos: 'Uno E2E',
+        nombres: 'Referidor', apellidos: 'Uno Prueba',
         cedula: '1710034065',
       });
     tokenReferidor = referidor.body.accessToken;
@@ -162,7 +162,7 @@ describe('Programa de referidos (e2e)', () => {
       .send({
         correo: `referido.uno.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Referido', apellidos: 'Uno E2E',
+        nombres: 'Referido', apellidos: 'Uno Prueba',
         codigoReferido: codigoReferidor,
       })
       .expect(201);
@@ -189,7 +189,7 @@ describe('Programa de referidos (e2e)', () => {
       .send({
         correo: `autorreferido.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Auto', apellidos: 'Referido E2E',
+        nombres: 'Auto', apellidos: 'Referido Prueba',
         cedula: '1710034065', // misma cédula que el referidor, sincronizada en el beforeAll
         codigoReferido: codigoReferidor,
       })
@@ -227,7 +227,7 @@ describe('Programa de referidos (e2e)', () => {
             viajeId,
             numeroAsiento: '1A',
             nombres: 'Referido',
-            apellidos: 'Uno E2E',
+            apellidos: 'Uno Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'adulto',
@@ -285,7 +285,7 @@ describe('Programa de referidos (e2e)', () => {
             viajeId,
             numeroAsiento: '1B',
             nombres: 'Referido',
-            apellidos: 'Uno E2E',
+            apellidos: 'Uno Prueba',
             tipoDocumento: 'cedula',
             documento: '1701004119',
             tipoTarifa: 'adulto',
@@ -318,7 +318,7 @@ describe('Programa de referidos (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoAdminPlataforma,
       password: 'ClaveSegura123',
-      nombres: 'Admin', apellidos: 'Plataforma Referidos E2E',
+      nombres: 'Admin', apellidos: 'Plataforma Referidos Prueba',
     });
     const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
     await pg.connect();

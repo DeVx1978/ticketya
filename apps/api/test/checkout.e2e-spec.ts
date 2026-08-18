@@ -52,7 +52,7 @@ describe('Checkout y pago (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombres: 'Director', apellidos: 'Checkout E2E',
+      nombres: 'Director', apellidos: 'Checkout Prueba',
     });
 
     const pg = new Client({
@@ -173,7 +173,7 @@ describe('Checkout y pago (e2e)', () => {
       .send({
         correo: `pasajero.checkout.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Pasajero', apellidos: 'Checkout E2E',
+        nombres: 'Pasajero', apellidos: 'Checkout Prueba',
       });
     tokenPasajero = pasajero.body.accessToken;
   });
@@ -229,7 +229,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Adulto E2E',
+            apellidos: 'Adulto Prueba',
             tipoDocumento: 'cedula',
             documento: '1701001370',
             tipoTarifa: 'adulto',
@@ -261,7 +261,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '1B',
             nombres: 'Pasajero',
-            apellidos: 'Niño E2E',
+            apellidos: 'Niño Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'nino',
@@ -294,7 +294,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '2B',
             nombres: 'Pasajero',
-            apellidos: 'Niño Sin Autorizacion E2E',
+            apellidos: 'Niño Sin Autorizacion Prueba',
             tipoDocumento: 'cedula',
             documento: '1701004119',
             tipoTarifa: 'nino',
@@ -318,7 +318,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '2C',
             nombres: 'Padre',
-            apellidos: 'E2E',
+            apellidos: 'Prueba',
             tipoDocumento: 'cedula',
             documento: '1701005488',
             tipoTarifa: 'adulto',
@@ -327,7 +327,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '2D',
             nombres: 'Hijo',
-            apellidos: 'E2E',
+            apellidos: 'Prueba',
             tipoDocumento: 'cedula',
             documento: '1701006858',
             tipoTarifa: 'nino',
@@ -354,7 +354,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '3B',
             nombres: 'Pasajero',
-            apellidos: 'Niño Verificacion E2E',
+            apellidos: 'Niño Verificacion Prueba',
             tipoDocumento: 'cedula',
             documento: '1701008227',
             tipoTarifa: 'nino',
@@ -409,7 +409,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '5B',
             nombres: 'Pasajero',
-            apellidos: 'Discapacidad Sin Documento E2E',
+            apellidos: 'Discapacidad Sin Documento Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'discapacidad',
@@ -433,7 +433,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '5C',
             nombres: 'Pasajero',
-            apellidos: 'Discapacidad E2E',
+            apellidos: 'Discapacidad Prueba',
             tipoDocumento: 'cedula',
             documento: '1701004119',
             tipoTarifa: 'discapacidad',
@@ -458,7 +458,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '5D',
             nombres: 'Pasajero',
-            apellidos: 'Discapacidad Verificacion E2E',
+            apellidos: 'Discapacidad Verificacion Prueba',
             tipoDocumento: 'cedula',
             documento: '1701006429',
             tipoTarifa: 'discapacidad',
@@ -492,7 +492,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '4A',
             nombres: 'Pasajero',
-            apellidos: 'Manifiesto E2E',
+            apellidos: 'Manifiesto Prueba',
             tipoDocumento: 'cedula',
             documento: '1701009597',
             tipoTarifa: 'adulto',
@@ -510,7 +510,7 @@ describe('Checkout y pago (e2e)', () => {
       (p: { numeroAsiento: string }) => p.numeroAsiento === '4A',
     );
     expect(fila).toBeDefined();
-    expect(fila.nombreCompleto).toBe('Pasajero Manifiesto E2E');
+    expect(fila.nombreCompleto).toBe('Pasajero Manifiesto Prueba');
     expect(fila.documento).toBe('1701009597');
     expect(fila.estadoBoleto).toBe('vigente');
     expect(fila.esMenorEdad).toBe(false);
@@ -527,7 +527,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '3C',
             nombres: 'Pasajero',
-            apellidos: 'Cancelacion E2E',
+            apellidos: 'Cancelacion Prueba',
             tipoDocumento: 'cedula',
             documento: '1701010967',
             tipoTarifa: 'adulto',
@@ -570,7 +570,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '3D',
             nombres: 'Pasajero',
-            apellidos: 'Cancelacion Ajena E2E',
+            apellidos: 'Cancelacion Ajena Prueba',
             tipoDocumento: 'cedula',
             documento: '1701012336',
             tipoTarifa: 'adulto',
@@ -585,7 +585,7 @@ describe('Checkout y pago (e2e)', () => {
       .send({
         correo: `otro.cancelacion.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Otro', apellidos: 'Pasajero Cancelacion E2E',
+        nombres: 'Otro', apellidos: 'Pasajero Cancelacion Prueba',
       });
 
     const res = await request(app.getHttpServer())
@@ -631,7 +631,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId: viajeCancelableId,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Viaje Cancelado E2E',
+            apellidos: 'Viaje Cancelado Prueba',
             tipoDocumento: 'cedula',
             documento: '1701013706',
             tipoTarifa: 'adulto',
@@ -700,7 +700,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId: viajeParaCambioId,
             numeroAsiento: '5A',
             nombres: 'Pasajero',
-            apellidos: 'Cambio Unidad E2E',
+            apellidos: 'Cambio Unidad Prueba',
             tipoDocumento: 'cedula',
             documento: '1701015073',
             tipoTarifa: 'adulto',
@@ -901,7 +901,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId: viajeConVentaId,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Editar Rechazo E2E',
+            apellidos: 'Editar Rechazo Prueba',
             tipoDocumento: 'cedula',
             documento: '1701016444',
             tipoTarifa: 'adulto',
@@ -929,7 +929,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '1D',
             nombres: 'Pasajero',
-            apellidos: 'Hallazgo E2E',
+            apellidos: 'Hallazgo Prueba',
             tipoDocumento: 'cedula',
             documento: '1701017814',
             tipoTarifa: 'adulto',
@@ -980,7 +980,7 @@ describe('Checkout y pago (e2e)', () => {
           viajeId,
           numeroAsiento: '2A',
           nombres: 'Pasajero',
-          apellidos: 'Reintento Desglose E2E',
+          apellidos: 'Reintento Desglose Prueba',
           tipoDocumento: 'cedula',
           documento: '1701019182',
           tipoTarifa: 'adulto',
@@ -1016,7 +1016,7 @@ describe('Checkout y pago (e2e)', () => {
           viajeId,
           numeroAsiento: '1C',
           nombres: 'Pasajero',
-          apellidos: 'Idempotencia E2E',
+          apellidos: 'Idempotencia Prueba',
           tipoDocumento: 'cedula',
           documento: '1701000000',
           tipoTarifa: 'adulto',
@@ -1083,7 +1083,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId: viajeRechazo.body.id,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Rechazo E2E',
+            apellidos: 'Rechazo Prueba',
             tipoDocumento: 'cedula',
             documento: '1701001370',
             tipoTarifa: 'adulto',
@@ -1126,7 +1126,7 @@ describe('Checkout y pago (e2e)', () => {
             viajeId,
             numeroAsiento: '3A',
             nombres: 'Pasajero',
-            apellidos: 'Cargo Plataforma E2E',
+            apellidos: 'Cargo Plataforma Prueba',
             tipoDocumento: 'cedula',
             documento: '1701002741',
             tipoTarifa: 'adulto',
@@ -1233,7 +1233,7 @@ describe('Checkout y pago (e2e)', () => {
         .send({
           correo: `pasajero.vip.${sufijo}@ticketya.ec`,
           password: 'ClaveSegura123',
-          nombres: 'Pasajero', apellidos: 'VIP E2E',
+          nombres: 'Pasajero', apellidos: 'VIP Prueba',
         });
       const loginPasajeroVip = await request(app.getHttpServer())
         .post('/auth/login')

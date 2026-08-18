@@ -45,7 +45,7 @@ describe('Métodos de pago manuales (e2e)', () => {
       correo: correoDirector,
       password: 'ClaveSegura123',
       nombres: 'Director',
-      apellidos: 'Pago Manual E2E',
+      apellidos: 'Pago Manual Prueba',
     });
     const loginDirector = await request(app.getHttpServer())
       .post('/auth/login')
@@ -137,7 +137,7 @@ describe('Métodos de pago manuales (e2e)', () => {
         correo: `pasajero.pago.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
         nombres: 'Pasajero',
-        apellidos: 'Pago Manual E2E',
+        apellidos: 'Pago Manual Prueba',
       });
     tokenPasajero = pasajero.body.accessToken;
   });
@@ -164,7 +164,7 @@ describe('Métodos de pago manuales (e2e)', () => {
             viajeId,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Pago Manual E2E',
+            apellidos: 'Pago Manual Prueba',
             tipoDocumento: 'cedula',
             documento: '1701006858',
             tipoTarifa: 'adulto',
@@ -201,7 +201,7 @@ describe('Métodos de pago manuales (e2e)', () => {
             viajeId,
             numeroAsiento: '2A',
             nombres: 'Pasajero',
-            apellidos: 'Confirma E2E',
+            apellidos: 'Confirma Prueba',
             tipoDocumento: 'cedula',
             documento: '1701008227',
             tipoTarifa: 'adulto',
@@ -245,7 +245,7 @@ describe('Métodos de pago manuales (e2e)', () => {
     // El nombre que se muestra es el del titular de la cuenta que pagó
     // (a quién contactar), no necesariamente el del pasajero que viaja
     // -- pueden ser personas distintas (comprar para un familiar).
-    expect(pendiente.compradorNombre).toBe('Pasajero Pago Manual E2E');
+    expect(pendiente.compradorNombre).toBe('Pasajero Pago Manual Prueba');
 
     // La cooperativa confirma.
     await request(app.getHttpServer())
@@ -298,7 +298,7 @@ describe('Métodos de pago manuales (e2e)', () => {
             viajeId,
             numeroAsiento: '3A',
             nombres: 'Pasajero',
-            apellidos: 'Rechazo E2E',
+            apellidos: 'Rechazo Prueba',
             tipoDocumento: 'cedula',
             documento: '1701009597',
             tipoTarifa: 'adulto',
@@ -338,7 +338,7 @@ describe('Métodos de pago manuales (e2e)', () => {
         correo: `pasajero.otro.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
         nombres: 'Otro',
-        apellidos: 'Pasajero E2E',
+        apellidos: 'Pasajero Prueba',
       });
     await bloquear(viajeId, '3A', otroPasajero.body.accessToken);
   });
@@ -354,7 +354,7 @@ describe('Métodos de pago manuales (e2e)', () => {
             viajeId,
             numeroAsiento: '4A',
             nombres: 'Pasajero',
-            apellidos: 'Ajeno E2E',
+            apellidos: 'Ajeno Prueba',
             tipoDocumento: 'cedula',
             documento: '1701010967',
             tipoTarifa: 'adulto',
@@ -369,7 +369,7 @@ describe('Métodos de pago manuales (e2e)', () => {
         correo: `pasajero.intruso.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
         nombres: 'Intruso',
-        apellidos: 'E2E',
+        apellidos: 'Prueba',
       })
     ).body.accessToken;
 
@@ -397,7 +397,7 @@ describe('Métodos de pago manuales (e2e)', () => {
               viajeId,
               numeroAsiento: '5A',
               nombres: 'Pasajero',
-              apellidos: 'Factura E2E',
+              apellidos: 'Factura Prueba',
               tipoDocumento: 'cedula',
               documento: '1701012336',
               tipoTarifa: 'adulto',
@@ -466,7 +466,7 @@ describe('Métodos de pago manuales (e2e)', () => {
       const solicitud = pendientes.body.find((s: { boletoId: string }) => s.boletoId === boletoId);
       expect(solicitud).toBeDefined();
       expect(solicitud.estado).toBe('pendiente');
-      expect(solicitud.pasajeroNombre).toBe('Pasajero Factura E2E');
+      expect(solicitud.pasajeroNombre).toBe('Pasajero Factura Prueba');
       expect(solicitud.datosTributarios.numero).toBe('0104123456');
 
       await request(app.getHttpServer())

@@ -51,7 +51,7 @@ describe('Reprogramación con crédito (e2e)', () => {
             viajeId,
             numeroAsiento,
             nombres: 'Pasajero',
-            apellidos: 'Reprogramación E2E',
+            apellidos: 'Reprogramación Prueba',
             tipoDocumento: 'cedula',
             documento: '1701013706',
             tipoTarifa: 'adulto',
@@ -76,7 +76,7 @@ describe('Reprogramación con crédito (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombres: 'Director', apellidos: 'Reprogramación E2E',
+      nombres: 'Director', apellidos: 'Reprogramación Prueba',
     });
 
     const pg = new Client({ connectionString: process.env.DATABASE_URL_PUBLICO });
@@ -216,7 +216,7 @@ describe('Reprogramación con crédito (e2e)', () => {
       .send({
         correo: `pasajero.reprog.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Pasajero', apellidos: 'Reprog E2E',
+        nombres: 'Pasajero', apellidos: 'Reprog Prueba',
       });
     tokenPasajero = pasajero.body.accessToken;
   });
@@ -386,7 +386,7 @@ describe('Reprogramación con crédito (e2e)', () => {
               viajeId: viajeOriginalId,
               numeroAsiento: '4B',
               nombres: 'Pasajero',
-              apellidos: 'Usa Credito E2E',
+              apellidos: 'Usa Credito Prueba',
               tipoDocumento: 'cedula',
               documento: '1701015073',
               tipoTarifa: 'adulto',
@@ -421,7 +421,7 @@ describe('Reprogramación con crédito (e2e)', () => {
               viajeId: viajeOriginalId,
               numeroAsiento: '4C',
               nombres: 'Pasajero',
-              apellidos: 'Reusa Credito E2E',
+              apellidos: 'Reusa Credito Prueba',
               tipoDocumento: 'cedula',
               documento: '1701016444',
               tipoTarifa: 'adulto',
@@ -460,7 +460,7 @@ describe('Reprogramación con crédito (e2e)', () => {
               viajeId: viajeOtraCoopId,
               numeroAsiento: '5A',
               nombres: 'Pasajero',
-              apellidos: 'Credito Cruzado E2E',
+              apellidos: 'Credito Cruzado Prueba',
               tipoDocumento: 'cedula',
               documento: '1701017814',
               tipoTarifa: 'adulto',
