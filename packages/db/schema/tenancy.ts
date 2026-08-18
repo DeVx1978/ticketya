@@ -62,6 +62,15 @@ export const cooperativas = pgTable(
       .default('15.00')
       .notNull(),
     ivaVisibleEnBoleto: boolean('iva_visible_en_boleto').default(true).notNull(),
+    // Corrección real (18-ago-2026, hallazgo del director comparando
+    // con FlixBus): el recargo VIP es una política fija de la
+    // cooperativa (como el precio de un tipo de asiento), no algo que
+    // se vuelve a escribir en cada viaje nuevo. Este es el valor por
+    // defecto -- el campo del formulario de "Crear viaje" sigue
+    // existiendo para ajustarlo puntualmente si un viaje lo necesita.
+    recargoVipDefault: numeric('recargo_vip_default', { precision: 8, scale: 2 })
+      .default('0')
+      .notNull(),
     // true = el valor de arriba se actualiza solo cuando el admin de
     // plataforma cambia el IVA nacional (comportamiento por defecto).
     // false = la cooperativa fijó su propio valor manualmente (ej.

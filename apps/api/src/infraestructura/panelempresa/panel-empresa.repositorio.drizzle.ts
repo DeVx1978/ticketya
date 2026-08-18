@@ -355,7 +355,11 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
     return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
       const filas = await tx.execute(sql`
         INSERT INTO viajes (cooperativa_id, ruta_id, unidad_id, fecha_salida, hora_salida_programada, hora_llegada_estimada, recargo_vip, precio_base, estado)
-        VALUES (${cooperativaId}, ${datos.rutaId}, ${datos.unidadId}, ${datos.fechaSalida}, ${datos.horaSalidaProgramada}, ${datos.horaLlegadaEstimada ?? null}, ${datos.recargoVip ?? 0}, ${datos.precioBase}, 'programado')
+        VALUES (
+          ${cooperativaId}, ${datos.rutaId}, ${datos.unidadId}, ${datos.fechaSalida}, ${datos.horaSalidaProgramada}, ${datos.horaLlegadaEstimada ?? null},
+          COALESCE(${datos.recargoVip ?? null}, (SELECT recargo_vip_default FROM cooperativas WHERE id = ${cooperativaId}), 0),
+          ${datos.precioBase}, 'programado'
+        )
         RETURNING id
       `);
       return { id: (filas.rows[0] as { id: string }).id };
@@ -1021,6 +1025,24 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
             iva_visible_en_boleto = ${datos.ivaVisibleEnBoleto},
             iva_sigue_tasa_nacional = ${datos.ivaSigueTasaNacional}
         WHERE id = ${cooperativaId}
+      `);
+    });
+  }
+
+  async obtenerConfiguracionVip(cooperativaId: string): Promise<{ recargoVipDefault: number }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT recargo_vip_default FROM cooperativas WHERE id = ${cooperativaId}
+      `);
+      const f = resultado.rows[0] as { recargo_vip_default: string };
+      return { recargoVipDefault: Number(f.recargo_vip_default) };
+    });
+  }
+
+  async actualizarConfiguracionVip(cooperativaId: string, recargoVipDefault: number): Promise<void> {
+    await ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      await tx.execute(sql`
+        UPDATE cooperativas SET recargo_vip_default = ${recargoVipDefault} WHERE id = ${cooperativaId}
       `);
     });
   }

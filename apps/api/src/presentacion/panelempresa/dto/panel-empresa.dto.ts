@@ -342,6 +342,13 @@ export class ActualizarPoliticaCancelacionReprogramacionDto {
 }
 
 /** IVA de la cooperativa — ya incluido en el precio del boleto por defecto (15%), configurable, ver 21-jul-2026. */
+/** Recargo VIP por defecto de la cooperativa -- corrección real 18-ago-2026, ver cooperativas.recargoVipDefault. */
+export class ActualizarConfiguracionVipDto {
+  @IsNumber()
+  @Min(0)
+  recargoVipDefault!: number;
+}
+
 export class ActualizarConfiguracionFiscalDto {
   @IsNumber()
   @Min(0)

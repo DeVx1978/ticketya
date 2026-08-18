@@ -1,4 +1,4 @@
-﻿import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
 import type { AlmacenamientoArchivos } from '../../dominio/auth/auth.ports';
 import { ALMACENAMIENTO_ARCHIVOS } from '../auth/auth.service';
 import { NotificacionesProgramadasService } from '../notificaciones-programadas/notificaciones-programadas.service';
@@ -339,6 +339,14 @@ export class PanelEmpresaService {
     },
   ) {
     return this.panel.actualizarConfiguracionFiscal(cooperativaId, datos);
+  }
+
+  obtenerConfiguracionVip(cooperativaId: string) {
+    return this.panel.obtenerConfiguracionVip(cooperativaId);
+  }
+
+  actualizarConfiguracionVip(cooperativaId: string, recargoVipDefault: number) {
+    return this.panel.actualizarConfiguracionVip(cooperativaId, recargoVipDefault);
   }
 
   obtenerHorasLimiteReprogramacion(cooperativaId: string) {

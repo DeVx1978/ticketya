@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -32,6 +32,7 @@ import {
   ActualizarEstadoUnidadDto,
   VerificarMenorDto,
   ActualizarConfiguracionFiscalDto,
+  ActualizarConfiguracionVipDto,
   ActualizarHorasLimiteReprogramacionDto,
   ActualizarPoliticaCancelacionReprogramacionDto,
   ActualizarPerfilDto,
@@ -435,6 +436,13 @@ export class PanelEmpresaController {
     return this.panel.obtenerConfiguracionFiscal(cooperativaDelToken(req.user));
   }
 
+  /** Recargo VIP por defecto -- correccion real 18-ago-2026. */
+  @Roles('admin_cooperativa')
+  @Get('configuracion-vip')
+  async obtenerConfiguracionVip(@Request() req: { user: PayloadToken }) {
+    return this.panel.obtenerConfiguracionVip(cooperativaDelToken(req.user));
+  }
+
   @Roles('admin_cooperativa')
   @Patch('configuracion-fiscal')
   async actualizarConfiguracionFiscal(
@@ -444,6 +452,19 @@ export class PanelEmpresaController {
     await this.panel.actualizarConfiguracionFiscal(
       cooperativaDelToken(req.user),
       dto,
+    );
+    return { ok: true };
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('configuracion-vip')
+  async actualizarConfiguracionVip(
+    @Body() dto: ActualizarConfiguracionVipDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    await this.panel.actualizarConfiguracionVip(
+      cooperativaDelToken(req.user),
+      dto.recargoVipDefault,
     );
     return { ok: true };
   }
