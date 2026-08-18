@@ -751,6 +751,10 @@ export interface PanelEmpresaRepositorio {
     },
   ): Promise<void>;
 
+  /** Corrección real 18-ago-2026 -- recargo VIP como política fija de la cooperativa. */
+  obtenerConfiguracionVip(cooperativaId: string): Promise<{ recargoVipDefault: number }>;
+  actualizarConfiguracionVip(cooperativaId: string, recargoVipDefault: number): Promise<void>;
+
   /**
    * Reprogramación con crédito (Fase C, 28-jul-2026) — horas mínimas
    * antes de la salida para poder reprogramar. Cada cooperativa
