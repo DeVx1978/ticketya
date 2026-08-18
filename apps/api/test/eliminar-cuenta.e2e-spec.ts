@@ -47,7 +47,7 @@ describe('Eliminación de cuenta (e2e)', () => {
       correo,
       password: 'ClaveSegura123',
       nombres: 'Elim',
-      apellidos: 'SinPass E2E',
+      apellidos: 'SinPass Prueba',
     });
     const login = await request(app.getHttpServer())
       .post('/auth/login')
@@ -67,7 +67,7 @@ describe('Eliminación de cuenta (e2e)', () => {
       correo,
       password: 'ClaveSegura123',
       nombres: 'Elim',
-      apellidos: 'PassMal E2E',
+      apellidos: 'PassMal Prueba',
     });
     const login = await request(app.getHttpServer())
       .post('/auth/login')
@@ -89,7 +89,7 @@ describe('Eliminación de cuenta (e2e)', () => {
       correo: correoDirector,
       password: 'ClaveSegura123',
       nombres: 'Director',
-      apellidos: 'Elim E2E',
+      apellidos: 'Elim Prueba',
     });
     await pg.query(
       "UPDATE usuarios SET rol='admin_plataforma' WHERE correo=$1",
@@ -167,7 +167,7 @@ describe('Eliminación de cuenta (e2e)', () => {
       correo: correoPasajero,
       password: 'ClaveSegura123',
       nombres: 'Pasajero',
-      apellidos: 'A Eliminar E2E',
+      apellidos: 'A Eliminar Prueba',
     });
     const loginPasajero = await request(app.getHttpServer())
       .post('/auth/login')
@@ -194,7 +194,7 @@ describe('Eliminación de cuenta (e2e)', () => {
             viajeId: viaje.body.id,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'A Eliminar E2E',
+            apellidos: 'A Eliminar Prueba',
             tipoDocumento: 'cedula',
             documento: '1701004119',
             tipoTarifa: 'adulto',
@@ -258,7 +258,7 @@ describe('Eliminación de cuenta (e2e)', () => {
       [compraId],
     );
     expect(filaPasajeroCompra.rows[0].nombres).toBe('Pasajero');
-    expect(filaPasajeroCompra.rows[0].apellidos).toBe('A Eliminar E2E');
+    expect(filaPasajeroCompra.rows[0].apellidos).toBe('A Eliminar Prueba');
     expect(filaPasajeroCompra.rows[0].documento).toBe('1701004119');
   });
 
@@ -271,7 +271,7 @@ describe('Eliminación de cuenta (e2e)', () => {
       correo,
       password: 'ClaveSegura123',
       nombres: 'Elim',
-      apellidos: 'Externa E2E',
+      apellidos: 'Externa Prueba',
     });
     const token = registro.body.accessToken;
     await pg.query(

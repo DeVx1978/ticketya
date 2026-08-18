@@ -39,7 +39,7 @@ describe('Calificaciones de viaje (e2e)', () => {
     await request(app.getHttpServer()).post('/auth/registro').send({
       correo: correoDirector,
       password: 'ClaveSegura123',
-      nombres: 'Director', apellidos: 'Calificaciones E2E',
+      nombres: 'Director', apellidos: 'Calificaciones Prueba',
     });
 
     const pg = new Client({
@@ -146,7 +146,7 @@ describe('Calificaciones de viaje (e2e)', () => {
       .send({
         correo: `pasajero.calif.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Pasajero', apellidos: 'Calificaciones E2E',
+        nombres: 'Pasajero', apellidos: 'Calificaciones Prueba',
       });
     tokenPasajero = pasajero.body.accessToken;
 
@@ -155,7 +155,7 @@ describe('Calificaciones de viaje (e2e)', () => {
       .send({
         correo: `otro.pasajero.calif.${sufijo}@ticketya.ec`,
         password: 'ClaveSegura123',
-        nombres: 'Otro', apellidos: 'Pasajero Calificaciones E2E',
+        nombres: 'Otro', apellidos: 'Pasajero Calificaciones Prueba',
       });
     tokenOtroPasajero = otroPasajero.body.accessToken;
 
@@ -173,7 +173,7 @@ describe('Calificaciones de viaje (e2e)', () => {
             viajeId,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Calificaciones E2E',
+            apellidos: 'Calificaciones Prueba',
             tipoDocumento: 'cedula',
             documento: '1701000000',
             tipoTarifa: 'adulto',
@@ -259,7 +259,7 @@ describe('Calificaciones de viaje (e2e)', () => {
             viajeId: viajeFuturo.body.id,
             numeroAsiento: '1A',
             nombres: 'Pasajero',
-            apellidos: 'Calificaciones E2E',
+            apellidos: 'Calificaciones Prueba',
             tipoDocumento: 'cedula',
             documento: '1701001370',
             tipoTarifa: 'adulto',
@@ -356,7 +356,7 @@ describe('Calificaciones de viaje (e2e)', () => {
               viajeId: viajeExtra.body.id,
               numeroAsiento: '1A',
               nombres: 'Pasajero',
-              apellidos: 'Calificaciones E2E',
+              apellidos: 'Calificaciones Prueba',
               tipoDocumento: 'cedula',
               documento: ['1701002741', '1701004119', '1701005488', '1701006858', '1701008227', '1701009597', '1701010967', '1701012336'][i % 8],
               tipoTarifa: 'adulto',

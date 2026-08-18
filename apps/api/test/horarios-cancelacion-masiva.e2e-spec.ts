@@ -59,7 +59,7 @@ describe('Horarios recurrentes y cancelación masiva (e2e)', () => {
         correo: correoAdmin,
         password: 'ClaveSegura123',
         nombres: 'Director',
-        apellidos: 'Horarios E2E',
+        apellidos: 'Horarios Prueba',
         cedula: '0999999998',
       })
       .expect(201);
@@ -112,7 +112,7 @@ describe('Horarios recurrentes y cancelación masiva (e2e)', () => {
         correo: correoPasajero,
         password: 'ClaveSegura123',
         nombres: 'Pasajero',
-        apellidos: 'Horarios E2E',
+        apellidos: 'Horarios Prueba',
         cedula: '0999999997',
       })
       .expect(201);
@@ -345,7 +345,7 @@ describe('Horarios recurrentes y cancelación masiva (e2e)', () => {
               viajeId,
               numeroAsiento: '1A',
               nombres: 'Pasajero',
-              apellidos: 'Credito E2E',
+              apellidos: 'Credito Prueba',
               tipoDocumento: 'cedula',
               documento: '1701005488',
               tipoTarifa: 'adulto',

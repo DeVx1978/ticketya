@@ -15,7 +15,26 @@ import {
   ValidatorConstraintInterface,
   ValidationArguments,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
+
+/**
+ * Correccion real 18-ago-2026, hallazgo del director probando la
+ * compra VIP: los nombres/apellidos del pasajero solo exigian 2+
+ * caracteres, sin formato real, y no forzaban mayuscula inicial.
+ * Acepta letras (incluye tildes y enie), espacios y apostrofes/guion
+ * (para nombres compuestos reales como "María José" o "D'Angelo").
+ */
+const PATRON_NOMBRE_REAL = /^[A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ'-]*(?:\s[A-Za-zÁÉÍÓÚÑáéíóúñ][A-Za-zÁÉÍÓÚÑáéíóúñ'-]*)*$/;
+
+function capitalizarNombre(valor: unknown): unknown {
+  if (typeof valor !== 'string') return valor;
+  return valor
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .map((palabra) => palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase())
+    .join(' ');
+}
 import { esDocumentoValido } from '../../../dominio/ventas/validadores-documento';
 
 /**
@@ -89,10 +108,14 @@ export class PasajeroCheckoutDto {
   /** Item 31.1, Fase 7 (13-ago-2026) -- separado en 2 campos reales (antes nombreCompleto). */
   @IsString()
   @MinLength(2)
+  @Matches(PATRON_NOMBRE_REAL, { message: 'nombres debe contener solo letras (se aceptan tildes y ñ)' })
+  @Transform(({ value }) => capitalizarNombre(value))
   nombres!: string;
 
   @IsString()
   @MinLength(2)
+  @Matches(PATRON_NOMBRE_REAL, { message: 'apellidos debe contener solo letras (se aceptan tildes y ñ)' })
+  @Transform(({ value }) => capitalizarNombre(value))
   apellidos!: string;
 
   /** Selector explicito -- confirmado con FlixBus que ambos son documentos validos reales. */
