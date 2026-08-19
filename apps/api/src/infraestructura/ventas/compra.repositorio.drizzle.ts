@@ -87,6 +87,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         pasajeroDocumento: pasajerosCompra.documento,
         compradorNombreCuenta: usuarios.nombreCompleto,
         compradorCedulaCuenta: usuarios.cedula,
+        esVip: boletos.esVip,
       })
       .from(boletos)
       .innerJoin(viajeAsientos, eq(boletos.viajeAsientoId, viajeAsientos.id))
@@ -125,6 +126,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         unidadIdentificador: b.unidadIdentificador,
         compradorNombre: b.compradorNombreCuenta ?? `${b.pasajeroNombres} ${b.pasajeroApellidos}`,
         compradorDocumento: b.compradorCedulaCuenta ?? b.pasajeroDocumento,
+        esVip: b.esVip,
       })),
     };
   }
@@ -241,6 +243,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         cargoPlataforma,
         ivaMonto: Number(ivaMonto.toFixed(2)),
         ivaVisible: f.ivaVisibleEnBoleto,
+        esVip,
       });
     }
 
@@ -323,6 +326,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
           tasaTerminal: d.tasaTerminal.toFixed(2),
           cargoPlataforma: d.cargoPlataforma.toFixed(2),
           ivaMonto: d.ivaMonto.toFixed(2),
+          esVip: d.esVip,
         })
         .returning();
       pasajeroCompraIds.push(pasajeroCompra.id);
@@ -336,6 +340,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         tasaTerminal: d.tasaTerminal,
         cargoPlataforma: d.cargoPlataforma,
         ivaMonto: d.ivaMonto,
+        esVip: d.esVip,
       });
     }
 
@@ -502,7 +507,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     const filas = await this.dbPublico.execute(sql`
       SELECT pc.id AS pasajero_compra_id, va.id AS viaje_asiento_id,
              va.numero_asiento, va.viaje_id, v.cooperativa_id,
-             pc.precio_pagado, pc.tasa_terminal, pc.cargo_plataforma, pc.iva_monto
+             pc.precio_pagado, pc.tasa_terminal, pc.cargo_plataforma, pc.iva_monto, pc.es_vip
       FROM pasajeros_compra pc
       INNER JOIN viaje_asientos va ON va.id = pc.viaje_asiento_id
       INNER JOIN viajes v ON v.id = va.viaje_id
@@ -524,6 +529,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
       tasa_terminal: string | null;
       cargo_plataforma: string | null;
       iva_monto: string | null;
+      es_vip: boolean;
     };
     const filasTipadas = filas.rows as unknown as FilaPasajero[];
 
@@ -547,8 +553,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
 
         const codigoQr = randomUUID();
         const boletoRows = await tx.execute(
-          sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, cargo_plataforma, iva_monto, estado)
-              VALUES (${cooperativaId}, ${pago.compraId}, ${f.pasajero_compra_id}, ${f.viaje_asiento_id}, ${codigoQr}, ${f.precio_pagado}, ${f.cargo_plataforma}, ${f.iva_monto}, 'vigente')
+          sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, cargo_plataforma, iva_monto, estado, es_vip)
+              VALUES (${cooperativaId}, ${pago.compraId}, ${f.pasajero_compra_id}, ${f.viaje_asiento_id}, ${codigoQr}, ${f.precio_pagado}, ${f.cargo_plataforma}, ${f.iva_monto}, 'vigente', ${f.es_vip})
               RETURNING id`,
         );
         const boletoId = (boletoRows.rows[0] as { id: string }).id;
@@ -660,8 +666,8 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
 
           const codigoQr = randomUUID();
           const boletoRows = await tx.execute(
-            sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, cargo_plataforma, iva_monto, estado)
-                VALUES (${cooperativaId}, ${compraId}, ${item.pasajeroCompraId}, ${viajeAsientoId}, ${codigoQr}, ${item.precioPagado.toFixed(2)}, ${item.cargoPlataforma.toFixed(2)}, ${item.ivaMonto.toFixed(2)}, 'vigente')
+            sql`INSERT INTO boletos (cooperativa_id, compra_id, pasajero_compra_id, viaje_asiento_id, codigo_qr, precio_pagado, cargo_plataforma, iva_monto, estado, es_vip)
+                VALUES (${cooperativaId}, ${compraId}, ${item.pasajeroCompraId}, ${viajeAsientoId}, ${codigoQr}, ${item.precioPagado.toFixed(2)}, ${item.cargoPlataforma.toFixed(2)}, ${item.ivaMonto.toFixed(2)}, 'vigente', ${item.esVip})
                 RETURNING id`,
           );
           const boletoId = (boletoRows.rows[0] as { id: string }).id;
@@ -741,6 +747,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
             unidadIdentificador: filaViaje.unidad_identificador,
             compradorNombre,
             compradorDocumento,
+            esVip: item.esVip,
           });
 
           await tx.execute(
@@ -1384,6 +1391,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
         unidadIdentificador: unidades.identificadorOperativo,
         compradorNombreCuenta: usuarios.nombreCompleto,
         compradorCedulaCuenta: usuarios.cedula,
+        esVip: boletos.esVip,
       })
       .from(boletos)
       .innerJoin(compras, eq(boletos.compraId, compras.id))

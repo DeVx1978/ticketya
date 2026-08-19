@@ -948,6 +948,7 @@ describe('Checkout y pago (e2e)', () => {
       'compradorDocumento',
       'compradorNombre',
       'cooperativaNombre',
+      'esVip',
       'fechaSalida',
       'horaSalidaProgramada',
       'id',
