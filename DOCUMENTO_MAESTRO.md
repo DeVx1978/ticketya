@@ -1437,6 +1437,82 @@ El director dio 2 órdenes en rápida sucesión que parecían contradecirse: pri
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.37 Recargo VIP como política fija de la cooperativa, no por cada viaje -- 18-ago-2026
+
+Hallazgo real del director probando la Zona VIP en producción: el recargo se pedía en el formulario de "Crear viaje" cada vez, obligando a escribirlo de nuevo en cada viaje nuevo. Verificado con evidencia real -- soporte oficial de FlixBus confirma que el precio de un asiento premium depende del TIPO de asiento (política fija del operador), no algo que se redefine por viaje.
+
+**Construido (backend, PR #115):**
+- `cooperativas.recargo_vip_default` (migración 0037), configurable una sola vez, default 0.
+- `GET`/`PATCH /coop/configuracion-vip` -- mismo patrón real que ya usa `configuracion-fiscal` (IVA).
+- `crearViaje` ahora usa `COALESCE`: si el admin especifica un recargo puntual para ese viaje, se respeta; si no, usa el valor por defecto de la cooperativa.
+
+**Construido (frontend, PR #116):** sección nueva "Recargo VIP" en Configuración, con su propio formulario. El formulario de "Crear viaje" se pre-llena automáticamente con ese valor -- ajustable por viaje si hace falta.
+
+**Verificado:** `tsc --noEmit` limpio, 213/213 pruebas e2e, `next build` 30/30 páginas. Migración aplicada y verificada de forma independiente en producción real (columna `recargo_vip_default numeric, default '0'`).
+
+**Probado en vivo por el director, con evidencia real:** viaje Quito→Guayaquil, precio base $10 + recargo VIP $3 configurado una sola vez → boleto confirmado en $13.00 sin escribir el recargo en el formulario del viaje.
+
+## 5.38 3 hallazgos reales de la misma prueba VIP: tasa de terminal, validación de nombres, indicador visual -- 18/19-ago-2026
+
+Mismo recorrido de prueba real de la sección 5.37. El director encontró 3 problemas reales adicionales en la confirmación de compra.
+
+**1. Tasa de terminal faltante ($0.25) -- hueco de datos, no de código.** Confirmado con evidencia real: `puntos_operacion.tasa_monto` estaba en `null` para las terminales Quitumbe y Carcelén (Cuenca y Guayaquil sí la tenían). El frontend ya sabía mostrarla (`{boleto.tasaTerminal > 0 && (...)}`) -- solo faltaba el dato. Corregido directo en producción (`UPDATE`, sin migración de código).
+
+**2. Nombres/apellidos del pasajero sin validación real (PR #117).** El checkout aceptaba `"juan Carlos López Gómez"` -- minúscula al inicio, sin ningún control de formato (antes solo `@IsString() @MinLength(2)`). Corregido en `crear-compra.dto.ts`: `PATRON_NOMBRE_REAL` exige solo letras (tildes y ñ incluidas), y `@Transform` capitaliza cada palabra automáticamente antes de guardar (el `ValidationPipe` global ya tenía `transform: true`).
+
+  **Efecto real en cadena:** la nueva validación rechazó datos de prueba preexistentes con dígitos en nombres/apellidos (convención `"E2E"`, `"Fase2"`, usada para unicidad en 8 archivos de pruebas) -- corregidos a valores solo-letras reales, mismo criterio que ahora exige producción.
+
+  **Pendiente real, sin confirmar:** el director corrigió manualmente las mayúsculas en su siguiente prueba, sin haber probado deliberadamente con minúsculas después del arreglo -- **no hay evidencia real todavía de que la capitalización automática funcione en producción.** Verificar con una prueba explícita (escribir un nombre en minúsculas y confirmar que se guarda capitalizado) antes de dar esto por cerrado.
+
+**3. Sin indicador visual de que un asiento es VIP (PR #118 backend, PR #119 frontend+PDF).** El pasajero pagaba el recargo sin que nada le confirmara que su asiento era VIP. Agregado `esVip` como fotografía fija del momento de la compra (mismo criterio que `cargoPlataforma`/`ivaMonto`): columna real en `boletos` y `pasajeros_compra` (migración 0038), fluye por las 3 interfaces de dominio y los 4 caminos reales donde se construye la respuesta de un boleto (idempotencia, `confirmarPago`, `confirmarPagoManual`, PDF) -- el cálculo ya existía (`validarYCalcularAsientos`), solo nunca se guardaba. Insignia "VIP" en la confirmación, `"<asiento> · VIP"` en las 2 celdas reales del PDF.
+
+**Verificado (los 3 hallazgos):** `tsc --noEmit` limpio, 213/213 pruebas e2e, `next build` 30/30 páginas en cada PR. Las 2 migraciones (0037, 0038) aplicadas y verificadas de forma independiente en producción.
+
+**Confirmado en vivo por el director, con evidencia real:** segunda compra Quito→Guayaquil, asiento 1A, con insignia "VIP" visible, tarifa $13.00, tasa de terminal $0.25, nombre capitalizado correctamente ("Carlos Pablo López Marín" -- aunque ver punto pendiente arriba sobre si fue automático o manual).
+
+## 5.39 Panel de empresa con menú lateral en pantalla grande -- 18-ago-2026
+
+Hallazgo real del director: los 10 enlaces del panel de cooperativa estaban amontonados en una sola fila horizontal arriba, difícil de usar en pantalla grande.
+
+**Construido (PR #120):** mismo patrón real ya construido en `/perfil` (sección 5.x, inspirado en Stripe/Linear) -- panel lateral fijo (`sticky`) en pantalla grande (`lg+`), mismos 10 enlaces de siempre, solo reorganizados. En celular/tablet sigue exactamente igual que antes.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
+## 5.40 Perfil rediseñado -- encabezado tipo Airbnb, wallet como tarjeta real, corrección de color -- 19-ago-2026
+
+Hallazgo real repetido del director sobre el diseño del perfil ("diseño asqueroso visualmente"). Investigadas referencias reales (Uber, Airbnb, tarjetas de fidelidad tipo Apple Wallet/Google Pay) en vez de interpretar "moderno" de forma vaga.
+
+**Construido (PR #121):**
+- Encabezado: de layout horizontal (foto+nombre+número en fila) a patrón Airbnb -- foto grande centrada, nombre prominente, 3 insignias reales en fila (miembro desde, viajes completados, código de pasajero). El QR y el talón recortable se mantienen, ahora como elemento secundario.
+- Wallet: de una caja oscura vertical a una tarjeta ancha real, tipo tarjeta de crédito/fidelidad -- gradiente, círculos decorativos, marca "COLUMBUS" como emisor, saldo grande.
+
+**Corrección de color (PR #122):** el director reportó que el negro (`bg-brand-dark`) de ambas tarjetas "se siente fúnebre" -- misma objeción ya documentada antes contra el negro como fondo dominante (sesión de diseño 15/16-ago-2026). Reemplazado por un degradado real de azul cobalto (`--brand-cobalto`, color de marca ya definido) en los 2 lugares. La franja del QR cambió de amarillo tenue a blanco translúcido neutral -- el amarillo queda reservado para momentos protagonistas puntuales, no como fondo de sección completa.
+
+**Pendiente real, sin resolver del todo:** el director aceptó dejarlo así por ahora ("no es lo que yo quería pero qué más toca"), sin lograr describir con precisión qué le sigue faltando al diseño. Retomar cuando pueda describirlo con más detalle.
+
+**Verificado (ambos PRs):** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
+**Hallazgo de proceso real, aparte del diseño:** dos veces en esta sesión, `git pull` reportó éxito en apariencia pero el `merge` falló silenciosamente (`fatal: not something we can merge in .git/FETCH_HEAD`), dejando `main` local desactualizado sin ningún error visible salvo el texto de la terminal. Detectado por el director leyendo la salida con cuidado, no por el flujo normal. Corregido con `git fetch` + `git merge origin/main` explícito, verificando `git log --oneline origin/main` contra `git log --oneline` local antes de continuar. **Lección real: no asumir que "Fast-forward" en pantalla significa que el merge se completó -- confirmar siempre el commit real de HEAD después.**
+
+## 5.41 Sección "Cómo funciona" en la portada, con 4 iconos propios -- 19-ago-2026
+
+Investigación comparativa real (redBus, FlixBus, plataformas de reserva) pedida por el director para definir qué secciones debe llevar una portada de venta de boletos. Hallazgo consistente en las fuentes: un resumen visual corto de pasos reduce la duda de un pasajero que nunca ha usado la plataforma.
+
+**Hallazgo real durante la investigación:** la sección "¿Por qué Columbus?" que se pensó que faltaba, ya existía (inline en `page.tsx`, más abajo en el archivo) -- no se duplicó.
+
+El director compartió un HTML de referencia con el patrón de 4 pasos, aclarando que era solo el diseño de una demo genérica, no el contenido final. Verificado contra el código real antes de escribir el texto: `tipoMetodoPagoEnum` solo tiene 5 métodos reales (transferencia bancaria, efectivo, De Una, PayPhone, tarjeta -- "Kushki" no existe en el sistema), y WhatsApp sigue simulado (`SimuladorNotificadorWhatsApp`, bloqueado por la cuenta gratuita de Twilio) -- el texto final refleja solo lo que la plataforma hace de verdad hoy, no la demo.
+
+**Construido (PR #123):** componente `ComoFunciona.tsx`, insertado justo después del Hero. 4 iconos SVG propios nuevos (buscar, asiento, pago, boleto QR), mismo patrón real ya establecido en `components/ilustraciones/` -- nunca emojis ni bancos de imágenes.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
+## 5.42 Pendientes reales acumulados al cierre de esta sesión (18/19-ago-2026)
+
+- **Capitalización automática de nombres** -- construida (sección 5.38), pero sin una prueba real deliberada que confirme que funciona en producción con una entrada en minúsculas.
+- **Diseño del perfil** -- el director no quedó conforme del todo con el color/estilo final (sección 5.40), sin lograr precisar qué le falta.
+- **Paradas intermedias de ruta** -- la tabla `ruta_paradas` existe bien diseñada en el esquema, pero nada la usa todavía (ni carga, ni visualización, ni compra desde una parada intermedia).
+- **Carga masiva por Excel/CSV para cooperativas** -- ya existe un sistema real y funcional (`POST /coop/importar`, sección anterior), pero solo acepta JSON escrito a mano -- no realista para personal administrativo real. Investigado el estándar de la industria (plantilla descargable Excel/CSV, llenar, subir) -- **decisión explícita: dejarlo para una sesión nueva y dedicada**, dado el tamaño real de la pieza.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
