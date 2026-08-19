@@ -11,4 +11,8 @@ export { IlustracionMindo } from "./IlustracionMindo";
 export { IconoCooperativa } from "./IconoCooperativa";
 export { IconoTerminal } from "./IconoTerminal";
 export { IconoPublicidad } from "./IconoPublicidad";
+export { IconoBuscar } from "./IconoBuscar";
+export { IconoAsiento } from "./IconoAsiento";
+export { IconoPago } from "./IconoPago";
+export { IconoBoletoQr } from "./IconoBoletoQr";
 export type { PropsIlustracion } from "./tipos";

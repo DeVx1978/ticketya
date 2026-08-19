@@ -1,4 +1,5 @@
 import { Hero } from "@/components/Hero";
+import { ComoFunciona } from "@/components/ComoFunciona";
 import { DestinosPopulares } from "@/components/DestinosPopulares";
 import { TerminalesAliadas } from "@/components/TerminalesAliadas";
 import { FranjaBanners } from "@/components/FranjaBanners";
@@ -9,6 +10,7 @@ export default function InicioPage() {
     <main className="flex-1">
       <Hero />
 
+      <ComoFunciona />
       <DestinosPopulares />
       <TerminalesAliadas />
 
