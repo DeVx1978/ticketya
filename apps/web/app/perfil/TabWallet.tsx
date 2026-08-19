@@ -49,7 +49,7 @@ export function TabWallet() {
           Nuevo patrón: tarjeta ancha tipo tarjeta de fidelidad/crédito
           real (Apple Wallet, Google Pay), con decoración sutil, no un
           bloque de texto vertical. */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-dark via-brand-dark to-[#0a1628] px-6 py-6 shadow-xl shadow-brand-dark/20 sm:px-8 sm:py-8">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-cobalto to-[#16307a] px-6 py-6 shadow-xl shadow-brand-cobalto/20 sm:px-8 sm:py-8">
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-brand-amber/10" />
         <div className="pointer-events-none absolute -bottom-16 -left-8 h-36 w-36 rounded-full bg-white/5" />
         <div className="relative flex items-start justify-between">
