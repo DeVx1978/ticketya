@@ -343,7 +343,14 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
           <div className="mt-4 space-y-6">
             {resultado.boletos.map((boleto) => (
               <div key={boleto.codigoQr} className="border-t border-brand-dark/10 pt-4 first:border-t-0 first:pt-0">
-                <p className="text-sm text-brand-dark/70">Asiento {boleto.numeroAsiento}</p>
+                <p className="flex items-center gap-2 text-sm text-brand-dark/70">
+                  Asiento {boleto.numeroAsiento}
+                  {boleto.esVip && (
+                    <span className="rounded-full bg-brand-amber px-2 py-0.5 text-xs font-semibold text-brand-dark">
+                      VIP
+                    </span>
+                  )}
+                </p>
                 <p className="text-xs text-brand-dark/50">
                   A nombre de {boleto.compradorNombre}
                   {boleto.compradorDocumento ? ` — ${boleto.compradorDocumento}` : ""}

@@ -648,7 +648,7 @@ export class CheckoutService {
 
       celda('FECHA', formatearFechaBoleto(datos.fechaSalida), col1X, yGrid);
       celda('HORA DE SALIDA', formatearHoraBoleto(datos.horaSalidaProgramada), col2X, yGrid);
-      celda('ASIENTO', datos.numeroAsiento, col1X, yGrid + alturaFilaGrid);
+      celda('ASIENTO', datos.esVip ? `${datos.numeroAsiento} · VIP` : datos.numeroAsiento, col1X, yGrid + alturaFilaGrid);
       celda('PASAJERO', datos.pasajeroNombre, col2X, yGrid + alturaFilaGrid);
       celda('DOCUMENTO', `${etiquetaDocumento} · ${datos.documento}`, col1X, yGrid + alturaFilaGrid * 2);
       celda('TARIFA', textoTarifa, col2X, yGrid + alturaFilaGrid * 2);
@@ -728,7 +728,7 @@ export class CheckoutService {
           .text(valor, x, yCeldasRepetidas + 11, { width: anchoTercio, align: 'center', ellipsis: true });
       };
       celdaTalon('BOLETO', numeroBoleto, margenIzq);
-      celdaTalon('ASIENTO', datos.numeroAsiento, margenIzq + anchoTercio);
+      celdaTalon('ASIENTO', datos.esVip ? `${datos.numeroAsiento} · VIP` : datos.numeroAsiento, margenIzq + anchoTercio);
       celdaTalon('SALIDA', formatearHoraBoleto(datos.horaSalidaProgramada), margenIzq + anchoTercio * 2);
 
       // Pie de página -- política REAL de esta cooperativa específica,

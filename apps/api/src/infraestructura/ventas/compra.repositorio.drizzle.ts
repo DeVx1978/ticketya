@@ -1362,6 +1362,7 @@ export class CompraRepositorioDrizzle implements CompraRepositorio {
     unidadIdentificador: string | null;
     compradorNombre: string;
     compradorDocumento: string | null;
+    esVip: boolean;
   } | null> {
     const puntosOrigenPdf = alias(puntosOperacion, 'puntos_origen_pdf');
     const puntosDestinoPdf = alias(puntosOperacion, 'puntos_destino_pdf');

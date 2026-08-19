@@ -1082,6 +1082,8 @@ export interface BoletoEmitido {
   unidadIdentificador: string | null;
   compradorNombre: string;
   compradorDocumento: string | null;
+  /** Correccion real 18-ago-2026 -- el pasajero no sabia que su asiento era VIP. */
+  esVip: boolean;
 }
 
 export interface ResultadoCompra {
