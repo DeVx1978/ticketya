@@ -107,33 +107,31 @@ function MiCuenta() {
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Mi cuenta</h1>
 
-      {/* Identidad, en forma de pase de abordar real -- mismo talón
-          recortable y franja de marca que ya usa el boleto PDF, para
-          que el pasaporte de viajero se sienta parte de la misma
-          familia visual, no una tarjeta de gradiente genérica. Ancho
-          completo real (15-ago-2026, hallazgo del director: "no debe
-          verse centrado, debe adaptarse a la pantalla") -- la tarjeta
-          crece con la pantalla en vez de quedar flotando en el centro
-          con espacio vacío a los lados. */}
+      {/* Identidad -- rediseño real 19-ago-2026, hallazgo del director:
+          la version anterior (horizontal, tipo pase de abordar solo)
+          se veia poco profesional. Nuevo patron real: encabezado tipo
+          Airbnb (foto grande centrada, nombre prominente, fila de
+          insignias con datos reales) + el mismo talon recortable de
+          siempre para el QR, ahora como elemento secundario, no
+          protagonista. */}
       <div className="mt-6 overflow-hidden rounded-2xl bg-brand-dark shadow-lg shadow-brand-dark/10">
-        <div className="flex flex-wrap items-center gap-5 px-6 py-6 sm:px-8">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-amber font-display text-2xl font-bold text-brand-dark">
+        <div className="flex flex-col items-center gap-4 px-6 py-8 text-center sm:px-8">
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-brand-amber font-display text-3xl font-bold text-brand-dark ring-4 ring-white/10">
             {iniciales || "P"}
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-xl font-bold text-white">{perfil.nombreCompleto}</p>
-            <p className="text-sm text-white/50">
+          <p className="font-display text-2xl font-bold text-white">{perfil.nombreCompleto}</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
               Viajero desde{" "}
               {new Date(perfil.creadoEn).toLocaleDateString("es-EC", { month: "long", year: "numeric" })}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="font-display text-3xl font-bold text-brand-amber">
-              {perfil.viajesCompletados ?? 0}
-            </p>
-            <p className="text-xs text-white/50">
+            </span>
+            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
+              {perfil.viajesCompletados ?? 0}{" "}
               {perfil.viajesCompletados === 1 ? "viaje completado" : "viajes completados"}
-            </p>
+            </span>
+            <span className="rounded-full bg-brand-amber/15 px-3 py-1.5 text-xs font-bold tracking-wide text-brand-amber">
+              {perfil.codigoPasajero}
+            </span>
           </div>
         </div>
         <div className="relative border-t border-dashed border-white/15">
@@ -149,14 +147,10 @@ function MiCuenta() {
               className="h-14 w-14 rounded-lg bg-white p-1"
             />
           )}
-          <div>
-            <p className="font-display text-lg font-bold tracking-wide text-brand-amber">
-              {perfil.codigoPasajero}
-            </p>
-            <p className="text-xs text-white/40">
-              Muéstralo en el terminal para verificar tu identidad, aunque no tengas tu boleto a mano.
-            </p>
-          </div>
+          <p className="text-xs text-white/50">
+            Muestra este código QR en el terminal para verificar tu identidad, aunque no tengas tu boleto a
+            mano.
+          </p>
         </div>
       </div>
 
