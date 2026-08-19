@@ -114,7 +114,10 @@ function MiCuenta() {
           insignias con datos reales) + el mismo talon recortable de
           siempre para el QR, ahora como elemento secundario, no
           protagonista. */}
-      <div className="mt-6 overflow-hidden rounded-2xl bg-brand-dark shadow-lg shadow-brand-dark/10">
+      {/* Corrección real 19-ago-2026, hallazgo del director: el negro
+          completo "se siente fúnebre" -- mismo criterio ya usado en
+          la portada, reemplazado por el azul cobalto de marca. */}
+      <div className="mt-6 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-cobalto to-[#16307a] shadow-lg shadow-brand-cobalto/20">
         <div className="flex flex-col items-center gap-4 px-6 py-8 text-center sm:px-8">
           <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-brand-amber font-display text-3xl font-bold text-brand-dark ring-4 ring-white/10">
             {iniciales || "P"}
@@ -138,7 +141,7 @@ function MiCuenta() {
           <div className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-white" />
           <div className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-white" />
         </div>
-        <div className="flex items-center gap-4 bg-brand-amber/10 px-6 py-4 sm:px-8">
+        <div className="flex items-center gap-4 bg-white/5 px-6 py-4 sm:px-8">
           {qrCodigoPasajero && (
             // eslint-disable-next-line @next/next/no-img-element -- data URL generada en el cliente
             <img
