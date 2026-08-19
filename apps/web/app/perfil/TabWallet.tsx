@@ -43,20 +43,33 @@ export function TabWallet() {
   }, []);
 
   return (
-    <div className="lg:grid lg:grid-cols-[280px_1fr] lg:items-start lg:gap-6">
-      <div className="overflow-hidden rounded-2xl bg-brand-dark lg:sticky lg:top-6">
-        <div className="px-6 py-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Saldo disponible</p>
-          <p className="mt-1 font-display text-4xl font-bold text-brand-amber">
+    <div>
+      {/* Rediseño real 19-ago-2026, hallazgo del director: el saldo se
+          veía como una caja plana, sin sensación de tarjeta real.
+          Nuevo patrón: tarjeta ancha tipo tarjeta de fidelidad/crédito
+          real (Apple Wallet, Google Pay), con decoración sutil, no un
+          bloque de texto vertical. */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-dark via-brand-dark to-[#0a1628] px-6 py-6 shadow-xl shadow-brand-dark/20 sm:px-8 sm:py-8">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-brand-amber/10" />
+        <div className="pointer-events-none absolute -bottom-16 -left-8 h-36 w-36 rounded-full bg-white/5" />
+        <div className="relative flex items-start justify-between">
+          <span className="font-display text-sm font-bold tracking-[0.2em] text-white/70">COLUMBUS</span>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-brand-amber">
+            Wallet
+          </span>
+        </div>
+        <div className="relative mt-8">
+          <p className="text-xs font-semibold uppercase tracking-wide text-white/40">Saldo disponible</p>
+          <p className="mt-1 font-display text-4xl font-bold text-brand-amber sm:text-5xl">
             {saldo === null ? "—" : `$${saldo.toFixed(2)}`}
           </p>
-          <p className="mt-2 text-xs text-white/40">
+          <p className="mt-3 text-xs text-white/40">
             Gana cashback cada vez que viajas, y úsalo para pagar tu próximo pasaje.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 lg:mt-0">
+      <div className="mt-6">
         {error && (
           <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
             {error}
