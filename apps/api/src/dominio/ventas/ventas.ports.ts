@@ -79,6 +79,8 @@ export interface DesgloseAsiento {
   ivaMonto: number;
   /** Si la cooperativa decide mostrar el desglose de IVA en el boleto (puede pagarlo igual y no mostrarlo). */
   ivaVisible: boolean;
+  /** Correccion real 18-ago-2026 -- el pasajero no sabia que su asiento era VIP. */
+  esVip: boolean;
 }
 
 export interface ResultadoPago {
@@ -111,6 +113,8 @@ export interface BoletoEmitido {
   unidadIdentificador: string | null;
   compradorNombre: string;
   compradorDocumento: string | null;
+  /** Correccion real 18-ago-2026 -- el pasajero no sabia que su asiento era VIP. */
+  esVip: boolean;
 }
 
 /**
@@ -164,6 +168,7 @@ export interface MapeoAsientoPasajero {
   tasaTerminal: number;
   cargoPlataforma: number;
   ivaMonto: number;
+  esVip: boolean;
 }
 
 export interface CompraRepositorio {

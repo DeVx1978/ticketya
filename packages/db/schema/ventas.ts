@@ -163,6 +163,8 @@ export const pasajerosCompra = pgTable(
     tasaTerminal: numeric('tasa_terminal', { precision: 10, scale: 2 }),
     cargoPlataforma: numeric('cargo_plataforma', { precision: 10, scale: 2 }),
     ivaMonto: numeric('iva_monto', { precision: 10, scale: 2 }),
+    // Correccion real 18-ago-2026 -- mismo criterio de fotografia fija que los 4 campos de arriba.
+    esVip: boolean('es_vip').default(false).notNull(),
   },
   (t) => [index('idx_pasajeros_compra_compra').on(t.compraId)],
 );
@@ -212,6 +214,13 @@ export const boletos = pgTable(
       .default('0')
       .notNull(),
     ivaMonto: numeric('iva_monto', { precision: 8, scale: 2 }).default('0').notNull(),
+
+    // Correccion real 18-ago-2026 (hallazgo del director probando la
+    // compra VIP): el checkout no le mostraba al pasajero que su
+    // asiento era VIP, aunque ya pagara el recargo. Fotografia fija
+    // del momento de la compra, mismo criterio que cargoPlataforma/
+    // ivaMonto de arriba -- no se recalcula despues.
+    esVip: boolean('es_vip').default(false).notNull(),
 
     estado: estadoBoletoEnum('estado').default('vigente').notNull(),
     validadoEn: timestamp('validado_en', { withTimezone: true }),
