@@ -98,21 +98,6 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
                 Panel Empresa
               </span>
             </span>
-            <nav className="hidden gap-1 md:flex">
-              {ENLACES.map((enlace) => (
-                <Link
-                  key={enlace.href}
-                  href={enlace.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-                    pathname === enlace.href
-                      ? "bg-brand text-white"
-                      : "text-brand-dark/70 hover:bg-brand-light"
-                  }`}
-                >
-                  {enlace.etiqueta}
-                </Link>
-              ))}
-            </nav>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs font-medium text-brand-dark/50 sm:inline">
@@ -126,8 +111,11 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
             </button>
           </div>
         </div>
-        {/* Menú de navegación en móvil, debajo de la barra superior */}
-        <nav className="flex gap-1 overflow-x-auto border-t border-black/5 px-4 py-2 md:hidden">
+        {/* Menú de navegación en móvil/tablet, debajo de la barra superior --
+            hallazgo real del director (18-ago-2026): en pantalla grande esto
+            se ve amontonado; ahora vive en un panel lateral fijo (ver abajo),
+            mismo patrón real ya usado en /perfil (Stripe/Linear). */}
+        <nav className="flex gap-1 overflow-x-auto border-t border-black/5 px-4 py-2 lg:hidden">
           {ENLACES.map((enlace) => (
             <Link
               key={enlace.href}
@@ -165,7 +153,26 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
           </Link>
         </div>
       )}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
+        <div className="lg:grid lg:grid-cols-[220px_1fr] lg:items-start lg:gap-10">
+          <nav className="hidden lg:sticky lg:top-24 lg:block lg:space-y-1">
+            {ENLACES.map((enlace) => (
+              <Link
+                key={enlace.href}
+                href={enlace.href}
+                className={`block w-full rounded-lg px-4 py-2.5 text-left text-sm font-semibold transition ${
+                  pathname === enlace.href
+                    ? "bg-brand-dark text-white"
+                    : "text-brand-dark/60 hover:bg-brand-dark/5 hover:text-brand-dark"
+                }`}
+              >
+                {enlace.etiqueta}
+              </Link>
+            ))}
+          </nav>
+          <div className="min-w-0">{children}</div>
+        </div>
+      </main>
     </div>
   );
 }
