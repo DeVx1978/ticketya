@@ -66,7 +66,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
   useLayoutEffect(() => {
     if (!compacto || !abierto || !inputRef.current) return;
     const rect = inputRef.current.getBoundingClientRect();
-    setPosicion({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    setPosicion({ top: rect.bottom, left: rect.left, width: rect.width });
   }, [compacto, abierto, texto]);
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
             style={compacto ? { position: "fixed", top: posicion.top, left: posicion.left, width: posicion.width } : undefined}
             className={
               compacto
-                ? "z-[100] overflow-hidden rounded-lg border border-white/15 bg-brand-dark/90 shadow-2xl shadow-black/40 backdrop-blur-md"
+                ? "z-[100] overflow-hidden rounded-b-2xl border border-t-0 border-white/15 bg-brand-dark/40 shadow-xl shadow-black/30 backdrop-blur-md"
                 : "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg"
             }
           >

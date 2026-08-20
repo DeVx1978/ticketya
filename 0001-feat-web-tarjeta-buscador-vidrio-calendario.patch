@@ -1,0 +1,693 @@
+From c55f12c41f44e62dc4e8306747f1bf6e0e29dbdd Mon Sep 17 00:00:00 2001
+From: DeVx1978 <elgurudelfutbol2026@gmail.com>
+Date: Thu, 20 Aug 2026 00:41:21 +0000
+Subject: [PATCH] feat(web): tarjeta del buscador con efecto vidrio +
+ calendario propio
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Rediseño de la tarjeta de búsqueda del Hero (BuscadorForm) a un
+estilo de vidrio oscuro semi-transparente, referencia real
+proporcionada por el director (easybook.com), coherente en todos
+los campos:
+
+- BuscadorForm: fondo bg-white/95 -> bg-brand-dark/40 backdrop-blur-md,
+  tabs Solo ida/Ida y vuelta, divisores e input de pasajeros vestidos
+  con el mismo vidrio. Responsive intacto (grid 2 cols en movil,
+  fila con divisores en desktop).
+- SelectorCiudad: mismo efecto aplicado condicionalmente solo en modo
+  `compacto` (usado en el Hero) para no afectar el otro uso real del
+  componente en panel-empresa/rutas. Incluye el dropdown de
+  sugerencias de ciudad/terminal.
+- CampoFecha (nuevo): reemplaza el <input type="date"> nativo del
+  Hero -- su popup de calendario lo dibuja el sistema operativo y no
+  se puede vestir con el diseño. Construido con react-day-picker
+  (nueva dependencia, cero conflicto de peer deps con React 19),
+  locale es, mismo vidrio oscuro, dia seleccionado en brand-amber.
+  Alcance: solo el Hero por ahora: quedan 6 usos mas de
+  type="date" en la plataforma (admin, panel-empresa, checkout) sin
+  tocar, a la espera de decidir si se extiende.
+
+Bug real atrapado en la verificacion visual antes de reportar listo:
+el popover de CampoFecha quedaba cortado por el overflow-hidden del
+<section> del Hero (necesario para el slider de fotos). Corregido
+montando el popover con un portal a document.body y posicion fixed
+calculada desde el rect real del boton, sin tocar el overflow del
+Hero.
+
+Verificado: tsc --noEmit limpio, next build limpio (30 rutas).
+Capturas reales generadas (desktop/movil, tarjeta y calendario
+abiertos) via Playwright headless contra next start local. El
+dropdown de sugerencias de ciudad no se pudo verificar visualmente
+en este entorno -- sin salida de red hacia el backend real de
+Render, la lista nunca trae resultados; mismo patron de estilo
+aplicado en el codigo, pendiente de confirmar en Vercel preview o
+produccion.
+---
+ apps/web/components/BuscadorForm.tsx   |  44 +++-----
+ apps/web/components/CampoFecha.tsx     | 150 +++++++++++++++++++++++++
+ apps/web/components/SelectorCiudad.tsx |  33 ++++--
+ apps/web/package.json                  |   1 +
+ package-lock.json                      | 107 ++++++++----------
+ 5 files changed, 234 insertions(+), 101 deletions(-)
+ create mode 100644 apps/web/components/CampoFecha.tsx
+
+diff --git a/apps/web/components/BuscadorForm.tsx b/apps/web/components/BuscadorForm.tsx
+index 75b1ad3..8746bef 100644
+--- a/apps/web/components/BuscadorForm.tsx
++++ b/apps/web/components/BuscadorForm.tsx
+@@ -3,6 +3,7 @@
+ import { useState } from "react";
+ import { useRouter } from "next/navigation";
+ import { SelectorCiudad } from "./SelectorCiudad";
++import { CampoFecha } from "./CampoFecha";
+ import type { PuntoOperacion } from "@/lib/api";
+ 
+ function hoyISO(): string {
+@@ -55,19 +56,19 @@ export function BuscadorForm() {
+   return (
+     <form
+       onSubmit={buscar}
+-      className="rounded-2xl bg-white/95 p-3 shadow-xl shadow-brand-dark/25 ring-1 ring-black/5 backdrop-blur-sm md:p-4"
++      className="rounded-2xl bg-brand-dark/40 p-3 shadow-xl shadow-black/30 ring-1 ring-white/15 backdrop-blur-md md:p-4"
+     >
+       <div
+         role="group"
+         aria-label="Tipo de viaje"
+-        className="mb-2 inline-flex overflow-hidden rounded-lg ring-1 ring-brand-light"
++        className="mb-2 inline-flex overflow-hidden rounded-lg ring-1 ring-white/20"
+       >
+         <button
+           type="button"
+           onClick={() => setIdaYVuelta(false)}
+           aria-pressed={!idaYVuelta}
+           className={`px-3 py-1 text-xs font-semibold transition ${
+-            !idaYVuelta ? "bg-brand text-white" : "bg-white text-brand-dark/60 hover:bg-brand-light/50"
++            !idaYVuelta ? "bg-brand text-white" : "bg-transparent text-white/60 hover:bg-white/10"
+           }`}
+         >
+           Solo ida
+@@ -77,7 +78,7 @@ export function BuscadorForm() {
+           onClick={() => setIdaYVuelta(true)}
+           aria-pressed={idaYVuelta}
+           className={`px-3 py-1 text-xs font-semibold transition ${
+-            idaYVuelta ? "bg-brand text-white" : "bg-white text-brand-dark/60 hover:bg-brand-light/50"
++            idaYVuelta ? "bg-brand text-white" : "bg-transparent text-white/60 hover:bg-white/10"
+           }`}
+         >
+           Ida y vuelta
+@@ -89,7 +90,7 @@ export function BuscadorForm() {
+           grande (con divisores verticales, no cada campo flotando por
+           separado), y también más compacta en celular (2 columnas en
+           vez de 5 filas apiladas -- reduce la altura total real). */}
+-      <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:divide-x md:divide-brand-light md:gap-0 md:rounded-lg md:ring-1 md:ring-brand-light">
++      <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:divide-x md:divide-white/15 md:gap-0 md:rounded-lg md:ring-1 md:ring-white/20">
+         <div className="col-span-2 md:flex-1 md:px-3 md:py-1.5">
+           <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} compacto />
+         </div>
+@@ -97,35 +98,20 @@ export function BuscadorForm() {
+           <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} compacto />
+         </div>
+         <div className="md:px-3 md:py-1.5">
+-          <label htmlFor="buscador-fecha" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
+-            {idaYVuelta ? "Fecha de ida" : "Fecha"}
+-          </label>
+-          <input
+-            id="buscador-fecha"
+-            type="date"
+-            value={fecha}
+-            min={hoyISO()}
+-            onChange={(e) => setFecha(e.target.value)}
+-            className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:p-0 md:focus:ring-0"
++          <CampoFecha
++            etiqueta={idaYVuelta ? "Fecha de ida" : "Fecha"}
++            valor={fecha}
++            minimo={hoyISO()}
++            onCambio={(v) => setFecha(v)}
+           />
+         </div>
+         {idaYVuelta && (
+           <div className="md:px-3 md:py-1.5">
+-            <label htmlFor="buscador-fecha-vuelta" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
+-              Fecha de vuelta
+-            </label>
+-            <input
+-              id="buscador-fecha-vuelta"
+-              type="date"
+-              value={fechaVuelta}
+-              min={fecha}
+-              onChange={(e) => setFechaVuelta(e.target.value)}
+-              className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:p-0 md:focus:ring-0"
+-            />
++            <CampoFecha etiqueta="Fecha de vuelta" valor={fechaVuelta} minimo={fecha} onCambio={(v) => setFechaVuelta(v)} />
+           </div>
+         )}
+         <div className="md:px-3 md:py-1.5">
+-          <label htmlFor="buscador-pasajeros" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
++          <label htmlFor="buscador-pasajeros" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-white/60">
+             Pasajeros
+           </label>
+           <input
+@@ -135,7 +121,7 @@ export function BuscadorForm() {
+             max={10}
+             value={pasajeros}
+             onChange={(e) => setPasajeros(Number(e.target.value))}
+-            className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-20 md:border-0 md:p-0 md:focus:ring-0"
++            className="w-full rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-20 md:border-0 md:bg-transparent md:p-0 md:focus:ring-0"
+           />
+         </div>
+         <button
+@@ -145,7 +131,7 @@ export function BuscadorForm() {
+           Buscar pasajes
+         </button>
+       </div>
+-      {error && <p className="mt-2 text-sm font-medium text-red-600">{error}</p>}
++      {error && <p className="mt-2 text-sm font-medium text-red-300">{error}</p>}
+     </form>
+   );
+ }
+diff --git a/apps/web/components/CampoFecha.tsx b/apps/web/components/CampoFecha.tsx
+new file mode 100644
+index 0000000..df6dceb
+--- /dev/null
++++ b/apps/web/components/CampoFecha.tsx
+@@ -0,0 +1,150 @@
++"use client";
++
++import { useEffect, useId, useRef, useState, useLayoutEffect } from "react";
++import { createPortal } from "react-dom";
++import { DayPicker } from "react-day-picker";
++import { es } from "react-day-picker/locale";
++
++interface Props {
++  etiqueta: string;
++  valor: string; // ISO yyyy-mm-dd, mismo formato que ya consume BuscadorForm
++  minimo?: string; // ISO yyyy-mm-dd
++  onCambio: (valorIso: string) => void;
++}
++
++function isoAFecha(iso: string): Date {
++  const [anio, mes, dia] = iso.split("-").map(Number);
++  return new Date(anio, mes - 1, dia);
++}
++
++function fechaAIso(fecha: Date): string {
++  const anio = fecha.getFullYear();
++  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
++  const dia = String(fecha.getDate()).padStart(2, "0");
++  return `${anio}-${mes}-${dia}`;
++}
++
++function formatoCorto(iso: string): string {
++  return isoAFecha(iso).toLocaleDateString("es-EC", {
++    day: "2-digit",
++    month: "short",
++  });
++}
++
++/**
++ * Calendario propio (19-ago-2026) -- orden real del director: el
++ * `<input type="date">` nativo abre un popup dibujado por el sistema
++ * operativo/navegador, imposible de vestir con el efecto vidrio de la
++ * tarjeta -- quedaba una pieza genérica pegada a un diseño premium.
++ * Reemplazado por react-day-picker (sin CSS por defecto, se
++ * estiliza 100% por `classNames`) solo en el buscador del Hero, a la
++ * espera de decidir si se extiende a los otros 6 usos reales de
++ * `type="date"` en la plataforma (admin, panel-empresa, checkout).
++ */
++export function CampoFecha({ etiqueta, valor, minimo, onCambio }: Props) {
++  const idCampo = useId();
++  const [abierto, setAbierto] = useState(false);
++  const [posicion, setPosicion] = useState({ top: 0, left: 0 });
++  const contenedorRef = useRef<HTMLDivElement>(null);
++  const botonRef = useRef<HTMLButtonElement>(null);
++  const popoverRef = useRef<HTMLDivElement>(null);
++
++  // Hallazgo real (19-ago-2026, atrapado en la verificación visual
++  // antes de reportar): el Hero tiene `overflow-hidden` en su
++  // <section> (necesario para el slider de fotos) -- un popover
++  // posicionado con `absolute` dentro de ese árbol queda cortado a la
++  // mitad, invisible. Se monta con un portal directo a `document.body`
++  // y se posiciona con `position: fixed` según el rect real del botón,
++  // así escapa del recorte sin tocar el overflow del Hero (lo rompería
++  // para el slider).
++  useLayoutEffect(() => {
++    if (!abierto || !botonRef.current) return;
++    const rect = botonRef.current.getBoundingClientRect();
++    setPosicion({ top: rect.bottom + 8, left: rect.left });
++  }, [abierto]);
++
++  useEffect(() => {
++    if (!abierto) return;
++    function alClicFuera(e: MouseEvent) {
++      const dentroDelBoton = contenedorRef.current?.contains(e.target as Node);
++      const dentroDelPopover = popoverRef.current?.contains(e.target as Node);
++      if (!dentroDelBoton && !dentroDelPopover) setAbierto(false);
++    }
++    function alPresionarEscape(e: KeyboardEvent) {
++      if (e.key === "Escape") setAbierto(false);
++    }
++    document.addEventListener("mousedown", alClicFuera);
++    document.addEventListener("keydown", alPresionarEscape);
++    return () => {
++      document.removeEventListener("mousedown", alClicFuera);
++      document.removeEventListener("keydown", alPresionarEscape);
++    };
++  }, [abierto]);
++
++  return (
++    <div ref={contenedorRef} className="relative">
++      <label htmlFor={idCampo} className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-white/60">
++        {etiqueta}
++      </label>
++      <button
++        id={idCampo}
++        ref={botonRef}
++        type="button"
++        onClick={() => setAbierto((a) => !a)}
++        aria-haspopup="dialog"
++        aria-expanded={abierto}
++        className="w-full rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-left text-sm text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:bg-transparent md:p-0 md:hover:bg-transparent md:focus:ring-0"
++      >
++        {formatoCorto(valor)}
++      </button>
++
++      {abierto &&
++        typeof document !== "undefined" &&
++        createPortal(
++          <div
++            ref={popoverRef}
++            role="dialog"
++            aria-label={etiqueta}
++            style={{ position: "fixed", top: posicion.top, left: posicion.left }}
++            className="z-[100] rounded-xl border border-white/15 bg-brand-dark/90 p-3 shadow-2xl shadow-black/40 backdrop-blur-md"
++          >
++            <DayPicker
++              mode="single"
++              locale={es}
++              selected={isoAFecha(valor)}
++              defaultMonth={isoAFecha(valor)}
++              disabled={minimo ? { before: isoAFecha(minimo) } : undefined}
++              onSelect={(fecha) => {
++                if (!fecha) return;
++                onCambio(fechaAIso(fecha));
++                setAbierto(false);
++              }}
++              classNames={{
++                root: "text-white",
++                months: "flex gap-4",
++                month: "space-y-2",
++                month_caption: "flex items-center justify-center py-1 text-sm font-semibold text-white capitalize",
++                nav: "flex items-center justify-between absolute inset-x-0 top-0 px-1",
++                button_previous:
++                  "flex h-7 w-7 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30",
++                button_next:
++                  "flex h-7 w-7 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-30",
++                chevron: "fill-current",
++                weekdays: "flex",
++                weekday: "w-8 text-center text-[10px] font-semibold uppercase text-white/40",
++                week: "flex",
++                day: "p-0.5",
++                day_button:
++                  "flex h-8 w-8 items-center justify-center rounded-lg text-sm text-white/85 transition hover:bg-white/15",
++                today: "font-bold text-brand-amber",
++                selected: "[&>button]:bg-brand-amber [&>button]:text-brand-dark [&>button]:font-bold [&>button]:hover:bg-brand-amber",
++                outside: "text-white/25",
++                disabled: "text-white/20 hover:bg-transparent cursor-not-allowed",
++              }}
++            />
++          </div>,
++          document.body
++        )}
++    </div>
++  );
++}
+diff --git a/apps/web/components/SelectorCiudad.tsx b/apps/web/components/SelectorCiudad.tsx
+index 2f164cd..05e197d 100644
+--- a/apps/web/components/SelectorCiudad.tsx
++++ b/apps/web/components/SelectorCiudad.tsx
+@@ -98,7 +98,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
+ 
+   return (
+     <div className="relative min-w-[140px] flex-1">
+-      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-brand-dark/50 md:mb-0.5" : ""}`}>
++      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-white/60 md:mb-0.5" : ""}`}>
+         {etiqueta}
+       </label>
+       <input
+@@ -121,24 +121,37 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
+         onFocus={() => setAbierto(true)}
+         onBlur={() => setTimeout(() => setAbierto(false), 150)}
+         onKeyDown={alPresionarTecla}
+-        className={`w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium ${
+-          compacto ? "md:border-0 md:p-0 md:text-sm md:placeholder:text-brand-dark/40 md:focus:ring-0" : ""
+-        }`}
++        className={
++          compacto
++            ? "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-base text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-medium md:border-0 md:bg-transparent md:p-0 md:text-sm md:placeholder:text-white/40 md:focus:ring-0"
++            : "w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
++        }
+       />
+       {abierto && sugerencias.length > 0 && (
+-        <ul id={idListbox} role="listbox" aria-label={etiqueta} className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg">
++        <ul
++          id={idListbox}
++          role="listbox"
++          aria-label={etiqueta}
++          className={
++            compacto
++              ? "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-white/15 bg-brand-dark/80 shadow-2xl shadow-black/40 backdrop-blur-md"
++              : "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg"
++          }
++        >
+           {sugerencias.map((s, i) => (
+             <li key={s.id} id={`${idListbox}-opcion-${i}`} role="option" aria-selected={i === indiceResaltado}>
+               <button
+                 type="button"
+                 onMouseDown={(e) => e.preventDefault()}
+                 onClick={() => elegir(s)}
+-                className={`block w-full px-3 py-2 text-left text-sm ${
+-                  i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"
+-                }`}
++                className={
++                  compacto
++                    ? `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-white/15" : "hover:bg-white/10"}`
++                    : `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"}`
++                }
+               >
+-                <span className="font-medium text-brand-dark">{s.ciudad}</span>{" "}
+-                <span className="text-brand-dark/50">— {s.nombre}</span>
++                <span className={compacto ? "font-medium text-white" : "font-medium text-brand-dark"}>{s.ciudad}</span>{" "}
++                <span className={compacto ? "text-white/50" : "text-brand-dark/50"}>— {s.nombre}</span>
+               </button>
+             </li>
+           ))}
+diff --git a/apps/web/package.json b/apps/web/package.json
+index d218820..ca758de 100644
+--- a/apps/web/package.json
++++ b/apps/web/package.json
+@@ -13,6 +13,7 @@
+     "next": "^16.2.12",
+     "qrcode": "^1.5.4",
+     "react": "19.2.4",
++    "react-day-picker": "^10.0.1",
+     "react-dom": "19.2.4"
+   },
+   "devDependencies": {
+diff --git a/package-lock.json b/package-lock.json
+index 01d96d4..0b42b40 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -269,6 +269,7 @@
+         "next": "^16.2.12",
+         "qrcode": "^1.5.4",
+         "react": "19.2.4",
++        "react-day-picker": "^10.0.1",
+         "react-dom": "19.2.4"
+       },
+       "devDependencies": {
+@@ -1061,6 +1062,12 @@
+         "@jridgewell/sourcemap-codec": "^1.4.10"
+       }
+     },
++    "node_modules/@date-fns/tz": {
++      "version": "1.5.0",
++      "resolved": "https://registry.npmjs.org/@date-fns/tz/-/tz-1.5.0.tgz",
++      "integrity": "sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg==",
++      "license": "MIT"
++    },
+     "node_modules/@drizzle-team/brocli": {
+       "version": "0.10.2",
+       "resolved": "https://registry.npmjs.org/@drizzle-team/brocli/-/brocli-0.10.2.tgz",
+@@ -2322,9 +2329,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2341,9 +2345,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2360,9 +2361,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2379,9 +2377,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2398,9 +2393,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2417,9 +2409,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2436,9 +2425,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2455,9 +2441,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -2474,9 +2457,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2499,9 +2479,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2524,9 +2501,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2549,9 +2523,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2574,9 +2545,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2599,9 +2567,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2624,9 +2589,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -2649,9 +2611,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -4303,9 +4262,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4322,9 +4278,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4341,9 +4294,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -4360,9 +4310,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -5543,7 +5490,7 @@
+       "version": "19.2.17",
+       "resolved": "https://registry.npmjs.org/@types/react/-/react-19.2.17.tgz",
+       "integrity": "sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==",
+-      "dev": true,
++      "devOptional": true,
+       "license": "MIT",
+       "dependencies": {
+         "csstype": "^3.2.2"
+@@ -8127,7 +8074,7 @@
+       "version": "3.2.3",
+       "resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
+       "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
+-      "dev": true,
++      "devOptional": true,
+       "license": "MIT"
+     },
+     "node_modules/damerau-levenshtein": {
+@@ -8191,6 +8138,16 @@
+         "url": "https://github.com/sponsors/ljharb"
+       }
+     },
++    "node_modules/date-fns": {
++      "version": "4.4.0",
++      "resolved": "https://registry.npmjs.org/date-fns/-/date-fns-4.4.0.tgz",
++      "integrity": "sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w==",
++      "license": "MIT",
++      "funding": {
++        "type": "github",
++        "url": "https://github.com/sponsors/kossnocorp"
++      }
++    },
+     "node_modules/debug": {
+       "version": "4.4.3",
+       "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
+@@ -14350,6 +14307,32 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/react-day-picker": {
++      "version": "10.0.1",
++      "resolved": "https://registry.npmjs.org/react-day-picker/-/react-day-picker-10.0.1.tgz",
++      "integrity": "sha512-eNh6BlwcYInWaJtRv18mXQ06Ys/H6rdTZAnTaSdOYJuTpwP1JMCHNd1FDRadA+gbeinq+psdULN5Xnowy9mV8w==",
++      "license": "MIT",
++      "dependencies": {
++        "@date-fns/tz": "^1.4.1",
++        "date-fns": "^4.1.0"
++      },
++      "engines": {
++        "node": ">=18"
++      },
++      "funding": {
++        "type": "individual",
++        "url": "https://github.com/sponsors/gpbl"
++      },
++      "peerDependencies": {
++        "@types/react": ">=16.8.0",
++        "react": ">=16.8.0"
++      },
++      "peerDependenciesMeta": {
++        "@types/react": {
++          "optional": true
++        }
++      }
++    },
+     "node_modules/react-dom": {
+       "version": "19.2.4",
+       "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.4.tgz",
+-- 
+2.43.0
+

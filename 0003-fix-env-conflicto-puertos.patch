@@ -1,0 +1,137 @@
+From 52dd9e6579dd67a943ae1b138761d705a5e0d186 Mon Sep 17 00:00:00 2001
+From: DeVx1978 <elgurudelfutbol2026@gmail.com>
+Date: Thu, 20 Aug 2026 02:00:32 +0000
+Subject: [PATCH] fix(env): documentar conflicto real de puertos
+ backend/frontend en local
+
+Hallazgo real del director probando en su maquina: la busqueda de
+terminales, estadisticas, rutas, etc. respondian 404 sin ningun error
+visible. Confirmado contra el codigo real: apps/api/src/main.ts usa
+`app.listen(process.env.PORT ?? 3000)` -- sin PORT en el .env real
+del backend, cae al puerto 3000, el mismo que usa `next dev` del
+frontend por defecto. Con los dos corriendo en local al mismo tiempo,
+uno de los dos gana el puerto y el otro queda inalcanzable.
+
+- apps/api/.env.example: agregada PORT=3001, con el hallazgo real
+  explicado en el comentario.
+- apps/web/.env.local.example (nuevo -- no existia ninguna plantilla
+  real para el frontend): NEXT_PUBLIC_API_URL=http://localhost:3001.
+- apps/web/.gitignore: el patron .env* bloqueaba tambien esta
+  plantilla real sin datos sensibles -- agregada excepcion explicita
+  !.env.local.example para poder subirla.
+
+Los .env/.env.local reales son locales a la maquina del director --
+ninguna de las 2 conversaciones puede editarlos directamente.
+Pendiente que el director agregue PORT=3001 a su apps/api/.env real,
+y cree su apps/web/.env.local real con
+NEXT_PUBLIC_API_URL=http://localhost:3001.
+
+Tambien documentado en DOCUMENTO_MAESTRO.md (seccion 5.43), junto con
+el resto del trabajo de esta sesion (vidrio + calendario propio en
+la tarjeta del buscador del Hero).
+---
+ DOCUMENTO_MAESTRO.md        | 22 ++++++++++++++++++++++
+ apps/api/.env.example       | 13 +++++++++++++
+ apps/web/.env.local.example | 16 ++++++++++++++++
+ apps/web/.gitignore         |  5 +++++
+ 4 files changed, 56 insertions(+)
+ create mode 100644 apps/web/.env.local.example
+
+diff --git a/DOCUMENTO_MAESTRO.md b/DOCUMENTO_MAESTRO.md
+index fccd556..135d742 100644
+--- a/DOCUMENTO_MAESTRO.md
++++ b/DOCUMENTO_MAESTRO.md
+@@ -1513,6 +1513,28 @@ El director compartió un HTML de referencia con el patrón de 4 pasos, aclarand
+ - **Paradas intermedias de ruta** -- la tabla `ruta_paradas` existe bien diseñada en el esquema, pero nada la usa todavía (ni carga, ni visualización, ni compra desde una parada intermedia).
+ - **Carga masiva por Excel/CSV para cooperativas** -- ya existe un sistema real y funcional (`POST /coop/importar`, sección anterior), pero solo acepta JSON escrito a mano -- no realista para personal administrativo real. Investigado el estándar de la industria (plantilla descargable Excel/CSV, llenar, subir) -- **decisión explícita: dejarlo para una sesión nueva y dedicada**, dado el tamaño real de la pieza.
+ 
++## 5.43 Tarjeta del buscador con efecto vidrio, calendario propio, y hallazgo real de conflicto de puertos en local -- 19/20-ago-2026
++
++Orden real del director: cambiar solo el diseño visual de la tarjeta de búsqueda del Hero a un efecto vidrio semi-transparente oscuro, referencia real compartida (easybook.com), coherente en todos los campos incluido el desplegable de sugerencias de ciudad/terminal. Trabajo hecho por la directora de frontend/diseño bajo este protocolo: cada ajuste se confirmó antes de escribir código.
++
++**Construido (rama `feature/hero-buscador-glass`, 2 commits):**
++- `BuscadorForm.tsx`: fondo `bg-white/95` → `bg-brand-dark/40 backdrop-blur-md`. Tabs Solo ida/Ida y vuelta, divisores y campo de pasajeros vestidos con el mismo vidrio. Responsive intacto (grid 2 columnas en móvil, fila con divisores en desktop).
++- `SelectorCiudad.tsx`: mismo vidrio aplicado solo en modo `compacto` (el único uso real dentro del Hero) -- no afecta el otro uso real del componente en `panel-empresa/rutas`.
++- `CampoFecha.tsx` (nuevo componente + dependencia nueva `react-day-picker`, sin conflicto de peer deps con React 19): reemplaza el `<input type="date">` nativo del Hero. Su popup de calendario lo dibuja el sistema operativo/navegador y no se puede vestir con el diseño -- construido con locale español, mismo vidrio oscuro, día seleccionado en `brand-amber`. Alcance real: solo el Hero por ahora; quedan 6 usos más de `type="date"` en la plataforma (admin, panel-empresa, checkout) sin tocar, a la espera de decidir si se extiende.
++
++**Bug real encontrado y corregido dos veces en el camino, mismo patrón:** el `<section>` del Hero tiene `overflow-hidden` (necesario para el slider de fotos). Cualquier popover posicionado `absolute` dentro de ese árbol queda recortado e invisible cuando el campo está cerca del borde inferior de la sección -- primero se atrapó en el calendario (verificación visual antes de reportar listo), después el director lo encontró en producción real en el desplegable de ciudades (no se había aplicado el mismo criterio ahí por descuido). Ambos casos corregidos igual: portal a `document.body` + posicionamiento `fixed` calculado desde el rect real del elemento disparador, sin tocar el `overflow-hidden` real del Hero.
++
++**Hallazgo real aparte, de entorno local (no de este código):** al probar en su máquina, el director encontró que la búsqueda de terminales, estadísticas, rutas, etc. respondían 404 sin ningún error visible. Causa real diagnosticada y confirmada contra el código: `apps/api/src/main.ts` usa `app.listen(process.env.PORT ?? 3000)` -- sin `PORT` en el `.env` real del backend, cae al puerto 3000, el mismo que usa `next dev` del frontend por defecto. Con ambos corriendo en local al mismo tiempo, uno de los dos queda inalcanzable. Corregido documentando el puerto real del backend en `3001`:
++- `apps/api/.env.example`: agregada `PORT=3001` con el hallazgo explicado en el comentario.
++- `apps/web/.env.local.example` (nuevo -- no existía ninguna plantilla real para el frontend): `NEXT_PUBLIC_API_URL=http://localhost:3001`.
++- `apps/web/.gitignore`: el patrón `.env*` bloqueaba también esta plantilla real sin datos sensibles -- agregada excepción explícita `!.env.local.example`.
++
++**Estos 2 archivos `.env`/`.env.local` reales son locales a la máquina del director -- ninguna de las 2 conversaciones puede editarlos directamente.** Pendiente que el director agregue `PORT=3001` a su `apps/api/.env` real, y cree su `apps/web/.env.local` real con `NEXT_PUBLIC_API_URL=http://localhost:3001`, antes de poder probar el flujo completo en su máquina.
++
++**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, en ambos commits. Capturas reales generadas (desktop/móvil, tarjeta, calendario y desplegable de ciudades abiertos) mediante navegador headless contra `next start` local -- el desplegable de ciudades se verificó con datos simulados porque el entorno de la directora no tiene salida de red hacia el backend real de Render; pendiente de confirmación del director con datos reales en su máquina, una vez resuelto el conflicto de puertos.
++
++**Pendiente para cerrar esta sesión:** el director aplica los 2 archivos `.env`/`.env.local` reales en su máquina, prueba el flujo completo (tarjeta, calendario, desplegable de ciudades con datos reales), y si todo queda conforme, push + PR + los 6 checks de CI antes de fusionar.
++
+ ## 6. Regla de mantenimiento de este documento
+ 
+ Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
+diff --git a/apps/api/.env.example b/apps/api/.env.example
+index a047f22..de0ddad 100644
+--- a/apps/api/.env.example
++++ b/apps/api/.env.example
+@@ -2,6 +2,19 @@
+ # El archivo ".env" NUNCA se sube a GitHub (está en .gitignore) porque
+ # tiene tu contraseña real de Postgres.
+ 
++# Puerto del backend (hallazgo real, 19-ago-2026): sin esta variable,
++# el backend cae al puerto 3000 por defecto (ver apps/api/src/main.ts,
++# `app.listen(process.env.PORT ?? 3000)`) -- el mismo puerto que usa
++# `next dev` del frontend por defecto. Con los dos corriendo en local
++# al mismo tiempo, uno de los dos gana el puerto 3000 y el otro queda
++# aislado -- el sintoma real es que el frontend nunca llega al
++# backend real y todo (busqueda de terminales, estadisticas, rutas,
++# etc.) responde 404, sin ningun error visible que lo explique. Se
++# separan los puertos: backend en 3001, frontend se queda en 3000 (ver
++# NEXT_PUBLIC_API_URL en apps/web/.env.local.example, que debe
++# apuntar a este mismo puerto).
++PORT=3001
++
+ # Conexión con el rol de aplicación (ticketya_app) — sujeta a RLS de
+ # verdad. Se usa para todo lo que pertenece a una cooperativa específica.
+ DATABASE_URL=postgresql://ticketya_app:cambia_esta_contrasena_app@localhost:5432/ticketya
+diff --git a/apps/web/.env.local.example b/apps/web/.env.local.example
+new file mode 100644
+index 0000000..d33c020
+--- /dev/null
++++ b/apps/web/.env.local.example
+@@ -0,0 +1,16 @@
++# Copia este archivo a ".env.local" (sin el ".example") si necesitas
++# cambiar a dónde apunta el frontend en tu máquina.
++#
++# Hallazgo real (19-ago-2026): sin esta variable, el frontend usa
++# http://localhost:3000 por defecto (ver API_URL en lib/api.ts) --
++# el mismo puerto que usa `next dev` para servirse a sí mismo. El
++# backend real (apps/api), a su vez, también cae al puerto 3000 por
++# defecto si su propio .env no define PORT (ver
++# apps/api/.env.example). Con los dos en el mismo puerto en local, uno
++# de los dos gana y el otro queda inalcanzable -- el síntoma real es
++# que la búsqueda de terminales, estadísticas, rutas, etc. responden
++# 404 sin ningún error visible que lo explique.
++#
++# Por eso el backend real se separa al puerto 3001 (ver
++# apps/api/.env.example), y esta variable debe apuntar ahí:
++NEXT_PUBLIC_API_URL=http://localhost:3001
+diff --git a/apps/web/.gitignore b/apps/web/.gitignore
+index 5ef6a52..c7ae9ee 100644
+--- a/apps/web/.gitignore
++++ b/apps/web/.gitignore
+@@ -32,6 +32,11 @@ yarn-error.log*
+ 
+ # env files (can opt-in for committing if needed)
+ .env*
++# excepcion real (19-ago-2026): esta es una plantilla real sin datos
++# sensibles -- necesaria para documentar el puerto real del backend
++# (ver apps/web/.env.local.example y apps/api/.env.example, hallazgo
++# de conflicto de puertos en local)
++!.env.local.example
+ 
+ # vercel
+ .vercel
+-- 
+2.43.0
+

@@ -1535,6 +1535,24 @@ Orden real del director: cambiar solo el diseño visual de la tarjeta de búsque
 
 **Pendiente para cerrar esta sesión:** el director aplica los 2 archivos `.env`/`.env.local` reales en su máquina, prueba el flujo completo (tarjeta, calendario, desplegable de ciudades con datos reales), y si todo queda conforme, push + PR + los 6 checks de CI antes de fusionar.
 
+## 5.44 Verificación independiente de la rama del buscador + desplegable pegado a la tarjeta -- 19/20-ago-2026
+
+Tras el reporte de la sección 5.43 (rama `feature/hero-buscador-glass`, entregada por otra conversación trabajando en paralelo), el director pidió tomar control directo de la verificación y cierre, en vez de seguir de intermediario entre 2 conversaciones.
+
+**Verificado de forma independiente, no solo confiando en el reporte recibido:**
+- Rama confirmada real en GitHub (`git fetch` + `git log`), commit `09de22b`, 3 commits sobre el HEAD real de `main`.
+- Código revisado línea por línea (portal del calendario, portal del desplegable de ciudades, vidrio) -- construcción de buena calidad, sin exceso de alcance sobre lo pedido.
+- `tsc --noEmit` (frontend y backend) limpio, `next build` 30/30 páginas -- verificado con las propias manos, no aceptado de la palabra de nadie.
+- **213/213 pruebas e2e reales, corridas directamente.** Primer intento: 154 de 213 fallaron -- diagnosticado como una base de datos local propia desactualizada (le faltaban las migraciones 0037/0038 de la sesión anterior, aplicadas a producción real mientras el director trabajaba directo sin esta conversación), no un problema de la rama. Aplicadas ambas migraciones a la base local, segunda corrida: 213/213 limpio.
+
+**Confirmado en producción local real por el director, con datos reales:** el desplegable de ciudades ya muestra resultados reales del backend (Quito → 4 terminales, incluida Carcelén) -- el conflicto de puertos quedó resuelto de verdad, no solo en teoría.
+
+**Hallazgo real aparte, sin relación con el código:** la base de datos local del director tiene ~100+ registros de basura de pruebas e2e sin limpiar (mismo patrón `Date.now()` ya documentado) -- confirmado que es exclusivo de su entorno local, producción real verificada limpia por él mismo. Pendiente de limpieza, no urgente.
+
+**Ajuste real de diseño, confirmado explícitamente antes de construir:** el director reportó que el desplegable de ciudades se veía como "una tarjeta independiente", separada visualmente de la tarjeta principal del buscador -- diagnóstico correcto: fondo sólido propio, las 4 esquinas redondeadas, sombra fuerte propia, con un espacio de separación. Corregido en `SelectorCiudad.tsx`: sin espacio (pegado justo debajo del campo), solo esquinas de abajo redondeadas (sin borde superior, para que se sienta como una continuación de la tarjeta, no una caja aparte), y el mismo tono real de fondo/vidrio que ya usa la tarjeta principal (`bg-brand-dark/40`, `backdrop-blur-md`, mismo `ring` de borde).
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
