@@ -1571,6 +1571,19 @@ Orden real del director: cambiar el formato de las tarjetas de "Destinos popular
 
 **Pendiente:** el director reemplaza las 8 descripciones genéricas por su propio texto; push + PR + los 6 checks de CI antes de fusionar.
 
+### 5.45.1 Corrección real de tamaño -- mismo día, tras verificación del director
+
+El primer entregable no coincidía con el tamaño real pedido -- la orden explícita era que la tarjeta se viera "exactamente igual" a la referencia (EaseMyTrip), y el primer intento solo agregó insignia+descripción sin corregir la proporción real de la tarjeta.
+
+**Medición real de la referencia** (no a ojo): recorte de la tarjeta completa en la captura real, 385×278px, relación ancho:alto ≈1.38:1. Muestreo de píxeles verticales confirmó que la foto ocupa el 64% superior de la altura (178/278) y el contenido blanco el 36% inferior -- y que el nombre va **superpuesto sobre la foto** (con degradado, como el título de la referencia), no debajo como había quedado en el primer intento.
+
+**Corregido:**
+- `TarjetaDestino`: la foto ahora usa `aspect-[385/178]` (mantiene la proporción real medida sin importar el ancho de columna del grid), nombre superpuesto con degradado, insignia reposicionada a la esquina superior derecha de la foto (antes estaba en la unión foto/contenido, causando el bug de la sección anterior).
+- Grid: de 4 a 3 columnas en desktop, para que la tarjeta resultante sea más ancha (más cercana en tamaño absoluto a los 385px reales de la referencia).
+- `TarjetaPublicidadNativa.tsx` actualizado al mismo patrón exacto, por la misma regla ya documentada de formato compartido con las tarjetas orgánicas.
+
+**Verificado con medición real, no solo visual:** tarjeta final capturada y recortada, proporción resultante 1.53:1 contra el 1.38:1 real de la referencia -- diferencia pequeña, dentro de lo esperable porque el ancho de columna cambia con el viewport (la referencia es una tarjeta de tamaño fijo en un carrusel horizontal, la nuestra es responsive dentro de un grid). `tsc --noEmit` y `next build` limpios tras el ajuste.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

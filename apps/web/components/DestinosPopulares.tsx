@@ -74,10 +74,18 @@ const DESTINOS = [
  * (`logo-columbus.png`), sin el texto, para que quepa a escala como
  * insignia pequeña -- el wordmark completo es demasiado ancho para
  * este tamaño de chip. */
+/** Insignia real de Columbus para cada tarjeta -- mismo criterio ya
+ * usado en el resto del sitio (SVG/PNG propio, nunca un emoji ni un
+ * ícono genérico de banco de imágenes). Ícono recortado del logo real
+ * (`logo-columbus.png`), sin el texto, para que quepa a escala como
+ * insignia pequeña -- el wordmark completo es demasiado ancho para
+ * este tamaño de chip. Posición medida con precisión de la referencia
+ * real (20-ago-2026): esquina superior derecha de la foto, chip
+ * blanco redondeado. */
 function InsigniaColumbus() {
   return (
-    <div className="absolute -top-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-md ring-1 ring-black/5">
-      <Image src="/img/icono-columbus.png" alt="Columbus" width={20} height={24} className="h-5 w-auto" />
+    <div className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow-md ring-1 ring-black/5">
+      <Image src="/img/icono-columbus.png" alt="Columbus" width={18} height={22} className="h-4 w-auto" />
     </div>
   );
 }
@@ -88,22 +96,36 @@ interface TarjetaDestinoProps {
   descripcion: string;
 }
 
+/**
+ * Proporciones medidas con precisión real de la referencia (captura
+ * de easymytrip.com, 20-ago-2026): tarjeta 385x278px reales, foto
+ * ocupa el 64% superior de la altura (178/278), contenido blanco el
+ * 36% inferior (100/278) -- relación ancho:alto total ≈1.38:1. El
+ * `aspect-[385/178]` en la foto mantiene esa proporción exacta sin
+ * importar el ancho real de la columna del grid (responsive real, no
+ * solo en el ancho medido). El nombre va superpuesto sobre la foto
+ * (con degradado para legibilidad), igual que el título de la
+ * referencia -- no debajo, como había quedado en el primer intento.
+ */
 function TarjetaDestino({ nombre, foto, descripcion }: TarjetaDestinoProps) {
   return (
     <div className="group overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative h-32 w-full">
+      <div className="relative aspect-[385/178] w-full">
         <Image
           src={foto}
           alt={nombre}
           fill
-          sizes="(max-width: 640px) 50vw, 25vw"
+          sizes="(max-width: 640px) 50vw, 33vw"
           className="object-cover"
         />
-      </div>
-      <div className="relative px-3 pb-3 pt-5">
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/10 to-transparent" />
         <InsigniaColumbus />
-        <p className="text-sm font-bold text-brand-dark">{nombre}</p>
-        <p className="mt-1 text-xs leading-snug text-brand-dark/60">{descripcion}</p>
+        <p className="absolute bottom-2 left-3 right-3 text-base font-bold leading-tight text-white sm:text-lg">
+          {nombre}
+        </p>
+      </div>
+      <div className="px-3 pb-3 pt-2">
+        <p className="text-xs leading-snug text-brand-dark/60 sm:text-sm">{descripcion}</p>
       </div>
     </div>
   );
@@ -115,7 +137,7 @@ export function DestinosPopulares() {
       <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-brand-cobalto">
         Destinos populares
       </h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {DESTINOS.slice(0, 4).map((destino) => (
           <TarjetaDestino key={destino.nombre} {...destino} />
         ))}
