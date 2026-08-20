@@ -79,6 +79,12 @@ export class BusquedaController {
     return this.busqueda.obtenerUbicacionViaje(viajeId);
   }
 
+  /** Paradas intermedias del trayecto -- RF-COOP-002, Fase 1 (20-ago-2026). */
+  @Get('viajes/:id/paradas')
+  async listarParadasDeViaje(@Param('id') viajeId: string) {
+    return this.busqueda.listarParadasDeViaje(viajeId);
+  }
+
   /**
    * Fase 7-portada (07-ago-2026) -- rutas reales disponibles con precio
    * de referencia, para la portada. Sin autenticacion, mismo criterio

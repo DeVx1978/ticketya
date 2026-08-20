@@ -777,6 +777,21 @@ export async function eliminarParadaCoop(token: string, paradaId: string): Promi
   }
 }
 
+/** Paradas intermedias del trayecto de un viaje -- vista publica, sin autenticacion (20-ago-2026). */
+export interface ParadaTrayecto {
+  orden: number;
+  ciudad: string;
+  nombre: string;
+  tarifaDesdeOrigen: number;
+  tiempoEstimadoDesdeOrigenMinutos: number | null;
+}
+
+export async function listarParadasDeViaje(viajeId: string): Promise<ParadaTrayecto[]> {
+  const res = await fetch(`${API_URL}/viajes/${viajeId}/paradas`, { cache: "no-store" });
+  if (!res.ok) return [];
+  return (await res.json()) as ParadaTrayecto[];
+}
+
 /** Ítem 11 (04-ago-2026) -- catálogo cerrado, sección 3.2 del documento maestro. */
 export type Amenidad =
   | "wifi"

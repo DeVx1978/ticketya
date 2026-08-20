@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AMENIDADES_CATALOGO, type ResultadoViaje } from "@/lib/api";
+import { AMENIDADES_CATALOGO, listarParadasDeViaje, type ResultadoViaje, type ParadaTrayecto } from "@/lib/api";
 import { ResenasCooperativa } from "./ResenasCooperativa";
 
 function formatearHora(iso: string): string {
@@ -56,6 +56,10 @@ export function TarjetaCooperativaAgrupada({
   const [horariosAbiertos, setHorariosAbiertos] = useState(false);
 
   const activo = viajes.find((v) => v.viajeId === viajeActivoId) ?? viajes[0];
+  const [paradas, setParadas] = useState<ParadaTrayecto[]>([]);
+  useEffect(() => {
+    listarParadasDeViaje(activo.viajeId).then(setParadas);
+  }, [activo.viajeId]);
   const duracion = calcularDuracion(activo.horaSalidaProgramada, activo.horaLlegadaEstimada);
   const hayVariosHorarios = viajes.length > 1;
 
@@ -133,11 +137,10 @@ export function TarjetaCooperativaAgrupada({
             )}
           </div>
 
-          {/* Ruta real, sin paradas intermedias todavia -- hallazgo
-              real (16-ago-2026): existe una tabla ruta_paradas bien
-              diseñada, pero ninguna funcion la usa todavia. Se
-              muestra lo real que sí tenemos (origen -> destino), sin
-              inventar paradas que no existen. */}
+          {/* Ruta real, con paradas intermedias reales cuando la
+              cooperativa las cargo -- ver mas abajo. Hallazgo cerrado
+              (16-ago-2026 → 20-ago-2026, Fase 1): la tabla
+              ruta_paradas ya se usa de verdad. */}
           <p className="mt-1 text-xs text-brand-dark/50">
             📍 Ruta: {activo.origenNombre} → {activo.destinoNombre}
           </p>
@@ -150,6 +153,19 @@ export function TarjetaCooperativaAgrupada({
           >
             Ver trayecto en el mapa
           </a>
+
+          {/* Paradas intermedias reales -- RF-COOP-002, Fase 1 (20-ago-2026). */}
+          {paradas.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-brand-dark/50">
+              <span>🚏 Paradas:</span>
+              <span>{activo.origenNombre}</span>
+              {paradas.map((p) => (
+                <span key={p.orden}>→ {p.ciudad}</span>
+              ))}
+              <span>→ {activo.destinoNombre}</span>
+            </div>
+          )}
+
           {activo.cooperativaCalificacionPromedio !== null && (
             <ResenasCooperativa
               cooperativaId={activo.cooperativaId}
