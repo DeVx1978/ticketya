@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SelectorCiudad } from "./SelectorCiudad";
+import { CampoFecha } from "./CampoFecha";
 import type { PuntoOperacion } from "@/lib/api";
 
 function hoyISO(): string {
@@ -55,19 +56,19 @@ export function BuscadorForm() {
   return (
     <form
       onSubmit={buscar}
-      className="rounded-2xl bg-white/95 p-3 shadow-xl shadow-brand-dark/25 ring-1 ring-black/5 backdrop-blur-sm md:p-4"
+      className="rounded-2xl bg-brand-dark/40 p-3 shadow-xl shadow-black/30 ring-1 ring-white/15 backdrop-blur-md md:p-4"
     >
       <div
         role="group"
         aria-label="Tipo de viaje"
-        className="mb-2 inline-flex overflow-hidden rounded-lg ring-1 ring-brand-light"
+        className="mb-2 inline-flex overflow-hidden rounded-lg ring-1 ring-white/20"
       >
         <button
           type="button"
           onClick={() => setIdaYVuelta(false)}
           aria-pressed={!idaYVuelta}
           className={`px-3 py-1 text-xs font-semibold transition ${
-            !idaYVuelta ? "bg-brand text-white" : "bg-white text-brand-dark/60 hover:bg-brand-light/50"
+            !idaYVuelta ? "bg-brand text-white" : "bg-transparent text-white/60 hover:bg-white/10"
           }`}
         >
           Solo ida
@@ -77,7 +78,7 @@ export function BuscadorForm() {
           onClick={() => setIdaYVuelta(true)}
           aria-pressed={idaYVuelta}
           className={`px-3 py-1 text-xs font-semibold transition ${
-            idaYVuelta ? "bg-brand text-white" : "bg-white text-brand-dark/60 hover:bg-brand-light/50"
+            idaYVuelta ? "bg-brand text-white" : "bg-transparent text-white/60 hover:bg-white/10"
           }`}
         >
           Ida y vuelta
@@ -89,7 +90,7 @@ export function BuscadorForm() {
           grande (con divisores verticales, no cada campo flotando por
           separado), y también más compacta en celular (2 columnas en
           vez de 5 filas apiladas -- reduce la altura total real). */}
-      <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:divide-x md:divide-brand-light md:gap-0 md:rounded-lg md:ring-1 md:ring-brand-light">
+      <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:divide-x md:divide-white/15 md:gap-0 md:rounded-lg md:ring-1 md:ring-white/20">
         <div className="col-span-2 md:flex-1 md:px-3 md:py-1.5">
           <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} compacto />
         </div>
@@ -97,35 +98,20 @@ export function BuscadorForm() {
           <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} compacto />
         </div>
         <div className="md:px-3 md:py-1.5">
-          <label htmlFor="buscador-fecha" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
-            {idaYVuelta ? "Fecha de ida" : "Fecha"}
-          </label>
-          <input
-            id="buscador-fecha"
-            type="date"
-            value={fecha}
-            min={hoyISO()}
-            onChange={(e) => setFecha(e.target.value)}
-            className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:p-0 md:focus:ring-0"
+          <CampoFecha
+            etiqueta={idaYVuelta ? "Fecha de ida" : "Fecha"}
+            valor={fecha}
+            minimo={hoyISO()}
+            onCambio={(v) => setFecha(v)}
           />
         </div>
         {idaYVuelta && (
           <div className="md:px-3 md:py-1.5">
-            <label htmlFor="buscador-fecha-vuelta" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
-              Fecha de vuelta
-            </label>
-            <input
-              id="buscador-fecha-vuelta"
-              type="date"
-              value={fechaVuelta}
-              min={fecha}
-              onChange={(e) => setFechaVuelta(e.target.value)}
-              className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-32 md:border-0 md:p-0 md:focus:ring-0"
-            />
+            <CampoFecha etiqueta="Fecha de vuelta" valor={fechaVuelta} minimo={fecha} onCambio={(v) => setFechaVuelta(v)} />
           </div>
         )}
         <div className="md:px-3 md:py-1.5">
-          <label htmlFor="buscador-pasajeros" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/50">
+          <label htmlFor="buscador-pasajeros" className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wide text-white/60">
             Pasajeros
           </label>
           <input
@@ -135,7 +121,7 @@ export function BuscadorForm() {
             max={10}
             value={pasajeros}
             onChange={(e) => setPasajeros(Number(e.target.value))}
-            className="w-full rounded-lg border border-brand-light bg-white px-2.5 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-20 md:border-0 md:p-0 md:focus:ring-0"
+            className="w-full rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-medium md:w-20 md:border-0 md:bg-transparent md:p-0 md:focus:ring-0"
           />
         </div>
         <button
@@ -145,7 +131,7 @@ export function BuscadorForm() {
           Buscar pasajes
         </button>
       </div>
-      {error && <p className="mt-2 text-sm font-medium text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm font-medium text-red-300">{error}</p>}
     </form>
   );
 }

@@ -98,7 +98,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
 
   return (
     <div className="relative min-w-[140px] flex-1">
-      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-brand-dark/50 md:mb-0.5" : ""}`}>
+      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-white/60 md:mb-0.5" : ""}`}>
         {etiqueta}
       </label>
       <input
@@ -121,24 +121,37 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
         onFocus={() => setAbierto(true)}
         onBlur={() => setTimeout(() => setAbierto(false), 150)}
         onKeyDown={alPresionarTecla}
-        className={`w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium ${
-          compacto ? "md:border-0 md:p-0 md:text-sm md:placeholder:text-brand-dark/40 md:focus:ring-0" : ""
-        }`}
+        className={
+          compacto
+            ? "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-base text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-medium md:border-0 md:bg-transparent md:p-0 md:text-sm md:placeholder:text-white/40 md:focus:ring-0"
+            : "w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+        }
       />
       {abierto && sugerencias.length > 0 && (
-        <ul id={idListbox} role="listbox" aria-label={etiqueta} className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg">
+        <ul
+          id={idListbox}
+          role="listbox"
+          aria-label={etiqueta}
+          className={
+            compacto
+              ? "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-white/15 bg-brand-dark/80 shadow-2xl shadow-black/40 backdrop-blur-md"
+              : "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg"
+          }
+        >
           {sugerencias.map((s, i) => (
             <li key={s.id} id={`${idListbox}-opcion-${i}`} role="option" aria-selected={i === indiceResaltado}>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => elegir(s)}
-                className={`block w-full px-3 py-2 text-left text-sm ${
-                  i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"
-                }`}
+                className={
+                  compacto
+                    ? `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-white/15" : "hover:bg-white/10"}`
+                    : `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"}`
+                }
               >
-                <span className="font-medium text-brand-dark">{s.ciudad}</span>{" "}
-                <span className="text-brand-dark/50">— {s.nombre}</span>
+                <span className={compacto ? "font-medium text-white" : "font-medium text-brand-dark"}>{s.ciudad}</span>{" "}
+                <span className={compacto ? "text-white/50" : "text-brand-dark/50"}>— {s.nombre}</span>
               </button>
             </li>
           ))}
