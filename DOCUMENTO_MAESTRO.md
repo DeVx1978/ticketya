@@ -1644,6 +1644,14 @@ El director reportó (sesión de la mañana siguiente, sobre la tarjeta del busc
 
 **Verificado reproduciendo el bug real antes y después del fix, no solo revisando el código:** captura del calendario alineado al abrir + captura tras scroll confirmando que ya se mueve junto con el campo (antes del fix, capturas equivalentes confirmaron el bug real). Misma prueba repetida para el desplegable de ciudades, con datos simulados (el entorno de esta conversación no tiene salida de red hacia el backend real de Render). `tsc --noEmit` y `next build` limpios.
 
+### 5.46.1 Ajuste visual: el calendario se veía como una tarjeta flotante aparte -- mismo día
+
+Tras el fix del scroll, el director señaló que el calendario seguía viéndose "flotante" -- pero esta vez no era el bug de scroll (ya corregido), sino un problema visual real presente incluso sin hacer scroll: fondo más oscuro que la tarjeta principal (`bg-brand-dark/90` vs `bg-brand-dark/40`), sombra propia (`shadow-2xl`), esquinas redondeadas en las 4 puntas, y 8px de separación respecto al campo -- se veía como una ventana aparte, no como parte del mismo diseño.
+
+**Corregido con el mismo criterio ya aplicado antes al desplegable de ciudades** (`SelectorCiudad.tsx`, sección 5.44): sin espacio de separación (`top: rect.bottom`, se quitó el `+8`), mismo tono de vidrio que la tarjeta principal (`bg-brand-dark/40`), esquinas redondeadas solo abajo (`rounded-b-2xl border-t-0`), sombra reducida (`shadow-xl` en vez de `shadow-2xl`).
+
+**Verificado con captura real:** confirmado que el calendario ahora queda pegado directo al campo, mismo tono que la tarjeta -- y reconfirmado que el fix del scroll (sección 5.46) sigue funcionando correctamente junto con este ajuste visual (captura tras scroll con ambos cambios aplicados a la vez). `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

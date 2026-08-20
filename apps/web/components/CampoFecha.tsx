@@ -68,12 +68,24 @@ export function CampoFecha({ etiqueta, valor, minimo, onCambio }: Props) {
   // corregir. Corregido escuchando scroll/resize mientras está
   // abierto, para recalcular la posición en cada evento y que el
   // calendario siga al campo real.
+  //
+  // Ajuste visual real (20-ago-2026, mismo día): incluso ya sin el
+  // bug de scroll, el calendario seguía viéndose como una tarjeta
+  // aparte, flotando en medio de la pantalla -- fondo más oscuro
+  // (bg-brand-dark/90) que la tarjeta principal (bg-brand-dark/40),
+  // sombra propia, esquinas redondeadas en las 4 puntas, y 8px de
+  // separación respecto al campo. Corregido con el mismo criterio ya
+  // aplicado antes al desplegable de ciudades (SelectorCiudad.tsx):
+  // sin espacio (`rect.bottom`, no `+8`), mismo tono de vidrio que la
+  // tarjeta (`bg-brand-dark/40`), esquinas redondeadas solo abajo
+  // (`rounded-b-2xl border-t-0`) -- se siente como una extensión de
+  // la tarjeta, no una ventana flotante aparte.
   useLayoutEffect(() => {
     if (!abierto || !botonRef.current) return;
     function recalcular() {
       if (!botonRef.current) return;
       const rect = botonRef.current.getBoundingClientRect();
-      setPosicion({ top: rect.bottom + 8, left: rect.left });
+      setPosicion({ top: rect.bottom, left: rect.left });
     }
     recalcular();
     window.addEventListener("scroll", recalcular, true);
@@ -127,7 +139,7 @@ export function CampoFecha({ etiqueta, valor, minimo, onCambio }: Props) {
             role="dialog"
             aria-label={etiqueta}
             style={{ position: "fixed", top: posicion.top, left: posicion.left }}
-            className="z-[100] rounded-xl border border-white/15 bg-brand-dark/90 p-3 shadow-2xl shadow-black/40 backdrop-blur-md"
+            className="z-[100] rounded-b-2xl border border-t-0 border-white/15 bg-brand-dark/40 p-3 shadow-xl shadow-black/30 backdrop-blur-md"
           >
             <DayPicker
               mode="single"
