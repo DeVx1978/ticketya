@@ -63,11 +63,29 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
   // `document.body` y se posiciona con `position: fixed` según el
   // rect real del input. El uso en panel-empresa/rutas (compacto
   // = false, sin overflow-hidden alrededor) no se toca.
+  //
+  // Bug real encontrado por el director (20-ago-2026, mismo defecto
+  // que CampoFecha): la posición solo se recalculaba al escribir
+  // (`texto` como dependencia) -- si el usuario hacía scroll de la
+  // página sin escribir, el dropdown se quedaba clavado en el mismo
+  // punto de la pantalla mientras el campo real se movía con el
+  // resto de la tarjeta. Corregido escuchando scroll/resize mientras
+  // está abierto en modo compacto.
   useLayoutEffect(() => {
     if (!compacto || !abierto || !inputRef.current) return;
-    const rect = inputRef.current.getBoundingClientRect();
-    setPosicion({ top: rect.bottom, left: rect.left, width: rect.width });
-  }, [compacto, abierto, texto]);
+    function recalcular() {
+      if (!inputRef.current) return;
+      const rect = inputRef.current.getBoundingClientRect();
+      setPosicion({ top: rect.bottom, left: rect.left, width: rect.width });
+    }
+    recalcular();
+    window.addEventListener("scroll", recalcular, true);
+    window.addEventListener("resize", recalcular);
+    return () => {
+      window.removeEventListener("scroll", recalcular, true);
+      window.removeEventListener("resize", recalcular);
+    };
+  }, [compacto, abierto]);
 
   useEffect(() => {
     if (temporizador.current) clearTimeout(temporizador.current);
