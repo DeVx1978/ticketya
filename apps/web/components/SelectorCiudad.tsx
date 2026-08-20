@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { buscarPuntosOperacion, type PuntoOperacion } from "@/lib/api";
 
 interface Props {
@@ -50,6 +51,23 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
   // solo se aplica la respuesta si sigue siendo la petición más
   // reciente en el momento en que vuelve.
   const secuenciaPeticion = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [posicion, setPosicion] = useState({ top: 0, left: 0, width: 0 });
+
+  // Mismo hallazgo real que en CampoFecha (19-ago-2026): el Hero tiene
+  // `overflow-hidden` en su <section> (necesario para el slider de
+  // fotos) -- la lista de sugerencias, posicionada `absolute` dentro
+  // de ese árbol, queda recortada e invisible cuando el campo está
+  // cerca del borde inferior de la sección. Solo en modo `compacto`
+  // (el único uso real dentro del Hero) se monta con un portal a
+  // `document.body` y se posiciona con `position: fixed` según el
+  // rect real del input. El uso en panel-empresa/rutas (compacto
+  // = false, sin overflow-hidden alrededor) no se toca.
+  useLayoutEffect(() => {
+    if (!compacto || !abierto || !inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setPosicion({ top: rect.bottom, left: rect.left, width: rect.width });
+  }, [compacto, abierto, texto]);
 
   useEffect(() => {
     if (temporizador.current) clearTimeout(temporizador.current);
@@ -98,11 +116,12 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
 
   return (
     <div className="relative min-w-[140px] flex-1">
-      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-brand-dark/50 md:mb-0.5" : ""}`}>
+      <label htmlFor={idCampo} className={`block text-xs font-semibold uppercase tracking-wide text-brand-dark/70 mb-1 ${compacto ? "md:text-[10px] md:text-white/60 md:mb-0.5" : ""}`}>
         {etiqueta}
       </label>
       <input
         id={idCampo}
+        ref={inputRef}
         type="text"
         role="combobox"
         aria-expanded={abierto && sugerencias.length > 0}
@@ -121,29 +140,46 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
         onFocus={() => setAbierto(true)}
         onBlur={() => setTimeout(() => setAbierto(false), 150)}
         onKeyDown={alPresionarTecla}
-        className={`w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium ${
-          compacto ? "md:border-0 md:p-0 md:text-sm md:placeholder:text-brand-dark/40 md:focus:ring-0" : ""
-        }`}
+        className={
+          compacto
+            ? "w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2.5 text-base text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand-medium md:border-0 md:bg-transparent md:p-0 md:text-sm md:placeholder:text-white/40 md:focus:ring-0"
+            : "w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+        }
       />
-      {abierto && sugerencias.length > 0 && (
-        <ul id={idListbox} role="listbox" aria-label={etiqueta} className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg">
-          {sugerencias.map((s, i) => (
-            <li key={s.id} id={`${idListbox}-opcion-${i}`} role="option" aria-selected={i === indiceResaltado}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => elegir(s)}
-                className={`block w-full px-3 py-2 text-left text-sm ${
-                  i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"
-                }`}
-              >
-                <span className="font-medium text-brand-dark">{s.ciudad}</span>{" "}
-                <span className="text-brand-dark/50">— {s.nombre}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {abierto && sugerencias.length > 0 && (() => {
+        const lista = (
+          <ul
+            id={idListbox}
+            role="listbox"
+            aria-label={etiqueta}
+            style={compacto ? { position: "fixed", top: posicion.top, left: posicion.left, width: posicion.width } : undefined}
+            className={
+              compacto
+                ? "z-[100] overflow-hidden rounded-b-2xl border border-t-0 border-white/15 bg-brand-dark/40 shadow-xl shadow-black/30 backdrop-blur-md"
+                : "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg"
+            }
+          >
+            {sugerencias.map((s, i) => (
+              <li key={s.id} id={`${idListbox}-opcion-${i}`} role="option" aria-selected={i === indiceResaltado}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => elegir(s)}
+                  className={
+                    compacto
+                      ? `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-white/15" : "hover:bg-white/10"}`
+                      : `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"}`
+                  }
+                >
+                  <span className={compacto ? "font-medium text-white" : "font-medium text-brand-dark"}>{s.ciudad}</span>{" "}
+                  <span className={compacto ? "text-white/50" : "text-brand-dark/50"}>— {s.nombre}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        );
+        return compacto && typeof document !== "undefined" ? createPortal(lista, document.body) : lista;
+      })()}
     </div>
   );
 }
