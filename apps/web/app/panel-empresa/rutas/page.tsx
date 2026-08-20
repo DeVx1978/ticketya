@@ -9,11 +9,15 @@ import {
   crearHorarioRutaCoop,
   actualizarEstadoHorarioRutaCoop,
   cancelarViajesMasivoCoop,
+  listarParadasCoop,
+  agregarParadaCoop,
+  eliminarParadaCoop,
   type PuntoOperacion,
   type RutaResumen,
   type TipoVehiculoResumen,
   type HorarioRutaResumen,
   type ResultadoCancelacionMasiva,
+  type ParadaResumen,
 } from "@/lib/api";
 import { obtenerToken } from "@/lib/auth";
 import { SelectorCiudad } from "@/components/SelectorCiudad";
@@ -62,6 +66,56 @@ export default function RutasPage() {
   const [resultadoMasivo, setResultadoMasivo] = useState<ResultadoCancelacionMasiva | null>(null);
   const [errorMasivo, setErrorMasivo] = useState<string | null>(null);
 
+  const [paradasPorRuta, setParadasPorRuta] = useState<Record<string, ParadaResumen[]>>({});
+  const [puntoParada, setPuntoParada] = useState<PuntoOperacion | null>(null);
+  const [tarifaParada, setTarifaParada] = useState("");
+  const [tiempoParada, setTiempoParada] = useState("");
+  const [guardandoParada, setGuardandoParada] = useState(false);
+  const [errorParada, setErrorParada] = useState<string | null>(null);
+
+  function cargarParadas(rutaId: string) {
+    const token = obtenerToken();
+    if (!token) return;
+    listarParadasCoop(token, rutaId)
+      .then((lista) => setParadasPorRuta((p) => ({ ...p, [rutaId]: lista })))
+      .catch(() => setParadasPorRuta((p) => ({ ...p, [rutaId]: [] })));
+  }
+
+  function agregarParada(rutaId: string, e: React.FormEvent) {
+    e.preventDefault();
+    const token = obtenerToken();
+    if (!token || !puntoParada || !tarifaParada) {
+      setErrorParada("Elige la parada y su tarifa desde el origen para continuar.");
+      return;
+    }
+    setGuardandoParada(true);
+    setErrorParada(null);
+    const siguienteOrden = (paradasPorRuta[rutaId]?.length ?? 0) + 1;
+    agregarParadaCoop(token, {
+      rutaId,
+      puntoOperacionId: puntoParada.id,
+      orden: siguienteOrden,
+      tarifaDesdeOrigen: Number(tarifaParada),
+      tiempoEstimadoDesdeOrigenMinutos: tiempoParada ? Number(tiempoParada) : undefined,
+    })
+      .then(() => {
+        setPuntoParada(null);
+        setTarifaParada("");
+        setTiempoParada("");
+        cargarParadas(rutaId);
+      })
+      .catch((err) => setErrorParada(err instanceof Error ? err.message : "No se pudo agregar la parada."))
+      .finally(() => setGuardandoParada(false));
+  }
+
+  function quitarParada(rutaId: string, paradaId: string) {
+    const token = obtenerToken();
+    if (!token) return;
+    eliminarParadaCoop(token, paradaId)
+      .then(() => cargarParadas(rutaId))
+      .catch((err) => setErrorParada(err instanceof Error ? err.message : "No se pudo eliminar la parada."));
+  }
+
   function cargarRutas() {
     const token = obtenerToken();
     if (!token) return;
@@ -92,6 +146,9 @@ export default function RutasPage() {
       listarHorariosRutaCoop(token, rutaId)
         .then((lista) => setHorariosPorRuta((h) => ({ ...h, [rutaId]: lista })))
         .catch(() => setHorariosPorRuta((h) => ({ ...h, [rutaId]: [] })));
+    }
+    if (!paradasPorRuta[rutaId]) {
+      cargarParadas(rutaId);
     }
   }
 
@@ -515,6 +572,105 @@ export default function RutasPage() {
                                 </div>
                               )}
                             </div>
+                          </div>
+
+                          {/* Paradas intermedias -- RF-COOP-002 (20-ago-2026, Fase 1). El precio de
+                              cada parada lo fija la cooperativa a mano, nunca una formula automatica. */}
+                          <div className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-black/5 lg:col-span-2">
+                            <h3 className="font-display text-sm font-bold text-brand-dark">
+                              Paradas intermedias
+                            </h3>
+                            <p className="mt-1 text-xs text-brand-dark/50">
+                              Puntos por los que pasa el bus entre el origen y el destino. Cada parada
+                              tiene su propio precio real, fijado por ustedes -- no un descuento
+                              automatico. Puede haber varias paradas dentro de la misma ciudad de
+                              destino (ej. una terminal general y luego la terminal propia).
+                            </p>
+
+                            <div className="mt-3 space-y-2">
+                              {(paradasPorRuta[r.id] ?? []).map((p) => (
+                                <div
+                                  key={p.id}
+                                  className="flex items-center justify-between rounded-lg bg-brand-light/30 px-3 py-2 text-xs"
+                                >
+                                  <div>
+                                    <span className="font-semibold text-brand-dark">
+                                      {p.orden}. {p.puntoOperacionCiudad}
+                                    </span>{" "}
+                                    <span className="text-brand-dark/70">— {p.puntoOperacionNombre}</span>{" "}
+                                    <span className="text-brand-dark/40">
+                                      ·{" "}
+                                      {new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(
+                                        p.tarifaDesdeOrigen,
+                                      )}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => quitarParada(r.id, p.id)}
+                                    className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700"
+                                  >
+                                    Quitar
+                                  </button>
+                                </div>
+                              ))}
+                              {paradasPorRuta[r.id]?.length === 0 && (
+                                <p className="text-xs text-brand-dark/40">
+                                  Todavía no has agregado ninguna parada intermedia en esta ruta.
+                                </p>
+                              )}
+                            </div>
+
+                            <form
+                              onSubmit={(e) => agregarParada(r.id, e)}
+                              className="mt-4 flex flex-wrap items-end gap-3 border-t border-black/5 pt-4"
+                            >
+                              <div className="min-w-[180px] flex-1">
+                                <SelectorCiudad
+                                  etiqueta="Parada"
+                                  placeholder="¿Dónde para?"
+                                  valor={puntoParada}
+                                  onCambio={setPuntoParada}
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor={`ruta-${r.id}-tarifa-parada`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                  Tarifa desde origen
+                                </label>
+                                <input
+                                  id={`ruta-${r.id}-tarifa-parada`}
+                                  type="number"
+                                  min={0}
+                                  step="0.01"
+                                  value={tarifaParada}
+                                  onChange={(e) => setTarifaParada(e.target.value)}
+                                  className="w-28 rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor={`ruta-${r.id}-tiempo-parada`} className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                                  Minutos desde origen (opcional)
+                                </label>
+                                <input
+                                  id={`ruta-${r.id}-tiempo-parada`}
+                                  type="number"
+                                  min={0}
+                                  value={tiempoParada}
+                                  onChange={(e) => setTiempoParada(e.target.value)}
+                                  className="w-28 rounded-lg border border-brand-light px-3 py-2 text-sm text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={guardandoParada}
+                                className="rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+                              >
+                                {guardandoParada ? "Guardando..." : "Agregar parada"}
+                              </button>
+                            </form>
+                            {errorParada && (
+                              <p className="mt-2 text-xs font-medium text-red-600">{errorParada}</p>
+                            )}
                           </div>
                         </div>
                       </td>
