@@ -218,7 +218,7 @@ export function DestinosPopulares() {
   }
 
   return (
-    <section className="mx-auto max-w-5xl px-4 py-12">
+    <section className="mx-auto max-w-screen-2xl px-4 py-12 sm:px-8 lg:px-12">
       <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-brand-cobalto">
         Destinos populares
       </h2>

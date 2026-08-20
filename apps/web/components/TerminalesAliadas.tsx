@@ -26,8 +26,8 @@ export async function TerminalesAliadas() {
   });
 
   return (
-    <section className="bg-brand-dark px-4 py-10">
-      <div className="mx-auto max-w-5xl">
+    <section className="bg-brand-dark px-4 py-10 sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-screen-2xl">
         <h2 className="mb-4 text-xs font-bold uppercase tracking-wide text-brand-amber">
           Terminales aliadas
         </h2>

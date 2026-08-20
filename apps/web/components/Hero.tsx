@@ -167,7 +167,7 @@ export function Hero() {
           tu boleto digital con QR al instante.
         </p>
 
-        <div className="mt-5 max-w-4xl md:mt-7">
+        <div className="mt-5 max-w-screen-2xl md:mt-7">
           <BuscadorForm />
         </div>
       </div>
