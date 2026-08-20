@@ -11,6 +11,7 @@ import {
   puntosOperacion,
   viajeAsientos,
   bannersPropios,
+  configuracionPlataforma,
 } from '@columbus/db';
 import { DRIZZLE_DB_PUBLICO } from '../../infraestructura/database/database.module';
 import type { DrizzleDb } from '../../infraestructura/database/database.provider';
@@ -339,6 +340,22 @@ export class BusquedaService {
       tarifaDesdeOrigen: Number(f.tarifaDesdeOrigen),
       tiempoEstimadoDesdeOrigenMinutos: f.tiempoEstimadoDesdeOrigenMinutos,
     }));
+  }
+
+  /**
+   * Contacto de soporte de la plataforma -- ya se usa en el PDF del
+   * boleto (compra.repositorio.drizzle.ts), pero nunca en un
+   * endpoint publico para el sitio web (20-ago-2026, footer real).
+   */
+  async obtenerContactoSoporte(): Promise<{ correo: string | null; telefono: string | null }> {
+    const [fila] = await this.db
+      .select({
+        correo: configuracionPlataforma.soporteCorreo,
+        telefono: configuracionPlataforma.soporteTelefono,
+      })
+      .from(configuracionPlataforma)
+      .limit(1);
+    return { correo: fila?.correo ?? null, telefono: fila?.telefono ?? null };
   }
 
   /**

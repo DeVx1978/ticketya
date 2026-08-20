@@ -85,6 +85,12 @@ export class BusquedaController {
     return this.busqueda.listarParadasDeViaje(viajeId);
   }
 
+  /** Contacto de soporte para el footer publico (20-ago-2026). */
+  @Get('contacto-soporte')
+  async obtenerContactoSoporte() {
+    return this.busqueda.obtenerContactoSoporte();
+  }
+
   /**
    * Fase 7-portada (07-ago-2026) -- rutas reales disponibles con precio
    * de referencia, para la portada. Sin autenticacion, mismo criterio

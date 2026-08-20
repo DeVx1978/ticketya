@@ -792,6 +792,18 @@ export async function listarParadasDeViaje(viajeId: string): Promise<ParadaTraye
   return (await res.json()) as ParadaTrayecto[];
 }
 
+/** Contacto de soporte para el footer -- publico, sin autenticacion (20-ago-2026). */
+export interface ContactoSoporte {
+  correo: string | null;
+  telefono: string | null;
+}
+
+export async function obtenerContactoSoporte(): Promise<ContactoSoporte> {
+  const res = await fetch(`${API_URL}/contacto-soporte`, { cache: "no-store" });
+  if (!res.ok) return { correo: null, telefono: null };
+  return (await res.json()) as ContactoSoporte;
+}
+
 /** Ítem 11 (04-ago-2026) -- catálogo cerrado, sección 3.2 del documento maestro. */
 export type Amenidad =
   | "wifi"
