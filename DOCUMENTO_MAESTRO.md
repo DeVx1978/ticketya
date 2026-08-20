@@ -1584,6 +1584,22 @@ El primer entregable no coincidía con el tamaño real pedido -- la orden explí
 
 **Verificado con medición real, no solo visual:** tarjeta final capturada y recortada, proporción resultante 1.53:1 contra el 1.38:1 real de la referencia -- diferencia pequeña, dentro de lo esperable porque el ancho de columna cambia con el viewport (la referencia es una tarjeta de tamaño fijo en un carrusel horizontal, la nuestra es responsive dentro de un grid). `tsc --noEmit` y `next build` limpios tras el ajuste.
 
+### 5.45.2 Carrusel real con flechas de navegación -- mismo día, misma sesión
+
+El director preguntó si se podía dejar exactamente como en la referencia: carrusel horizontal (no grid), con espacio para agregar más destinos después sin romper el layout. Confirmado y construido.
+
+**Reutiliza un patrón real ya existente en el proyecto** (`FranjaBanners.tsx`, scroll horizontal con `overflow-x-auto`, sin librería externa) -- se le agrega `scroll-snap` (para que las tarjetas queden alineadas al soltar el scroll) y botones de flecha, que `FranjaBanners.tsx` no tenía. Cero dependencias nuevas.
+
+**Construido:**
+- `DestinosPopulares.tsx`: convertido a `"use client"`, el grid de 3 columnas pasa a un `<div>` con `flex overflow-x-auto snap-x snap-mandatory`, scrollbar oculta (`[scrollbar-width:none]` + `[&::-webkit-scrollbar]:hidden`). Tarjetas con ancho fijo (`w-72`/`w-80`, no dependen de columnas de grid) y `snap-start`.
+- `FlechaCarrusel` (nuevo, dentro del mismo archivo): botones circulares blancos con flecha SVG propia (sin librería de íconos nueva), posicionados a los lados, ocultos en móvil (`hidden sm:flex` -- en móvil el swipe táctil ya es el patrón natural, igual criterio real que cualquier carrusel de producto: Booking, Airbnb).
+- `useRef` + `scrollBy({ behavior: "smooth" })` para el desplazamiento real al hacer clic -- distancia calculada como 85% del ancho visible del carrusel.
+- `PublicidadNativa.tsx`: el contenedor de la tarjeta patrocinada pasa de `col-span-2 sm:col-span-1` (clases de grid, ya no aplicables) a `w-72 shrink-0 snap-start sm:w-80` -- mismo ancho fijo que las tarjetas orgánicas, sigue apareciendo después de la 4ª tarjeta.
+
+**Resuelve de paso el pedido de "agregar más destinos después"**: al ser carrusel de ancho fijo por tarjeta, agregar una ciudad nueva al arreglo `DESTINOS` simplemente la agrega al final del scroll -- no hay columnas que recalcular ni layout que se rompa.
+
+**Verificado con interacción real, no solo visual:** capturas confirmando el carrusel en desktop (flechas visibles) y móvil (flechas ocultas, swipe natural), más una prueba real de clic en la flecha derecha con Playwright, confirmando que el `scrollBy` sí mueve el carrusel (capturada la vista antes/después del clic, mostrando destinos distintos). `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
