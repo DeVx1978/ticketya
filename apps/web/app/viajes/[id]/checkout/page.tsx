@@ -510,8 +510,13 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   type="text"
                   required
                   minLength={5}
+                  maxLength={p.tipoDocumento === "cedula" ? 10 : 20}
                   value={p.documento}
-                  onChange={(e) => actualizarPasajero(indice, { documento: e.target.value })}
+                  onChange={(e) => {
+                    const valorLimpio =
+                      p.tipoDocumento === "cedula" ? e.target.value.replace(/\D/g, "") : e.target.value;
+                    actualizarPasajero(indice, { documento: valorLimpio });
+                  }}
                   className="w-full rounded-lg border border-brand-light px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
                 />
               </div>
@@ -693,8 +698,9 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                   <input
                     id="checkout-invitado-telefono"
                     type="tel"
+                    maxLength={10}
                     value={telefonoContacto}
-                    onChange={(e) => setTelefonoContacto(e.target.value)}
+                    onChange={(e) => setTelefonoContacto(e.target.value.replace(/\D/g, ""))}
                     className="mt-1 w-full rounded-lg border border-brand-dark/20 px-3 py-2 text-sm"
                     placeholder="0991234567"
                   />
@@ -714,7 +720,19 @@ function FormularioCheckout({ viajeId }: { viajeId: string }) {
                 </div>
               </div>
             )}
-            {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+            {error && (
+              <div className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-600 ring-1 ring-red-100">
+                <p>{error}</p>
+                {error.toLowerCase().includes("bloqueo") && (
+                  <Link
+                    href={`/viajes/${viajeId}/asientos`}
+                    className="mt-1 inline-block font-semibold text-red-700 underline"
+                  >
+                    Volver a elegir asiento
+                  </Link>
+                )}
+              </div>
+            )}
             <button
               type="submit"
               disabled={procesando}
