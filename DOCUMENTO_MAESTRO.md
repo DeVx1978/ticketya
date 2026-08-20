@@ -1513,6 +1513,28 @@ El director compartió un HTML de referencia con el patrón de 4 pasos, aclarand
 - **Paradas intermedias de ruta** -- la tabla `ruta_paradas` existe bien diseñada en el esquema, pero nada la usa todavía (ni carga, ni visualización, ni compra desde una parada intermedia).
 - **Carga masiva por Excel/CSV para cooperativas** -- ya existe un sistema real y funcional (`POST /coop/importar`, sección anterior), pero solo acepta JSON escrito a mano -- no realista para personal administrativo real. Investigado el estándar de la industria (plantilla descargable Excel/CSV, llenar, subir) -- **decisión explícita: dejarlo para una sesión nueva y dedicada**, dado el tamaño real de la pieza.
 
+## 5.43 Tarjeta del buscador con efecto vidrio, calendario propio, y hallazgo real de conflicto de puertos en local -- 19/20-ago-2026
+
+Orden real del director: cambiar solo el diseño visual de la tarjeta de búsqueda del Hero a un efecto vidrio semi-transparente oscuro, referencia real compartida (easybook.com), coherente en todos los campos incluido el desplegable de sugerencias de ciudad/terminal. Trabajo hecho por la directora de frontend/diseño bajo este protocolo: cada ajuste se confirmó antes de escribir código.
+
+**Construido (rama `feature/hero-buscador-glass`, 2 commits):**
+- `BuscadorForm.tsx`: fondo `bg-white/95` → `bg-brand-dark/40 backdrop-blur-md`. Tabs Solo ida/Ida y vuelta, divisores y campo de pasajeros vestidos con el mismo vidrio. Responsive intacto (grid 2 columnas en móvil, fila con divisores en desktop).
+- `SelectorCiudad.tsx`: mismo vidrio aplicado solo en modo `compacto` (el único uso real dentro del Hero) -- no afecta el otro uso real del componente en `panel-empresa/rutas`.
+- `CampoFecha.tsx` (nuevo componente + dependencia nueva `react-day-picker`, sin conflicto de peer deps con React 19): reemplaza el `<input type="date">` nativo del Hero. Su popup de calendario lo dibuja el sistema operativo/navegador y no se puede vestir con el diseño -- construido con locale español, mismo vidrio oscuro, día seleccionado en `brand-amber`. Alcance real: solo el Hero por ahora; quedan 6 usos más de `type="date"` en la plataforma (admin, panel-empresa, checkout) sin tocar, a la espera de decidir si se extiende.
+
+**Bug real encontrado y corregido dos veces en el camino, mismo patrón:** el `<section>` del Hero tiene `overflow-hidden` (necesario para el slider de fotos). Cualquier popover posicionado `absolute` dentro de ese árbol queda recortado e invisible cuando el campo está cerca del borde inferior de la sección -- primero se atrapó en el calendario (verificación visual antes de reportar listo), después el director lo encontró en producción real en el desplegable de ciudades (no se había aplicado el mismo criterio ahí por descuido). Ambos casos corregidos igual: portal a `document.body` + posicionamiento `fixed` calculado desde el rect real del elemento disparador, sin tocar el `overflow-hidden` real del Hero.
+
+**Hallazgo real aparte, de entorno local (no de este código):** al probar en su máquina, el director encontró que la búsqueda de terminales, estadísticas, rutas, etc. respondían 404 sin ningún error visible. Causa real diagnosticada y confirmada contra el código: `apps/api/src/main.ts` usa `app.listen(process.env.PORT ?? 3000)` -- sin `PORT` en el `.env` real del backend, cae al puerto 3000, el mismo que usa `next dev` del frontend por defecto. Con ambos corriendo en local al mismo tiempo, uno de los dos queda inalcanzable. Corregido documentando el puerto real del backend en `3001`:
+- `apps/api/.env.example`: agregada `PORT=3001` con el hallazgo explicado en el comentario.
+- `apps/web/.env.local.example` (nuevo -- no existía ninguna plantilla real para el frontend): `NEXT_PUBLIC_API_URL=http://localhost:3001`.
+- `apps/web/.gitignore`: el patrón `.env*` bloqueaba también esta plantilla real sin datos sensibles -- agregada excepción explícita `!.env.local.example`.
+
+**Estos 2 archivos `.env`/`.env.local` reales son locales a la máquina del director -- ninguna de las 2 conversaciones puede editarlos directamente.** Pendiente que el director agregue `PORT=3001` a su `apps/api/.env` real, y cree su `apps/web/.env.local` real con `NEXT_PUBLIC_API_URL=http://localhost:3001`, antes de poder probar el flujo completo en su máquina.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas, en ambos commits. Capturas reales generadas (desktop/móvil, tarjeta, calendario y desplegable de ciudades abiertos) mediante navegador headless contra `next start` local -- el desplegable de ciudades se verificó con datos simulados porque el entorno de la directora no tiene salida de red hacia el backend real de Render; pendiente de confirmación del director con datos reales en su máquina, una vez resuelto el conflicto de puertos.
+
+**Pendiente para cerrar esta sesión:** el director aplica los 2 archivos `.env`/`.env.local` reales en su máquina, prueba el flujo completo (tarjeta, calendario, desplegable de ciudades con datos reales), y si todo queda conforme, push + PR + los 6 checks de CI antes de fusionar.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

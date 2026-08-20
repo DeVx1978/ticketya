@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# excepcion real (19-ago-2026): esta es una plantilla real sin datos
+# sensibles -- necesaria para documentar el puerto real del backend
+# (ver apps/web/.env.local.example y apps/api/.env.example, hallazgo
+# de conflicto de puertos en local)
+!.env.local.example
 
 # vercel
 .vercel
