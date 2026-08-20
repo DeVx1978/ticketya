@@ -4,6 +4,7 @@ import { and, eq, ilike, or, sql } from 'drizzle-orm';
 import {
   viajes,
   rutas,
+  rutaParadas,
   cooperativas,
   unidades,
   tiposVehiculo,
@@ -296,6 +297,48 @@ export class BusquedaService {
       longitud: Number(fila.longitud),
       actualizadaEn: fila.actualizadaEn,
     };
+  }
+
+  /**
+   * Paradas intermedias del trayecto de un viaje -- RF-COOP-002,
+   * Fase 1 (20-ago-2026). El viaje no guarda sus propias paradas --
+   * las hereda de su ruta, que es donde la cooperativa las carga.
+   */
+  async listarParadasDeViaje(viajeId: string): Promise<
+    {
+      orden: number;
+      ciudad: string;
+      nombre: string;
+      tarifaDesdeOrigen: number;
+      tiempoEstimadoDesdeOrigenMinutos: number | null;
+    }[]
+  > {
+    const [filaViaje] = await this.db
+      .select({ rutaId: viajes.rutaId })
+      .from(viajes)
+      .where(eq(viajes.id, viajeId));
+    if (!filaViaje) return [];
+
+    const filas = await this.db
+      .select({
+        orden: rutaParadas.orden,
+        ciudad: puntosOperacion.ciudad,
+        nombre: puntosOperacion.nombre,
+        tarifaDesdeOrigen: rutaParadas.tarifaDesdeOrigen,
+        tiempoEstimadoDesdeOrigenMinutos: rutaParadas.tiempoEstimadoDesdeOrigenMinutos,
+      })
+      .from(rutaParadas)
+      .innerJoin(puntosOperacion, eq(puntosOperacion.id, rutaParadas.puntoOperacionId))
+      .where(eq(rutaParadas.rutaId, filaViaje.rutaId))
+      .orderBy(rutaParadas.orden);
+
+    return filas.map((f) => ({
+      orden: f.orden,
+      ciudad: f.ciudad,
+      nombre: f.nombre,
+      tarifaDesdeOrigen: Number(f.tarifaDesdeOrigen),
+      tiempoEstimadoDesdeOrigenMinutos: f.tiempoEstimadoDesdeOrigenMinutos,
+    }));
   }
 
   /**
