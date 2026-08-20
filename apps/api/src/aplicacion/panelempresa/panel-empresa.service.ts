@@ -12,6 +12,8 @@ import type {
   DatosEditarTipoVehiculo,
   DatosEditarRuta,
   DatosNuevaRuta,
+  DatosNuevaParada,
+  DatosEditarParada,
   DatosNuevoViaje,
   DatosNuevoUsuarioStaff,
   DatosNuevoConductor,
@@ -137,6 +139,22 @@ export class PanelEmpresaService {
 
   listarRutas(cooperativaId: string) {
     return this.panel.listarRutas(cooperativaId);
+  }
+
+  agregarParada(cooperativaId: string, datos: DatosNuevaParada) {
+    return this.panel.agregarParada(cooperativaId, datos);
+  }
+
+  listarParadas(cooperativaId: string, rutaId: string) {
+    return this.panel.listarParadas(cooperativaId, rutaId);
+  }
+
+  editarParada(cooperativaId: string, paradaId: string, datos: DatosEditarParada) {
+    return this.panel.editarParada(cooperativaId, paradaId, datos);
+  }
+
+  eliminarParada(cooperativaId: string, paradaId: string) {
+    return this.panel.eliminarParada(cooperativaId, paradaId);
   }
 
   editarRuta(cooperativaId: string, rutaId: string, datos: DatosEditarRuta) {

@@ -272,6 +272,38 @@ export interface DatosNuevaRuta {
   nombre?: string;
 }
 
+/**
+ * Paradas intermedias de una ruta -- RF-COOP-002. Cada parada tiene su
+ * propio precio real (`tarifaDesdeOrigen`), decidido a mano por la
+ * cooperativa -- nunca un porcentaje ni una formula automatica. Un
+ * mismo destino final (ej. Quito) puede tener varias paradas propias
+ * (Quitumbe, luego la terminal propia de la cooperativa), no solo una
+ * por ciudad.
+ */
+export interface DatosNuevaParada {
+  rutaId: string;
+  puntoOperacionId: string;
+  orden: number;
+  tarifaDesdeOrigen: number;
+  tiempoEstimadoDesdeOrigenMinutos?: number;
+}
+
+export interface DatosEditarParada {
+  orden?: number;
+  tarifaDesdeOrigen?: number;
+  tiempoEstimadoDesdeOrigenMinutos?: number;
+}
+
+export interface ParadaResumen {
+  id: string;
+  orden: number;
+  tarifaDesdeOrigen: number;
+  tiempoEstimadoDesdeOrigenMinutos: number | null;
+  puntoOperacionId: string;
+  puntoOperacionNombre: string;
+  puntoOperacionCiudad: string;
+}
+
 export interface DatosNuevoViaje {
   rutaId: string;
   unidadId: string;
@@ -602,6 +634,15 @@ export interface PanelEmpresaRepositorio {
   ): Promise<{ id: string }>;
   /** Rutas de la cooperativa, para elegir al armar un viaje o solo para revisar lo que ya existe. */
   listarRutas(cooperativaId: string): Promise<RutaResumen[]>;
+  /** Paradas intermedias de una ruta -- RF-COOP-002. */
+  agregarParada(cooperativaId: string, datos: DatosNuevaParada): Promise<{ id: string }>;
+  listarParadas(cooperativaId: string, rutaId: string): Promise<ParadaResumen[]>;
+  editarParada(
+    cooperativaId: string,
+    paradaId: string,
+    datos: DatosEditarParada,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }>;
+  eliminarParada(cooperativaId: string, paradaId: string): Promise<{ ok: true } | { ok: false; motivo: string }>;
   editarRuta(
     cooperativaId: string,
     rutaId: string,

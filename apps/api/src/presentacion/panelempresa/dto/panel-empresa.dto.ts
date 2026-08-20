@@ -90,6 +90,46 @@ export class CrearRutaDto {
   nombre?: string;
 }
 
+/** Parada intermedia de una ruta -- RF-COOP-002. El precio (tarifaDesdeOrigen)
+ * lo decide la cooperativa a mano, no una formula automatica. */
+export class CrearParadaDto {
+  @IsString()
+  rutaId!: string;
+
+  @IsString()
+  puntoOperacionId!: string;
+
+  @IsInt()
+  @Min(1)
+  orden!: number;
+
+  @IsNumber()
+  @Min(0)
+  tarifaDesdeOrigen!: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  tiempoEstimadoDesdeOrigenMinutos?: number;
+}
+
+export class EditarParadaDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  orden?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  tarifaDesdeOrigen?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  tiempoEstimadoDesdeOrigenMinutos?: number;
+}
+
 export class CrearViajeDto {
   @IsString()
   rutaId!: string;

@@ -15,6 +15,9 @@ import type {
   DatosEditarTipoVehiculo,
   DatosEditarRuta,
   DatosNuevaRuta,
+  DatosNuevaParada,
+  DatosEditarParada,
+  ParadaResumen,
   DatosNuevoViaje,
   DatosNuevoUsuarioStaff,
   DatosNuevoConductor,
@@ -319,6 +322,84 @@ export class PanelEmpresaRepositorioDrizzle implements PanelEmpresaRepositorio {
           precioBaseReferencia: Number(f.precio_base_referencia),
         };
       });
+    });
+  }
+
+  async agregarParada(cooperativaId: string, datos: DatosNuevaParada): Promise<{ id: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`
+        INSERT INTO ruta_paradas (ruta_id, punto_operacion_id, orden, tarifa_desde_origen, tiempo_estimado_desde_origen_minutos)
+        VALUES (${datos.rutaId}, ${datos.puntoOperacionId}, ${datos.orden}, ${datos.tarifaDesdeOrigen}, ${datos.tiempoEstimadoDesdeOrigenMinutos ?? null})
+        RETURNING id
+      `);
+      return { id: (filas.rows[0] as { id: string }).id };
+    });
+  }
+
+  async listarParadas(cooperativaId: string, rutaId: string): Promise<ParadaResumen[]> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const resultado = await tx.execute(sql`
+        SELECT rp.id, rp.orden, rp.tarifa_desde_origen, rp.tiempo_estimado_desde_origen_minutos,
+               po.id AS punto_operacion_id, po.nombre AS punto_operacion_nombre, po.ciudad AS punto_operacion_ciudad
+        FROM ruta_paradas rp
+        JOIN puntos_operacion po ON po.id = rp.punto_operacion_id
+        WHERE rp.ruta_id = ${rutaId}
+        ORDER BY rp.orden ASC
+      `);
+      return resultado.rows.map((fila) => {
+        const f = fila as {
+          id: string;
+          orden: number;
+          tarifa_desde_origen: string;
+          tiempo_estimado_desde_origen_minutos: number | null;
+          punto_operacion_id: string;
+          punto_operacion_nombre: string;
+          punto_operacion_ciudad: string;
+        };
+        return {
+          id: f.id,
+          orden: f.orden,
+          tarifaDesdeOrigen: Number(f.tarifa_desde_origen),
+          tiempoEstimadoDesdeOrigenMinutos: f.tiempo_estimado_desde_origen_minutos,
+          puntoOperacionId: f.punto_operacion_id,
+          puntoOperacionNombre: f.punto_operacion_nombre,
+          puntoOperacionCiudad: f.punto_operacion_ciudad,
+        };
+      });
+    });
+  }
+
+  async editarParada(
+    cooperativaId: string,
+    paradaId: string,
+    datos: DatosEditarParada,
+  ): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`SELECT id FROM ruta_paradas WHERE id = ${paradaId}`);
+      if (filas.rows.length === 0) {
+        return { ok: false as const, motivo: 'Esta parada no existe.' };
+      }
+      if (datos.orden !== undefined) {
+        await tx.execute(sql`UPDATE ruta_paradas SET orden = ${datos.orden} WHERE id = ${paradaId}`);
+      }
+      if (datos.tarifaDesdeOrigen !== undefined) {
+        await tx.execute(sql`UPDATE ruta_paradas SET tarifa_desde_origen = ${String(datos.tarifaDesdeOrigen)} WHERE id = ${paradaId}`);
+      }
+      if (datos.tiempoEstimadoDesdeOrigenMinutos !== undefined) {
+        await tx.execute(sql`UPDATE ruta_paradas SET tiempo_estimado_desde_origen_minutos = ${datos.tiempoEstimadoDesdeOrigenMinutos} WHERE id = ${paradaId}`);
+      }
+      return { ok: true as const };
+    });
+  }
+
+  async eliminarParada(cooperativaId: string, paradaId: string): Promise<{ ok: true } | { ok: false; motivo: string }> {
+    return ejecutarComoCooperativa(this.db, cooperativaId, async (tx) => {
+      const filas = await tx.execute(sql`SELECT id FROM ruta_paradas WHERE id = ${paradaId}`);
+      if (filas.rows.length === 0) {
+        return { ok: false as const, motivo: 'Esta parada no existe.' };
+      }
+      await tx.execute(sql`DELETE FROM ruta_paradas WHERE id = ${paradaId}`);
+      return { ok: true as const };
     });
   }
 

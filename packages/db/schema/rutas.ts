@@ -21,7 +21,7 @@ import {
   index,
   pgPolicy,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { cooperativas } from './tenancy';
 import { puntosOperacion } from './tenancy';
 import { unidades, conductores } from './flota';
@@ -90,8 +90,17 @@ export const rutaParadas = pgTable(
   (t) => [
     index('idx_ruta_paradas_ruta').on(t.rutaId),
     index('idx_ruta_paradas_orden').on(t.rutaId, t.orden),
+    // Correccion real de seguridad (20-ago-2026): esta tabla no tenia
+    // RLS activado -- mismo patron real que viaje_asientos (sin
+    // cooperativa_id propio, aislamiento via el padre `rutas`).
+    pgPolicy('aislamiento_cooperativa_ruta_paradas', {
+      for: 'all',
+      to: [appRole, platformAdminRole],
+      using: sql`ruta_id IN (SELECT id FROM rutas WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
+      withCheck: sql`ruta_id IN (SELECT id FROM rutas WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
+    }),
   ],
-);
+).enableRLS();
 
 /**
  * RF-COOP-002 — frecuencias/horarios recurrentes que la cooperativa opera
