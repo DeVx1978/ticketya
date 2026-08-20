@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { buscarPuntosOperacion, type PuntoOperacion } from "@/lib/api";
 
 interface Props {
@@ -50,6 +51,23 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
   // solo se aplica la respuesta si sigue siendo la petición más
   // reciente en el momento en que vuelve.
   const secuenciaPeticion = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [posicion, setPosicion] = useState({ top: 0, left: 0, width: 0 });
+
+  // Mismo hallazgo real que en CampoFecha (19-ago-2026): el Hero tiene
+  // `overflow-hidden` en su <section> (necesario para el slider de
+  // fotos) -- la lista de sugerencias, posicionada `absolute` dentro
+  // de ese árbol, queda recortada e invisible cuando el campo está
+  // cerca del borde inferior de la sección. Solo en modo `compacto`
+  // (el único uso real dentro del Hero) se monta con un portal a
+  // `document.body` y se posiciona con `position: fixed` según el
+  // rect real del input. El uso en panel-empresa/rutas (compacto
+  // = false, sin overflow-hidden alrededor) no se toca.
+  useLayoutEffect(() => {
+    if (!compacto || !abierto || !inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    setPosicion({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+  }, [compacto, abierto, texto]);
 
   useEffect(() => {
     if (temporizador.current) clearTimeout(temporizador.current);
@@ -103,6 +121,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
       </label>
       <input
         id={idCampo}
+        ref={inputRef}
         type="text"
         role="combobox"
         aria-expanded={abierto && sugerencias.length > 0}
@@ -127,36 +146,40 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
             : "w-full rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
         }
       />
-      {abierto && sugerencias.length > 0 && (
-        <ul
-          id={idListbox}
-          role="listbox"
-          aria-label={etiqueta}
-          className={
-            compacto
-              ? "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-white/15 bg-brand-dark/80 shadow-2xl shadow-black/40 backdrop-blur-md"
-              : "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg"
-          }
-        >
-          {sugerencias.map((s, i) => (
-            <li key={s.id} id={`${idListbox}-opcion-${i}`} role="option" aria-selected={i === indiceResaltado}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => elegir(s)}
-                className={
-                  compacto
-                    ? `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-white/15" : "hover:bg-white/10"}`
-                    : `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"}`
-                }
-              >
-                <span className={compacto ? "font-medium text-white" : "font-medium text-brand-dark"}>{s.ciudad}</span>{" "}
-                <span className={compacto ? "text-white/50" : "text-brand-dark/50"}>— {s.nombre}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {abierto && sugerencias.length > 0 && (() => {
+        const lista = (
+          <ul
+            id={idListbox}
+            role="listbox"
+            aria-label={etiqueta}
+            style={compacto ? { position: "fixed", top: posicion.top, left: posicion.left, width: posicion.width } : undefined}
+            className={
+              compacto
+                ? "z-[100] overflow-hidden rounded-lg border border-white/15 bg-brand-dark/90 shadow-2xl shadow-black/40 backdrop-blur-md"
+                : "absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-brand-light bg-white shadow-lg"
+            }
+          >
+            {sugerencias.map((s, i) => (
+              <li key={s.id} id={`${idListbox}-opcion-${i}`} role="option" aria-selected={i === indiceResaltado}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => elegir(s)}
+                  className={
+                    compacto
+                      ? `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-white/15" : "hover:bg-white/10"}`
+                      : `block w-full px-3 py-2 text-left text-sm ${i === indiceResaltado ? "bg-brand-light" : "hover:bg-brand-light"}`
+                  }
+                >
+                  <span className={compacto ? "font-medium text-white" : "font-medium text-brand-dark"}>{s.ciudad}</span>{" "}
+                  <span className={compacto ? "text-white/50" : "text-brand-dark/50"}>— {s.nombre}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        );
+        return compacto && typeof document !== "undefined" ? createPortal(lista, document.body) : lista;
+      })()}
     </div>
   );
 }
