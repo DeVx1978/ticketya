@@ -1600,6 +1600,18 @@ El director preguntó si se podía dejar exactamente como en la referencia: carr
 
 **Verificado con interacción real, no solo visual:** capturas confirmando el carrusel en desktop (flechas visibles) y móvil (flechas ocultas, swipe natural), más una prueba real de clic en la flecha derecha con Playwright, confirmando que el `scrollBy` sí mueve el carrusel (capturada la vista antes/después del clic, mostrando destinos distintos). `tsc --noEmit` y `next build` limpios.
 
+### 5.45.3 Peek visible + carrusel continuo (sin dead-end) -- mismo día, misma sesión
+
+El director señaló dos diferencias reales contra la referencia: (1) no se veía ningún pedacito de la tarjeta siguiente/anterior a los lados (en la referencia sí), y (2) el carrusel se quedaba topado al llegar al final, en vez de seguir siendo continuo.
+
+**Causa real del problema (1), confirmada con aritmética, no a ojo:** con `w-80` (320px), 3 tarjetas + espacios sumaban exactamente 992px -- el mismo ancho disponible del contenedor (`max-w-5xl` menos padding). Cero remanente, cero peek posible, sin importar el viewport.
+
+**Corregido:**
+- `TarjetaDestino` y el contenedor de `PublicidadNativa`: ancho fijo cambiado a `w-[300px]` -- valor elegido a propósito porque no es divisor exacto de anchos de contenedor típicos, así que siempre queda un remanente real visible como peek, en cualquier viewport.
+- `desplazar()`: se agregó detección de borde (margen de 10px) -- si la flecha derecha se pulsa estando ya al final, hace `scrollTo({ left: 0 })` en vez de `scrollBy`, y viceversa con la flecha izquierda al inicio. No es un carrusel infinito real con tarjetas clonadas (fuera de alcance de lo pedido) -- es un salto real al extremo opuesto, que dentro del comportamiento del usuario (clic en flecha) da la sensación de recorrido continuo, sin quedar nunca topado.
+
+**Verificado con interacción real:** 6 clics seguidos en la flecha derecha con Playwright (más que suficientes para pasar del final real de 9 tarjetas) -- captura confirmando que volvió a mostrar Quito/Guayaquil/Ibarra desde el principio, no un carrusel topado al final. Captura del peek confirmando el pedacito visible de la tarjeta siguiente en el estado inicial. `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

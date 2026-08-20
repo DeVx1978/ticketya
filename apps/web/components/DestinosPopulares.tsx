@@ -106,15 +106,22 @@ interface TarjetaDestinoProps {
  * ocupa el 64% superior de la altura (178/278), contenido blanco el
  * 36% inferior (100/278) -- relación ancho:alto total ≈1.38:1. El
  * `aspect-[385/178]` en la foto mantiene esa proporción exacta.
- * Ancho fijo real (no depende de columnas de grid, es una tarjeta de
- * carrusel): w-72 (288px) en móvil, w-80 (320px) desde sm -- guarda
- * la misma relación ~1.38:1 que la referencia real.
+ *
+ * Ancho fijo real `w-[300px]` -- valor elegido a propósito (20-ago-2026,
+ * 2º ajuste, tras verificación del director): con `w-80` (320px) las
+ * 3 tarjetas + espacios coincidían EXACTO con el ancho del
+ * contenedor (992px = 3×320 + 2×16), dejando cero espacio para ver
+ * un pedacito de la siguiente tarjeta -- lo que sí se ve en la
+ * referencia real, a ambos lados. `300px` no es divisor exacto de
+ * ningún ancho de contenedor típico, así que siempre sobra espacio
+ * real para el "peek" de la tarjeta siguiente, sin importar el
+ * viewport.
  */
 function TarjetaDestino({ nombre, foto, descripcion }: TarjetaDestinoProps) {
   return (
-    <div className="w-72 shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md sm:w-80">
+    <div className="w-[300px] shrink-0 snap-start overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative aspect-[385/178] w-full">
-        <Image src={foto} alt={nombre} fill sizes="320px" className="object-cover" />
+        <Image src={foto} alt={nombre} fill sizes="300px" className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/10 to-transparent" />
         <InsigniaColumbus />
         <p className="absolute bottom-2 left-3 right-3 text-base font-bold leading-tight text-white sm:text-lg">
@@ -153,9 +160,32 @@ function FlechaCarrusel({ direccion, onClick }: { direccion: "izquierda" | "dere
 export function DestinosPopulares() {
   const carruselRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Carrusel continuo (20-ago-2026, 2º ajuste): la referencia real no
+   * se queda topada al llegar al final -- vuelve a empezar. Se
+   * detecta cercanía al borde (con un margen de 10px, porque el
+   * scroll real casi nunca cae en el pixel exacto) y se salta al
+   * extremo opuesto antes de desplazar, para que el clic siguiente ya
+   * arranque desde ahí -- sensación de recorrido sin fin, sin
+   * necesidad de clonar tarjetas ni un carrusel infinito real (fuera
+   * de alcance para lo que se pidió).
+   */
   function desplazar(direccion: "izquierda" | "derecha") {
     const el = carruselRef.current;
     if (!el) return;
+    const margen = 10;
+    const enElFinal = el.scrollLeft + el.clientWidth >= el.scrollWidth - margen;
+    const enElInicio = el.scrollLeft <= margen;
+
+    if (direccion === "derecha" && enElFinal) {
+      el.scrollTo({ left: 0, behavior: "smooth" });
+      return;
+    }
+    if (direccion === "izquierda" && enElInicio) {
+      el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+      return;
+    }
+
     const distancia = el.clientWidth * 0.85;
     el.scrollBy({ left: direccion === "izquierda" ? -distancia : distancia, behavior: "smooth" });
   }
