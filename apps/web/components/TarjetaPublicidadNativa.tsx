@@ -35,26 +35,29 @@ interface Props {
  */
 export function TarjetaPublicidadNativa({ nombreAnunciante, archivoUrl, href, onClic }: Props) {
   const contenido = (
-    <div className="group relative h-28 w-full overflow-hidden rounded-xl">
-      {archivoUrl ? (
-        <Image
-          src={archivoUrl}
-          alt={nombreAnunciante}
-          fill
-          sizes="(max-width: 640px) 50vw, 25vw"
-          className="object-cover"
-          unoptimized
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-brand-cobalto-claro">
-          <IconoPublicidad tamano={40} />
-        </div>
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/70 via-brand-dark/0 to-transparent" />
-      <span className="absolute right-2 top-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-white/90">
-        Publicidad
-      </span>
-      <p className="absolute bottom-2 left-3 text-sm font-semibold text-white">{nombreAnunciante}</p>
+    <div className="group overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="relative h-32 w-full">
+        {archivoUrl ? (
+          <Image
+            src={archivoUrl}
+            alt={nombreAnunciante}
+            fill
+            sizes="(max-width: 640px) 50vw, 25vw"
+            className="object-cover"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-brand-cobalto-claro">
+            <IconoPublicidad tamano={40} />
+          </div>
+        )}
+        <span className="absolute right-2 top-2 rounded bg-black/40 px-2 py-0.5 text-[10px] text-white/90">
+          Publicidad
+        </span>
+      </div>
+      <div className="px-3 pb-3 pt-2">
+        <p className="text-sm font-bold text-brand-dark">{nombreAnunciante}</p>
+      </div>
     </div>
   );
 

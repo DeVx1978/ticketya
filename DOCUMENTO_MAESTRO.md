@@ -1554,6 +1554,23 @@ Tras el reporte de la sección 5.43 (rama `feature/hero-buscador-glass`, entrega
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.45 Rediseño de Destinos Populares -- insignia de marca + descripción por ciudad -- 20-ago-2026
+
+Orden real del director: cambiar el formato de las tarjetas de "Destinos populares" (antes: solo foto + nombre) a un formato con insignia de marca superpuesta, nombre y una descripción corta -- referencia real compartida (tarjetas de oferta de EaseMyTrip).
+
+**Construido (rama `feature/destinos-populares-rediseno`):**
+- `public/img/icono-columbus.png` (nuevo): ícono recortado del logo real (`logo-columbus.png`), sin el texto -- el wordmark completo es demasiado ancho (2425×625px, ~4:1) para una insignia pequeña; se habría visto estirado o ilegible.
+- `DestinosPopulares.tsx`: cada tarjeta pasa de foto+nombre en una sola pieza (con degradado) a dos partes -- foto arriba (`h-32`), y debajo un bloque de contenido con la insignia superpuesta en la unión, el nombre en negrita, y una descripción corta.
+- `TarjetaPublicidadNativa.tsx` actualizado al mismo formato nuevo, por la decisión real ya documentada en la sección 3.9 ("el resultado patrocinado usa el mismo formato que un resultado orgánico") -- si no se actualizaba junto con `DestinosPopulares.tsx`, la tarjeta de publicidad hubiera quedado con el formato viejo, rompiendo esa regla.
+
+**Descripciones por ciudad -- genéricas, investigadas con fuentes reales (Goraymi, Wikipedia, ministerios de turismo, guías turísticas), NO definitivas.** El director las va a revisar y reemplazar por su propio texto en una sesión aparte. Las 8: Quito, Guayaquil, Ibarra, Machala, Esmeraldas, Baños de Agua Santa, Montañita, Salinas.
+
+**Bug real atrapado en la verificación visual antes de reportar listo:** la insignia se posicionó primero con `-bottom-3` relativo al contenedor de texto, en vez de `-top-3` -- quedaba pegada abajo, tapando parte de la descripción, en vez de estar en la unión entre la foto y el contenido. Corregido y reverificado con captura real antes de continuar.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` limpio (30 rutas). Capturas reales en desktop y móvil confirmando el layout correcto tras el fix.
+
+**Pendiente:** el director reemplaza las 8 descripciones genéricas por su propio texto; push + PR + los 6 checks de CI antes de fusionar.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
