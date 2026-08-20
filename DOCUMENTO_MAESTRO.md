@@ -1612,6 +1612,24 @@ El director señaló dos diferencias reales contra la referencia: (1) no se veí
 
 **Verificado con interacción real:** 6 clics seguidos en la flecha derecha con Playwright (más que suficientes para pasar del final real de 9 tarjetas) -- captura confirmando que volvió a mostrar Quito/Guayaquil/Ibarra desde el principio, no un carrusel topado al final. Captura del peek confirmando el pedacito visible de la tarjeta siguiente en el estado inicial. `tsc --noEmit` y `next build` limpios.
 
+### 5.45.4 Carrusel infinito real (sin "regreso" visible) + desplazamiento de a una tarjeta -- mismo día, misma sesión
+
+El ajuste anterior (5.45.3, "saltar al inicio con `scrollTo` al llegar al final") se sentía como que el carrusel se devolvía -- un salto brusco y visible, justo lo que el director señaló como desordenado. Un carrusel continuo real no "vuelve": sigue avanzando siempre hacia adelante, igual que la referencia real. También se pidió que el desplazamiento fuera de una tarjeta a la vez, no por bloques (antes se movía 85% del ancho visible, "de a 3").
+
+**Técnica real implementada** (el mismo truco que usan por dentro librerías como Swiper/Embla, sin agregar ninguna dependencia nueva):
+- La secuencia de 8 destinos se **duplica una vez más al final** del carrusel (sin duplicar el anuncio, para no inflar impresiones/clics reales de publicidad).
+- Un ref (`inicioClonRef`) marca el punto exacto donde empieza esa copia, medido con `offsetLeft` real (no un número fijo escrito a mano -- sigue siendo correcto aunque cambie la cantidad de destinos en el futuro).
+- Un listener de `scroll` revisa en cada evento si `scrollLeft` ya cruzó ese punto; si es así, resta ese mismo ancho al `scrollLeft` de forma **instantánea** (sin `behavior: smooth`) -- como el contenido clonado es idéntico pixel por pixel al original en ese punto exacto, el ojo no percibe ningún salto.
+- `desplazar()` ahora mueve exactamente `PASO` (ancho de una tarjeta + el espacio entre tarjetas, 316px) por clic, en vez de un bloque completo.
+- Se quitó `snap-x snap-mandatory` -- interfería con la corrección de scroll por JavaScript (el navegador peleaba por alinear el snap justo cuando se estaba ajustando el `scrollLeft`); el desplazamiento exacto por `PASO` ya deja las tarjetas alineadas sin necesitar CSS snap.
+
+**Verificado con interacción real, cruzando el punto crítico varias veces (no solo "funciona a simple vista"):**
+- 3 clics uno a uno con Playwright, capturando después de cada uno -- confirmado que avanza exactamente una tarjeta por clic (Quito/Guayaquil/Ibarra → Guayaquil/Ibarra/Machala).
+- 14 clics seguidos (más que suficientes para cruzar las 9 tarjetas reales varias veces) -- captura final mostrando Montañita/Salinas/**Quito otra vez**, confirmando que el salto invisible funciona y el carrusel nunca se queda topado ni se "devuelve" de forma visible.
+- Scroll táctil simulado en viewport móvil (390px), cruzando el punto del salto -- mismo comportamiento correcto sin depender de las flechas.
+
+`tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

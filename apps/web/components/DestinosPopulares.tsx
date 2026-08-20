@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { PublicidadNativa } from "./PublicidadNativa";
 
@@ -159,35 +159,62 @@ function FlechaCarrusel({ direccion, onClick }: { direccion: "izquierda" | "dere
 
 export function DestinosPopulares() {
   const carruselRef = useRef<HTMLDivElement>(null);
+  const inicioClonRef = useRef<HTMLDivElement>(null);
+  const anchoVueltaRef = useRef(0);
+  const ANCHO_TARJETA = 300;
+  const ESPACIO = 16; // gap-4
+  const PASO = ANCHO_TARJETA + ESPACIO;
 
   /**
-   * Carrusel continuo (20-ago-2026, 2º ajuste): la referencia real no
-   * se queda topada al llegar al final -- vuelve a empezar. Se
-   * detecta cercanía al borde (con un margen de 10px, porque el
-   * scroll real casi nunca cae en el pixel exacto) y se salta al
-   * extremo opuesto antes de desplazar, para que el clic siguiente ya
-   * arranque desde ahí -- sensación de recorrido sin fin, sin
-   * necesidad de clonar tarjetas ni un carrusel infinito real (fuera
-   * de alcance para lo que se pidió).
+   * Carrusel continuo real (20-ago-2026, 3er ajuste, tras dos rondas
+   * de corrección del director): el intento anterior ("saltar al
+   * inicio con scrollTo" al llegar al final) se sentía como que el
+   * carrusel se devolvía -- un salto visible y brusco, justo lo que
+   * el director señaló como desordenado. Un carrusel infinito real no
+   * "vuelve" -- sigue avanzando siempre hacia adelante.
+   *
+   * Técnica real (el mismo truco que usan Swiper/Embla por dentro):
+   * la secuencia de destinos se duplica una vez más al final (sin
+   * duplicar el anuncio, para no inflar impresiones/clics reales).
+   * Cuando el scroll cruza el punto exacto donde empieza esa copia
+   * (medido con `inicioClonRef.current.offsetLeft`, no un número fijo
+   * -- así sigue siendo correcto si cambia la cantidad de destinos),
+   * se resta ese mismo ancho al `scrollLeft` de forma INSTANTÁNEA (sin
+   * `behavior: smooth`) -- como el contenido clonado es idéntico
+   * pixel por pixel al original en ese punto, el ojo no percibe
+   * ningún salto: se ve como si el carrusel jamás terminara.
+   *
+   * El desplazamiento por clic también cambió: antes movía un bloque
+   * completo (85% del ancho visible, "de a 3"). Ahora mueve
+   * exactamente el ancho de UNA tarjeta + el espacio entre tarjetas
+   * (`PASO`) -- de a una, como pidió el director, igual que la
+   * referencia real.
    */
+  useEffect(() => {
+    if (inicioClonRef.current) {
+      anchoVueltaRef.current = inicioClonRef.current.offsetLeft;
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = carruselRef.current;
+    if (!el) return;
+    function alHacerScroll() {
+      const contenedor = carruselRef.current;
+      const anchoVuelta = anchoVueltaRef.current;
+      if (!contenedor || !anchoVuelta) return;
+      if (contenedor.scrollLeft >= anchoVuelta) {
+        contenedor.scrollLeft -= anchoVuelta;
+      }
+    }
+    el.addEventListener("scroll", alHacerScroll, { passive: true });
+    return () => el.removeEventListener("scroll", alHacerScroll);
+  }, []);
+
   function desplazar(direccion: "izquierda" | "derecha") {
     const el = carruselRef.current;
     if (!el) return;
-    const margen = 10;
-    const enElFinal = el.scrollLeft + el.clientWidth >= el.scrollWidth - margen;
-    const enElInicio = el.scrollLeft <= margen;
-
-    if (direccion === "derecha" && enElFinal) {
-      el.scrollTo({ left: 0, behavior: "smooth" });
-      return;
-    }
-    if (direccion === "izquierda" && enElInicio) {
-      el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
-      return;
-    }
-
-    const distancia = el.clientWidth * 0.85;
-    el.scrollBy({ left: direccion === "izquierda" ? -distancia : distancia, behavior: "smooth" });
+    el.scrollBy({ left: direccion === "izquierda" ? -PASO : PASO, behavior: "smooth" });
   }
 
   return (
@@ -199,7 +226,7 @@ export function DestinosPopulares() {
         <FlechaCarrusel direccion="izquierda" onClick={() => desplazar("izquierda")} />
         <div
           ref={carruselRef}
-          className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {DESTINOS.slice(0, 4).map((destino) => (
             <TarjetaDestino key={destino.nombre} {...destino} />
@@ -209,6 +236,16 @@ export function DestinosPopulares() {
 
           {DESTINOS.slice(4).map((destino) => (
             <TarjetaDestino key={destino.nombre} {...destino} />
+          ))}
+
+          {/* Copia real de la secuencia completa, para el salto
+             imperceptible del carrusel continuo -- ver comentario
+             de `desplazar`/`alHacerScroll` arriba. `inicioClonRef`
+             marca dónde empieza esta copia (primer elemento). */}
+          {DESTINOS.map((destino, i) => (
+            <div key={`${destino.nombre}-clon`} ref={i === 0 ? inicioClonRef : undefined}>
+              <TarjetaDestino {...destino} />
+            </div>
           ))}
         </div>
         <FlechaCarrusel direccion="derecha" onClick={() => desplazar("derecha")} />
