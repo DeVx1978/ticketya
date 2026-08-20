@@ -726,6 +726,57 @@ export async function crearRutaCoop(
   return cuerpo as { id: string };
 }
 
+/** Paradas intermedias de una ruta -- RF-COOP-002 (20-ago-2026). */
+export interface ParadaResumen {
+  id: string;
+  orden: number;
+  tarifaDesdeOrigen: number;
+  tiempoEstimadoDesdeOrigenMinutos: number | null;
+  puntoOperacionId: string;
+  puntoOperacionNombre: string;
+  puntoOperacionCiudad: string;
+}
+
+export async function listarParadasCoop(token: string, rutaId: string): Promise<ParadaResumen[]> {
+  const res = await fetch(`${API_URL}/coop/rutas/${rutaId}/paradas`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudieron cargar las paradas.");
+  }
+  return cuerpo as ParadaResumen[];
+}
+
+export async function agregarParadaCoop(
+  token: string,
+  datos: { rutaId: string; puntoOperacionId: string; orden: number; tarifaDesdeOrigen: number; tiempoEstimadoDesdeOrigenMinutos?: number },
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_URL}/coop/paradas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(", ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo agregar la parada.");
+  }
+  return cuerpo as { id: string };
+}
+
+export async function eliminarParadaCoop(token: string, paradaId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/coop/paradas/${paradaId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    throw new Error(cuerpo?.message ?? "No se pudo eliminar la parada.");
+  }
+}
+
 /** Ítem 11 (04-ago-2026) -- catálogo cerrado, sección 3.2 del documento maestro. */
 export type Amenidad =
   | "wifi"
