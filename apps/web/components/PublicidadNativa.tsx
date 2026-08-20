@@ -41,7 +41,7 @@ export function PublicidadNativa() {
   if (!campana) return null;
 
   return (
-    <div className="col-span-2 sm:col-span-1">
+    <div className="w-[300px] shrink-0 snap-start">
       <TarjetaPublicidadNativa
         nombreAnunciante={campana.nombreAnunciante}
         archivoUrl={campana.archivoUrl}

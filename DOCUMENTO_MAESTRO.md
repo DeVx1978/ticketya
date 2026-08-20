@@ -1554,6 +1554,82 @@ Tras el reporte de la sección 5.43 (rama `feature/hero-buscador-glass`, entrega
 
 **Verificado:** `tsc --noEmit` limpio, `next build` 30/30 páginas.
 
+## 5.45 Rediseño de Destinos Populares -- insignia de marca + descripción por ciudad -- 20-ago-2026
+
+Orden real del director: cambiar el formato de las tarjetas de "Destinos populares" (antes: solo foto + nombre) a un formato con insignia de marca superpuesta, nombre y una descripción corta -- referencia real compartida (tarjetas de oferta de EaseMyTrip).
+
+**Construido (rama `feature/destinos-populares-rediseno`):**
+- `public/img/icono-columbus.png` (nuevo): ícono recortado del logo real (`logo-columbus.png`), sin el texto -- el wordmark completo es demasiado ancho (2425×625px, ~4:1) para una insignia pequeña; se habría visto estirado o ilegible.
+- `DestinosPopulares.tsx`: cada tarjeta pasa de foto+nombre en una sola pieza (con degradado) a dos partes -- foto arriba (`h-32`), y debajo un bloque de contenido con la insignia superpuesta en la unión, el nombre en negrita, y una descripción corta.
+- `TarjetaPublicidadNativa.tsx` actualizado al mismo formato nuevo, por la decisión real ya documentada en la sección 3.9 ("el resultado patrocinado usa el mismo formato que un resultado orgánico") -- si no se actualizaba junto con `DestinosPopulares.tsx`, la tarjeta de publicidad hubiera quedado con el formato viejo, rompiendo esa regla.
+
+**Descripciones por ciudad -- genéricas, investigadas con fuentes reales (Goraymi, Wikipedia, ministerios de turismo, guías turísticas), NO definitivas.** El director las va a revisar y reemplazar por su propio texto en una sesión aparte. Las 8: Quito, Guayaquil, Ibarra, Machala, Esmeraldas, Baños de Agua Santa, Montañita, Salinas.
+
+**Bug real atrapado en la verificación visual antes de reportar listo:** la insignia se posicionó primero con `-bottom-3` relativo al contenedor de texto, en vez de `-top-3` -- quedaba pegada abajo, tapando parte de la descripción, en vez de estar en la unión entre la foto y el contenido. Corregido y reverificado con captura real antes de continuar.
+
+**Verificado:** `tsc --noEmit` limpio, `next build` limpio (30 rutas). Capturas reales en desktop y móvil confirmando el layout correcto tras el fix.
+
+**Pendiente:** el director reemplaza las 8 descripciones genéricas por su propio texto; push + PR + los 6 checks de CI antes de fusionar.
+
+### 5.45.1 Corrección real de tamaño -- mismo día, tras verificación del director
+
+El primer entregable no coincidía con el tamaño real pedido -- la orden explícita era que la tarjeta se viera "exactamente igual" a la referencia (EaseMyTrip), y el primer intento solo agregó insignia+descripción sin corregir la proporción real de la tarjeta.
+
+**Medición real de la referencia** (no a ojo): recorte de la tarjeta completa en la captura real, 385×278px, relación ancho:alto ≈1.38:1. Muestreo de píxeles verticales confirmó que la foto ocupa el 64% superior de la altura (178/278) y el contenido blanco el 36% inferior -- y que el nombre va **superpuesto sobre la foto** (con degradado, como el título de la referencia), no debajo como había quedado en el primer intento.
+
+**Corregido:**
+- `TarjetaDestino`: la foto ahora usa `aspect-[385/178]` (mantiene la proporción real medida sin importar el ancho de columna del grid), nombre superpuesto con degradado, insignia reposicionada a la esquina superior derecha de la foto (antes estaba en la unión foto/contenido, causando el bug de la sección anterior).
+- Grid: de 4 a 3 columnas en desktop, para que la tarjeta resultante sea más ancha (más cercana en tamaño absoluto a los 385px reales de la referencia).
+- `TarjetaPublicidadNativa.tsx` actualizado al mismo patrón exacto, por la misma regla ya documentada de formato compartido con las tarjetas orgánicas.
+
+**Verificado con medición real, no solo visual:** tarjeta final capturada y recortada, proporción resultante 1.53:1 contra el 1.38:1 real de la referencia -- diferencia pequeña, dentro de lo esperable porque el ancho de columna cambia con el viewport (la referencia es una tarjeta de tamaño fijo en un carrusel horizontal, la nuestra es responsive dentro de un grid). `tsc --noEmit` y `next build` limpios tras el ajuste.
+
+### 5.45.2 Carrusel real con flechas de navegación -- mismo día, misma sesión
+
+El director preguntó si se podía dejar exactamente como en la referencia: carrusel horizontal (no grid), con espacio para agregar más destinos después sin romper el layout. Confirmado y construido.
+
+**Reutiliza un patrón real ya existente en el proyecto** (`FranjaBanners.tsx`, scroll horizontal con `overflow-x-auto`, sin librería externa) -- se le agrega `scroll-snap` (para que las tarjetas queden alineadas al soltar el scroll) y botones de flecha, que `FranjaBanners.tsx` no tenía. Cero dependencias nuevas.
+
+**Construido:**
+- `DestinosPopulares.tsx`: convertido a `"use client"`, el grid de 3 columnas pasa a un `<div>` con `flex overflow-x-auto snap-x snap-mandatory`, scrollbar oculta (`[scrollbar-width:none]` + `[&::-webkit-scrollbar]:hidden`). Tarjetas con ancho fijo (`w-72`/`w-80`, no dependen de columnas de grid) y `snap-start`.
+- `FlechaCarrusel` (nuevo, dentro del mismo archivo): botones circulares blancos con flecha SVG propia (sin librería de íconos nueva), posicionados a los lados, ocultos en móvil (`hidden sm:flex` -- en móvil el swipe táctil ya es el patrón natural, igual criterio real que cualquier carrusel de producto: Booking, Airbnb).
+- `useRef` + `scrollBy({ behavior: "smooth" })` para el desplazamiento real al hacer clic -- distancia calculada como 85% del ancho visible del carrusel.
+- `PublicidadNativa.tsx`: el contenedor de la tarjeta patrocinada pasa de `col-span-2 sm:col-span-1` (clases de grid, ya no aplicables) a `w-72 shrink-0 snap-start sm:w-80` -- mismo ancho fijo que las tarjetas orgánicas, sigue apareciendo después de la 4ª tarjeta.
+
+**Resuelve de paso el pedido de "agregar más destinos después"**: al ser carrusel de ancho fijo por tarjeta, agregar una ciudad nueva al arreglo `DESTINOS` simplemente la agrega al final del scroll -- no hay columnas que recalcular ni layout que se rompa.
+
+**Verificado con interacción real, no solo visual:** capturas confirmando el carrusel en desktop (flechas visibles) y móvil (flechas ocultas, swipe natural), más una prueba real de clic en la flecha derecha con Playwright, confirmando que el `scrollBy` sí mueve el carrusel (capturada la vista antes/después del clic, mostrando destinos distintos). `tsc --noEmit` y `next build` limpios.
+
+### 5.45.3 Peek visible + carrusel continuo (sin dead-end) -- mismo día, misma sesión
+
+El director señaló dos diferencias reales contra la referencia: (1) no se veía ningún pedacito de la tarjeta siguiente/anterior a los lados (en la referencia sí), y (2) el carrusel se quedaba topado al llegar al final, en vez de seguir siendo continuo.
+
+**Causa real del problema (1), confirmada con aritmética, no a ojo:** con `w-80` (320px), 3 tarjetas + espacios sumaban exactamente 992px -- el mismo ancho disponible del contenedor (`max-w-5xl` menos padding). Cero remanente, cero peek posible, sin importar el viewport.
+
+**Corregido:**
+- `TarjetaDestino` y el contenedor de `PublicidadNativa`: ancho fijo cambiado a `w-[300px]` -- valor elegido a propósito porque no es divisor exacto de anchos de contenedor típicos, así que siempre queda un remanente real visible como peek, en cualquier viewport.
+- `desplazar()`: se agregó detección de borde (margen de 10px) -- si la flecha derecha se pulsa estando ya al final, hace `scrollTo({ left: 0 })` en vez de `scrollBy`, y viceversa con la flecha izquierda al inicio. No es un carrusel infinito real con tarjetas clonadas (fuera de alcance de lo pedido) -- es un salto real al extremo opuesto, que dentro del comportamiento del usuario (clic en flecha) da la sensación de recorrido continuo, sin quedar nunca topado.
+
+**Verificado con interacción real:** 6 clics seguidos en la flecha derecha con Playwright (más que suficientes para pasar del final real de 9 tarjetas) -- captura confirmando que volvió a mostrar Quito/Guayaquil/Ibarra desde el principio, no un carrusel topado al final. Captura del peek confirmando el pedacito visible de la tarjeta siguiente en el estado inicial. `tsc --noEmit` y `next build` limpios.
+
+### 5.45.4 Carrusel infinito real (sin "regreso" visible) + desplazamiento de a una tarjeta -- mismo día, misma sesión
+
+El ajuste anterior (5.45.3, "saltar al inicio con `scrollTo` al llegar al final") se sentía como que el carrusel se devolvía -- un salto brusco y visible, justo lo que el director señaló como desordenado. Un carrusel continuo real no "vuelve": sigue avanzando siempre hacia adelante, igual que la referencia real. También se pidió que el desplazamiento fuera de una tarjeta a la vez, no por bloques (antes se movía 85% del ancho visible, "de a 3").
+
+**Técnica real implementada** (el mismo truco que usan por dentro librerías como Swiper/Embla, sin agregar ninguna dependencia nueva):
+- La secuencia de 8 destinos se **duplica una vez más al final** del carrusel (sin duplicar el anuncio, para no inflar impresiones/clics reales de publicidad).
+- Un ref (`inicioClonRef`) marca el punto exacto donde empieza esa copia, medido con `offsetLeft` real (no un número fijo escrito a mano -- sigue siendo correcto aunque cambie la cantidad de destinos en el futuro).
+- Un listener de `scroll` revisa en cada evento si `scrollLeft` ya cruzó ese punto; si es así, resta ese mismo ancho al `scrollLeft` de forma **instantánea** (sin `behavior: smooth`) -- como el contenido clonado es idéntico pixel por pixel al original en ese punto exacto, el ojo no percibe ningún salto.
+- `desplazar()` ahora mueve exactamente `PASO` (ancho de una tarjeta + el espacio entre tarjetas, 316px) por clic, en vez de un bloque completo.
+- Se quitó `snap-x snap-mandatory` -- interfería con la corrección de scroll por JavaScript (el navegador peleaba por alinear el snap justo cuando se estaba ajustando el `scrollLeft`); el desplazamiento exacto por `PASO` ya deja las tarjetas alineadas sin necesitar CSS snap.
+
+**Verificado con interacción real, cruzando el punto crítico varias veces (no solo "funciona a simple vista"):**
+- 3 clics uno a uno con Playwright, capturando después de cada uno -- confirmado que avanza exactamente una tarjeta por clic (Quito/Guayaquil/Ibarra → Guayaquil/Ibarra/Machala).
+- 14 clics seguidos (más que suficientes para cruzar las 9 tarjetas reales varias veces) -- captura final mostrando Montañita/Salinas/**Quito otra vez**, confirmando que el salto invisible funciona y el carrusel nunca se queda topado ni se "devuelve" de forma visible.
+- Scroll táctil simulado en viewport móvil (390px), cruzando el punto del salto -- mismo comportamiento correcto sin depender de las flechas.
+
+`tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
