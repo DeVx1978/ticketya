@@ -23,7 +23,7 @@ export async function RutasDisponibles() {
   }
 
   return (
-    <section className="mx-auto max-w-5xl px-4 pb-16">
+    <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-8 lg:px-12">
       <div className="flex items-baseline justify-between">
         <h2 className="font-display text-xl font-bold text-brand-dark">Rutas disponibles</h2>
         {estadisticas && (

@@ -16,7 +16,7 @@ export default function InicioPage() {
 
       <RutasDisponibles />
 
-      <section className="mx-auto max-w-5xl px-4 pb-16 pt-24">
+      <section className="mx-auto max-w-7xl px-4 pb-16 pt-24 sm:px-8 lg:px-12">
         <FranjaBanners />
         <h2 className="font-display text-xl font-bold text-brand-dark">
           ¿Por qué Columbus?
