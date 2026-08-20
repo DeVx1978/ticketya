@@ -1630,6 +1630,20 @@ El ajuste anterior (5.45.3, "saltar al inicio con `scrollTo` al llegar al final"
 
 `tsc --noEmit` y `next build` limpios.
 
+## 5.46 Calendario y desplegable de ciudades desanclados del campo al hacer scroll -- 20-ago-2026
+
+El director reportó (sesión de la mañana siguiente, sobre la tarjeta del buscador ya fusionada): al abrir el calendario, este "se despliega y queda suelto de la tarjeta principal" -- mismo síntoma que ya se había corregido antes para el desplegable de ciudades (sección 5.44), pero esta vez en el calendario.
+
+**Reproducido con evidencia real antes de asumir la causa:** captura con el calendario recién abierto (alineado correctamente bajo el campo "Fecha"), luego captura tras hacer scroll de la página con el calendario todavía abierto -- el calendario se quedó clavado en el mismo punto de la pantalla mientras el campo real se desplazaba con el resto de la tarjeta.
+
+**Causa real:** en `CampoFecha.tsx`, la posición (`top`/`left`) del popover se calculaba **una sola vez**, al abrir (`useLayoutEffect` disparado solo por el cambio de `abierto`), con `getBoundingClientRect()` del botón. Como el popover usa `position: fixed` (necesario para escapar del `overflow-hidden` del Hero, eso seguía siendo correcto), queda fijo a la pantalla, no al campo -- si la página se movía con scroll después de abrirlo, se desincronizaba. No es un bug nuevo introducido por otra conversación -- es un defecto latente de mi implementación original del 19-ago, no detectado entonces porque nunca se probó haciendo scroll con el calendario abierto.
+
+**Revisado también `SelectorCiudad.tsx`** (mismo patrón de portal) sin que el director lo reportara todavía -- confirmado el mismo defecto latente (la posición solo se recalculaba al escribir, no al hacer scroll sin escribir). Corregido igual, antes de que se convirtiera en un reporte aparte.
+
+**Corregido en ambos:** listener de `scroll` (con `capture: true`, por si hay contenedores con scroll propio anidados) y `resize` en la ventana, activo solo mientras el popover está abierto, que recalcula la posición en cada evento -- así el calendario/desplegable sigue al campo real en vez de quedarse fijo en la pantalla. Se retira el listener al cerrar.
+
+**Verificado reproduciendo el bug real antes y después del fix, no solo revisando el código:** captura del calendario alineado al abrir + captura tras scroll confirmando que ya se mueve junto con el campo (antes del fix, capturas equivalentes confirmaron el bug real). Misma prueba repetida para el desplegable de ciudades, con datos simulados (el entorno de esta conversación no tiene salida de red hacia el backend real de Render). `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

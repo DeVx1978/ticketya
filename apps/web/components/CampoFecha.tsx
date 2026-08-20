@@ -57,10 +57,31 @@ export function CampoFecha({ etiqueta, valor, minimo, onCambio }: Props) {
   // y se posiciona con `position: fixed` según el rect real del botón,
   // así escapa del recorte sin tocar el overflow del Hero (lo rompería
   // para el slider).
+  //
+  // Bug real encontrado por el director (20-ago-2026): la posición
+  // solo se calculaba UNA VEZ al abrir. Como el popover es
+  // `position: fixed` (fijo a la PANTALLA, no al campo), si la página
+  // se desplazaba con scroll después de abrirlo, el campo "Fecha" se
+  // movía junto con el resto de la tarjeta pero el calendario se
+  // quedaba clavado en el mismo punto de la pantalla -- se veía
+  // "suelto". Reproducido y confirmado con captura real antes de
+  // corregir. Corregido escuchando scroll/resize mientras está
+  // abierto, para recalcular la posición en cada evento y que el
+  // calendario siga al campo real.
   useLayoutEffect(() => {
     if (!abierto || !botonRef.current) return;
-    const rect = botonRef.current.getBoundingClientRect();
-    setPosicion({ top: rect.bottom + 8, left: rect.left });
+    function recalcular() {
+      if (!botonRef.current) return;
+      const rect = botonRef.current.getBoundingClientRect();
+      setPosicion({ top: rect.bottom + 8, left: rect.left });
+    }
+    recalcular();
+    window.addEventListener("scroll", recalcular, true);
+    window.addEventListener("resize", recalcular);
+    return () => {
+      window.removeEventListener("scroll", recalcular, true);
+      window.removeEventListener("resize", recalcular);
+    };
   }, [abierto]);
 
   useEffect(() => {
