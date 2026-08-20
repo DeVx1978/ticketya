@@ -22,6 +22,8 @@ import {
   CrearTipoVehiculoDto,
   CrearUnidadDto,
   CrearRutaDto,
+  CrearParadaDto,
+  EditarParadaDto,
   CrearViajeDto,
   CrearUsuarioStaffDto,
   CrearConductorDto,
@@ -165,6 +167,54 @@ export class PanelEmpresaController {
   @Get('rutas')
   async listarRutas(@Request() req: { user: PayloadToken }) {
     return this.panel.listarRutas(cooperativaDelToken(req.user));
+  }
+
+  @Roles('admin_cooperativa')
+  @Post('paradas')
+  async agregarParada(
+    @Body() dto: CrearParadaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.agregarParada(cooperativaDelToken(req.user), dto);
+  }
+
+  @Roles('admin_cooperativa', 'vendedor')
+  @Get('rutas/:rutaId/paradas')
+  async listarParadas(
+    @Param('rutaId') rutaId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    return this.panel.listarParadas(cooperativaDelToken(req.user), rutaId);
+  }
+
+  @Roles('admin_cooperativa')
+  @Patch('paradas/:paradaId')
+  async editarParada(
+    @Param('paradaId') paradaId: string,
+    @Body() dto: EditarParadaDto,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.editarParada(
+      cooperativaDelToken(req.user),
+      paradaId,
+      dto,
+    );
+    if (!resultado.ok) throw new BadRequestException(resultado.motivo);
+    return { ok: true };
+  }
+
+  @Roles('admin_cooperativa')
+  @Delete('paradas/:paradaId')
+  async eliminarParada(
+    @Param('paradaId') paradaId: string,
+    @Request() req: { user: PayloadToken },
+  ) {
+    const resultado = await this.panel.eliminarParada(
+      cooperativaDelToken(req.user),
+      paradaId,
+    );
+    if (!resultado.ok) throw new BadRequestException(resultado.motivo);
+    return { ok: true };
   }
 
   @Roles('admin_cooperativa')
