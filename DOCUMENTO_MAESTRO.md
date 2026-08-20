@@ -1667,6 +1667,14 @@ El director notó, comparando su propia plataforma contra la referencia real (Ea
 
 **Verificado en 6 anchos de pantalla reales, no solo desktop/móvil** (captura en cada uno): 390px (móvil), 768px (tablet), 1280px (laptop), 1440px (desktop común), 1920px (el monitor real del director), y 2560px (ultra-ancho) -- confirmado que en 2560px el contenido queda centrado con margen simétrico, sin estirarse de borde a borde ni comprimirse en una columna angosta; y que en 390px el móvil quedó exactamente igual que antes (el padding responsivo solo entra en `sm:`/`lg:`, no afecta el rango móvil). `tsc --noEmit` y `next build` limpios.
 
+### 5.47.1 Corrección de precisión: 1280px seguía angosto -- mismo día
+
+El director probó el ajuste anterior en su monitor real (1920px) y confirmó que todavía quedaba bastante espacio libre a los lados, comparado con la referencia. Medición real, no a ojo: con `max-w-7xl` (1280px), el margen en 1920px queda en 16.7% por lado -- la referencia real mide 9.4% por lado. Corregido con el valor que sí coincide con precisión: **`max-w-screen-2xl` (1536px)**, que da 10% de margen en 1920px (casi idéntico a la referencia) y sigue viéndose controlado en ultra-ancho (20% de margen en 2560px, no estirado de borde a borde).
+
+**Aplicado en las mismas 9 ocurrencias** (8 ubicaciones, Footer tiene 2 contenedores internos) donde antes se puso `max-w-7xl`. Se encontró y se dejó sin tocar, a propósito, un `max-w-7xl` preexistente en `app/buscar/page.tsx` (página de resultados de búsqueda) -- no es parte de la landing ni del alcance de este pedido.
+
+**Reverificado en los mismos 6 anchos de pantalla:** en 2560px ahora se ven 5 tarjetas completas de Destinos Populares en vez de 4 (más espacio real aprovechado), márgenes simétricos correctos. Móvil (390px) confirmado sin cambios. `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
