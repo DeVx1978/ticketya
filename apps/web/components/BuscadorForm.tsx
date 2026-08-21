@@ -91,10 +91,10 @@ export function BuscadorForm() {
           separado), y también más compacta en celular (2 columnas en
           vez de 5 filas apiladas -- reduce la altura total real). */}
       <div className="grid grid-cols-2 gap-2 md:flex md:items-stretch md:divide-x md:divide-white/15 md:gap-0 md:rounded-lg md:ring-1 md:ring-white/20">
-        <div className="col-span-2 md:flex-1 md:px-3 md:py-1.5">
+        <div className="col-span-2 md:max-w-64 md:flex-1 md:px-3 md:py-1.5">
           <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} compacto />
         </div>
-        <div className="col-span-2 md:flex-1 md:px-3 md:py-1.5">
+        <div className="col-span-2 md:max-w-64 md:flex-1 md:px-3 md:py-1.5">
           <SelectorCiudad etiqueta="Destino" placeholder="¿A dónde vas?" valor={destino} onCambio={setDestino} compacto />
         </div>
         <div className="md:px-3 md:py-1.5">
