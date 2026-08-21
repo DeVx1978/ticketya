@@ -132,7 +132,7 @@ export function FranjaBanners() {
               <img
                 src={b.imagenUrl}
                 alt={b.titulo}
-                className="aspect-[12/1.6] w-full object-cover sm:aspect-[16/3]"
+                className="aspect-[20/2] w-full object-cover sm:aspect-[24/2.2]"
               />
             </a>
           ))}
@@ -150,7 +150,7 @@ export function FranjaBanners() {
                 <img
                   src={b.imagenUrl}
                   alt={b.titulo}
-                  className="aspect-[12/1.6] w-full object-cover sm:aspect-[16/3]"
+                  className="aspect-[20/2] w-full object-cover sm:aspect-[24/2.2]"
                 />
               </a>
             ))}
