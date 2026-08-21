@@ -1675,6 +1675,22 @@ El director probó el ajuste anterior en su monitor real (1920px) y confirmó qu
 
 **Reverificado en los mismos 6 anchos de pantalla:** en 2560px ahora se ven 5 tarjetas completas de Destinos Populares en vez de 4 (más espacio real aprovechado), márgenes simétricos correctos. Móvil (390px) confirmado sin cambios. `tsc --noEmit` y `next build` limpios.
 
+## 5.48 Pendiente real sin resolver: barra del buscador en el Hero -- 21-ago-2026
+
+Hallazgo real del director: la tarjeta del buscador (Origen, Destino, Fecha, Pasajeros, botón) se veía "muy alargada", con Origen y Destino demasiado anchos.
+
+**3 intentos reales, ninguno cerró el problema del todo:**
+
+1. **PR #142** -- Origen y Destino eran los únicos campos con `md:flex-1` en la fila (Fecha, Pasajeros y el botón tenían ancho fijo), así que absorbían todo el espacio libre de la barra completa. Se les agregó `md:max-w-64` -- corrigió el ancho individual de esos 2 campos.
+
+2. **PR #143** -- Tras el arreglo anterior, quedó un hueco vacío grande entre el botón "Buscar pasajes" y el borde derecho de la caja completa: el `<div>` contenedor de toda la barra (el que tiene el borde/`ring` alrededor) seguía siendo `md:flex`, que por defecto se estira para llenar el ancho del padre (`max-w-screen-2xl` en el Hero), aunque su contenido ya no lo necesitara. Se cambió a `md:inline-flex md:w-fit`, para que el contenedor solo ocupe el ancho real de su contenido.
+
+3. **Verificado por el director tras el PR #143:** el hueco vacío **seguía ahí, sin corregirse** -- y además, el cambio de `md:flex` a `md:inline-flex md:w-fit` en el contenedor de la barra **desalineó el interruptor "Solo ida / Ida y vuelta"**, que vive en un `<div>` hermano, justo arriba de la barra (no se tocó directamente, pero al cambiar el ancho de la barra de abajo, quedó descuadrado respecto al interruptor de arriba, que sigue con su tamaño de siempre).
+
+**Decisión real del director:** dejar de intentar corregirlo a ciegas (3 rondas de ajustes en el código, sin ver la pantalla real, no lo resolvieron) -- pasa a la otra conversación, que si puede recibir capturas de pantalla del director, para diagnosticar con evidencia visual real en vez de suposiciones sobre CSS.
+
+**Pendiente real para quien lo retome:** revisar con una captura de pantalla real (no solo el código) tanto el hueco vacío que persiste como el desalineamiento nuevo del interruptor de ida/vuelta -- probablemente haga falta repensar la relación entre el `<div>` del interruptor y el `<div>` de la barra como un solo bloque, en vez de 2 elementos independientes con anchos que no se coordinan entre sí.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
