@@ -56,7 +56,7 @@ export function BuscadorForm() {
   return (
     <form
       onSubmit={buscar}
-      className="rounded-2xl bg-brand-dark/40 p-3 shadow-xl shadow-black/30 ring-1 ring-white/15 backdrop-blur-md md:p-4"
+      className="rounded-2xl bg-brand-dark/40 p-3 shadow-xl shadow-black/30 ring-1 ring-white/15 backdrop-blur-md md:w-fit md:p-4"
     >
       <div
         role="group"
@@ -89,8 +89,31 @@ export function BuscadorForm() {
           referencia -- barra compacta en una sola fila en pantalla
           grande (con divisores verticales, no cada campo flotando por
           separado), y también más compacta en celular (2 columnas en
-          vez de 5 filas apiladas -- reduce la altura total real). */}
-      <div className="grid grid-cols-2 gap-2 md:inline-flex md:w-fit md:items-stretch md:divide-x md:divide-white/15 md:gap-0 md:rounded-lg md:ring-1 md:ring-white/20">
+          vez de 5 filas apiladas -- reduce la altura total real).
+
+          Bug real encontrado y corregido (21-ago-2026, ver sección
+          5.48 del DOCUMENTO_MAESTRO): PR #143 había cambiado esto a
+          `md:inline-flex md:w-fit` para quitar el hueco vacío a la
+          derecha del botón -- pero `inline-flex` no solo acomoda los
+          hijos, también vuelve este `<div>` un elemento EN LÍNEA
+          (como un `<span>`), y el interruptor de arriba también lo
+          es -- dos elementos en línea seguidos se acomodan uno al
+          lado del otro, no uno debajo del otro. Por eso el
+          interruptor "Solo ida/Ida y vuelta" quedó al lado de la
+          barra en vez de arriba. Corregido con `md:flex` (display de
+          bloque, se sigue apilando abajo del interruptor como
+          siempre debió ser) + `md:w-fit` (se mantiene, sigue sin
+          estirarse de más -- eso sí funcionaba bien).
+
+          Segundo hallazgo real, encontrado al verificar con captura
+          (no se veía solo revisando el código): con el interruptor ya
+          apilado correctamente, el hueco vacío reportado por el
+          director SEGUÍA ahí -- el `<form>` exterior (el que envuelve
+          tanto el interruptor como esta barra) nunca tuvo un ancho
+          ajustado a su contenido, solo la barra interna lo tenía. Se
+          le agregó `md:w-fit` también al `<form>` (más arriba en este
+          archivo). */}
+      <div className="grid grid-cols-2 gap-2 md:flex md:w-fit md:items-stretch md:divide-x md:divide-white/15 md:gap-0 md:rounded-lg md:ring-1 md:ring-white/20">
         <div className="col-span-2 md:max-w-64 md:flex-1 md:px-3 md:py-1.5">
           <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde sales?" valor={origen} onCambio={setOrigen} compacto />
         </div>
