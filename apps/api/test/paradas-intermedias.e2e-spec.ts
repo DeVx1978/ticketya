@@ -167,9 +167,23 @@ describe('Paradas intermedias de ruta (e2e)', () => {
   });
 
   it('el endpoint público (sin autenticación) muestra las paradas reales de un viaje, para el pasajero', async () => {
+    // Diagnostico real temporal (20-ago-2026) -- este test pasa
+    // siempre en local pero falla en CI con lista vacia. Imprime los
+    // valores reales para encontrar la causa real antes de seguir
+    // adivinando.
+    const verificarDesdeCoop = await request(app.getHttpServer())
+      .get(`/coop/rutas/${rutaAId}/paradas`)
+      .set('Authorization', `Bearer ${tokenCoopA}`);
+    console.log('DIAGNOSTICO -- rutaAId:', rutaAId);
+    console.log('DIAGNOSTICO -- viajeAId:', viajeAId);
+    console.log('DIAGNOSTICO -- paradas vistas por la cooperativa dueña:', JSON.stringify(verificarDesdeCoop.body));
+
     const res = await request(app.getHttpServer())
-      .get(`/viajes/${viajeAId}/paradas`)
-      .expect(200);
+      .get(`/viajes/${viajeAId}/paradas`);
+    console.log('DIAGNOSTICO -- status del endpoint publico:', res.status);
+    console.log('DIAGNOSTICO -- cuerpo del endpoint publico:', JSON.stringify(res.body));
+
+    expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].ciudad).toBe('Riobamba');
     expect(Number(res.body[0].tarifaDesdeOrigen)).toBe(5);
