@@ -1691,6 +1691,18 @@ Hallazgo real del director: la tarjeta del buscador (Origen, Destino, Fecha, Pas
 
 **Pendiente real para quien lo retome:** revisar con una captura de pantalla real (no solo el código) tanto el hueco vacío que persiste como el desalineamiento nuevo del interruptor de ida/vuelta -- probablemente haga falta repensar la relación entre el `<div>` del interruptor y el `<div>` de la barra como un solo bloque, en vez de 2 elementos independientes con anchos que no se coordinan entre sí.
 
+### 5.48.1 RESUELTO -- diagnóstico con evidencia visual real, 2 hallazgos reales -- 21-ago-2026
+
+Retomado por esta conversación, siguiendo la instrucción explícita del director: diagnosticar con captura de pantalla real antes de proponer cualquier cambio, no ajustar CSS a ciegas.
+
+**Hallazgo real #1 (causa raíz del desalineamiento):** confirmado en la captura real que el interruptor "Solo ida/Ida y vuelta" no estaba desalineado en el sentido de "descuadrado" -- estaba **al lado** de la barra, en la misma fila, ambos centrados verticalmente entre sí, en vez de uno arriba del otro. Causa exacta: PR #143 cambió el contenedor de la barra de `md:flex` a `md:inline-flex`. `inline-flex` no solo acomoda los elementos hijos -- también vuelve el propio `<div>` un elemento EN LÍNEA (como un `<span>`), y el interruptor de arriba ya era `inline-flex` desde antes. Dos elementos en línea seguidos se acomodan uno al lado del otro, no uno debajo del otro. Corregido: `md:inline-flex md:w-fit` -> `md:flex md:w-fit` (mantiene el ancho ajustado al contenido, pero `flex` sigue siendo un bloque que se apila).
+
+**Hallazgo real #2 (el hueco vacío seguía sin resolverse, encontrado al reverificar con captura tras el hallazgo #1):** con el interruptor ya apilado correctamente, el hueco vacío reportado por el director seguía ahí. Causa real: el `<form>` exterior (el que envuelve tanto el interruptor como la barra) nunca tuvo su ancho ajustado al contenido -- solo la barra interna lo tenía (`md:w-fit`). El PR #143 corrigió el ancho de la barra pero no el del `<form>` que la contiene, así que el `<form>` seguía estirándose a los 1536px completos del contenedor del Hero, dejando el hueco visible a la derecha del botón. Corregido: se agregó `md:w-fit` también al `<form>`.
+
+**Verificado con captura real, comparando directamente contra la captura de referencia que el director compartió** (cómo se veía antes de que empezara el problema, 19-ago-2026): tarjeta compacta, interruptor apilado arriba, sin hueco vacío, termina justo después del botón "Buscar pasajes" -- coincide. Reverificado también en móvil (390px): sin cambios, sigue a ancho completo como corresponde ahí (el `md:w-fit` solo aplica desde el breakpoint `md:`). `tsc --noEmit` y `next build` limpios.
+
+**Pendiente:** confirmación final del director tras aplicar el patch en su máquina real.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
