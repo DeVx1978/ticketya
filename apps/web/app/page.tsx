@@ -10,6 +10,8 @@ export default function InicioPage() {
     <main className="flex-1">
       <Hero />
 
+      <FranjaBanners />
+
       <ComoFunciona />
       <DestinosPopulares />
       <TerminalesAliadas />
@@ -17,7 +19,6 @@ export default function InicioPage() {
       <RutasDisponibles />
 
       <section className="mx-auto max-w-screen-2xl px-4 pb-16 pt-24 sm:px-8 lg:px-12">
-        <FranjaBanners />
         <h2 className="font-display text-xl font-bold text-brand-dark">
           ¿Por qué Columbus?
         </h2>
