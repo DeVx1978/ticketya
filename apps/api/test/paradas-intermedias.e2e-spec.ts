@@ -166,6 +166,15 @@ describe('Paradas intermedias de ruta (e2e)', () => {
     expect(res.body.id).toBeDefined();
   });
 
+  it('el endpoint público (sin autenticación) muestra las paradas reales de un viaje, para el pasajero', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/viajes/${viajeAId}/paradas`)
+      .expect(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0].ciudad).toBe('Riobamba');
+    expect(Number(res.body[0].tarifaDesdeOrigen)).toBe(5);
+  });
+
   it('la cooperativa dueña puede listar sus propias paradas, con el precio real que puso', async () => {
     const res = await request(app.getHttpServer())
       .get(`/coop/rutas/${rutaAId}/paradas`)
@@ -237,15 +246,6 @@ describe('Paradas intermedias de ruta (e2e)', () => {
       .get(`/coop/rutas/${rutaAId}/paradas`)
       .set('Authorization', `Bearer ${tokenCoopA}`);
     expect(Number(verificar.body[0].tarifaDesdeOrigen)).toBe(7.5);
-  });
-
-  it('el endpoint público (sin autenticación) muestra las paradas reales de un viaje, para el pasajero', async () => {
-    const res = await request(app.getHttpServer())
-      .get(`/viajes/${viajeAId}/paradas`)
-      .expect(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].ciudad).toBe('Riobamba');
-    expect(Number(res.body[0].tarifaDesdeOrigen)).toBe(7.5);
   });
 
   it('la cooperativa dueña sí puede eliminar su propia parada', async () => {
