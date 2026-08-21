@@ -126,13 +126,13 @@ export function FranjaBanners() {
               href={b.enlaceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full shrink-0 snap-start overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5 transition hover:opacity-95"
+              className="flex w-full shrink-0 snap-start items-center justify-center overflow-hidden rounded-2xl bg-brand-light shadow-sm ring-1 ring-black/5 transition hover:opacity-95"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica, no un asset local */}
               <img
                 src={b.imagenUrl}
                 alt={b.titulo}
-                className="aspect-[20/2] w-full object-cover sm:aspect-[24/2.2]"
+                className="h-20 w-full object-contain sm:h-24"
               />
             </a>
           ))}
@@ -144,13 +144,13 @@ export function FranjaBanners() {
                 href={b.enlaceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full shrink-0 snap-start overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5 transition hover:opacity-95"
+                className="flex w-full shrink-0 snap-start items-center justify-center overflow-hidden rounded-2xl bg-brand-light shadow-sm ring-1 ring-black/5 transition hover:opacity-95"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- URL externa dinámica, no un asset local */}
                 <img
                   src={b.imagenUrl}
                   alt={b.titulo}
-                  className="aspect-[20/2] w-full object-cover sm:aspect-[24/2.2]"
+                  className="h-20 w-full object-contain sm:h-24"
                 />
               </a>
             ))}
