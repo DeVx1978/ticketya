@@ -104,7 +104,7 @@ export function FranjaBanners() {
   if (banners.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-screen-2xl px-4 pt-10 sm:px-8 lg:px-12">
+    <section className="mx-auto max-w-3xl px-4 pt-10 sm:px-8">
       <div
         className="relative"
         onMouseEnter={() => setEnPausa(true)}
