@@ -93,11 +93,17 @@ export const rutaParadas = pgTable(
     // Correccion real de seguridad (20-ago-2026): esta tabla no tenia
     // RLS activado -- mismo patron real que viaje_asientos (sin
     // cooperativa_id propio, aislamiento via el padre `rutas`).
+    // Correccion real (20-ago-2026, migracion 0040): la primera
+    // version copiaba el patron viejo y obsoleto de solo listar el
+    // rol en `to`, esperando BYPASSRLS -- eso nunca funciona en un
+    // Postgres administrado (Render). Patron correcto real, mismo
+    // que ya usa el resto de la plataforma desde la migracion 0028:
+    // excepcion explicita dentro de using/withCheck.
     pgPolicy('aislamiento_cooperativa_ruta_paradas', {
       for: 'all',
       to: [appRole, platformAdminRole],
-      using: sql`ruta_id IN (SELECT id FROM rutas WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
-      withCheck: sql`ruta_id IN (SELECT id FROM rutas WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
+      using: sql`current_user = 'ticketya_platform_admin' OR ruta_id IN (SELECT id FROM rutas WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
+      withCheck: sql`current_user = 'ticketya_platform_admin' OR ruta_id IN (SELECT id FROM rutas WHERE cooperativa_id = NULLIF(current_setting('app.current_cooperativa_id', true), '')::uuid)`,
     }),
   ],
 ).enableRLS();
