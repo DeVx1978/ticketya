@@ -1703,6 +1703,113 @@ Retomado por esta conversación, siguiendo la instrucción explícita del direct
 
 **Pendiente:** confirmación final del director tras aplicar el patch en su máquina real.
 
+## 5.49 Footer completo -- soporte, legal, 3 columnas -- 20-ago-2026
+
+Hallazgo real: el footer real (`Footer.tsx`) existía desde una sesión anterior pero era mínimo -- solo logo + 2 enlaces ("Anuncia con nosotros", "Iniciar sesión"). Sin contacto de soporte visible (el dato ya existía en `configuracion_plataforma.soporte_correo`/`soporte_telefono`, solo se usaba en el PDF del boleto, nunca en un endpoint público) y sin páginas legales.
+
+Orden explícita del director: "completo pero no recargado" -- 3 columnas simples, no un mapa de sitio gigante. Investigación comparativa real (Expedia, HubSpot, guía de confianza turismo 2026).
+
+**Backend (PR #133):** nuevo endpoint público `GET /contacto-soporte` en `busqueda.controller.ts` -- reutiliza el dato ya existente, público sin autenticación (mismo patrón que el resto del módulo de búsqueda).
+
+**Páginas nuevas** `/terminos` y `/privacidad` -- contenido redactado según cómo la plataforma opera de verdad (Columbus es el intermediario entre cooperativas independientes y pasajeros, cada cooperativa define su propia política de cancelación, datos de pago procesados por la pasarela sin que Columbus los guarde) -- no un texto genérico de plantilla. Marcadas explícitamente como borrador de buena fe, no revisión legal formal.
+
+**Footer rediseñado:** logo + 3 columnas (Compañía, Legal, Ayuda), mismo patrón real de columnas usado por Expedia como referencia.
+
+Verificado: `tsc` limpio en ambos paquetes, 213/213 pruebas e2e (número de esa fecha), `next build` 32/32 páginas.
+
+## 5.50 Hallazgo de seguridad real -- RLS de paradas intermedias nunca visible para el admin de plataforma -- 20-ago-2026
+
+Contexto real: otra conversación paralela hizo una verificación independiente del trabajo de paradas intermedias (Fase 1, PRs #130-132) y encontró 2 hallazgos reales: (1) el trabajo nunca se había documentado en este archivo, y (2) **no existía ninguna prueba e2e** para la función nueva, ni para el aislamiento RLS que la migración 0039 decía haber corregido.
+
+**PR #136 -- 8 pruebas e2e reales nuevas** (`paradas-intermedias.e2e-spec.ts`): crear/listar/editar/eliminar parada como dueño, el endpoint público para el pasajero, y 3 pruebas explícitas de aislamiento cruzado (Cooperativa B no puede ver/editar/eliminar ninguna parada de la Cooperativa A).
+
+**Al correr estas pruebas en CI (GitHub Actions), fallaron -- nunca en local.** Diagnóstico real: el endpoint público (`GET /viajes/:id/paradas`, usa `DRIZZLE_DB_PUBLICO` con el rol `ticketya_platform_admin`) devolvía lista vacía en CI, aunque la cooperativa dueña sí veía la parada con su propio token. **Causa raíz real, confirmada**: la migración 0039 (20-ago) copió el patrón viejo y ya obsoleto de solo *listar* `ticketya_platform_admin` en el `TO` de la política SQL, esperando que eso le diera acceso total -- pero eso **nunca funciona** en un Postgres administrado como Render, donde `BYPASSRLS` jamás se le puede otorgar de verdad a un rol de aplicación (ver también sección 2 de `ENTREGA_TECNICA_EXHAUSTIVA.md`, y el comentario real en `packages/db/schema/rls.ts`). Localmente pasaba por casualidad, por una configuración vieja de rol que quedó de una sesión anterior, ocultando el error real -- CI (Postgres limpio) lo reveló.
+
+**Migración 0040**, patrón correcto real (mismo ya usado desde la migración 0028 para boletos/rutas/viajes/etc.): excepción explícita dentro de la propia condición `USING`/`WITH CHECK` (`current_user = 'ticketya_platform_admin' OR <condición normal>`), en vez de depender de estar listado en el `TO`.
+
+Verificado en producción real, de forma independiente, con una consulta directa a `pg_policies` confirmando que la política corregida sí contiene la excepción del admin de plataforma. Verificado también: 221/221 pruebas e2e.
+
+## 5.51 Espacio publicitario -- reposicionado debajo del Hero, autoplay real -- 21-ago-2026
+
+Orden explícita del director: no sobrecargar la landing agregando un espacio publicitario nuevo -- mejorar el único que ya existía (`FranjaBanners.tsx`, promoción interna propia, no el sistema de campañas pagadas de `comercial/`).
+
+**PR #137:** 2 cambios reales. (1) Posición: de casi al final de la página a justo debajo del buscador. (2) Diseño: de una fila de miniaturas pequeñas con scroll manual, a un banner ancho a la vez con autoplay cada 5s (se pausa con el mouse encima) -- reutiliza la misma técnica real de scroll infinito ya probada en `DestinosPopulares.tsx`.
+
+**PR #138:** el banner se veía "demasiado alto" -- corregida la proporción de aspecto (`aspect-[12/1.6]` -> `aspect-[20/2]`, más panorámico).
+
+**PR #139:** 3 imágenes reales del director cargadas como assets estáticos (`apps/web/public/img/banners/`), mismo patrón real ya usado para las fotos de destinos.
+
+**PR #140:** el contenedor completo se sentía "demasiado invasivo" -- reducido de `max-w-screen-2xl` a `max-w-3xl`, centrado, para que se sienta secundario.
+
+**PR #141:** hallazgo real probando con las 3 imágenes reales del director -- "se sobresalían de la tarjeta". Causa real confirmada con datos: sus 3 imágenes tenían proporciones muy distintas entre sí (817x101, 713x143, 825x165 px -- de 5:1 a 8:1), pero el contenedor forzaba una proporción fija muy panorámica con `object-cover`, obligando a recortar o estirar cada imagen. Corregido con un enfoque robusto: altura fija + `object-contain` (la imagen completa siempre visible, sin recortar ni deformar) + fondo neutro de marca para rellenar el espacio sobrante -- no depende de que cada banner futuro tenga una proporción exacta.
+
+## 5.52 Tarjeta de resultados -- ya no repite origen/destino 3 veces -- 21-ago-2026
+
+Hallazgo real del director: la tarjeta de resultados mostraba origen/destino tres veces seguidas -- arriba con horas, en una línea "📍 Ruta: X → Y", y de nuevo en "🚏 Paradas: X → parada → Y". **Aprobado explícitamente el plan antes de construir** (el director marcó como problema real que en la sesión anterior se construyó sin acordar el plan primero -- desde este punto, todo cambio real se propone y se espera confirmación antes de tocar código).
+
+**PR #146:** quitada la línea de "Ruta" (100% redundante con lo de arriba). La línea de paradas ahora solo dice por dónde pasa la ruta ("Vía Cuenca"), sin repetir origen ni destino -- es el dato real que distingue a una cooperativa de otra en la misma ruta física (ejemplo real que dio el director: Machala → Quito vía Naranjal, contra otra cooperativa que va vía Riobamba).
+
+## 5.53 Investigación real de rutas físicas distintas entre las mismas ciudades -- 21-ago-2026
+
+El director planteó un caso real de negocio: distintas cooperativas cubren la misma ruta (ej. Machala-Quito) por caminos físicos distintos (vía Naranjal-Quevedo-Santo Domingo, vs. vía Riobamba-Ambato), y algunas cooperativas tienen oficinas propias sin terminal formal (ejemplo real: Transportes Occidental en Naranjal).
+
+**Confirmado con investigación real** (Transportes Occidental, Panamericana, Transportes Ecuador): el patrón es real y común en Ecuador. Panamericana específicamente confirmada operando **2 rutas físicas distintas** entre Machala y Quito -- directa y vía Riobamba-Ambato -- como servicios separados, con horarios propios cada una.
+
+**Confirmado contra el código real, sin necesitar ningún cambio de esquema:**
+1. Una cooperativa ya puede crear varias rutas independientes entre las mismas 2 ciudades, cada una con su propio precio real (solo hay un índice normal en `rutas`, no una restricción de unicidad sobre origen/destino).
+2. Ya existe el tipo `oficina_agencia` en `puntos_operacion`, distinto de `terminal_terrestre`, vinculado a una sola cooperativa vía `cooperativaPropietariaId` -- sin restricción de cuántas puede tener una cooperativa en la misma ciudad.
+3. El buscador de sugerencias (antes del cambio de la sección 5.54) incluía ambos tipos sin distinción.
+
+## 5.54 Búsqueda real por ciudad, no por punto exacto -- cambio arquitectónico -- 21-ago-2026
+
+**El hallazgo real más importante de esta sesión.** El director dio un ejemplo real y preciso: viajando de Tulcán a Quito, una cooperativa llega a Carcelén a $9, otra a Quitumbe a $10 -- ambos viajes reales y válidos. Si el pasajero elegía "Quitumbe" como destino en la casilla de búsqueda, la opción real de Carcelén (de otra cooperativa) **nunca aparecía**, aunque ambas fueran viajes reales a la misma ciudad.
+
+**Causa raíz confirmada en el código**: `busqueda.service.ts`, método `buscarViajes`, filtraba con `eq(rutas.origenPuntoOperacionId, origenId)` / `eq(rutas.destinoPuntoOperacionId, destinoId)` -- coincidencia **exacta** del punto elegido, no de la ciudad.
+
+También se confirmó, con un ejemplo real del director (su propia oficina "Panamericana -- Oficina La Colón" apareciendo en el desplegable de sugerencias antes de elegir ninguna cooperativa), que mostrar oficinas privadas de cooperativa mezcladas con terminales públicas en la búsqueda general genera confusión real.
+
+**PR #147, 2 cambios reales:**
+1. `buscarViajes` ahora resuelve la CIUDAD real de los puntos elegidos antes de filtrar, y compara por ciudad completa (`eq(origen.ciudad, origenCiudad)`) -- cada cooperativa sigue mostrando su propio punto exacto de llegada dentro de su propia tarjeta de resultado, eso no cambia.
+2. `buscarPuntosOperacion` (el desplegable de sugerencias) ya no incluye puntos de tipo `oficina_agencia` -- solo terminales públicas aparecen antes de elegir cooperativa.
+
+**Efecto colateral real, esperado y correcto**: 4 pruebas e2e existentes fallaron -- no por un error en la lógica nueva, sino porque varias pruebas reutilizaban nombres de ciudad genéricos reales (`'Machala'`, `'Guayaquil'`, `'Loja'`, `'Cuenca'`) sin sufijo único, algo que nunca importaba antes con coincidencia exacta de punto mientras la BD local de pruebas acumulaba años de datos de corridas anteriores. Corregidas agregando el mismo sufijo único ya usado en `nombre`, también a `ciudad`, en las 4 pruebas afectadas (`busqueda.e2e-spec.ts` x2, `calificaciones.e2e-spec.ts`, `puntos-operacion-propuestos.e2e-spec.ts`).
+
+Verificado: `tsc` limpio, 221/221 pruebas e2e.
+
+## 5.55 Datos de prueba reales desde Machala -- investigación real, 3 cooperativas, 252 viajes -- 21/24-ago-2026
+
+Orden explícita del director: borrar todos los datos de prueba viejos y crear datos realistas, investigados contra cooperativas reales de Ecuador, para poder probar el flujo completo desde la terminal de Machala.
+
+**Borrado real completo** de 6 cooperativas de prueba viejas y todo lo dependiente -- requirió calcular por código el orden topológico real de 69 relaciones de llave foránea (el intento manual, a mano, falló 3 veces por dependencias no obvias). Ejecutado dentro de una transacción atómica real, con verificación explícita de que las 6 cooperativas encontradas eran *todas* las que existían antes de borrar nada.
+
+**Investigación real de rutas y precios**, con fuentes reales (Rome2Rio, ecuabuses.com, tarifa oficial de la ANT): Machala-Quito $17-27 (520km, ~8h30), Machala-Guayaquil ~$7 (177-239km, ~3h30), Machala-Cuenca $6 (166km, ~3h30, tarifa oficial ANT), Machala-Huaquillas ~$3 (corta, sin dato oficial exacto).
+
+**3 cooperativas reales creadas** (Panamericana Internacional, Transportes Ecuador, Transportes Santa), con 2 oficinas propias reales de Panamericana (La Colón en Quito, Bolívar y Colón en Machala -- direcciones reales confirmadas por investigación), 12 rutas (6 pares ida/vuelta), y horarios reales investigados. Todo creado vía la API real (no SQL crudo para la lógica de negocio), incluido el flujo completo real de 2FA obligatorio para cuentas nuevas de `admin_cooperativa`.
+
+**3 hallazgos reales encontrados y corregidos durante esta construcción**, todos relevantes para cualquiera que toque este código después:
+
+1. **Duplicados rechazados de una sesión anterior interfiriendo**: existían 2 registros de "Terminal Terrestre Quitumbe" y 2 de "Terminal Terrestre de Guayaquil" (uno aprobado, uno rechazado de una prueba vieja). El script de creación, al buscar por nombre sin filtrar por `estado`, agarró por casualidad los rechazados para 2 rutas reales -- por eso no aparecían en la búsqueda pública real. Corregido reasignando las rutas/paradas afectadas al punto aprobado real, y borrando los duplicados rechazados.
+
+2. **Zona horaria** (ver también sección 3 de `ENTREGA_TECNICA_EXHAUSTIVA.md`): 252 viajes se generaron 5 horas antes de lo real, porque el script insertó horas "locales" de Ecuador sin el offset `-05:00` explícito, y la sesión de conexión usa UTC. Corregido sumando 5 horas a los 252 viajes reales.
+
+3. **Duración estimada uniforme e incorrecta**: el script original calculaba `hora_llegada_estimada` sumando 4 horas fijas a *todas* las rutas por igual, sin importar la distancia real -- Machala-Quito (8h30 reales) se mostraba con 4h. Corregido con un `UPDATE` real por destino, usando las duraciones investigadas.
+
+**Precios actualizados** a los valores reales investigados (reemplazando los estimados iniciales, que estaban muy por debajo de lo real -- ej. Machala-Quito estimado en $12, real confirmado $17-27).
+
+## 5.56 Distancia real en kilómetros -- nuevo campo, visible en resultados -- 24-ago-2026
+
+Hallazgo real del director, pidiendo ver la distancia real de cada ruta como dato informativo junto a la duración estimada.
+
+**PR #148:** migración `0041`, nuevo campo `distancia_km` en `rutas`. Conectado de punta a punta: el `SELECT` real de `buscarViajes` ahora incluye `distanciaKm`, la interfaz `ResultadoViaje` del frontend lo declara, y la tarjeta de resultados lo muestra justo debajo de "Aprox. Xh".
+
+Cargados los kilómetros reales investigados para las 12 rutas creadas en la sección 5.55.
+
+**Pendiente real anotado**: el campo todavía no está expuesto en `CrearRutaDto` del panel de cooperativa -- por ahora solo se puede cargar por script directo a la base de datos, no desde el formulario real donde la cooperativa crea su propia ruta.
+
+## 5.57 Documento técnico exhaustivo de entrega -- 24-ago-2026
+
+A pedido del director, para poder entregarle el proyecto a otro desarrollador con experiencia sin perder ningún detalle técnico real: se creó `ENTREGA_TECNICA_EXHAUSTIVA.md` en la raíz del repositorio -- mapa técnico completo (arquitectura, seguridad RLS con el mecanismo exacto, gotcha real de zona horaria, todos los endpoints reales por módulo, flujo completo de 2FA, huecos reales confirmados, patrones y trampas reales de testing) verificado contra el código en el momento de escribirlo, no de memoria. Complementa a este documento (`DOCUMENTO_MAESTRO.md`) -- este es el diario cronológico de decisiones, aquel es el mapa técnico de consulta rápida.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
