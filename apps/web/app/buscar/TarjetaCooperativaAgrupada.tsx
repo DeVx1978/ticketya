@@ -121,9 +121,14 @@ export function TarjetaCooperativaAgrupada({
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
               <span className="h-px flex-1 bg-current" />
               <Image src="/img/bus-trayecto.png" alt="" width={44} height={15} className="shrink-0" />
-              {duracion && (
-                <span className="shrink-0 text-[10px] font-medium text-brand-dark/50">Aprox. {duracion}</span>
-              )}
+              <span className="flex shrink-0 flex-col items-center">
+                {duracion && (
+                  <span className="text-[10px] font-medium text-brand-dark/50">Aprox. {duracion}</span>
+                )}
+                {activo.distanciaKm && (
+                  <span className="text-[10px] text-brand-dark/35">{activo.distanciaKm} km</span>
+                )}
+              </span>
               <span className="h-px flex-1 bg-current" />
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
             </span>

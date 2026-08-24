@@ -41,6 +41,8 @@ export interface ResultadoViaje {
   origenNombre: string;
   destinoNombre: string;
   recargoVip: string;
+  // Hallazgo real del director (21-ago-2026) -- dato informativo.
+  distanciaKm: number | null;
 }
 
 export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperacion[]> {
