@@ -137,14 +137,13 @@ export function TarjetaCooperativaAgrupada({
             )}
           </div>
 
-          {/* Ruta real, con paradas intermedias reales cuando la
-              cooperativa las cargo -- ver mas abajo. Hallazgo cerrado
-              (16-ago-2026 → 20-ago-2026, Fase 1): la tabla
-              ruta_paradas ya se usa de verdad. */}
-          <p className="mt-1 text-xs text-brand-dark/50">
-            📍 Ruta: {activo.origenNombre} → {activo.destinoNombre}
-          </p>
-
+          {/* Hallazgo real del director (21-ago-2026): la linea de
+              "Ruta: origen -> destino" repetia exactamente lo que ya
+              se ve arriba (con horas) -- se quita del todo. La linea
+              de paradas tambien repetia origen/destino; ahora solo
+              dice por donde pasa, que es el dato real que distingue
+              a una cooperativa de otra en la misma ruta (ej. Machala
+              -> Quito via Naranjal, vs. via Riobamba). */}
           <a
             href={`https://www.google.com/maps/dir/?api=1&origin=${activo.origenLatitud},${activo.origenLongitud}&destination=${activo.destinoLatitud},${activo.destinoLongitud}`}
             target="_blank"
@@ -154,16 +153,11 @@ export function TarjetaCooperativaAgrupada({
             Ver trayecto en el mapa
           </a>
 
-          {/* Paradas intermedias reales -- RF-COOP-002, Fase 1 (20-ago-2026). */}
+          {/* Por donde pasa esta ruta -- RF-COOP-002, Fase 1 (20-ago-2026). */}
           {paradas.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-brand-dark/50">
-              <span>🚏 Paradas:</span>
-              <span>{activo.origenNombre}</span>
-              {paradas.map((p) => (
-                <span key={p.orden}>→ {p.ciudad}</span>
-              ))}
-              <span>→ {activo.destinoNombre}</span>
-            </div>
+            <p className="mt-1 text-xs text-brand-dark/50">
+              Vía {paradas.map((p) => p.ciudad).join(", ")}
+            </p>
           )}
 
           {activo.cooperativaCalificacionPromedio !== null && (
