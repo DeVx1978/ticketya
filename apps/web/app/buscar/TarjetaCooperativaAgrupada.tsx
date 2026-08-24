@@ -111,29 +111,44 @@ export function TarjetaCooperativaAgrupada({
           )}
 
           <div className="mt-2 flex items-center gap-2">
-            <div className="text-right sm:text-left">
+            <div className="max-w-[100px] shrink-0 text-right sm:max-w-[140px] sm:text-left">
+              {/* Etiquetas SALIDA/LLEGADA -- hallazgo real del director
+                  (24-ago-2026), comparando captura real contra su demo
+                  de referencia: sin esto, solo se veía la hora en
+                  negrita sin identificar qué es cada una. */}
+              <span className="block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/40">
+                Salida
+              </span>
               <span className="block text-lg font-bold text-brand-dark">
                 {formatearHora(activo.horaSalidaProgramada)}
               </span>
               <span className="block text-xs text-brand-cobalto/80">{activo.origenNombre}</span>
             </div>
-            <span className="flex flex-1 items-center gap-1.5 text-brand-dark/25">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
-              <span className="h-px flex-1 bg-current" />
-              <Image src="/img/bus-trayecto.png" alt="" width={44} height={15} className="shrink-0" />
-              <span className="flex shrink-0 flex-col items-center">
+            <span className="flex min-w-[64px] flex-1 items-center gap-1.5 sm:min-w-[90px]">
+              {/* Punto de salida verde, punto de llegada rojo -- orden
+                  real del director (24-ago-2026), mismo criterio visual
+                  de su demo de referencia. El bus va CENTRADO entre el
+                  texto de duración y el de distancia (antes iba a un
+                  lado del bloque de texto, no en medio). */}
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+              <span className="h-px flex-1 bg-brand-dark/25" />
+              <span className="flex shrink-0 flex-col items-center gap-0.5">
                 {duracion && (
                   <span className="text-[10px] font-medium text-brand-dark/50">Aprox. {duracion}</span>
                 )}
+                <Image src="/img/bus-trayecto.png" alt="" width={44} height={15} className="shrink-0" />
                 {activo.distanciaKm && (
                   <span className="text-[10px] text-brand-dark/35">{activo.distanciaKm} km</span>
                 )}
               </span>
-              <span className="h-px flex-1 bg-current" />
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
+              <span className="h-px flex-1 bg-brand-dark/25" />
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
             </span>
             {activo.horaLlegadaEstimada && (
-              <div>
+              <div className="max-w-[100px] shrink-0 sm:max-w-[140px]">
+                <span className="block text-[10px] font-semibold uppercase tracking-wide text-brand-dark/40">
+                  Llegada
+                </span>
                 <span className="block text-lg font-bold text-brand-dark">
                   {formatearHora(activo.horaLlegadaEstimada)}
                 </span>
@@ -171,19 +186,66 @@ export function TarjetaCooperativaAgrupada({
               cantidadTotal={activo.cooperativaCalificacionCantidad}
             />
           )}
+        </div>
 
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="flex items-center justify-between gap-6 sm:flex-col sm:items-end sm:justify-start">
+            <div className="text-right">
+              {(esMejorPrecio || esTopCalificado) && (
+                <div className="mb-1 flex flex-wrap justify-end gap-1">
+                  {esMejorPrecio && (
+                    <span className="inline-block rounded-full bg-brand-cobalto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                      Mejor precio
+                    </span>
+                  )}
+                  {esTopCalificado && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                      ★ Top calificado
+                    </span>
+                  )}
+                </div>
+              )}
+              <p className="font-display text-3xl font-extrabold text-brand-dark">${Number(activo.precioBase).toFixed(2)}</p>
+              <p className="text-xs text-brand-dark/50">
+                {activo.asientosDisponibles} asiento{activo.asientosDisponibles !== 1 ? "s" : ""} libre
+                {activo.asientosDisponibles !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <Link
+              href={hrefsPorViaje[activo.viajeId]}
+              className="shrink-0 rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95"
+            >
+              Elegir asiento
+            </Link>
+          </div>
+
+          {/* Movido aquí, debajo del botón (24-ago-2026, hallazgo real
+              del director comparando contra su demo de referencia):
+              antes vivía en la columna izquierda, junto al texto de la
+              ruta -- en la referencia real, "Ver horarios" acompaña la
+              acción de compra, no la descripción de la ruta.
+
+              Bug real de móvil encontrado y corregido en el camino
+              (mismo día): este bloque vivía como TERCER hijo dentro de
+              la fila `flex items-center justify-between` de arriba --
+              en móvil (donde ese contenedor sigue siendo fila, se
+              apila solo desde `sm:`), un hijo `w-full` compitiendo por
+              espacio con los otros 2 rompía todo el layout, cortando
+              "LLEGADA"/"Ver horarios" fuera de la pantalla. Corregido
+              sacándolo a un bloque HERMANO, siempre a ancho completo,
+              nunca compitiendo por espacio en una fila. */}
           {hayVariosHorarios && (
-            <div className="mt-3">
+            <div className="w-full text-right">
               <button
                 type="button"
                 onClick={() => setHorariosAbiertos((a) => !a)}
-                className="flex items-center gap-1 text-xs font-semibold text-brand-dark"
+                className="flex items-center gap-1 text-xs font-semibold text-brand-dark sm:justify-end"
               >
                 🕐 Todos los horarios disponibles — {viajes.length} salidas hoy
                 <span className="text-brand-dark/40">{horariosAbiertos ? "▲" : "▼"}</span>
               </button>
               {horariosAbiertos && (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap justify-end gap-2">
                   {viajes.map((v) => (
                     <button
                       key={v.viajeId}
@@ -202,36 +264,6 @@ export function TarjetaCooperativaAgrupada({
               )}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center justify-between gap-6 sm:flex-col sm:items-end sm:justify-start">
-          <div className="text-right">
-            {(esMejorPrecio || esTopCalificado) && (
-              <div className="mb-1 flex flex-wrap justify-end gap-1">
-                {esMejorPrecio && (
-                  <span className="inline-block rounded-full bg-brand-cobalto px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                    Mejor precio
-                  </span>
-                )}
-                {esTopCalificado && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                    ★ Top calificado
-                  </span>
-                )}
-              </div>
-            )}
-            <p className="font-display text-3xl font-extrabold text-brand-dark">${Number(activo.precioBase).toFixed(2)}</p>
-            <p className="text-xs text-brand-dark/50">
-              {activo.asientosDisponibles} asiento{activo.asientosDisponibles !== 1 ? "s" : ""} libre
-              {activo.asientosDisponibles !== 1 ? "s" : ""}
-            </p>
-          </div>
-          <Link
-            href={hrefsPorViaje[activo.viajeId]}
-            className="shrink-0 rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95"
-          >
-            Elegir asiento
-          </Link>
         </div>
       </div>
     </div>

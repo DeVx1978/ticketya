@@ -1831,6 +1831,31 @@ El director compartió un demo propio (`superb-clafoutis-03b99b.netlify.app`, HT
 
 **Pendiente:** confirmación del director tras aplicar el patch y ver la página real con datos reales (este entorno no tiene salida de red hacia el backend de Render).
 
+## 5.59 Tarjeta de resultados: etiquetas Salida/Llegada, colores, bus centrado, banner con vida -- 24-ago-2026
+
+El director comparó captura real de la plataforma (tras el PR #150) contra su demo de referencia, encontrando 4 diferencias reales concretas más una queja de diseño sobre el banner.
+
+**Hallazgos reales confirmados contra el código antes de tocar nada:**
+1. Sin etiquetas "SALIDA"/"LLEGADA" -- solo hora en negrita + terminal, sin identificar cuál es cuál.
+2. Puntos del trayecto neutros (`bg-current`, gris) -- pedido explícito: salida verde, llegada roja.
+3. Ícono del bus posicionado *antes* del bloque de texto duración/km, no *en medio* de esas 2 líneas como en la referencia.
+4. "Ver horarios" vivía en la columna izquierda (junto al texto de la ruta) -- en la referencia, acompaña la acción de compra, debajo del botón "Elegir asiento".
+5. Banner de resumen de ruta descrito como "fúnebre y sin vida" -- negro liso, sin ningún acento de color, comparado con el Hero (que sí resalta texto en ámbar).
+
+**Construido, los 5 puntos (rama `fix/tarjeta-resultados-salida-llegada`):**
+- Etiquetas Salida/Llegada agregadas (`text-[10px] uppercase text-brand-dark/40`).
+- Puntos: `bg-emerald-500` (salida) / `bg-red-500` (llegada), reemplazando `bg-current`.
+- Bus reordenado dentro de una columna centrada: duración arriba, ícono en medio, km abajo.
+- Bloque "Ver horarios" movido a un div hermano dentro de la columna derecha, siempre debajo de "Elegir asiento".
+- Banner: `py-6` -> `py-4` (más delgado) + flecha `→` en `text-brand-amber`, mismo acento ya usado en el Hero -- no un elemento nuevo inventado.
+
+**3 bugs reales encontrados y corregidos en el camino, atrapados por verificación visual real, no solo revisando código:**
+1. **Punto rojo encimado con el texto de llegada:** el primer intento (`min-w-[90px]` en la sección central) no alcanzó -- el bloque de LLEGADA, con `shrink-0` pero sin ancho máximo, se expandía a su ancho de contenido completo (el nombre largo del terminal sin partir), dejando la sección central por debajo de su propio mínimo natural. Corregido con `max-w-[140px]` en los bloques de Salida/Llegada, para que el texto largo se parta en 2 líneas en vez de forzar el ancho del bloque.
+2. **"Ver horarios" cortado fuera de pantalla en móvil:** al mover ese bloque a la columna derecha, quedó como tercer hijo dentro de una fila (`flex items-center justify-between`, fila por defecto en móvil, columna solo desde `sm:`) -- un hijo `w-full` compitiendo por espacio con los otros 2 rompía todo el layout. Corregido envolviendo precio+botón en su propio contenedor, y sacando "Ver horarios" a un bloque hermano siempre a ancho completo.
+3. **Mismo texto de llegada aún cortado en 390px** tras el fix #1: los anchos fijos (`140+90+140+gaps` ≈386px) no cabían en el ancho real disponible en móvil (~350px, tras el padding de la tarjeta). Corregido con anchos responsivos: `max-w-[100px] sm:max-w-[140px]` en Salida/Llegada, `min-w-[64px] sm:min-w-[90px]` en la sección central -- 280px en móvil, con margen real.
+
+**Verificado con evidencia real en cada ronda, no dado por cerrado hasta confirmar con captura:** ruta temporal con datos simulados (`TarjetaCooperativaAgrupada` con props de prueba, ya que el backend real es inalcanzable desde este entorno) -- capturas y recortes con zoom en desktop y móvil, confirmando cada uno de los 3 bugs antes/después de su fix respectivo. `tsc --noEmit` y `next build` limpios en el estado final.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

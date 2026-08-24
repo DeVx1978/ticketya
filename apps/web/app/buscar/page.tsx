@@ -250,15 +250,30 @@ export default async function ResultadosBusquedaPage({
           "Cambiar búsqueda", en vez de un link de texto simple sobre
           fondo claro. Se usa nuestro vidrio oscuro real
           (`bg-brand-dark`), no el rojo del demo -- decisión explícita
-          del director: mantener la marca real, no copiar el color. */}
-      <div className="bg-brand-dark px-4 py-6">
+          del director: mantener la marca real, no copiar el color.
+
+          Ajuste real (24-ago-2026, mismo día): el director señaló que
+          se veía "fúnebre y sin vida" -- negro liso, sin ningún acento
+          de color, comparado con el Hero (que sí resalta "sin filas ni
+          papeleo" en ámbar). Corregido con el mismo criterio: menos
+          padding vertical (py-6 -> py-4, franja más delgada) y la
+          flecha entre ciudades en `brand-amber`, mismo acento de marca
+          que ya usa el resto del sitio -- no un elemento nuevo
+          inventado. */}
+      <div className="bg-brand-dark px-4 py-4">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="font-display text-2xl font-bold text-white">
-                {mostrandoVuelta
-                  ? `${destinoCiudad ?? "Destino"} → ${origenCiudad ?? "Origen"}`
-                  : `${origenCiudad ?? "Origen"} → ${destinoCiudad ?? "Destino"}`}
+                {mostrandoVuelta ? (
+                  <>
+                    {destinoCiudad ?? "Destino"} <span className="text-brand-amber">→</span> {origenCiudad ?? "Origen"}
+                  </>
+                ) : (
+                  <>
+                    {origenCiudad ?? "Origen"} <span className="text-brand-amber">→</span> {destinoCiudad ?? "Destino"}
+                  </>
+                )}
               </h1>
               <p className="text-sm text-white/60">
                 {formatearFecha(mostrandoVuelta ? (fechaVuelta ?? fecha) : fecha)}{" "}
