@@ -84,13 +84,16 @@ describe('Calificaciones de viaje (e2e)', () => {
       });
     tokenCoop = loginCoop.body.accessToken;
 
+    // Hallazgo real (21-ago-2026): la busqueda real ahora filtra por
+    // CIUDAD, no por punto exacto -- la ciudad tambien debe ser unica
+    // por corrida para no chocar con anos de datos acumulados.
     const origen = await request(app.getHttpServer())
       .post('/admin/puntos-operacion')
       .set('Authorization', `Bearer ${tokenAdmin}`)
       .send({
         tipo: 'terminal_terrestre',
         nombre: `Origen Calif ${sufijo}`,
-        ciudad: 'Machala',
+        ciudad: `Machala Calif ${sufijo}`,
         provincia: 'El Oro',
       });
 
@@ -100,7 +103,7 @@ describe('Calificaciones de viaje (e2e)', () => {
       .send({
         tipo: 'terminal_terrestre',
         nombre: `Destino Calif ${sufijo}`,
-        ciudad: 'Guayaquil',
+        ciudad: `Guayaquil Calif ${sufijo}`,
         provincia: 'Guayas',
       });
 

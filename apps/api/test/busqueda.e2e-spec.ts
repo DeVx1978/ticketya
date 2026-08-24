@@ -148,13 +148,19 @@ describe('Búsqueda de rutas (e2e)', () => {
         password: 'ClaveSegura123',
       });
 
+    // Hallazgo real (21-ago-2026): desde que la busqueda real filtra
+    // por CIUDAD (orden del director, ejemplo real Tulcan Carcelen vs
+    // Quitumbe), la ciudad tambien debe ser unica por corrida -- antes
+    // "Machala"/"Guayaquil" a secas no importaba porque se exigia el
+    // punto EXACTO. Ahora, sin el sufijo, colisiona con anos de datos
+    // acumulados de corridas anteriores en la BD local de pruebas.
     const origen = await request(app.getHttpServer())
       .post('/admin/puntos-operacion')
       .set('Authorization', `Bearer ${loginDirector.body.accessToken}`)
       .send({
         tipo: 'terminal_terrestre',
         nombre: `Origen Búsqueda ${sufijo}`,
-        ciudad: 'Machala',
+        ciudad: `Machala Prueba ${sufijo}`,
         provincia: 'El Oro',
       });
     puntoOrigenId = origen.body.puntoOperacionId;
@@ -165,7 +171,7 @@ describe('Búsqueda de rutas (e2e)', () => {
       .send({
         tipo: 'terminal_terrestre',
         nombre: `Destino Búsqueda ${sufijo}`,
-        ciudad: 'Guayaquil',
+        ciudad: `Guayaquil Prueba ${sufijo}`,
         provincia: 'Guayas',
       });
     puntoDestinoId = destino.body.puntoOperacionId;
@@ -184,11 +190,16 @@ describe('Búsqueda de rutas (e2e)', () => {
       });
     puntoRelevanciaExactoId = exacto.body.puntoOperacionId;
 
+    // Hallazgo real (21-ago-2026): este punto era 'oficina_agencia' a
+    // proposito, pero ahora la busqueda real (orden del director)
+    // excluye oficinas del desplegable de sugerencias -- cambiado a
+    // terminal_terrestre para seguir probando el orden de relevancia,
+    // que es la intencion real de esta prueba, no el tipo del punto.
     const parcial = await request(app.getHttpServer())
       .post('/admin/puntos-operacion')
       .set('Authorization', `Bearer ${loginDirector.body.accessToken}`)
       .send({
-        tipo: 'oficina_agencia',
+        tipo: 'terminal_terrestre',
         nombre: `ZzRelevancia${sufijo} Sucursal Norte`, // solo el NOMBRE empieza así, la ciudad es otra
         ciudad: 'Otra Ciudad',
         provincia: 'El Oro',
@@ -285,7 +296,10 @@ describe('Búsqueda de rutas (e2e)', () => {
       expect(Array.isArray(res.body)).toBe(true);
       const encontrada = res.body.find((p: { id: string }) => p.id === puntoOrigenId);
       expect(encontrada).toBeDefined();
-      expect(encontrada.ciudad).toBe('Machala');
+      // Hallazgo real (21-ago-2026): esta prueba reutiliza el mismo
+      // punto que el fixture de arriba, cuya ciudad ahora es unica
+      // por corrida (ver el hallazgo real de busqueda por ciudad).
+      expect(encontrada.ciudad).toBe(`Machala Prueba ${sufijo}`);
     });
 
     it('no exige ningún query param -- distinto a /puntos-operacion/buscar, que rechaza texto corto', async () => {
