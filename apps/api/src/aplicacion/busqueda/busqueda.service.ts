@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { alias } from 'drizzle-orm/pg-core';
-import { and, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import {
   viajes,
   rutas,
@@ -80,6 +80,15 @@ export class BusquedaService {
             ilike(puntosOperacion.nombre, `%${textoNormalizado}%`),
           ),
           tieneRutaReal,
+          // Hallazgo real del director (21-ago-2026): una oficina
+          // propia de una cooperativa (ej. "Panamericana -- Oficina
+          // La Colon") no debe aparecer en la busqueda general -- se
+          // presta a confusion antes de que la persona haya elegido
+          // ninguna cooperativa. Solo las terminales publicas
+          // compartidas aparecen aqui; el punto exacto de cada
+          // cooperativa se muestra despues, dentro de su propia
+          // tarjeta de resultado.
+          ne(puntosOperacion.tipo, 'oficina_agencia'),
         ),
       )
       .orderBy(relevancia, puntosOperacion.ciudad)
@@ -111,6 +120,29 @@ export class BusquedaService {
   }) {
     const { origenId, destinoId, fecha, pasajerosMinimos, horaDesde, horaHasta, tipoVehiculoId, amenidades } = params;
 
+    // Hallazgo real del director (21-ago-2026, con un ejemplo real:
+    // Tulcan -> Quito, donde una cooperativa llega a Carcelen a $9 y
+    // otra a Quitumbe a $10 -- ambos son viajes reales y validos, pero
+    // antes la busqueda exigia coincidencia EXACTA del punto elegido,
+    // asi que elegir "Quitumbe" escondia la opcion real de Carcelen.
+    // Ahora se resuelve la CIUDAD real de los puntos elegidos, y se
+    // busca por ciudad completa -- cada cooperativa sigue mostrando su
+    // propio punto exacto de llegada dentro de su propia tarjeta,
+    // nada de eso cambia.
+    const [puntoOrigenReal] = await this.db
+      .select({ ciudad: puntosOperacion.ciudad })
+      .from(puntosOperacion)
+      .where(eq(puntosOperacion.id, origenId));
+    const [puntoDestinoReal] = await this.db
+      .select({ ciudad: puntosOperacion.ciudad })
+      .from(puntosOperacion)
+      .where(eq(puntosOperacion.id, destinoId));
+    if (!puntoOrigenReal || !puntoDestinoReal) {
+      return [];
+    }
+    const origenCiudad = puntoOrigenReal.ciudad;
+    const destinoCiudad = puntoDestinoReal.ciudad;
+
     // Union doble de puntos_operacion: una vez como origen, otra como destino.
     const origen = alias(puntosOperacion, 'origen');
     const destino = alias(puntosOperacion, 'destino');
@@ -141,8 +173,8 @@ export class BusquedaService {
     // las pidió. horaDesde/horaHasta convierte a hora local Ecuador
     // antes de comparar (la columna es timestamptz en UTC).
     const condiciones = [
-      eq(rutas.origenPuntoOperacionId, origenId),
-      eq(rutas.destinoPuntoOperacionId, destinoId),
+      eq(origen.ciudad, origenCiudad),
+      eq(destino.ciudad, destinoCiudad),
       eq(viajes.fechaSalida, fecha),
       eq(viajes.estado, 'programado'),
       // Cooperativas proponen sus propios puntos de operación

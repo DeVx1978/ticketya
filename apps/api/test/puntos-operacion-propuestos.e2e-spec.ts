@@ -209,21 +209,22 @@ describe('Cooperativas proponen puntos de operación (e2e)', () => {
       .send({
         tipo: 'oficina_agencia',
         nombre: `Oficina Busqueda Publica ${sufijo}`,
-        ciudad: 'Loja',
+        ciudad: `Loja Prueba ${sufijo}`,
         provincia: 'Loja',
       })
       .expect(201);
 
     // Un destino ya aprobado real (creado directo por el admin, mismo
     // flujo de siempre) -- para que la única variable en juego sea el
-    // estado del ORIGEN, nada más.
+    // estado del ORIGEN, nada más. Ciudad unica por corrida (hallazgo
+    // real 21-ago-2026, la busqueda ahora filtra por ciudad).
     const destinoAprobado = await request(app.getHttpServer())
       .post('/admin/puntos-operacion')
       .set('Authorization', `Bearer ${tokenSuperAdmin}`)
       .send({
         tipo: 'terminal_terrestre',
         nombre: `Terminal Destino Busqueda ${sufijo}`,
-        ciudad: 'Cuenca',
+        ciudad: `Cuenca Prueba ${sufijo}`,
         provincia: 'Azuay',
       })
       .expect(201);
