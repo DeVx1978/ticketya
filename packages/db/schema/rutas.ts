@@ -51,6 +51,9 @@ export const rutas = pgTable(
     precioBaseReferencia: numeric('precio_base_referencia', { precision: 8, scale: 2 }).notNull(),
 
     duracionEstimadaMinutos: integer('duracion_estimada_minutos'),
+    // Hallazgo real del director (21-ago-2026) -- dato informativo real
+    // para el pasajero, junto a la duracion estimada.
+    distanciaKm: integer('distancia_km'),
 
     activa: boolean('activa').default(true).notNull(),
     creadoEn: timestamp('creado_en', { withTimezone: true }).defaultNow().notNull(),

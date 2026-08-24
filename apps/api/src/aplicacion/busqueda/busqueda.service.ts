@@ -247,6 +247,9 @@ export class BusquedaService {
         // nombre real.
         origenNombre: origen.nombre,
         destinoNombre: destino.nombre,
+        // Hallazgo real del director (21-ago-2026) -- dato informativo
+        // real para el pasajero, junto a la duracion estimada.
+        distanciaKm: rutas.distanciaKm,
       })
       .from(viajes)
       .innerJoin(rutas, eq(viajes.rutaId, rutas.id))
