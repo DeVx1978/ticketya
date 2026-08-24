@@ -1810,6 +1810,27 @@ Cargados los kilómetros reales investigados para las 12 rutas creadas en la sec
 
 A pedido del director, para poder entregarle el proyecto a otro desarrollador con experiencia sin perder ningún detalle técnico real: se creó `ENTREGA_TECNICA_EXHAUSTIVA.md` en la raíz del repositorio -- mapa técnico completo (arquitectura, seguridad RLS con el mecanismo exacto, gotcha real de zona horaria, todos los endpoints reales por módulo, flujo completo de 2FA, huecos reales confirmados, patrones y trampas reales de testing) verificado contra el código en el momento de escribirlo, no de memoria. Complementa a este documento (`DOCUMENTO_MAESTRO.md`) -- este es el diario cronológico de decisiones, aquel es el mapa técnico de consulta rápida.
 
+## 5.58 Rediseño de resultados de búsqueda -- referencia real del director (demo propio) -- 24-ago-2026
+
+El director compartió un demo propio (`superb-clafoutis-03b99b.netlify.app`, HTML de referencia, NO parte de este repositorio) como plano visual de cómo quiere que se vea `/buscar`. Aclarado explícitamente por el director: es un demo de referencia, no otro proyecto real -- la instrucción fue adaptar nuestra página real (con nuestras funciones reales) a ese diseño, no copiar el demo tal cual.
+
+**Comparación real hecha antes de tocar código** (código real de `page.tsx`, `TarjetaCooperativaAgrupada.tsx`, `FiltrosBusqueda.tsx`, `FiltroCooperativaPills.tsx`, y el esquema real de `packages/db/schema/enums.ts`), presentada al director para confirmación explícita antes de construir:
+- **Ya teníamos, solo faltaba el estilo:** reseñas/calificación real, insignias "Mejor precio"/"Top calificado", duración+distancia real, horarios agrupados expandibles, banner destacado, ordenar por precio, filtro por cooperativa (ya existía como píldoras, no en el panel).
+- **Se podía construir sin tocar backend:** filtro de precio (Min/Max) -- cada resultado ya trae `precioBase`, se filtra en cliente sobre los datos ya obtenidos.
+- **NO se podía construir tal cual, hallazgo real:** "Tipo de bus" (Económico/VIP/Doble piso) como filtro de casillas -- el único campo estructurado real es `categoriaVehiculoEnum` (`bus`/`buseta`/`van`/`auto`, carrocería, no clase de servicio). Ese filtro quedó fuera de esta entrega, pendiente de una decisión aparte de producto/backend si se quiere de verdad.
+- **Ya teníamos de más, que el demo ni muestra:** "Ver trayecto en el mapa" (Google Maps real), "Vía [paradas reales]", distancia en km -- no se tocó, se mantiene.
+- **Decisión de marca confirmada:** mantener el amarillo real (`brand-amber`/`brand-dark`), no el rojo del demo.
+- **Fuera de alcance de esta entrega, confirmado con el director:** header global más completo (Cooperativas/Destinos/¿Cómo funciona?/Anunciantes + avatar de usuario) -- eso toca el header de todo el sitio, no solo esta página.
+
+**Construido (rama `feat/resultados-busqueda-rediseno`):**
+- `page.tsx`: el resumen de ruta (antes texto plano sobre fondo claro) pasa a una franja oscura real con nuestra marca (`bg-brand-dark`), con el botón "← Cambiar búsqueda" -- mismo patrón visual del demo, colores propios.
+- `FiltrosBusqueda.tsx`: nuevo bloque real de Precio (USD) Min/Max, mismo patrón que ya usan `horaDesde`/`horaHasta` (actualiza la URL, el filtrado real ocurre en el servidor).
+- `page.tsx`: filtrado real de `precioMin`/`precioMax` sobre `resultadosAMostrar`, mismo lugar y patrón que el filtro de cooperativa ya existente -- cero cambios de backend, cero parámetros nuevos en `buscarViajes`.
+
+**Verificado con evidencia real, no solo revisando el código:** ruta temporal para renderizar el banner + panel de filtros sin depender del backend real (bloqueado desde este entorno) -- capturas en desktop y móvil confirmando el diseño, y una prueba real con Playwright escribiendo "10"/"25" en los campos y haciendo clic en "Aplicar filtros", confirmando que la URL queda `?precioMin=10&precioMax=25` -- exactamente lo que `page.tsx` real necesita para filtrar. Encontrado y corregido en el camino: la ruta temporal de verificación fallaba el build por `useSearchParams()` sin `Suspense` -- limitación real de Next.js para prerender estático, no un bug de `FiltrosBusqueda` (la página real `/buscar` ya es dinámica, nunca se prerender, no le afecta). `tsc --noEmit` y `next build` limpios.
+
+**Pendiente:** confirmación del director tras aplicar el patch y ver la página real con datos reales (este entorno no tiene salida de red hacia el backend de Render).
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
