@@ -25,7 +25,7 @@ export default async function ResultadosBusquedaPage({
   // y idaAsiento llegan cuando ya se eligio el tramo de ida y se esta
   // viendo la busqueda del tramo de vuelta (ver TarjetaResultado, que
   // arma ese link al elegir "Elegir asiento" en el tramo de ida).
-  const { fechaVuelta, idaViajeId, idaAsientos, ordenarPor, cooperativaId } = sp;
+  const { fechaVuelta, idaViajeId, idaAsientos, ordenarPor, cooperativaId, precioMin, precioMax } = sp;
   const esIdaYVuelta = !!fechaVuelta;
 
   if (!origenId || !destinoId || !fecha) {
@@ -176,6 +176,20 @@ export default async function ResultadosBusquedaPage({
     resultadosAMostrar = resultadosAMostrar.filter((r) => r.cooperativaId === cooperativaId);
   }
 
+  // Fase 8-buscador (24-ago-2026) -- filtro de precio real, sobre
+  // datos ya obtenidos -- mismo patrón que el filtro de cooperativa de
+  // arriba. `Number(precioMin)` con NaN (campo vacío o inválido) no
+  // filtra nada en ese extremo, mismo criterio real que ya usa el
+  // input HTML de precio (sin mínimo/máximo si no se especifica).
+  const precioMinNum = precioMin ? Number(precioMin) : null;
+  const precioMaxNum = precioMax ? Number(precioMax) : null;
+  if (precioMinNum !== null && !Number.isNaN(precioMinNum)) {
+    resultadosAMostrar = resultadosAMostrar.filter((r) => Number(r.precioBase) >= precioMinNum);
+  }
+  if (precioMaxNum !== null && !Number.isNaN(precioMaxNum)) {
+    resultadosAMostrar = resultadosAMostrar.filter((r) => Number(r.precioBase) <= precioMaxNum);
+  }
+
   // "Ver horarios" agrupado por cooperativa (17-ago-2026, orden real
   // del director): se agrupan los viajes reales de esta ruta/fecha
   // por cooperativa+tipo de vehículo -- una sola tarjeta por grupo,
@@ -230,30 +244,48 @@ export default async function ResultadosBusquedaPage({
 
   return (
     <main className="flex-1 bg-brand-light/40">
-      <div className="mx-auto max-w-7xl px-4 py-10">
-        <Link href="/" className="text-sm font-semibold text-brand-cobalto hover:underline">
-          ← Nueva búsqueda
-        </Link>
-
-        {esIdaYVuelta && (
-          <div className="mt-3 flex items-center gap-2 text-sm font-semibold">
-            <span className={mostrandoVuelta ? "text-brand-dark/40" : "text-brand-cobalto"}>
-              1. Ida{idaViajeId && mostrandoVuelta ? " ✓" : ""}
-            </span>
-            <span className="text-brand-dark/30">→</span>
-            <span className={mostrandoVuelta ? "text-brand-cobalto" : "text-brand-dark/40"}>2. Vuelta</span>
+      {/* Franja oscura de resumen de ruta -- adaptación real de la
+          referencia del director (demo, 24-ago-2026): en el demo esto
+          es una franja oscura con el resumen de la ruta + botón
+          "Cambiar búsqueda", en vez de un link de texto simple sobre
+          fondo claro. Se usa nuestro vidrio oscuro real
+          (`bg-brand-dark`), no el rojo del demo -- decisión explícita
+          del director: mantener la marca real, no copiar el color. */}
+      <div className="bg-brand-dark px-4 py-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="font-display text-2xl font-bold text-white">
+                {mostrandoVuelta
+                  ? `${destinoCiudad ?? "Destino"} → ${origenCiudad ?? "Origen"}`
+                  : `${origenCiudad ?? "Origen"} → ${destinoCiudad ?? "Destino"}`}
+              </h1>
+              <p className="text-sm text-white/60">
+                {formatearFecha(mostrandoVuelta ? (fechaVuelta ?? fecha) : fecha)}{" "}
+                · {pasajeros ?? 1} pasajero{Number(pasajeros ?? 1) > 1 ? "s" : ""}
+              </p>
+            </div>
+            <Link
+              href="/"
+              className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+            >
+              ← Cambiar búsqueda
+            </Link>
           </div>
-        )}
 
-        <h1 className="font-display mt-3 text-2xl font-bold text-brand-dark">
-          {mostrandoVuelta
-            ? `${destinoCiudad ?? "Destino"} → ${origenCiudad ?? "Origen"}`
-            : `${origenCiudad ?? "Origen"} → ${destinoCiudad ?? "Destino"}`}
-        </h1>
-        <p className="text-sm text-brand-dark/70">
-          {formatearFecha(mostrandoVuelta ? (fechaVuelta ?? fecha) : fecha)}{" "}
-          · {pasajeros ?? 1} pasajero{Number(pasajeros ?? 1) > 1 ? "s" : ""}
-        </p>
+          {esIdaYVuelta && (
+            <div className="mt-3 flex items-center gap-2 text-sm font-semibold">
+              <span className={mostrandoVuelta ? "text-white/40" : "text-brand-medium"}>
+                1. Ida{idaViajeId && mostrandoVuelta ? " ✓" : ""}
+              </span>
+              <span className="text-white/30">→</span>
+              <span className={mostrandoVuelta ? "text-brand-medium" : "text-white/40"}>2. Vuelta</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-10">
 
         <div className="mt-6 lg:grid lg:grid-cols-[260px_1fr] lg:items-start lg:gap-6">
           {!mostrandoVuelta && (

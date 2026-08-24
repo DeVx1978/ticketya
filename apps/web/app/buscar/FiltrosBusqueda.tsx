@@ -52,6 +52,15 @@ export function FiltrosBusqueda({ variante = "dropdown" }: { variante?: "dropdow
   const [amenidades, setAmenidades] = useState<Amenidad[]>(
     (searchParams.get("amenidades")?.split(",").filter(Boolean) as Amenidad[]) ?? [],
   );
+  // Fase 8-buscador (24-ago-2026) -- filtro de precio real, orden del
+  // director tras comparar contra su demo de referencia. Se filtra en
+  // el CLIENTE sobre los resultados que el servidor ya obtuvo -- cada
+  // resultado ya trae `precioBase`, no hace falta ningún cambio de
+  // backend ni un parámetro nuevo en `buscarViajes`. Mismo patrón real
+  // que ya usan `horaDesde`/`horaHasta`: solo actualiza la URL,
+  // page.tsx (servidor) hace el filtrado real.
+  const [precioMin, setPrecioMin] = useState<string>(searchParams.get("precioMin") ?? "");
+  const [precioMax, setPrecioMax] = useState<string>(searchParams.get("precioMax") ?? "");
   const [abierto, setAbierto] = useState(false);
 
   function alternarAmenidad(valor: Amenidad) {
@@ -79,23 +88,66 @@ export function FiltrosBusqueda({ variante = "dropdown" }: { variante?: "dropdow
     } else {
       params.delete("amenidades");
     }
+    if (precioMin.trim()) {
+      params.set("precioMin", precioMin.trim());
+    } else {
+      params.delete("precioMin");
+    }
+    if (precioMax.trim()) {
+      params.set("precioMax", precioMax.trim());
+    } else {
+      params.delete("precioMax");
+    }
     router.push(`${pathname}?${params.toString()}`);
   }
 
   function limpiar() {
     setFranjaHorario(null);
     setAmenidades([]);
+    setPrecioMin("");
+    setPrecioMax("");
     const params = new URLSearchParams(searchParams.toString());
     params.delete("horaDesde");
     params.delete("horaHasta");
     params.delete("amenidades");
+    params.delete("precioMin");
+    params.delete("precioMax");
     router.push(`${pathname}?${params.toString()}`);
   }
 
-  const hayFiltrosActivos = Boolean(searchParams.get("horaDesde") || searchParams.get("amenidades"));
+  const hayFiltrosActivos = Boolean(
+    searchParams.get("horaDesde") || searchParams.get("amenidades") || searchParams.get("precioMin") || searchParams.get("precioMax"),
+  );
 
   const contenidoFiltros = (
     <div className="space-y-4">
+      <div>
+        <label id="filtros-precio-label" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+          Precio (USD)
+        </label>
+        <div role="group" aria-labelledby="filtros-precio-label" className="flex items-center gap-2">
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            placeholder="Min"
+            value={precioMin}
+            onChange={(e) => setPrecioMin(e.target.value)}
+            className="w-full rounded-lg border border-brand-light px-2.5 py-1.5 text-sm text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+          <span className="text-brand-dark/30">—</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            placeholder="Max"
+            value={precioMax}
+            onChange={(e) => setPrecioMax(e.target.value)}
+            className="w-full rounded-lg border border-brand-light px-2.5 py-1.5 text-sm text-brand-dark placeholder:text-brand-dark/35 focus:outline-none focus:ring-2 focus:ring-brand-medium"
+          />
+        </div>
+      </div>
+
       <div>
         <label id="filtros-hora-label" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
           Hora de salida
