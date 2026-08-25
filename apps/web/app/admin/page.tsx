@@ -24,6 +24,57 @@ const ETIQUETA_ROL: Record<string, string> = {
   admin_plataforma: "Admins de plataforma",
 };
 
+/* Rediseño real (25-ago-2026) -- tarjetas de métrica estilo TailAdmin
+   (ícono en insignia de color + número grande), colores de marca
+   reales (cobalto/ámbar), sin insignias de tendencia -- descartadas
+   por orden explícita del director (no hay snapshot histórico real
+   para calcular variación, no se simula). Misma lógica de datos real
+   de siempre, solo cambia el envoltorio visual. */
+function IconoCooperativasMetrica({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 21V9l9-6 9 6v12" />
+      <path d="M9 21v-6h6v6" />
+    </svg>
+  );
+}
+function IconoBoletosMetrica({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+      <path d="M13 6v12" strokeDasharray="2 2" />
+    </svg>
+  );
+}
+function IconoVentasMetrica({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9 12h6M12 9v6" />
+    </svg>
+  );
+}
+
+function TarjetaMetrica({
+  icono: Icono,
+  etiqueta,
+  valor,
+}: {
+  icono: (props: { className?: string }) => React.ReactElement;
+  etiqueta: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-cobalto-claro text-brand-cobalto">
+        <Icono className="h-5 w-5" />
+      </div>
+      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-brand-dark/50">{etiqueta}</p>
+      <p className="mt-1 font-display text-3xl font-extrabold text-brand-dark">{valor}</p>
+    </div>
+  );
+}
+
 export default function AdminHome() {
   const [ivaPorcentaje, setIvaPorcentaje] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -134,24 +185,21 @@ export default function AdminHome() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">Cooperativas activas</p>
-          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
-            {ventas === null ? "—" : ventas.length}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">Boletos vendidos (total)</p>
-          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
-            {ventas === null ? "—" : ventas.reduce((acc, v) => acc + v.totalBoletos, 0)}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">Total vendido (histórico)</p>
-          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
-            {ventas === null ? "—" : formatearDolares(ventas.reduce((acc, v) => acc + v.totalVentas, 0))}
-          </p>
-        </div>
+        <TarjetaMetrica
+          icono={IconoCooperativasMetrica}
+          etiqueta="Cooperativas activas"
+          valor={ventas === null ? "—" : ventas.length}
+        />
+        <TarjetaMetrica
+          icono={IconoBoletosMetrica}
+          etiqueta="Boletos vendidos (total)"
+          valor={ventas === null ? "—" : ventas.reduce((acc, v) => acc + v.totalBoletos, 0)}
+        />
+        <TarjetaMetrica
+          icono={IconoVentasMetrica}
+          etiqueta="Total vendido (histórico)"
+          valor={ventas === null ? "—" : formatearDolares(ventas.reduce((acc, v) => acc + v.totalVentas, 0))}
+        />
       </div>
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
@@ -261,7 +309,7 @@ id="admin-iva-nacional"
             <button
               type="submit"
               disabled={guardando}
-              className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+              className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
             >
               {guardando ? "Propagando..." : "Guardar y propagar"}
             </button>
@@ -301,7 +349,7 @@ id="admin-cargo-plataforma"
             <button
               type="submit"
               disabled={guardandoCargo}
-              className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+              className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
             >
               {guardandoCargo ? "Guardando..." : "Guardar"}
             </button>
