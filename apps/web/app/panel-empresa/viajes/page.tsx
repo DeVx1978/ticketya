@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   crearViajeCoop,
@@ -241,6 +241,92 @@ function BotonCancelarViaje({
     >
       Cancelar viaje
     </button>
+  );
+}
+
+/* Rediseño real Fase 1 (25-ago-2026), hallazgo real del director:
+   las 4 acciones por viaje (Ver pasajeros, Editar, Cambiar unidad,
+   Cancelar viaje) estaban siempre visibles, amontonadas en una
+   columna angosta -- se veía descuidado. Reemplazado por un menú
+   "···" (mismo patrón real de acciones de fila que usa TailAdmin),
+   colapsado por defecto -- se cierra solo al hacer clic fuera. Los
+   3 componentes reales (BotonEditarViaje, BotonCambiarUnidad,
+   BotonCancelarViaje) se reusan tal cual adentro, sin tocar su
+   lógica interna -- cuando alguno se expande a su formulario en
+   línea (ej. "Editar" abre los campos de hora/precio), el menú se
+   queda abierto para poder interactuar con ese formulario. */
+function MenuAccionesViaje({
+  viaje,
+  unidadesActivas,
+  onEditado,
+  onCambiado,
+  onCancelado,
+  onError,
+}: {
+  viaje: ViajeCoopResumen;
+  unidadesActivas: UnidadResumen[];
+  onEditado: () => void;
+  onCambiado: () => void;
+  onCancelado: (boletosCancelados: number) => void;
+  onError: (mensaje: string) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const contenedorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    function alHacerClicFuera(e: MouseEvent) {
+      if (contenedorRef.current && !contenedorRef.current.contains(e.target as Node)) {
+        setAbierto(false);
+      }
+    }
+    document.addEventListener("mousedown", alHacerClicFuera);
+    return () => document.removeEventListener("mousedown", alHacerClicFuera);
+  }, [abierto]);
+
+  return (
+    <div ref={contenedorRef} className="relative inline-block text-left">
+      <button
+        onClick={() => setAbierto((a) => !a)}
+        aria-label="Acciones del viaje"
+        aria-expanded={abierto}
+        className="rounded-lg p-1.5 text-brand-dark/50 transition hover:bg-brand-light hover:text-brand-dark"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="2" />
+          <circle cx="12" cy="12" r="2" />
+          <circle cx="19" cy="12" r="2" />
+        </svg>
+      </button>
+      {abierto && (
+        <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] space-y-2 rounded-xl bg-white p-3 text-left shadow-lg ring-1 ring-black/10">
+          <Link
+            href={`/panel-empresa/viajes/${viaje.id}/pasajeros`}
+            className="block text-xs font-semibold text-brand hover:underline"
+          >
+            Ver pasajeros
+          </Link>
+          {viaje.estado === "programado" && (
+            <>
+              <div className="border-t border-black/5 pt-2">
+                <BotonEditarViaje viaje={viaje} onEditado={onEditado} onError={onError} />
+              </div>
+              <div>
+                <BotonCambiarUnidad
+                  viajeId={viaje.id}
+                  unidades={unidadesActivas}
+                  onCambiado={onCambiado}
+                  onError={onError}
+                />
+              </div>
+              <div className="border-t border-black/5 pt-2">
+                <BotonCancelarViaje viajeId={viaje.id} onCancelado={onCancelado} onError={onError} />
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -519,45 +605,25 @@ id="viaje-fecha"
                     {formatearDolares(v.precioBase)}
                   </td>
                   <td className="px-6 py-3 text-right">
-                    <div className="flex flex-col items-end gap-1">
-                      <Link
-                        href={`/panel-empresa/viajes/${v.id}/pasajeros`}
-                        className="text-xs font-semibold text-brand hover:underline"
-                      >
-                        Ver pasajeros
-                      </Link>
-                      {v.estado === "programado" && (
-                        <>
-                          <BotonEditarViaje
-                            viaje={v}
-                            onEditado={() => {
-                              setMensajeExito("Viaje actualizado.");
-                              cargarTodo();
-                            }}
-                            onError={setMensajeError}
-                          />
-                          <BotonCambiarUnidad
-                            viajeId={v.id}
-                            unidades={(unidades ?? []).filter((u) => u.activo)}
-                            onCambiado={() => {
-                              setMensajeExito("Unidad del viaje actualizada — los boletos ya vendidos no se vieron afectados.");
-                              cargarTodo();
-                            }}
-                            onError={setMensajeError}
-                          />
-                          <BotonCancelarViaje
-                            viajeId={v.id}
-                            onCancelado={(boletosCancelados) => {
-                              setMensajeExito(
-                                `Viaje cancelado — ${boletosCancelados} boleto${boletosCancelados === 1 ? "" : "s"} cancelado${boletosCancelados === 1 ? "" : "s"} automáticamente.`,
-                              );
-                              cargarTodo();
-                            }}
-                            onError={setMensajeError}
-                          />
-                        </>
-                      )}
-                    </div>
+                    <MenuAccionesViaje
+                      viaje={v}
+                      unidadesActivas={(unidades ?? []).filter((u) => u.activo)}
+                      onEditado={() => {
+                        setMensajeExito("Viaje actualizado.");
+                        cargarTodo();
+                      }}
+                      onCambiado={() => {
+                        setMensajeExito("Unidad del viaje actualizada — los boletos ya vendidos no se vieron afectados.");
+                        cargarTodo();
+                      }}
+                      onCancelado={(boletosCancelados) => {
+                        setMensajeExito(
+                          `Viaje cancelado — ${boletosCancelados} boleto${boletosCancelados === 1 ? "" : "s"} cancelado${boletosCancelados === 1 ? "" : "s"} automáticamente.`,
+                        );
+                        cargarTodo();
+                      }}
+                      onError={setMensajeError}
+                    />
                   </td>
                 </tr>
               ))}

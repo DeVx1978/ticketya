@@ -18,6 +18,47 @@ function formatearDolares(monto: number) {
   return new Intl.NumberFormat("es-EC", { style: "currency", currency: "USD" }).format(monto);
 }
 
+/* Rediseño real Fase 1 (25-ago-2026) -- tarjetas de métrica con
+   ícono, mismo patrón visual ya usado en /admin (sección 5.63), pero
+   con la insignia en ámbar suave en vez de cobalto -- coherente con
+   el acento real de este panel. */
+function IconoBoletos({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z" />
+      <path d="M13 6v12" strokeDasharray="2 2" />
+    </svg>
+  );
+}
+function IconoVentas({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9 12h6M12 9v6" />
+    </svg>
+  );
+}
+
+function TarjetaMetrica({
+  icono: Icono,
+  etiqueta,
+  valor,
+}: {
+  icono: (props: { className?: string }) => React.ReactElement;
+  etiqueta: string;
+  valor: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-amber/15 text-brand-amber">
+        <Icono className="h-5 w-5" />
+      </div>
+      <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-brand-dark/50">{etiqueta}</p>
+      <p className="mt-1 font-display text-3xl font-extrabold text-brand-dark">{valor}</p>
+    </div>
+  );
+}
+
 export default function PanelEmpresaDashboard() {
   // Hallazgo real del director, probando la cuenta de vendedor
   // (25-ago-2026): esta pantalla pedía las 3 secciones reales
@@ -172,23 +213,13 @@ export default function PanelEmpresaDashboard() {
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">
-            Boletos vendidos hoy
-          </p>
-          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
-            {filas === null ? "—" : totalBoletos}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">
-            Total vendido hoy
-          </p>
-          <p className="mt-2 font-display text-3xl font-extrabold text-brand-dark">
-            {filas === null ? "—" : formatearDolares(totalVentas)}
-          </p>
-        </div>
-      </div>
+            <TarjetaMetrica icono={IconoBoletos} etiqueta="Boletos vendidos hoy" valor={filas === null ? "—" : totalBoletos} />
+            <TarjetaMetrica
+              icono={IconoVentas}
+              etiqueta="Total vendido hoy"
+              valor={filas === null ? "—" : formatearDolares(totalVentas)}
+            />
+          </div>
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
         <div className="border-b border-black/5 px-6 py-4">
@@ -268,7 +299,7 @@ export default function PanelEmpresaDashboard() {
             <button
               type="submit"
               disabled={guardandoLogo}
-              className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+              className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
             >
               {guardandoLogo ? "Guardando..." : "Guardar"}
             </button>
@@ -326,7 +357,7 @@ export default function PanelEmpresaDashboard() {
             <button
               type="submit"
               disabled={guardandoFiscal}
-              className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+              className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
             >
               {guardandoFiscal ? "Guardando..." : "Guardar"}
             </button>
