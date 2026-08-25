@@ -1856,6 +1856,27 @@ El director comparó captura real de la plataforma (tras el PR #150) contra su d
 
 **Verificado con evidencia real en cada ronda, no dado por cerrado hasta confirmar con captura:** ruta temporal con datos simulados (`TarjetaCooperativaAgrupada` con props de prueba, ya que el backend real es inalcanzable desde este entorno) -- capturas y recortes con zoom en desktop y móvil, confirmando cada uno de los 3 bugs antes/después de su fix respectivo. `tsc --noEmit` y `next build` limpios en el estado final.
 
+## 5.60 Rediseño moderno de "Mi cuenta" -- portada real + avatar superpuesto + bug real de foto corregido -- 24-ago-2026
+
+El director pidió explícitamente un rediseño estético del encabezado de perfil ("se ve asqueroso", quería "una sección de perfil moderna"), compartiendo una plantilla real de Figma (perfil estilo X/Twitter: foto de portada + avatar superpuesto en la esquina) como referencia visual.
+
+**2 hallazgos reales confirmados en el código antes de construir:**
+1. El backend **ya tenía** el endpoint completo de subida de foto (`POST /auth/perfil/foto`, sube la imagen real y guarda `fotoUrl`), y el frontend **ya tenía** la función conectada (`subirFotoPerfil`) -- funcionando desde la pestaña "Mis datos", solo que como un `<input type="file">` genérico, no un botón integrado al diseño.
+2. **Bug real encontrado:** el avatar del encabezado **siempre mostraba las iniciales**, sin revisar nunca `perfil.fotoUrl` -- aunque el usuario ya hubiera subido una foto real, jamás se reflejaba en el encabezado.
+
+**Construido (rama `feat/perfil-rediseno-moderno`, un solo archivo, `apps/web/app/perfil/page.tsx`):**
+- Portada real: `hero-2.jpg` (la misma foto real de la Terminal de Machala ya usada en el Hero) -- nunca banco de imágenes, regla ya establecida del proyecto.
+- Avatar superpuesto en la esquina inferior izquierda de la portada, con anillo blanco -- muestra la foto real si `fotoUrl` existe, iniciales como respaldo si no (corrige el bug real encontrado).
+- Botón de cámara (SVG propio, nuevo -- no existía ningún ícono de cámara en el proyecto) superpuesto sobre el avatar, conectado al mismo input de archivo real -- mismo endpoint/función ya existente, ahora también disparable desde el encabezado. La pestaña "Mis datos" sigue funcionando igual, sin tocar.
+- Nombre e insignias alineados a la izquierda debajo del avatar (antes centrados).
+- Talón recortable del QR se mantiene igual, solo con los colores ajustados al nuevo fondo blanco de la tarjeta.
+
+**2 correcciones reales en el camino, antes de reportar como listo:**
+1. Color inventado por accidente: `text-brand-amber-700` no existe como token real (se coló al copiar el patrón de otra insignia que sí usa el ámbar genérico de Tailwind) -- corregido a `text-brand-amber`, el token real de marca.
+2. `next/image` con `perfil.fotoUrl` habría fallado en producción -- `next.config.ts` no tiene ningún dominio remoto configurado, y el destino real de la foto depende del proveedor de almacenamiento configurado (no es un dominio fijo). Corregido usando `<img>` normal, mismo patrón real ya usado en `TarjetaCooperativaAgrupada.tsx` para `cooperativaLogoUrl` (otra URL externa dinámica).
+
+**Verificado con evidencia real, no solo visual:** ruta temporal con datos simulados, capturas en desktop y móvil confirmando el diseño. Además, **prueba funcional real** con Playwright: confirmado que el botón de cámara (`<label>`) está correctamente conectado al `<input type="file">` real (mismo `id`, mismo `accept`), y una prueba de selección de archivo real (`set_input_files`) confirmando con captura que el avatar sí se actualiza visualmente al elegir una foto -- no solo que el botón se ve bien, sino que el mecanismo funciona de punta a punta. `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
