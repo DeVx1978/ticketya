@@ -1895,6 +1895,41 @@ Hay otra conversacion paralela trabajando en el mismo proyecto (confirmado real:
 
 **Pendiente real:** cuando el director traiga ese contenido, revisarlo contra el codigo real (no copiarlo a ciegas), y fusionarlo con las secciones ya existentes aqui, evitando duplicados.
 
+## 5.62 PENDIENTE REAL -- subida de foto de perfil da 404 en producción (backend, no frontend) -- 24-ago-2026
+
+El director probó el botón de cámara nuevo del encabezado de perfil (sección 5.60/5.61) en producción real -- la subida "funcionó" (no dio error), pero la foto nunca se ve: `Failed to load resource: 404` sobre una URL tipo `/uploads/perfiles/<uuid>.webp`.
+
+**Causa raíz real, confirmada en el código -- ya documentada honestamente por quien lo construyó, no es un bug oculto:** `apps/api/src/infraestructura/almacenamiento/simulador.almacenamiento.ts` es un simulador a propósito (mismo patrón que otros simuladores del proyecto, ej. pagos) -- SÍ guarda el archivo real en disco del servidor, y SÍ devuelve una URL real (`/uploads/<carpeta>/<uuid>.<ext>`), pero el comentario del propio archivo ya advertía: *"para que la URL devuelta sea visitable de verdad en un navegador, falta configurar en `main.ts` que el servidor sirva esta carpeta como archivos estáticos"* -- ese paso nunca se hizo. No es un bug introducido por el rediseño del encabezado (sección 5.60/5.61) -- el simulador ya tenía esta limitación desde antes; el botón de cámara solo lo hizo más visible al dejar de estar enterrado en la pestaña "Mis datos".
+
+**Complicación real adicional, más allá de solo servir la carpeta:** el backend corre en Render, donde el disco es efímero en la mayoría de los planes -- aunque se sirva `uploads/` como estático, las fotos podrían perderse en cada redeploy. Una solución duradera real necesita almacenamiento externo (Cloudinary, S3, o similar), no solo servir la carpeta local.
+
+**2 caminos reales presentados al director, decisión pendiente:**
+- **A (rápido, no duradero):** agregar `app.useStaticAssets()` en `main.ts` -- resuelve el 404 ahora, pero las fotos no sobrevivirían un redeploy en Render.
+- **B (real y duradero):** conectar almacenamiento externo real (Cloudinary/S3) -- requiere que el director cree la cuenta y proporcione credenciales, mismo tipo de paso externo ya visto antes con el login de Google (sección 5.48.1).
+
+**Decisión del director:** dejarlo pendiente para una sesión aparte, dedicada al backend -- no se toca en esta sesión (que fue de frontend). Queda marcado aquí para retomarlo cuando corresponda.
+
+## 5.63 Rediseño del panel de admin -- referencia real TailAdmin (SaaS demo), sidebar lateral -- 25-ago-2026
+
+Orden de la otra conversación (la directora), reenviada por el director: convertir `/admin` en un panel administrativo con diseño moderno de verdad, con referencia visual real (plantilla TailAdmin, variante SaaS -- demo en vivo: `https://demo.tailadmin.com/saas`, mismo stack Next.js + Tailwind).
+
+**Plan presentado y confirmado por el director antes de tocar código**, con investigación real hecha primero (código actual de `admin/page.tsx` y `admin/layout.tsx`, más el contenido real de la referencia vía `web_fetch`):
+- **Sidebar lateral: sí**, aunque signifique tocar `layout.tsx` y afectar las 7 pantallas del panel (no solo el dashboard) -- confirmado explícitamente por el director: "un sidebar en una sola pantalla y navegación horizontal en las otras 6 se vería inconsistente".
+- **Insignias de tendencia** (`+2.5%`, `-1.6%`, como en la referencia): descartadas, orden explícita del director -- no hay snapshot histórico real para calcular variación, no se simula.
+- **Gráficas, notificaciones, búsqueda `⌘K`, "Product Performance"**: fuera, ninguna tiene dato real hoy.
+- **Logo real** (`/img/logo-columbus.png`, el mismo que ya usa el header público) en el sidebar, no un ícono genérico.
+- **Colores de marca reales**, no los de TailAdmin: `brand-cobalto` (azul, `#2451c4`) como color principal en vez de negro, `brand-amber` para la acción principal -- mismo patrón ya establecido en todo el sitio.
+
+**Hallazgo real en el camino, antes de construir:** `/panel-empresa/layout.tsx` (la referencia de diseño que dio el director) todavía usa `bg-brand-dark` (negro) para el ítem activo de su propio menú lateral -- parece ser una instancia que no se corrigió cuando se resolvió ese problema en otras pantallas. Se avisó al director; el panel nuevo sigue la instrucción explícita (cobalto, no negro), no esa inconsistencia puntual encontrada en la referencia.
+
+**Construido (rama `feat/admin-panel-tailadmin`, 2 archivos):**
+- `layout.tsx`: reescrito por completo -- sidebar fijo en desktop (ancho `w-64`, logo + insignia "Panel Admin" + 7 enlaces reales con ícono propio SVG por enlace + rol del usuario + botón Salir), menú deslizable equivalente en móvil (mismo contenido, activado por un botón de hamburguesa en el header superior). Ítem activo en `bg-brand-cobalto`. Misma lógica real de guardia de sesión (verificación de token, redirección) sin tocar -- solo cambia el envoltorio visual.
+- `page.tsx`: nuevo componente `TarjetaMetrica` (ícono en insignia cobalto + número grande), reemplaza las 3 tarjetas de métrica anteriores -- mismo dato real (`ventas.length`, boletos totales, total vendido). Botones de los 2 formularios (IVA nacional, Cargo de plataforma) corregidos de `bg-brand` (casi negro) a `bg-brand-amber`, mismo patrón de marca. Cero cambios de lógica de negocio, cero endpoints nuevos ni tocados.
+
+**Bug real encontrado y corregido en el camino, atrapado por verificación visual, no solo revisando código:** el logo real (`logo-columbus.png`) tiene el texto "Columbus" en blanco -- diseñado para fondos oscuros (así se usa en todo el resto del sitio). Sobre el fondo blanco del sidebar nuevo, el texto quedaba invisible, solo se veía el ícono amarillo suelto. No se creó un logo nuevo (sería inventar un asset de marca) -- se le dio al área del logo (tanto en el sidebar de escritorio como en el menú móvil) un fondo `bg-brand-cobalto`, coherente con la instrucción real del director de usar cobalto como color principal -- refuerza la marca en vez de solo tapar el bug.
+
+**Verificado con evidencia real:** ruta temporal con datos simulados (backend real inalcanzable desde este entorno), capturas en desktop y móvil confirmando el diseño antes y después del fix del logo. `next build` completo confirmando que las 7 rutas reales de admin (`/admin`, `/admin/cooperativas`, `/admin/puntos-operacion`, `/admin/banners`, `/admin/comercial`, `/admin/liquidaciones`, `/admin/administradores`) siguen compilando correctamente con el layout nuevo. `tsc --noEmit` limpio.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
