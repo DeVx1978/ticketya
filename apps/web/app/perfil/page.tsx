@@ -126,7 +126,24 @@ function MiCuenta() {
     .toUpperCase();
 
   return (
-    <main className="mx-auto max-w-6xl flex-1 px-4 py-10 lg:px-8">
+    <main className="flex-1 px-4 py-10 lg:px-8">
+      {/* Bug real encontrado (24-ago-2026, mismo día del ajuste de
+          ancho): `mx-auto` + `flex-1` combinados en el MISMO elemento
+          -- y ese elemento es hijo directo del `<body>` con
+          `flex flex-col` (ver layout.tsx) -- sacan al elemento del
+          comportamiento "stretch" (estirarse a todo el ancho) en el
+          eje transversal de un contenedor flex: un margen automático
+          en ese eje anula el stretch y encoge el elemento a su propio
+          contenido, sin importar el valor de `max-w`. Por eso ampliar
+          a `max-w-screen-2xl` no alcanzaba -- la tarjeta seguía
+          angosta. No lo causó este cambio -- ya venía así desde antes
+          (con `max-w-6xl` era menos notorio, porque el contenido casi
+          llenaba ese ancho de por sí). Corregido con el mismo patrón
+          real que ya usa `/buscar` (page.tsx, la ruta con resultados
+          reales): el `<main>` NUNCA lleva `mx-auto`/`max-w` -- el
+          ancho vive en un `<div>` anidado, sin ser el hijo flex
+          directo del body. */}
+      <div className="mx-auto max-w-screen-2xl">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
 
       <h1 className="font-display text-2xl font-bold text-brand-dark">Mi cuenta</h1>
@@ -165,8 +182,15 @@ function MiCuenta() {
             solo desde la pestaña "Mis datos" (esa sigue funcionando
             igual, sin tocar). */}
       <div className="mt-6 overflow-hidden rounded-2xl bg-white shadow-lg shadow-black/5 ring-1 ring-black/5">
-        <div className="relative h-32 w-full sm:h-44">
-          <Image src="/img/hero-2.jpg" alt="" fill sizes="(max-width: 1024px) 100vw, 896px" className="object-cover" priority />
+        <div className="relative h-48 w-full sm:h-64 lg:h-80">
+          <Image
+            src="/img/bus-portada-perfil.jpg"
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 1536px"
+            className="object-cover object-center"
+            priority
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/0 to-black/10" />
         </div>
 
@@ -307,6 +331,7 @@ function MiCuenta() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </main>
   );
