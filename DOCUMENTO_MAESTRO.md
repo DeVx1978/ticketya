@@ -1930,6 +1930,16 @@ Orden de la otra conversación (la directora), reenviada por el director: conver
 
 **Verificado con evidencia real:** ruta temporal con datos simulados (backend real inalcanzable desde este entorno), capturas en desktop y móvil confirmando el diseño antes y después del fix del logo. `next build` completo confirmando que las 7 rutas reales de admin (`/admin`, `/admin/cooperativas`, `/admin/puntos-operacion`, `/admin/banners`, `/admin/comercial`, `/admin/liquidaciones`, `/admin/administradores`) siguen compilando correctamente con el layout nuevo. `tsc --noEmit` limpio.
 
+## 5.64 "Forbidden resource" en Comercial y Liquidaciones -- hallazgo real, corregido por la otra conversación (PR #157) -- 25-ago-2026
+
+El director reportó el error real `Forbidden resource` (403) al navegar a `/admin/comercial` y `/admin/liquidaciones` con sesión `super_admin`, tras el rediseño del panel (sección 5.63) -- el sidebar nuevo hizo más fácil llegar a esas 2 secciones, dejando el problema más visible.
+
+**Diagnóstico real hecho antes de que se reportara la corrección:** confirmado en el código que **no lo causó el rediseño del panel** -- es una inconsistencia real del backend, ya existente desde antes. `ComercialController` y `LiquidacionesController` solo tenían `@Roles('admin_plataforma')` a nivel de clase, sin `super_admin` -- mientras que `AdminController` (Cooperativas, Puntos de operación, Banners, Administradores -- las otras 4 secciones del panel, que sí funcionaban bien) ya tenía el patrón correcto: `@Roles('admin_plataforma', 'super_admin')`. `RolesGuard` hace coincidencia exacta de rol, sin jerarquía implícita -- `super_admin`, aunque es el nivel más alto, quedaba fuera si no está listado explícitamente.
+
+**Corregido por la otra conversación** (rama `fix/super-admin-forbidden-comercial-liquidaciones`, PR #157, commit `5c42546`, ya fusionado en `main`): ambos controladores actualizados al mismo patrón real ya usado en `AdminController`.
+
+**Verificado por esta conversación tras el aviso, no solo confiado de palabra:** confirmado en el código real (`git fetch` + lectura directa de ambos archivos) que el decorador quedó `@Roles('admin_plataforma', 'super_admin')` en los 2 controladores. Además, se revisaron **todos** los controladores reales que sirven las 7 secciones del panel de admin, buscando cualquier otro con la misma inconsistencia -- ninguno encontrado; las 4 secciones restantes (Cooperativas, Puntos de operación, Banners, Administradores) viven en `AdminController`, que ya tenía el patrón correcto desde antes.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
