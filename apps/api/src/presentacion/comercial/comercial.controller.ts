@@ -1,4 +1,4 @@
-﻿import {
+import {
   Body,
   Controller,
   Get,
@@ -20,9 +20,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { PayloadToken } from '../../dominio/auth/auth.ports';
 
-/** RF-COMM -- gestion comercial/publicitaria, exclusiva de admin_plataforma. */
+/** RF-COMM -- gestion comercial/publicitaria. Hallazgo real
+ * (25-ago-2026): solo admin_plataforma podia entrar, aunque
+ * super_admin -- el nivel mas alto -- tambien deberia poder, mismo
+ * patron ya usado en AdminController real. */
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin_plataforma')
+@Roles('admin_plataforma', 'super_admin')
 @Controller('admin')
 export class ComercialController {
   constructor(private readonly comercial: ComercialService) {}
