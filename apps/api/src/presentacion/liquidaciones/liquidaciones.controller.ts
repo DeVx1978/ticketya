@@ -6,11 +6,12 @@ import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 
 /**
  * Liquidaciones a cooperativas — RF-ADMIN-003. Exclusivo del admin de
- * plataforma, igual que el resto de operaciones de dinero/negocio a
- * nivel plataforma.
+ * plataforma. Hallazgo real (25-ago-2026): solo admin_plataforma
+ * podia entrar, aunque super_admin -- el nivel mas alto -- tambien
+ * deberia poder, mismo patron ya usado en AdminController real.
  */
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin_plataforma')
+@Roles('admin_plataforma', 'super_admin')
 @Controller('admin/liquidaciones')
 export class LiquidacionesController {
   constructor(private readonly liquidaciones: LiquidacionesService) {}
