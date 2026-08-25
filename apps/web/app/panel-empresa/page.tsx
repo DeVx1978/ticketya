@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   obtenerDashboardCoop,
   obtenerConfiguracionFiscal,
   actualizarConfiguracionFiscal,
   obtenerPerfilCoop,
   actualizarPerfilCoop,
+  listarViajesCoop,
   type FilaVentaDelDia,
+  type ViajeCoopResumen,
 } from "@/lib/api";
 import { obtenerToken, decodificarToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
@@ -29,6 +30,20 @@ export default function PanelEmpresaDashboard() {
   // acceso al payload que ya decodificó layout.tsx, sin contexto
   // compartido entre ambos).
   const [rolActual, setRolActual] = useState<string | null>(null);
+
+  // "Viajes de hoy" para el vendedor (25-ago-2026, hallazgo real del
+  // director: los 4 botones que había antes duplicaban el menú de
+  // arriba, sin aportar nada). Reemplazado por contenido real y
+  // distinto -- lista de solo lectura, mismo endpoint real ya
+  // accesible para vendedor (`GET /coop/viajes`, ya usado por la
+  // sección "Viajes" del menú), filtrada por la fecha de hoy.
+  // `fechaSalida` es una columna `date` real (sin componente de hora
+  // ni huso horario -- a diferencia de `horaSalidaProgramada`, que sí
+  // tiene el gotcha real de zona horaria documentado en
+  // ENTREGA_TECNICA_EXHAUSTIVA.md sección 3), así que comparar el
+  // string tal cual, sin conversión, es seguro aquí.
+  const [viajesHoy, setViajesHoy] = useState<ViajeCoopResumen[] | null>(null);
+  const [errorViajesHoy, setErrorViajesHoy] = useState<string | null>(null);
 
   const [filas, setFilas] = useState<FilaVentaDelDia[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +79,12 @@ export default function PanelEmpresaDashboard() {
     if (rol !== "admin_cooperativa") {
       setCargandoFiscal(false);
       setCargandoLogo(false);
+      listarViajesCoop(token)
+        .then((viajes) => {
+          const hoy = new Date().toLocaleDateString("sv-SE"); // formato real YYYY-MM-DD, mismo que fechaSalida
+          setViajesHoy(viajes.filter((v) => v.fechaSalida === hoy));
+        })
+        .catch((err) => setErrorViajesHoy(err instanceof Error ? err.message : "No se pudieron cargar los viajes de hoy."));
       return;
     }
 
@@ -316,43 +337,54 @@ export default function PanelEmpresaDashboard() {
       </div>
         </>
       ) : (
-        // Vendedor real -- confirmado con el director que no existe
-        // ningún endpoint real de "ventas propias" ni ningún otro dato
-        // equivalente a las 3 secciones de admin_cooperativa -- no se
-        // inventa ningún número aquí. Accesos directos reales a lo
-        // que el vendedor sí puede usar (mismos 5 enlaces ya visibles
-        // en su menú lateral).
+        // Vendedor real -- hallazgo del director (25-ago-2026): la
+        // primera versión de este bloque tenía 4 botones que
+        // duplicaban exactamente el menú de arriba, sin aportar nada
+        // nuevo. Reemplazado por contenido real y distinto: lista de
+        // solo lectura de los viajes que salen hoy, mismo endpoint ya
+        // accesible para vendedor -- no un dato inventado.
         <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
-          <h1 className="font-display text-2xl font-bold text-brand-dark">¡Hola!</h1>
-          <p className="mt-1 text-sm text-brand-dark/70">
-            Desde aquí puedes ir directo a lo que necesitas para tu turno.
-          </p>
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Link
-              href="/panel-empresa/rutas"
-              className="rounded-xl border border-brand-light px-4 py-3 text-sm font-semibold text-brand-dark transition hover:border-brand-cobalto/40 hover:bg-brand-cobalto-claro hover:text-brand-cobalto"
-            >
-              Ver rutas
-            </Link>
-            <Link
-              href="/panel-empresa/unidades"
-              className="rounded-xl border border-brand-light px-4 py-3 text-sm font-semibold text-brand-dark transition hover:border-brand-cobalto/40 hover:bg-brand-cobalto-claro hover:text-brand-cobalto"
-            >
-              Ver unidades
-            </Link>
-            <Link
-              href="/panel-empresa/viajes"
-              className="rounded-xl border border-brand-light px-4 py-3 text-sm font-semibold text-brand-dark transition hover:border-brand-cobalto/40 hover:bg-brand-cobalto-claro hover:text-brand-cobalto"
-            >
-              Ver viajes
-            </Link>
-            <Link
-              href="/panel-empresa/validar-qr"
-              className="rounded-xl bg-brand-amber px-4 py-3 text-sm font-semibold text-brand-dark transition hover:brightness-95"
-            >
-              Validar boleto
-            </Link>
-          </div>
+          <h1 className="font-display text-2xl font-bold text-brand-dark">Viajes de hoy</h1>
+          <p className="mt-1 text-sm text-brand-dark/70">Salidas programadas para hoy, en un vistazo.</p>
+
+          {errorViajesHoy && (
+            <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
+              {errorViajesHoy}
+            </div>
+          )}
+
+          {viajesHoy === null && !errorViajesHoy && (
+            <p className="mt-4 text-sm text-brand-dark/50">Cargando...</p>
+          )}
+
+          {viajesHoy !== null && viajesHoy.length === 0 && (
+            <p className="mt-4 text-sm text-brand-dark/50">No hay viajes programados para hoy.</p>
+          )}
+
+          {viajesHoy !== null && viajesHoy.length > 0 && (
+            <div className="mt-4 overflow-hidden rounded-xl ring-1 ring-black/5">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-brand-light/40 text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                  <tr>
+                    <th className="px-4 py-3">Hora</th>
+                    <th className="px-4 py-3">Ruta</th>
+                    <th className="px-4 py-3">Unidad</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/5">
+                  {viajesHoy.map((v) => (
+                    <tr key={v.id}>
+                      <td className="px-4 py-3 font-semibold text-brand-dark">
+                        {new Date(v.horaSalidaProgramada).toLocaleTimeString("es-EC", { hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="px-4 py-3 text-brand-dark/80">{v.rutaNombre}</td>
+                      <td className="px-4 py-3 text-brand-dark/60">{v.unidadPlaca}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
