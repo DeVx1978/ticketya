@@ -1979,6 +1979,24 @@ Los 3 puntos pedidos por el director en la sección 5.65 (#1 menú del vendedor,
 
 **Nota real de continuidad de sesión:** el entorno de esta conversación se reinició entre turnos, perdiendo la rama y los commits locales de un primer intento (nunca se habían subido a GitHub, así que no se perdió nada del lado real del proyecto). El código se reconstruyó desde cero con la misma lógica ya verificada visualmente antes del reinicio (capturas reales confirmando el menú filtrado por rol y ambos estados de permiso de la pantalla de Soporte) -- verificado de nuevo con `tsc --noEmit` y `next build` limpios tras la reconstrucción, coincidiendo exactamente con el resultado de la primera verificación. Cambio 100% frontend, cero archivos tocados en `apps/api`.
 
+## 5.67 Dashboard del vendedor -- 3 "Forbidden resource" reales, encontrados probando la cuenta real -- 25-ago-2026
+
+El director probó la cuenta real de vendedor tras el cierre de la sección 5.66 (menú filtrado por rol): el menú de 5 enlaces quedó bien, pero al entrar a "Panel" (`/panel-empresa`, el dashboard), aparecían **3 errores reales `Forbidden resource`** dentro de la misma pantalla -- "Ventas de hoy", "Logo de la cooperativa", "Configuración de IVA".
+
+**Causa real, confirmada por el director antes de pedir el fix:** los 3 endpoints (`GET /coop/dashboard`, `GET /coop/perfil`, `GET /coop/configuracion-fiscal`) están correctamente restringidos a `admin_cooperativa` en el backend -- eso está bien, un vendedor no debería poder verlos. El problema real estaba en `apps/web/app/panel-empresa/page.tsx`: pedía los 3 datos en el `useEffect` inicial sin revisar `payload.rol` primero, mostrando el error crudo del backend en vez de simplemente no pedir/mostrar esas secciones. Mismo patrón exacto que ya se había corregido antes en el menú lateral (5.66) y en la pantalla de Soporte del admin (5.66) -- esta vez en una tercera pantalla que no se había revisado.
+
+**Investigación real antes de construir:** se confirmó con el director que **no existe ningún endpoint real** de "ventas propias del vendedor" en el controlador (`grep` completo del archivo real, cero resultados con `@Roles('vendedor')` para ningún dato de ventas/logo/fiscal) -- se descartó explícitamente inventar o simular ese dato.
+
+**Plan presentado y confirmado antes de tocar código:**
+1. Decodificar el rol real en `page.tsx` (mismo patrón ya usado en `admin/page.tsx` -- sin contexto compartido entre `layout.tsx` y `page.tsx`, cada uno decodifica el token por su cuenta).
+2. Las 3 llamadas reales (`obtenerDashboardCoop`, `obtenerConfiguracionFiscal`, `obtenerPerfilCoop`) solo se disparan si `rol === "admin_cooperativa"` -- el vendedor nunca hace la petición que le iba a fallar.
+3. Las 3 secciones visuales correspondientes, envueltas en la misma condición.
+4. Para el vendedor: **sin inventar ningún dato**, un bloque de bienvenida simple con accesos directos reales a lo que sí puede usar (Rutas, Unidades, Viajes, Validar boleto -- mismos 5 enlaces ya visibles en su menú).
+
+**Construido (rama `fix/dashboard-vendedor-forbidden`, un solo archivo, `apps/web/app/panel-empresa/page.tsx`):** exactamente como se planeó -- `rolActual` decodificado en el `useEffect`, las 3 llamadas y las 3 secciones envueltas en `rolActual === "admin_cooperativa"`, bloque de bienvenida real (`¡Hola!` + 4 accesos directos) como alternativa para el vendedor.
+
+**Verificado con captura real:** ruta temporal mostrando ambos casos lado a lado (`admin_cooperativa` con las 3 secciones completas, `vendedor` con el bloque de bienvenida limpio, sin ningún error). `tsc --noEmit` y `next build` limpios. Cambio 100% frontend, cero archivos tocados en `apps/api` -- confirmado con `git diff --stat`.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
