@@ -1877,6 +1877,18 @@ El director pidió explícitamente un rediseño estético del encabezado de perf
 
 **Verificado con evidencia real, no solo visual:** ruta temporal con datos simulados, capturas en desktop y móvil confirmando el diseño. Además, **prueba funcional real** con Playwright: confirmado que el botón de cámara (`<label>`) está correctamente conectado al `<input type="file">` real (mismo `id`, mismo `accept`), y una prueba de selección de archivo real (`set_input_files`) confirmando con captura que el avatar sí se actualiza visualmente al elegir una foto -- no solo que el botón se ve bien, sino que el mecanismo funciona de punta a punta. `tsc --noEmit` y `next build` limpios.
 
+## 5.61 Perfil: ancho real corregido (bug de CSS encontrado) + imagen de portada real del director -- 24-ago-2026
+
+El director señaló que el perfil (ya rediseñado en la sección 5.60) se seguía viendo "amontonado al centro", y compartió una imagen real (bus Columbus con "MACHALA" en el letrero, marca visible completa) para usar como portada en vez de `hero-2.jpg`, pidiendo que el bus se vea completo.
+
+**Hallazgo real, más profundo que solo el ancho:** ampliar `max-w-6xl` a `max-w-screen-2xl` (mismo estándar ya establecido en el resto del sitio) no alcanzó -- medido con Playwright (`bounding_box()` real, no a ojo), el `<main>` seguía midiendo solo 354px en una pantalla de 1920px. Causa raíz real: `<main>` combinaba `mx-auto` + `flex-1` **en el mismo elemento**, que además es hijo directo del `<body>` con `flex flex-col` (`layout.tsx`) -- un margen automático en el eje transversal de un contenedor flex anula el comportamiento "stretch" (estirarse a todo el ancho) y encoge el elemento a su propio contenido, sin importar el valor de `max-w`. **No lo causó este cambio** -- ya venía así desde antes; con `max-w-6xl` (1152px) era menos notorio porque el contenido casi llenaba ese ancho de por sí, y se hizo evidente al ampliar a 1536px.
+
+**Corregido con el mismo patrón real que ya usa `/buscar`** (`page.tsx` de resultados, la ruta con contenido real): el `<main>` nunca lleva `mx-auto`/`max-w` directamente -- el ancho vive en un `<div>` anidado adentro, nunca en el hijo flex directo del body. Reverificado con `bounding_box()`: `<main>` ahora mide los 1920px completos, la tarjeta llega a los 1536px esperados.
+
+**Imagen de portada real:** guardada como asset propio del proyecto (`public/img/bus-portada-perfil.jpg`, imagen real proporcionada por el director, 1280x720). Altura de la portada aumentada (`h-48 sm:h-64 lg:h-80`, antes `h-32 sm:h-44`) para reducir el recorte lateral del bus en pantallas anchas -- imagen de proporción 1.78:1, con más altura el contenedor se acerca más a esa proporción real en vez de quedar extremadamente ancho y corto.
+
+**Verificado con captura real en 3 anchos** (1920px, 1200px, 390px móvil) -- confirmado en los 3 que el bus se ve prácticamente completo (logo Columbus, letrero "MACHALA", carrocería), sin el amontonamiento anterior. `tsc --noEmit` y `next build` limpios.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
