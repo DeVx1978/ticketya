@@ -292,8 +292,12 @@ describe('Panel Admin + Panel Empresa (e2e)', () => {
 
     expect(
       res.body.some(
-        (c: { cooperativa_nombre: string }) =>
-          c.cooperativa_nombre === 'Coop E2E',
+        // Hallazgo real (25-ago-2026): el backend devolvia snake_case por
+        // error (bug real -- mostraba "NaN" en el dashboard real del
+        // director), corregido a camelCase para coincidir con la
+        // interfaz real FilaVentaNacional.
+        (c: { cooperativaNombre: string }) =>
+          c.cooperativaNombre === 'Coop E2E',
       ),
     ).toBe(true);
   });

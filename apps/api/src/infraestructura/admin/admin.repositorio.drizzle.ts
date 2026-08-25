@@ -298,14 +298,22 @@ export class AdminRepositorioDrizzle implements AdminRepositorio {
   }
 
   async dashboardNacional(): Promise<FilaVentaNacional[]> {
+    // Hallazgo real del director (25-ago-2026): esta consulta cruda
+    // devolvia columnas en snake_case (asi las nombra Postgres por
+    // defecto), pero la interfaz FilaVentaNacional espera camelCase --
+    // el "as unknown as" de abajo solo enganaba a TypeScript, en
+    // tiempo de ejecucion cada v.totalBoletos/v.totalVentas del
+    // frontend daba "undefined", mostrando "NaN" en pantalla. Se
+    // corrige con alias explicitos entre comillas dobles (Postgres
+    // respeta mayusculas solo asi), para que coincidan de verdad.
     const resultado = await this.db.execute(sql`
-      SELECT c.nombre_comercial AS cooperativa_nombre,
-             COALESCE(SUM(b.precio_pagado), 0)::float AS total_ventas,
-             COUNT(b.id)::int AS total_boletos
+      SELECT c.nombre_comercial AS "cooperativaNombre",
+             COALESCE(SUM(b.precio_pagado), 0)::float AS "totalVentas",
+             COUNT(b.id)::int AS "totalBoletos"
       FROM cooperativas c
       LEFT JOIN boletos b ON b.cooperativa_id = c.id
       GROUP BY c.id, c.nombre_comercial
-      ORDER BY total_ventas DESC
+      ORDER BY "totalVentas" DESC
     `);
     return resultado.rows as unknown as FilaVentaNacional[];
   }
