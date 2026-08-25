@@ -1479,6 +1479,42 @@ export async function actualizarCargoPlataforma(token: string, monto: number): P
   }
 }
 
+/**
+ * Contacto de soporte -- edición desde el Panel Admin (25-ago-2026,
+ * hallazgo real de auditoría de la directora) -- el endpoint ya
+ * existía en el backend desde el 13-ago-2026, pero nunca se conectó
+ * al frontend. Reusa el tipo `ContactoSoporte` ya declarado arriba
+ * (misma forma real, `{correo, telefono}`) -- esa función pública
+ * (`obtenerContactoSoporte`, sin token) es para el footer; estas dos
+ * son para el panel de admin, con autenticación.
+ *
+ * A diferencia de cargo-plataforma/iva-nacional, el PATCH aquí es
+ * EXCLUSIVO de super_admin (ver admin.controller.ts) -- admin_plataforma
+ * solo puede leer. La pantalla que usa esto debe respetar ese límite.
+ */
+export async function obtenerContactoSoporteAdmin(token: string): Promise<ContactoSoporte> {
+  const res = await fetch(`${API_URL}/admin/soporte`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) throw new Error(cuerpo?.message ?? "No se pudo cargar el contacto de soporte.");
+  return cuerpo as ContactoSoporte;
+}
+
+export async function actualizarContactoSoporteAdmin(token: string, datos: ContactoSoporte): Promise<void> {
+  const res = await fetch(`${API_URL}/admin/soporte`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+  const cuerpo = await res.json();
+  if (!res.ok) {
+    const mensaje = Array.isArray(cuerpo?.message) ? cuerpo.message.join(" ") : cuerpo?.message;
+    throw new Error(mensaje ?? "No se pudo guardar el contacto de soporte.");
+  }
+}
+
 // ---------------------------------------------------------------------
 // Perfil de cooperativa (logo) — ver 22-jul-2026.
 // ---------------------------------------------------------------------

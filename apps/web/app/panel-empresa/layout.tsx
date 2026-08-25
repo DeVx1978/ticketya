@@ -10,13 +10,13 @@ const ENLACES = [
   { href: "/panel-empresa", etiqueta: "Panel" },
   { href: "/panel-empresa/rutas", etiqueta: "Rutas" },
   { href: "/panel-empresa/unidades", etiqueta: "Unidades" },
-  { href: "/panel-empresa/personal", etiqueta: "Personal" },
+  { href: "/panel-empresa/personal", etiqueta: "Personal", soloAdmin: true },
   { href: "/panel-empresa/viajes", etiqueta: "Viajes" },
   { href: "/panel-empresa/validar-qr", etiqueta: "Validar boleto" },
-  { href: "/panel-empresa/pagos-pendientes", etiqueta: "Pagos pendientes" },
-  { href: "/panel-empresa/solicitudes-factura", etiqueta: "Facturas" },
-  { href: "/panel-empresa/configuracion", etiqueta: "Configuración" },
-  { href: "/panel-empresa/carga-masiva", etiqueta: "Carga masiva" },
+  { href: "/panel-empresa/pagos-pendientes", etiqueta: "Pagos pendientes", soloAdmin: true },
+  { href: "/panel-empresa/solicitudes-factura", etiqueta: "Facturas", soloAdmin: true },
+  { href: "/panel-empresa/configuracion", etiqueta: "Configuración", soloAdmin: true },
+  { href: "/panel-empresa/carga-masiva", etiqueta: "Carga masiva", soloAdmin: true },
 ];
 
 /**
@@ -87,6 +87,15 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
     );
   }
 
+  // Hallazgo real de la directora (auditoría, 25-ago-2026): un vendedor
+  // real solo tiene acceso de backend a 8 endpoints de solo lectura +
+  // validar-qr/verificar-menor -- los otros 6 enlaces (Personal, Pagos
+  // pendientes, Facturas, Configuración, Carga masiva) le fallaban con
+  // 403 sin ningún aviso, porque el menú nunca se filtraba por rol.
+  // Corregido: se oculta directamente lo que el backend ya rechaza,
+  // en vez de mostrar un enlace que lleva a un error.
+  const enlacesVisibles = ENLACES.filter((enlace) => !enlace.soloAdmin || payload?.rol === "admin_cooperativa");
+
   return (
     <div className="flex min-h-full flex-1 flex-col bg-brand-light/20">
       <header className="sticky top-0 z-50 border-b border-black/5 bg-white">
@@ -116,7 +125,7 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
             se ve amontonado; ahora vive en un panel lateral fijo (ver abajo),
             mismo patrón real ya usado en /perfil (Stripe/Linear). */}
         <nav className="flex gap-1 overflow-x-auto border-t border-black/5 px-4 py-2 lg:hidden">
-          {ENLACES.map((enlace) => (
+          {enlacesVisibles.map((enlace) => (
             <Link
               key={enlace.href}
               href={enlace.href}
@@ -156,7 +165,7 @@ export default function PanelEmpresaLayout({ children }: { children: React.React
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">
         <div className="lg:grid lg:grid-cols-[220px_1fr] lg:items-start lg:gap-10">
           <nav className="hidden lg:sticky lg:top-24 lg:block lg:space-y-1">
-            {ENLACES.map((enlace) => (
+            {enlacesVisibles.map((enlace) => (
               <Link
                 key={enlace.href}
                 href={enlace.href}

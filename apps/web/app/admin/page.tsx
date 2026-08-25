@@ -7,10 +7,12 @@ import {
   obtenerCargoPlataforma,
   actualizarCargoPlataforma,
   contarUsuariosPorRolAdmin,
+  obtenerContactoSoporteAdmin,
+  actualizarContactoSoporteAdmin,
   type FilaVentaNacional,
   type ConteoUsuarios,
 } from "@/lib/api";
-import { obtenerToken } from "@/lib/auth";
+import { obtenerToken, decodificarToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
 
 function formatearDolares(monto: number) {
@@ -94,9 +96,25 @@ export default function AdminHome() {
   const [errorCargo, setErrorCargo] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
 
+  // Pantalla real de Soporte (25-ago-2026, hallazgo real de auditoría
+  // de la directora) -- el endpoint ya existía en el backend desde el
+  // 13-ago-2026, pero nunca se conectó al frontend. El PATCH es
+  // exclusivo de super_admin -- se necesita el rol real del usuario
+  // actual para mostrar/ocultar la posibilidad de editar.
+  const [rolActual, setRolActual] = useState<string | null>(null);
+  const [correoSoporte, setCorreoSoporte] = useState("");
+  const [telefonoSoporte, setTelefonoSoporte] = useState("");
+  const [cargandoSoporte, setCargandoSoporte] = useState(true);
+  const [guardandoSoporte, setGuardandoSoporte] = useState(false);
+  const [errorSoporte, setErrorSoporte] = useState<string | null>(null);
+
   useEffect(() => {
     const token = obtenerToken();
     if (!token) return; // el layout ya se encarga de redirigir si no hay token
+
+    const datos = decodificarToken(token);
+    setRolActual(datos?.rol ?? null);
+
     fetch(`${API_URL}/admin/iva-nacional`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
       .then((res) => res.json())
       .then((cuerpo: { ivaPorcentaje: number }) => setIvaPorcentaje(String(cuerpo.ivaPorcentaje)))
@@ -115,6 +133,14 @@ export default function AdminHome() {
       .then((monto) => setCargoPlataforma(String(monto)))
       .catch((err) => setErrorCargo(err instanceof Error ? err.message : "No se pudo cargar el cargo de plataforma."))
       .finally(() => setCargandoCargo(false));
+
+    obtenerContactoSoporteAdmin(token)
+      .then((c) => {
+        setCorreoSoporte(c.correo ?? "");
+        setTelefonoSoporte(c.telefono ?? "");
+      })
+      .catch((err) => setErrorSoporte(err instanceof Error ? err.message : "No se pudo cargar el contacto de soporte."))
+      .finally(() => setCargandoSoporte(false));
   }, []);
 
   async function guardarCargo(e: React.FormEvent) {
@@ -134,6 +160,25 @@ export default function AdminHome() {
       setErrorCargo(err instanceof Error ? err.message : "No se pudo guardar.");
     } finally {
       setGuardandoCargo(false);
+    }
+  }
+
+  async function guardarSoporte(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorSoporte(null);
+    const token = obtenerToken();
+    if (!token) return;
+    setGuardandoSoporte(true);
+    try {
+      await actualizarContactoSoporteAdmin(token, {
+        correo: correoSoporte.trim() || null,
+        telefono: telefonoSoporte.trim() || null,
+      });
+      setMensajeExito("Contacto de soporte actualizado.");
+    } catch (err) {
+      setErrorSoporte(err instanceof Error ? err.message : "No se pudo guardar.");
+    } finally {
+      setGuardandoSoporte(false);
     }
   }
 
@@ -356,6 +401,73 @@ id="admin-cargo-plataforma"
           </form>
         )}
         {errorCargo && <p className="mt-3 text-sm font-medium text-red-600">{errorCargo}</p>}
+      </div>
+
+      <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+        <h2 className="font-display text-lg font-bold text-brand-dark">Contacto de soporte</h2>
+        <p className="mt-1 text-sm text-brand-dark/70">
+          Correo y teléfono que se muestran en el pie de página del sitio.
+        </p>
+
+        {cargandoSoporte ? (
+          <p className="mt-4 text-sm text-brand-dark/50">Cargando...</p>
+        ) : rolActual === "super_admin" ? (
+          <form onSubmit={guardarSoporte} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div>
+              <label htmlFor="admin-soporte-correo" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Correo
+              </label>
+              <input
+                id="admin-soporte-correo"
+                type="email"
+                value={correoSoporte}
+                onChange={(e) => setCorreoSoporte(e.target.value)}
+                placeholder="soporte@columbus.com.ec"
+                className="w-64 rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <div>
+              <label htmlFor="admin-soporte-telefono" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
+                Teléfono
+              </label>
+              <input
+                id="admin-soporte-telefono"
+                type="tel"
+                value={telefonoSoporte}
+                onChange={(e) => setTelefonoSoporte(e.target.value)}
+                placeholder="1800265862"
+                className="w-48 rounded-lg border border-brand-light bg-white px-3 py-2.5 text-base text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-medium"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={guardandoSoporte}
+              className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
+            >
+              {guardandoSoporte ? "Guardando..." : "Guardar"}
+            </button>
+          </form>
+        ) : (
+          // Orden real del director (25-ago-2026): el PATCH de este
+          // endpoint es exclusivo de super_admin -- si se mostrara el
+          // botón igual a los demás formularios, un admin_plataforma
+          // lo vería habilitado y le fallaría con 403 sin aviso, el
+          // mismo problema real que motivó el punto 1 de esta sesión
+          // (menú del vendedor). Se muestra el valor actual, de solo
+          // lectura, con una nota clara del porqué.
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-brand-dark">
+              <span className="font-semibold">Correo:</span> {correoSoporte || "— sin definir —"}
+            </p>
+            <p className="text-sm text-brand-dark">
+              <span className="font-semibold">Teléfono:</span> {telefonoSoporte || "— sin definir —"}
+            </p>
+            <p className="text-xs text-brand-dark/50">
+              Solo un super admin puede editar el contacto de soporte.
+            </p>
+          </div>
+        )}
+        {errorSoporte && <p className="mt-3 text-sm font-medium text-red-600">{errorSoporte}</p>}
       </div>
     </div>
   );
