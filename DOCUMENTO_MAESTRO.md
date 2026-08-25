@@ -1889,6 +1889,12 @@ El director señaló que el perfil (ya rediseñado en la sección 5.60) se segu�
 
 **Verificado con captura real en 3 anchos** (1920px, 1200px, 390px móvil) -- confirmado en los 3 que el bus se ve prácticamente completo (logo Columbus, letrero "MACHALA", carrocería), sin el amontonamiento anterior. `tsc --noEmit` y `next build` limpios.
 
+## 5.59 Pendiente real de coordinacion -- unificar con la otra conversacion -- 24-ago-2026
+
+Hay otra conversacion paralela trabajando en el mismo proyecto (confirmado real: fusiono PR #150-153, incluido `fix/perfil-ancho-portada-bus`, mientras esta conversacion trabajaba en paralelo). El director va a pedirle a esa conversacion que actualice su propia version de este documento con su trabajo reciente, y luego va a traer ese contenido aqui para que quede unificado en un solo documento real y completo -- sin perder el trabajo de ninguna de las 2 conversaciones.
+
+**Pendiente real:** cuando el director traiga ese contenido, revisarlo contra el codigo real (no copiarlo a ciegas), y fusionarlo con las secciones ya existentes aqui, evitando duplicados.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
