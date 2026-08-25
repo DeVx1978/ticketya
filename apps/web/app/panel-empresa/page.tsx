@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   obtenerDashboardCoop,
   obtenerConfiguracionFiscal,
@@ -9,7 +10,7 @@ import {
   actualizarPerfilCoop,
   type FilaVentaDelDia,
 } from "@/lib/api";
-import { obtenerToken } from "@/lib/auth";
+import { obtenerToken, decodificarToken } from "@/lib/auth";
 import { Toast } from "@/components/Toast";
 
 function formatearDolares(monto: number) {
@@ -17,6 +18,18 @@ function formatearDolares(monto: number) {
 }
 
 export default function PanelEmpresaDashboard() {
+  // Hallazgo real del director, probando la cuenta de vendedor
+  // (25-ago-2026): esta pantalla pedía las 3 secciones reales
+  // exclusivas de admin_cooperativa (dashboard de ventas, logo,
+  // configuración fiscal) sin revisar el rol antes -- un vendedor
+  // veía "Forbidden resource" 3 veces, el error crudo del backend, en
+  // vez de simplemente no ver esas secciones. Mismo patrón real ya
+  // corregido antes en el menú lateral y en la pantalla de Soporte
+  // del admin: decodificar el rol localmente (page.tsx no tiene
+  // acceso al payload que ya decodificó layout.tsx, sin contexto
+  // compartido entre ambos).
+  const [rolActual, setRolActual] = useState<string | null>(null);
+
   const [filas, setFilas] = useState<FilaVentaDelDia[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +50,23 @@ export default function PanelEmpresaDashboard() {
   useEffect(() => {
     const token = obtenerToken();
     if (!token) return; // el layout ya se encarga de redirigir si no hay token
+
+    const datos = decodificarToken(token);
+    const rol = datos?.rol ?? null;
+    setRolActual(rol);
+
+    // Las 3 llamadas de abajo (dashboard, configuración fiscal, perfil
+    // con el logo) están correctamente restringidas a admin_cooperativa
+    // en el backend -- confirmado por el director que no existe ningún
+    // endpoint real equivalente para el vendedor (ni de "ventas
+    // propias" ni de ningún otro dato de estas 3 secciones). Se evita
+    // la petición desde el inicio, en vez de dejar que falle.
+    if (rol !== "admin_cooperativa") {
+      setCargandoFiscal(false);
+      setCargandoLogo(false);
+      return;
+    }
+
     obtenerDashboardCoop(token)
       .then(setFilas)
       .catch((err) => setError(err instanceof Error ? err.message : "No se pudo cargar el dashboard."));
@@ -104,20 +134,23 @@ export default function PanelEmpresaDashboard() {
   return (
     <div className="space-y-6">
       <Toast mensaje={mensajeExito} onCerrar={() => setMensajeExito(null)} />
-      <div>
-        <h1 className="font-display text-2xl font-bold text-brand-dark">Ventas de hoy</h1>
-        <p className="mt-1 text-sm text-brand-dark/70">
-          Resumen de boletos vendidos hoy, en línea y en ventanilla, por ruta y por vendedor.
-        </p>
-      </div>
 
-      {error && (
-        <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
-          {error}
-        </div>
-      )}
+      {rolActual === "admin_cooperativa" ? (
+        <>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-brand-dark">Ventas de hoy</h1>
+            <p className="mt-1 text-sm text-brand-dark/70">
+              Resumen de boletos vendidos hoy, en línea y en ventanilla, por ruta y por vendedor.
+            </p>
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {error && (
+            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-100">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-dark/50">
             Boletos vendidos hoy
@@ -281,6 +314,47 @@ export default function PanelEmpresaDashboard() {
         {mensajeFiscal && <p className="mt-3 text-sm font-medium text-emerald-600">{mensajeFiscal}</p>}
         {errorFiscal && <p className="mt-3 text-sm font-medium text-red-600">{errorFiscal}</p>}
       </div>
+        </>
+      ) : (
+        // Vendedor real -- confirmado con el director que no existe
+        // ningún endpoint real de "ventas propias" ni ningún otro dato
+        // equivalente a las 3 secciones de admin_cooperativa -- no se
+        // inventa ningún número aquí. Accesos directos reales a lo
+        // que el vendedor sí puede usar (mismos 5 enlaces ya visibles
+        // en su menú lateral).
+        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+          <h1 className="font-display text-2xl font-bold text-brand-dark">¡Hola!</h1>
+          <p className="mt-1 text-sm text-brand-dark/70">
+            Desde aquí puedes ir directo a lo que necesitas para tu turno.
+          </p>
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Link
+              href="/panel-empresa/rutas"
+              className="rounded-xl border border-brand-light px-4 py-3 text-sm font-semibold text-brand-dark transition hover:border-brand-cobalto/40 hover:bg-brand-cobalto-claro hover:text-brand-cobalto"
+            >
+              Ver rutas
+            </Link>
+            <Link
+              href="/panel-empresa/unidades"
+              className="rounded-xl border border-brand-light px-4 py-3 text-sm font-semibold text-brand-dark transition hover:border-brand-cobalto/40 hover:bg-brand-cobalto-claro hover:text-brand-cobalto"
+            >
+              Ver unidades
+            </Link>
+            <Link
+              href="/panel-empresa/viajes"
+              className="rounded-xl border border-brand-light px-4 py-3 text-sm font-semibold text-brand-dark transition hover:border-brand-cobalto/40 hover:bg-brand-cobalto-claro hover:text-brand-cobalto"
+            >
+              Ver viajes
+            </Link>
+            <Link
+              href="/panel-empresa/validar-qr"
+              className="rounded-xl bg-brand-amber px-4 py-3 text-sm font-semibold text-brand-dark transition hover:brightness-95"
+            >
+              Validar boleto
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
