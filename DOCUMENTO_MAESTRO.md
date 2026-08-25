@@ -1962,6 +1962,23 @@ Orden del director: "no necesitamos más sorpresas" -- investigación exhaustiva
 
 **Decisión real del director:** no pedir los 8 de una vez -- se le pidieron a la otra conversación los 3 más pequeños y urgentes (#1, #3, #4). Los otros 5 (#2, #5, #6, #7, #8) quedan como pendientes reales para sesiones dedicadas aparte, cada uno con su propio alcance bien definido cuando se retomen.
 
+## 5.66 Cierre de los 3 huecos urgentes (sección 5.65, #1/#3/#4) -- 25-ago-2026
+
+Los 3 puntos pedidos por el director en la sección 5.65 (#1 menú del vendedor, #3 pantalla de Soporte, #4 horas límite de reprogramación), asignados a esta conversación. Plan presentado y confirmado antes de tocar código, con investigación real hecha primero.
+
+**Hallazgo real durante la investigación, antes de construir el #3:** el `PATCH /admin/soporte` es exclusivo de `super_admin` (no `admin_plataforma`) -- distinto al patrón de IVA/Cargo de plataforma, que ambos roles pueden editar. Construir el formulario igual a los otros 2 sin distinguir esto habría repetido el mismo problema real del #1 (botón visible que falla con 403 sin aviso). Confirmado con el director antes de construir: el botón "Guardar" solo aparece si el rol real es `super_admin`; con `admin_plataforma` se ve de solo lectura, con una nota explicando el porqué.
+
+**Hallazgo real durante la investigación del #4:** la funcionalidad de negocio (horas límite de reprogramación) **ya estaba completamente cubierta**, editable desde `/panel-empresa/configuracion` a través de `politica-cancelacion-reprogramacion` -- mismo campo, misma columna real (`cooperativas.horas_limite_reprogramacion`). El endpoint dedicado que menciona la auditoría (`/coop/horas-limite-reprogramacion`) sí está huérfano en el frontend, pero es redundante con lo que ya funciona. **Cerrado sin código nuevo**, confirmado por el director -- no es un pendiente, ya está cubierto de verdad.
+
+**Construido (rama `feat/menu-vendedor-y-soporte`, 3 archivos):**
+- `panel-empresa/layout.tsx`: campo `soloAdmin?: boolean` en los 5 enlaces reales que el backend rechaza a un vendedor (Personal, Pagos pendientes, Facturas, Configuración, Carga masiva), filtrado por `payload.rol` en los 2 lugares donde se renderiza el menú (móvil y escritorio).
+- `lib/api.ts`: 2 funciones nuevas, `obtenerContactoSoporteAdmin` y `actualizarContactoSoporteAdmin`. Tuvieron que nombrarse distinto a `obtenerContactoSoporte` (ya existente, función pública sin token, usada por el footer) -- colisión real de nombres encontrada y corregida antes de romper el build.
+- `admin/page.tsx`: 3er formulario de configuración (Contacto de soporte), mismo patrón visual exacto que IVA/Cargo de plataforma -- con el criterio de permisos real descrito arriba.
+
+**Bug real encontrado y corregido durante la construcción:** al reusar el nombre `obtenerContactoSoporte` para mis funciones nuevas, `tsc` marcó redeclaración -- ya existía una función pública real con ese nombre exacto (footer, sin autenticación, endpoint `/contacto-soporte` distinto). Renombradas a `*Admin` para no chocar, reusando el tipo `ContactoSoporte` ya declarado en vez de duplicarlo.
+
+**Nota real de continuidad de sesión:** el entorno de esta conversación se reinició entre turnos, perdiendo la rama y los commits locales de un primer intento (nunca se habían subido a GitHub, así que no se perdió nada del lado real del proyecto). El código se reconstruyó desde cero con la misma lógica ya verificada visualmente antes del reinicio (capturas reales confirmando el menú filtrado por rol y ambos estados de permiso de la pantalla de Soporte) -- verificado de nuevo con `tsc --noEmit` y `next build` limpios tras la reconstrucción, coincidiendo exactamente con el resultado de la primera verificación. Cambio 100% frontend, cero archivos tocados en `apps/api`.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
