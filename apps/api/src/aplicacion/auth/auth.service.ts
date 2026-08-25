@@ -182,7 +182,18 @@ export class AuthService {
     // esto, decenas de pruebas e2e existentes que ya inician sesión
     // como admin_cooperativa/admin_plataforma/super_admin y esperan
     // accessToken directo se romperían de golpe.
-    if (ROLES_2FA_OBLIGATORIO.includes(usuario.rol) && process.env.NODE_ENV !== 'test') {
+    // Desactivado temporalmente a pedido del director (24-ago-2026) --
+    // necesita entrar sin friccion a los paneles administrativos
+    // mientras hace ajustes y pruebas reales. Se reactiva borrando la
+    // variable de entorno DESACTIVAR_2FA_TEMPORAL (local y/o en
+    // Render), sin tocar codigo de nuevo. Por defecto, sin la
+    // variable puesta, el 2FA sigue exigiendose normal -- no hay
+    // riesgo de que quede desactivado por accidente.
+    if (
+      ROLES_2FA_OBLIGATORIO.includes(usuario.rol) &&
+      process.env.NODE_ENV !== 'test' &&
+      process.env.DESACTIVAR_2FA_TEMPORAL !== 'true'
+    ) {
       const tokenTemporal = await this.emitirTokenTemporal2fa(usuario.id);
       if (!usuario.totpHabilitado) {
         // "Configuración forzada en el siguiente login", no un bloqueo
