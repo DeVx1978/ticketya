@@ -1940,6 +1940,28 @@ El director reportó el error real `Forbidden resource` (403) al navegar a `/adm
 
 **Verificado por esta conversación tras el aviso, no solo confiado de palabra:** confirmado en el código real (`git fetch` + lectura directa de ambos archivos) que el decorador quedó `@Roles('admin_plataforma', 'super_admin')` en los 2 controladores. Además, se revisaron **todos** los controladores reales que sirven las 7 secciones del panel de admin, buscando cualquier otro con la misma inconsistencia -- ninguno encontrado; las 4 secciones restantes (Cooperativas, Puntos de operación, Banners, Administradores) viven en `AdminController`, que ya tenía el patrón correcto desde antes.
 
+## 5.65 Auditoría real completa -- 8 huecos reales confirmados en los paneles internos -- 25-ago-2026
+
+Orden del director: "no necesitamos más sorpresas" -- investigación exhaustiva de todos los paneles internos (admin, cooperativa, vendedor), comparando cada endpoint real del backend contra las pantallas reales del frontend, buscando funciones huérfanas (backend construido, sin ninguna pantalla conectada) y roles reales sin reflejar en la interfaz.
+
+**1. URGENTE -- Menú del panel de cooperativa no respeta el rol real de Vendedor.** `apps/web/app/panel-empresa/layout.tsx`, arreglo `ENLACES` -- lista fija de 10 enlaces, sin ningún filtro por rol. Confirmado contra el backend real: un vendedor solo tiene permiso real en 8 endpoints (`tipos-vehiculo`, `unidades`, `rutas`, `rutas/:id/paradas`, `viajes`, `viajes/:id/pasajeros` -- todos de solo lectura -- más `validar-qr` y `verificar-menor`). Los otros 6 enlaces del menú (Personal, Pagos pendientes, Facturas, Configuración, Carga masiva, crear/editar en Rutas/Unidades) le fallan con 403 sin ningún aviso visual. Afecta a personal real usando el sistema todos los días.
+
+**2. No se puede asignar un conductor específico a un viaje.** La columna `viajes.conductorId` existe en la base de datos real desde hace tiempo, pero `conductorId` **no está en ningún DTO** (`CrearViajeDto` ni similar) -- imposible asignarlo desde la API, mucho menos desde una pantalla.
+
+**3. Falta pantalla real de Soporte en el panel de admin.** El endpoint (`GET`/`PATCH /admin/soporte`) existe y funciona -- pero no hay ninguna pantalla en `/admin` para editarlo. Hoy el correo/teléfono de soporte del footer solo se cambia por script directo a la base de datos.
+
+**4. Falta pantalla real de Horas límite de reprogramación en el panel de cooperativa.** El endpoint (`GET`/`PATCH /coop/horas-limite-reprogramacion`) existe, pero está completamente huérfano -- ni siquiera existe la función correspondiente en `apps/web/lib/api.ts`. Afecta una regla de negocio real (cuántas horas antes del viaje se puede reprogramar un boleto).
+
+**5. No existe ningún sistema de quejas/reclamos de pasajeros** -- ni en el backend, ni en el frontend. Confirmado con búsqueda completa en `dominio/`, cero coincidencias.
+
+**6. No existe ningún módulo real de reportes/analítica** más allá del dashboard nacional básico (totales acumulados, sin filtro de fecha). Sin reporte de ocupación, rutas más vendidas, ni nada exportable.
+
+**7. No existe ninguna pantalla de historial de notificaciones enviadas** (correo/WhatsApp) a un usuario -- útil para soporte real ("no me llegó la confirmación"), hoy imposible de verificar.
+
+**8. No existe campo de logo para terminales aliadas.** `puntos_operacion` no tiene columna `logoUrl` (a diferencia de `cooperativas`, que sí la tiene y funciona de punta a punta). El componente real `TerminalesAliadas.tsx` muestra un ícono genérico (`IconoTerminal`), nunca el logo real de cada terminal/marca aliada.
+
+**Decisión real del director:** no pedir los 8 de una vez -- se le pidieron a la otra conversación los 3 más pequeños y urgentes (#1, #3, #4). Los otros 5 (#2, #5, #6, #7, #8) quedan como pendientes reales para sesiones dedicadas aparte, cada uno con su propio alcance bien definido cuando se retomen.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
