@@ -289,7 +289,7 @@ export default function RutasPage() {
         <button
           type="submit"
           disabled={guardando}
-          className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
         >
           {guardando ? "Guardando..." : "Crear ruta"}
         </button>
@@ -479,7 +479,7 @@ export default function RutasPage() {
                               <button
                                 type="submit"
                                 disabled={guardandoHorario}
-                                className="rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+                                className="rounded-lg bg-brand-amber px-4 py-2 text-xs font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
                               >
                                 {guardandoHorario ? "Guardando..." : "Agregar horario"}
                               </button>
@@ -663,7 +663,7 @@ export default function RutasPage() {
                               <button
                                 type="submit"
                                 disabled={guardandoParada}
-                                className="rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+                                className="rounded-lg bg-brand-amber px-4 py-2 text-xs font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
                               >
                                 {guardandoParada ? "Guardando..." : "Agregar parada"}
                               </button>

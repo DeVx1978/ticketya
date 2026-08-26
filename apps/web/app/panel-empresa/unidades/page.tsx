@@ -331,7 +331,7 @@ export default function UnidadesPage() {
           <button
             type="submit"
             disabled={guardandoTipo}
-            className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
             {guardandoTipo ? "Guardando..." : "Crear tipo de vehículo"}
           </button>
@@ -588,7 +588,7 @@ export default function UnidadesPage() {
           <button
             type="submit"
             disabled={guardandoUnidad || !tipos?.length}
-            className="h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            className="h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
             {guardandoUnidad ? "Guardando..." : "Crear unidad"}
           </button>

@@ -143,7 +143,7 @@ export default function ValidarQrPage() {
           <button
             type="submit"
             disabled={validando || !codigo.trim()}
-            className="rounded-lg bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            className="rounded-lg bg-brand-amber px-6 py-3 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
             {validando ? "Validando..." : "Validar"}
           </button>

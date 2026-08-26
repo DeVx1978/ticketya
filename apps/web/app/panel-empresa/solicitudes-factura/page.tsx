@@ -86,7 +86,7 @@ function TarjetaSolicitud({
           <button
             onClick={marcarEmitida}
             disabled={guardando}
-            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            className="rounded-lg bg-brand-amber px-4 py-2 text-sm font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
             {guardando ? "Guardando..." : "Marcar como emitida"}
           </button>

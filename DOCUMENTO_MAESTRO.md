@@ -2025,6 +2025,22 @@ Orden del director: mismo tratamiento visual real ya aplicado a `/admin` (secci�
 
 **Pendiente real, confirmado con el director:** Fase 2 (Rutas, Unidades, Personal, Validar boleto, Pagos pendientes, Facturas, Configuración, Carga masiva) queda para una sesión aparte -- mejor hacerlo bien por partes que apurado.
 
+## 5.70 Rediseño de `/panel-empresa` -- Fase 2a (probado con cuenta real, alcance redefinido con evidencia) -- 25-ago-2026
+
+El director confirmó la Fase 1 (sección 5.69) **probándola con una cooperativa real recién creada** (`Gonzalez Internacional`, vía `/admin/cooperativas`, con su primer usuario `admin_cooperativa` y un `vendedor` creado después desde "Personal") -- no solo con capturas simuladas. Confirmó que el sidebar, el filtro de menú por rol, y el reemplazo del dashboard del vendedor por "Viajes de hoy" funcionan correctamente con datos 100% reales, cero errores.
+
+**Antes de construir la Fase 2, alcance redefinido con evidencia real** (no a ciegas): revisado el tamaño real de las 8 secciones restantes (2,939 líneas en total) -- Rutas (687) y Unidades (646, incluye un editor visual de mapa de asientos VIP/mujeres) resultaron mucho más grandes y complejas de lo esperado. Se propuso dividir de nuevo: **Fase 2a** (esta sesión) = las 5 más chicas (Personal, Validar boleto, Pagos pendientes, Facturas, Carga masiva) + una corrección mecánica de color en **todas** las páginas restantes (incluidas Rutas/Unidades/Configuración, sin tocar su estructura). **Fase 2b** (sesión aparte) = el rediseño estructural completo de Rutas, Unidades y Configuración.
+
+**Hallazgo real importante, encontrado al investigar antes de construir:** las 5 páginas de la Fase 2a **ya usaban** el mismo patrón de tarjetas (`rounded-2xl bg-white shadow-sm ring-1 ring-black/5`) desde antes -- confirmado con `grep`, no estaban en "texto plano" como se pensaba al plantear el alcance. El problema real concreto que sí quedaba pendiente ahí era solo el color de los botones de acción (`bg-brand`, casi negro, heredado del diseño viejo).
+
+**Construido (rama `feat/panel-empresa-tailadmin-fase2a`, 9 archivos):**
+- Corrección mecánica real de color: `bg-brand` (botones) -> `bg-brand-amber`, en **9 archivos** -- las 5 de la Fase 2a, más `viajes/page.tsx` (un botón que quedó fuera del alcance de la Fase 1, que solo tocó el menú de acciones), `rutas/page.tsx`, `unidades/page.tsx`, y `configuracion/page.tsx` (incluidos 2 interruptores de encendido/apagado reales -- política de cancelación y de reprogramación -- que también usaban el mismo casi-negro para su estado "activado"). Aplicado con `sed` restringido solo a las líneas que ya contenían el patrón real del botón, para no tocar por accidente otro `text-white` no relacionado en el mismo archivo -- verificado con `grep` que no quedó ninguno huérfano.
+- Sin cambios estructurales en Rutas, Unidades, Configuración -- eso es explícitamente alcance de la Fase 2b.
+
+**Verificado con evidencia real:** `next build` completo confirmando las 11 rutas reales, `tsc --noEmit` limpio, y una ruta temporal replicando el patrón exacto real de "Personal" (mismo formulario, mismo botón) con captura confirmando que el ámbar se integra bien con el resto de la tarjeta. Cambio 100% frontend, cero archivos tocados en `apps/api`.
+
+**Pendiente real, confirmado con el director:** Fase 2b (rediseño estructural completo de Rutas, Unidades, Configuración) para una sesión aparte.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

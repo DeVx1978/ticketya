@@ -191,7 +191,7 @@ export default function PersonalPage() {
           <button
             type="submit"
             disabled={guardandoStaff}
-            className="h-[42px] w-fit rounded-lg bg-brand px-5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50 sm:col-span-2 lg:col-span-4"
+            className="h-[42px] w-fit rounded-lg bg-brand-amber px-5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50 sm:col-span-2 lg:col-span-4"
           >
             {guardandoStaff ? "Creando..." : "Crear usuario"}
           </button>
@@ -311,7 +311,7 @@ export default function PersonalPage() {
           <button
             type="submit"
             disabled={guardandoConductor}
-            className="h-[42px] w-fit rounded-lg bg-brand px-5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            className="h-[42px] w-fit rounded-lg bg-brand-amber px-5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
             {guardandoConductor ? "Guardando..." : "Registrar conductor"}
           </button>
