@@ -38,7 +38,7 @@ export class BusquedaService {
   constructor(@Inject(DRIZZLE_DB_PUBLICO) private readonly db: DrizzleDb) {}
 
   /** RF-BUS-002 — autocompletado de ciudades/terminales. */
-  async buscarPuntosOperacion(texto: string) {
+  async buscarPuntosOperacion(texto: string, soloConRutas = true) {
     const textoNormalizado = texto.trim();
     // Prioridad de relevancia (hallazgo documentado, cerrado
     // 22-jul-2026): antes no había ORDER BY, así que Postgres devolvía
@@ -79,7 +79,15 @@ export class BusquedaService {
             ilike(puntosOperacion.ciudad, `%${textoNormalizado}%`),
             ilike(puntosOperacion.nombre, `%${textoNormalizado}%`),
           ),
-          tieneRutaReal,
+          // Bug real encontrado (26-ago-2026, auditoría real del
+          // director): este filtro tiene sentido para el buscador
+          // público del pasajero (no mostrar ciudades sin viajes),
+          // pero bloqueaba por completo a una cooperativa nueva
+          // creando su primera ruta -- ni siquiera un punto recién
+          // aprobado por el admin podía encontrarse, porque recién
+          // aprobado todavía tiene 0 rutas reales. `soloConRutas` deja
+          // que el panel de cooperativa lo desactive explícitamente.
+          soloConRutas ? tieneRutaReal : undefined,
           // Hallazgo real del director (21-ago-2026): una oficina
           // propia de una cooperativa (ej. "Panamericana -- Oficina
           // La Colon") no debe aparecer en la busqueda general -- se
