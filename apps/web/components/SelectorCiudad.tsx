@@ -14,6 +14,13 @@ interface Props {
    * propio (el contenedor exterior ya trae el borde/divisor real) --
    * opcional, false por defecto, no afecta dónde ya se usa sin esto. */
   compacto?: boolean;
+  /** Bug real encontrado (26-ago-2026, auditoría real del director):
+   * `true` por defecto -- preserva el comportamiento público ya
+   * verificado (solo mostrar ciudades con rutas reales). El selector
+   * de Origen/Destino al crear una ruta en el panel de cooperativa lo
+   * pasa en `false`, para no bloquear a una cooperativa nueva
+   * buscando el punto de su primera ruta. */
+  soloConRutas?: boolean;
 }
 
 /**
@@ -29,7 +36,7 @@ interface Props {
  * resaltado virtual (aria-activedescendant), Enter confirma la
  * seleccionada, Escape cierra. Así no hay ninguna carrera con blur.
  */
-export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compacto = false }: Props) {
+export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compacto = false, soloConRutas = true }: Props) {
   // Ítem 21 (07-ago-2026) -- useId(), no un id fijo: este componente se
   // usa 2 veces en la misma página (Origen y Destino) -- un id fijo
   // haría que ambas etiquetas apuntaran al mismo campo.
@@ -95,7 +102,7 @@ export function SelectorCiudad({ etiqueta, placeholder, valor, onCambio, compact
     }
     temporizador.current = setTimeout(async () => {
       const idPeticion = ++secuenciaPeticion.current;
-      const resultado = await buscarPuntosOperacion(texto);
+      const resultado = await buscarPuntosOperacion(texto, soloConRutas);
       if (idPeticion !== secuenciaPeticion.current) return; // ya no es la más reciente -- descartar
       setSugerencias(resultado);
       setIndiceResaltado(-1);

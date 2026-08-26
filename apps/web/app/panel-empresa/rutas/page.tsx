@@ -269,8 +269,8 @@ export default function RutasPage() {
         onSubmit={crear}
         className="grid grid-cols-1 gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:grid-cols-2 lg:grid-cols-4 lg:items-end"
       >
-        <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde?" valor={origen} onCambio={setOrigen} />
-        <SelectorCiudad etiqueta="Destino" placeholder="¿Hacia dónde?" valor={destino} onCambio={setDestino} />
+        <SelectorCiudad etiqueta="Origen" placeholder="¿Desde dónde?" valor={origen} onCambio={setOrigen} soloConRutas={false} />
+        <SelectorCiudad etiqueta="Destino" placeholder="¿Hacia dónde?" valor={destino} onCambio={setDestino} soloConRutas={false} />
         <div>
           <label htmlFor="ruta-precio-base" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-brand-dark/70">
             Precio base (USD)
@@ -631,6 +631,7 @@ export default function RutasPage() {
                                   placeholder="¿Dónde para?"
                                   valor={puntoParada}
                                   onCambio={setPuntoParada}
+                                  soloConRutas={false}
                                 />
                               </div>
                               <div>

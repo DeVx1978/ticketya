@@ -20,7 +20,7 @@ export class BusquedaController {
   /** RF-BUS-002 */
   @Get('puntos-operacion/buscar')
   async buscarPuntosOperacion(@Query() query: BuscarPuntosOperacionDto) {
-    return this.busqueda.buscarPuntosOperacion(query.texto);
+    return this.busqueda.buscarPuntosOperacion(query.texto, query.soloConRutas);
   }
 
   /**

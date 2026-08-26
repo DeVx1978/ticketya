@@ -45,11 +45,12 @@ export interface ResultadoViaje {
   distanciaKm: number | null;
 }
 
-export async function buscarPuntosOperacion(texto: string): Promise<PuntoOperacion[]> {
+export async function buscarPuntosOperacion(texto: string, soloConRutas = true): Promise<PuntoOperacion[]> {
   if (texto.trim().length < 2) return [];
-  const res = await fetch(`${API_URL}/puntos-operacion/buscar?texto=${encodeURIComponent(texto)}`, {
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${API_URL}/puntos-operacion/buscar?texto=${encodeURIComponent(texto)}&soloConRutas=${soloConRutas}`,
+    { cache: "no-store" },
+  );
   if (!res.ok) return [];
   return res.json();
 }
