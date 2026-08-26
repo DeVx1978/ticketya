@@ -464,7 +464,7 @@ export default function RutasPage() {
                                       onClick={() => alternarDia(d.valor)}
                                       className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
                                         diasSeleccionados.includes(d.valor)
-                                          ? "bg-brand text-white"
+                                          ? "bg-brand-amber text-brand-dark"
                                           : "bg-brand-light/40 text-brand-dark/70"
                                       }`}
                                     >
