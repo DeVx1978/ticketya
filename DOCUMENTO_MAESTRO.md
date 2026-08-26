@@ -2041,6 +2041,20 @@ El director confirmó la Fase 1 (sección 5.69) **probándola con una cooperativ
 
 **Pendiente real, confirmado con el director:** Fase 2b (rediseño estructural completo de Rutas, Unidades, Configuración) para una sesión aparte.
 
+## 5.71 Fase 2a verificada con cuenta real de producción + Fase 2b (hallazgo: alcance mucho menor de lo esperado) -- 25-ago-2026
+
+**Verificación real de la Fase 2a, con una cuenta 100% real, no simulada:** el director creó una cooperativa nueva desde cero (`Gonzalez Internacional`, vía `/admin/cooperativas`, Modelo A) y probó cada una de las 9 pantallas corregidas en producción real, con clics reales, confirmando uno por uno: botones ámbar en Personal ("Crear usuario", "Registrar conductor"), Validar boleto (correctamente atenuado cuando el campo está vacío -- comportamiento esperado, no un bug), Carga masiva ("Importar"), y los 4 botones + 2 interruptores de Configuración ("Confirmar datos", "Guardar política", "Guardar IVA", "Guardar recargo VIP", y los interruptores de cancelación/reprogramación pasando de gris a ámbar sólido al activarse). Pagos pendientes y Facturas no tenían ningún dato real para mostrar botón, verificado como estado esperado, no error.
+
+**Fase 2b -- alcance real investigado a fondo antes de construir, resultó mucho menor de lo previsto:** revisada la estructura completa de Rutas (687 líneas) y Unidades (646 líneas, incluye editor visual de mapa de asientos VIP/mujeres) -- confirmado que **ya usaban** el mismo patrón de tarjetas/tablas del resto del panel, sin el problema de acciones amontonadas que sí tenía Viajes (Rutas ya usa un botón único "Gestionar/Ocultar" con panel expandible; Unidades ya usa un interruptor de estado simple, no una columna de enlaces). El editor de asientos ya usa ámbar (`bg-amber-500`, variante genérica de Tailwind, visualmente correcta aunque no el token exacto de marca). Configuración ya había quedado 100% cubierta en la Fase 2a.
+
+**Único hallazgo real pendiente:** 2 instancias más del mismo patrón oscuro (`bg-brand text-white`) que la corrección mecánica de la Fase 2a no alcanzó a cubrir por tener una forma de clase ligeramente distinta -- chips seleccionables, no botones de acción: días de la semana al agregar un horario (Rutas), y amenidades al crear un tipo de vehículo (Unidades).
+
+**Construido (rama `fix/panel-empresa-chips-ambar`, 2 archivos):** `bg-brand text-white` -> `bg-brand-amber text-brand-dark` en ambas instancias. Confirmado con `grep` que no queda ninguna instancia vieja en todo `/panel-empresa`.
+
+**Verificado con captura real:** ruta temporal replicando ambos chips interactivos, confirmando que el estado seleccionado se ve en ámbar sólido. `tsc --noEmit` y `next build` limpios. Cambio 100% frontend, cero archivos tocados en `apps/api`.
+
+**Con esto, la Fase 2b queda cerrada** -- no se identificó ningún hallazgo real adicional de "diseño roto" en Rutas ni Unidades más allá de estas 2 instancias; ambas páginas ya estaban visualmente al mismo nivel que el resto del panel.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.

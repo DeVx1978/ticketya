@@ -348,7 +348,7 @@ export default function UnidadesPage() {
                   onClick={() => alternarAmenidadTipo(a.valor)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                     amenidadesTipo.includes(a.valor)
-                      ? "bg-brand text-white"
+                      ? "bg-brand-amber text-brand-dark"
                       : "bg-brand-light/40 text-brand-dark/70"
                   }`}
                 >
