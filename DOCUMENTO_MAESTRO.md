@@ -2055,6 +2055,27 @@ El director confirmó la Fase 1 (sección 5.69) **probándola con una cooperativ
 
 **Con esto, la Fase 2b queda cerrada** -- no se identificó ningún hallazgo real adicional de "diseño roto" en Rutas ni Unidades más allá de estas 2 instancias; ambas páginas ya estaban visualmente al mismo nivel que el resto del panel.
 
+## 5.72 PENDIENTE REAL -- falta un "Punto de Venta" para vendedores en oficinas físicas -- 25-ago-2026
+
+El director planteó una pregunta real de negocio: Columbus vende boletos digitales, pero la meta es que las cooperativas también puedan vender en sus propias oficinas físicas del terminal, atendiendo al pasajero en el mostrador (buscar ruta, ver horarios, ver mapa de asientos, tomar datos del pasajero, cobrar, imprimir el boleto ahí mismo). Se pidió investigar si esa función ya existe.
+
+**Investigación real hecha, con evidencia de código y de mercado:**
+- Confirmado en el código: **no existe ninguna pantalla de "Punto de Venta"** dentro de `/panel-empresa` -- las 11 secciones reales no incluyen nada así (ver listado completo, sección 5.63 en adelante).
+- El endpoint real de compra (`POST /compras`) sí soporta "compra como invitado" (`OptionalJwtAuthGuard`, ítem 31 fase 7) -- técnicamente permite una venta sin que el pasajero tenga cuenta, pero es el mismo flujo público que usa cualquier pasajero, no una herramienta propia del vendedor.
+- El pago en efectivo hoy (`pago-manual`) exige "sube tu comprobante y espera confirmación de la cooperativa" -- no sirve para un cliente parado frente al mostrador esperando su boleto.
+- **Investigación real de mercado** (búsqueda real, no inventada): comparado contra CBus (Central Bus, México, empresa real de software para este sector) y Ticketor -- ambos confirman que un sistema de venta de boletos para terminal de autobuses de verdad necesita: punto de venta dedicado, **corte de caja** (cuánto vendió cada vendedor en su turno), **trazabilidad por vendedor** (qué vendedor procesó cada venta -- CBus reporta que sin esto, las empresas pierden entre 1.7% y 22.4% de sus ingresos por fraude/error interno), y pago instantáneo en el mostrador.
+- Confirmado en el esquema real de base de datos (`packages/db/schema/ventas.ts`): la tabla `compras` solo tiene `compradorUsuarioId` (el comprador, si tiene cuenta) -- **no existe ningún campo que registre qué vendedor procesó la venta**. Sin esto, no hay forma real de saber quién vendió qué.
+
+**4 brechas reales confirmadas, no inventadas:**
+1. Sin pantalla de Punto de Venta dedicada para el vendedor
+2. Sin pago instantáneo en efectivo (el flujo actual es para pagos que se confirman después, no en el momento)
+3. Sin corte de caja (cuánto recaudó cada vendedor)
+4. Sin trazabilidad por vendedor (ni siquiera queda registrado quién hizo la venta)
+
+**Aclaración real importante que hizo el director, y que confirmé:** esto se conecta con el pendiente ya documentado de la pasarela de pago con tarjeta (sección 3.4, bloqueo externo real -- decisión de proveedor, PayPhone/Kushki, pendiente del dueño del proyecto) -- **pero no son lo mismo**. El pago con **tarjeta** en el mostrador sí necesitaría esa pasarela real (mismo bloqueo externo). Pero el pago en **efectivo** (el caso más común en un mostrador real) **no depende de ninguna pasarela externa** -- confirmar "se cobró efectivo, boleto emitido" es una función 100% interna, que se puede construir sin esperar esa decisión externa.
+
+**Decisión del director:** construirlo, pero como sesión aparte y dedicada -- no se toca en esta sesión. Queda marcado aquí como pendiente real completo, con las 4 piezas identificadas, para retomarlo cuando corresponda.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
