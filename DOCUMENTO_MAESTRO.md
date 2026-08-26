@@ -2076,6 +2076,30 @@ El director planteó una pregunta real de negocio: Columbus vende boletos digita
 
 **Decisión del director:** construirlo, pero como sesión aparte y dedicada -- no se toca en esta sesión. Queda marcado aquí como pendiente real completo, con las 4 piezas identificadas, para retomarlo cuando corresponda.
 
+## 5.73 Auditoría real de 2 flujos completos + bug real encontrado y corregido (candado circular en Rutas) -- 26-ago-2026
+
+Con la otra directora fuera temporalmente, el director pidió que esta conversación tomara el mando de la documentación, y solicitó auditar 2 flujos reales completos para verificar que estuvieran bien: (1) la compra del pasajero en la plataforma, y (2) cómo una cooperativa nueva crea y arma todo su entorno para operar.
+
+**Flujo 1 -- compra del pasajero en línea, verificado end-to-end, sólido, sin hallazgos graves:**
+- `/buscar` -> `/viajes/[id]/asientos` (con bloqueo temporal real, `expiraEn`, evita doble venta del mismo asiento) -> `/viajes/[id]/checkout`.
+- Pago con tarjeta: boleto y QR generados al instante, con desglose real de precio (tarifa, tasa terminal, cargo de plataforma, IVA), enlace a "Mis boletos".
+- Pago manual: correctamente exige subir comprobante y esperar confirmación -- coherente con el modelo actual, no es un error.
+
+**Flujo 2 -- una cooperativa arma su entorno, bug real serio encontrado y corregido:**
+
+Investigando la cadena real de dependencias (tipos de vehículo -> unidades -> rutas -> horarios -> viajes generados), se encontró que el selector de Origen/Destino/Parada al crear una ruta en `/panel-empresa/rutas` reutiliza **el mismo endpoint público** que usa el pasajero (`/puntos-operacion/buscar`), el cual filtra por `tieneRutaReal` -- solo muestra puntos que **ya tienen** al menos una ruta real.
+
+**Esto bloqueaba por completo a cualquier cooperativa nueva** creando su primera ruta entre 2 ciudades sin rutas previas -- un candado circular real: ni siquiera un punto recién aprobado por el admin de plataforma aparecía en la búsqueda, porque recién aprobado todavía tiene 0 rutas reales. Confirmado que no existía ningún endpoint alterno ni forma real de romper el ciclo.
+
+**Corregido** (rama `fix/rutas-selector-puntos-nuevos`, 6 archivos -- 3 backend, 3 frontend): nuevo parámetro real `soloConRutas` (`true` por defecto, preserva intacto el comportamiento público) agregado al DTO, controlador y servicio del endpoint (`apps/api`). El cliente API, `SelectorCiudad`, y los 3 usos reales en Rutas (Origen, Destino, Parada) lo pasan en `false`. El buscador público (`BuscadorForm`, portada) queda sin ningún cambio -- confirmado que es el único otro archivo real que usa `SelectorCiudad` en todo el proyecto.
+
+**Verificado con evidencia real completa, no solo `tsc`/build** -- mismo estándar exigido siempre para cambios de backend:
+- **Postgres real instalado en este entorno** (`apt-get install postgresql-16`), las 42 migraciones + 5 scripts manuales aplicados, en el mismo orden exacto que usa CI.
+- **221 pruebas e2e reales corridas** -- las 19 suites pasaron, incluida `busqueda.e2e-spec.ts` (confirma que el comportamiento público no se rompió).
+- **Prueba funcional real con `curl`**, no solo teoría: insertado un punto real aprobado sin ninguna ruta ("Terminal Terrestre de Portoviejo") -- confirmado que sin el parámetro nuevo la búsqueda sale vacía (comportamiento público intacto) y con `soloConRutas=false` sí aparece (bug resuelto). Dato de prueba limpiado después, junto con el servidor de desarrollo y el `.env` real usado para la prueba (nunca comiteado).
+
+Un hallazgo real menor, detectado y descartado en el camino: al correr `tsc --noEmit` la primera vez, apareció un error real (`distanciaKm` no existe en el tipo) -- confirmado con `git stash` que **ya existía en `main` antes de este cambio**, causado por una compilación desactualizada del paquete `@columbus/db` en este entorno local (CI siempre lo recompila primero). Resuelto recompilando el paquete (`cd packages/db && npx tsc -p tsconfig.build.json`), no era un bug real del código.
+
 ## 6. Regla de mantenimiento de este documento
 
 Este documento se actualiza al cierre de cada sesión de trabajo real donde algo cambie de estado — no solo cuando se pida explícitamente. **Ninguna construcción nueva empieza sin que la decisión ya esté escrita aquí y confirmada primero (regla reforzada 2-ago-2026, ver sección 5).** **REGLA NO NEGOCIABLE (07-ago-2026): ningún ítem se marca "completo" sin responder primero "¿qué le falta comparado con las mejores plataformas del mundo?".** Ningún resumen de conversación ni memoria de sesión reemplaza esto como fuente de verdad. Antes de escribir código nuevo, se consulta este documento primero.
