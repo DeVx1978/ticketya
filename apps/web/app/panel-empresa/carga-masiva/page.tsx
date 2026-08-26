@@ -143,7 +143,7 @@ export default function CargaMasivaPage() {
         <button
           type="submit"
           disabled={enviando}
-          className="mt-4 rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          className="mt-4 rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
         >
           {enviando ? "Procesando..." : "Importar"}
         </button>

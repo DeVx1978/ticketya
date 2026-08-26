@@ -283,7 +283,7 @@ export default function ConfiguracionPage() {
           <button
             type="submit"
             disabled={guardandoDatos}
-            className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+            className="rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
           >
             {guardandoDatos ? "Confirmando..." : "Confirmar datos"}
           </button>
@@ -320,7 +320,7 @@ export default function ConfiguracionPage() {
               setPolitica((p) => (p ? { ...p, permiteCancelacion: !p.permiteCancelacion } : p))
             }
             className={`relative h-6 w-11 rounded-full transition ${
-              politica.permiteCancelacion ? "bg-brand" : "bg-gray-300"
+              politica.permiteCancelacion ? "bg-brand-amber" : "bg-gray-300"
             }`}
           >
             <span
@@ -374,7 +374,7 @@ export default function ConfiguracionPage() {
               )
             }
             className={`relative h-6 w-11 rounded-full transition ${
-              politica.permiteReprogramacion ? "bg-brand" : "bg-gray-300"
+              politica.permiteReprogramacion ? "bg-brand-amber" : "bg-gray-300"
             }`}
           >
             <span
@@ -422,7 +422,7 @@ export default function ConfiguracionPage() {
         <button
           type="submit"
           disabled={guardandoPolitica}
-          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
         >
           {guardandoPolitica ? "Guardando..." : "Guardar política"}
         </button>
@@ -470,7 +470,7 @@ export default function ConfiguracionPage() {
         <button
           type="submit"
           disabled={guardandoFiscal}
-          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
         >
           {guardandoFiscal ? "Guardando..." : "Guardar IVA"}
         </button>
@@ -503,7 +503,7 @@ export default function ConfiguracionPage() {
         <button
           type="submit"
           disabled={guardandoVip}
-          className="rounded-lg bg-brand px-5 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          className="rounded-lg bg-brand-amber px-5 py-2.5 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
         >
           {guardandoVip ? "Guardando..." : "Guardar recargo VIP"}
         </button>

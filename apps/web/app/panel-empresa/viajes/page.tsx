@@ -99,7 +99,7 @@ id="viaje-precio"
       <button
         onClick={confirmar}
         disabled={guardando}
-        className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+        className="rounded bg-brand-amber px-2 py-1 text-xs font-semibold text-brand-dark hover:brightness-95 disabled:opacity-50"
       >
         ✓
       </button>
@@ -172,7 +172,7 @@ id="viaje-unidad"
       <button
         onClick={confirmar}
         disabled={guardando || !unidadElegida}
-        className="rounded bg-brand px-2 py-1 text-xs font-semibold text-white hover:bg-brand-dark disabled:opacity-50"
+        className="rounded bg-brand-amber px-2 py-1 text-xs font-semibold text-brand-dark hover:brightness-95 disabled:opacity-50"
       >
         ✓
       </button>
@@ -547,7 +547,7 @@ id="viaje-fecha"
         <button
           type="submit"
           disabled={guardando || faltaConfigurar}
-          className="lg:col-span-5 h-[42px] rounded-lg bg-brand px-4 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
+          className="lg:col-span-5 h-[42px] rounded-lg bg-brand-amber px-4 font-semibold text-brand-dark transition hover:brightness-95 disabled:opacity-50"
         >
           {guardando ? "Guardando..." : "Crear viaje"}
         </button>
